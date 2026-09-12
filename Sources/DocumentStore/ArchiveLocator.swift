@@ -2,8 +2,14 @@ import Foundation
 
 /// Creates, opens and remembers archive folders.
 ///
-/// The path of the last opened archive lives in `UserDefaults`; a
-/// security-scoped bookmark replaces it once the app is sandboxed (spec 2.2).
+/// The app always uses the archive at `defaultArchiveURL()`
+/// (`~/Library/Application Support/Ziffer`), created automatically on first
+/// launch. `createArchive`/`openArchive` remain able to work with an
+/// arbitrary path for tests and a later "Archiv verschieben" feature.
+///
+/// `rememberedArchive`/`remember`/`forgetArchive` predate the fixed location
+/// and are unused by the app now; a security-scoped bookmark would replace
+/// them once the app is sandboxed (spec 2.2).
 public struct ArchiveLocator {
     public static let defaultsKey = "de.ziffer.archivePath"
     public static let defaultFolderName = "Ziffer"
@@ -14,6 +20,24 @@ public struct ArchiveLocator {
     public init(defaults: UserDefaults = .standard, fileManager: FileManager = .default) {
         self.defaults = defaults
         self.fileManager = fileManager
+    }
+
+    /// `~/Library/Application Support/Ziffer`, the archive location used by
+    /// the app. Created on demand by `FileManager` if missing.
+    public func defaultArchiveURL() -> URL {
+        let base = (try? fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: true
+        )) ?? fileManager.homeDirectoryForCurrentUser.appending(path: "Library/Application Support")
+        return base.appending(path: Self.defaultFolderName, directoryHint: .isDirectory)
+    }
+
+    /// Opens the default archive, creating its layout on first launch.
+    /// Safe to call on every launch: existing folders are reused as-is.
+    public func openDefaultArchive(appVersion: String, schemaVersion: String) throws -> Archive {
+        try createArchive(at: defaultArchiveURL(), appVersion: appVersion, schemaVersion: schemaVersion)
     }
 
     /// The remembered archive, if its folder still contains a database.

@@ -45,7 +45,8 @@ on `Domain`; `Tax` and `Validation` have neither network nor database access
 
 ## The archive folder
 
-On first launch the app creates or opens an archive folder:
+On first launch the app creates the archive folder at
+`~/Library/Application Support/Ziffer`:
 
 ```text
 Ziffer/
@@ -57,8 +58,10 @@ Ziffer/
 └── README.txt
 ```
 
-The path of the last opened archive is stored in `UserDefaults`. Debug builds
-seed three sample transactions into a freshly created archive.
+There is no folder picker; the location is fixed. `ArchiveLocator` can still
+open an arbitrary path, which the test suite uses and a later "Archiv
+verschieben" feature will build on. Debug builds seed three sample
+transactions into a freshly created archive.
 
 ## Tests
 

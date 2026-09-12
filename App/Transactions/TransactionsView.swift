@@ -52,7 +52,7 @@ struct TransactionsView: View {
                 Label(row.paymentStatus.label, systemImage: row.paymentStatus.symbol)
                     .foregroundStyle(row.paymentStatus.tint)
             }
-            .width(120)
+            .width(140)
 
             TableColumn("Steuer") { row in
                 Text(row.taxTreatment?.label ?? "–")
@@ -104,7 +104,7 @@ extension PaymentStatus {
     var label: LocalizedStringKey {
         switch self {
         case .paid: "Bezahlt"
-        case .partiallyPaid: "Teilweise"
+        case .partiallyPaid: "Teilweise bezahlt"
         case .unpaid: "Offen"
         case .unknown: "Unbekannt"
         }

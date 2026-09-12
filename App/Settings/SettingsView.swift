@@ -1,12 +1,16 @@
+import AI
 import AppKit
 import SwiftUI
 
-/// Settings. The API key field is a placeholder until the Keychain and the
-/// OpenAI client arrive with milestone M4 (spec 10.5).
+/// Settings. The API key lives in the Keychain; model and reasoning effort
+/// live in the `settings` table. The OpenAI client itself arrives with
+/// milestone M4 (spec 10.5).
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @AppStorage("ai.model") private var selectedModel = "gpt-5"
-    @State private var apiKey = ""
+    @State private var apiKeyInput = ""
+    @State private var hasAPIKey = APIKeyStore.hasKey
+    @State private var selectedModel = OpenAIModel.default
+    @State private var selectedEffort = ReasoningEffort.default
 
     var body: some View {
         Form {
@@ -16,16 +20,12 @@ struct SettingsView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                HStack {
-                    Button("Im Finder zeigen") {
-                        if let url = model.archive?.rootURL {
-                            NSWorkspace.shared.activateFileViewerSelecting([url])
-                        }
+                Button("Im Finder zeigen") {
+                    if let url = model.archive?.rootURL {
+                        NSWorkspace.shared.activateFileViewerSelecting([url])
                     }
-                    .disabled(model.archive == nil)
-                    Spacer()
-                    Button("Archiv wechseln …", action: model.closeArchive)
                 }
+                .disabled(model.archive == nil)
             }
 
             Section("Betrieb") {
@@ -34,17 +34,30 @@ struct SettingsView: View {
             }
 
             Section {
-                SecureField("API-Schlüssel", text: $apiKey, prompt: Text("sk-…"))
-                    .disabled(true)
+                SecureField("OpenAI API-Schlüssel", text: $apiKeyInput, prompt: Text("sk-…"))
+                    .onSubmit(saveAPIKey)
+                HStack {
+                    Text(hasAPIKey ? "Schlüssel gespeichert" : "Kein Schlüssel hinterlegt")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Entfernen", role: .destructive, action: removeAPIKey)
+                        .disabled(!hasAPIKey)
+                }
                 Picker("Modell", selection: $selectedModel) {
-                    Text("GPT-5").tag("gpt-5")
-                    Text("GPT-5 mini").tag("gpt-5-mini")
+                    ForEach(OpenAIModel.allCases, id: \.self) { model in
+                        Text(model.displayName).tag(model)
+                    }
+                }
+                Picker("Denkaufwand", selection: $selectedEffort) {
+                    ForEach(ReasoningEffort.allCases, id: \.self) { effort in
+                        Text(effort.displayName).tag(effort)
+                    }
                 }
             } header: {
-                Text("Künstliche Intelligenz")
+                Text("KI")
             } footer: {
                 Text(
-                    "Noch ohne Funktion. Ab Meilenstein M4 wird der Schlüssel im Schlüsselbund gespeichert und für die Belegerkennung verwendet."
+                    "Der Schlüssel wird im Schlüsselbund gespeichert. Ab Meilenstein M4 wird er für die Belegerkennung verwendet."
                 )
                 .font(.callout)
                 .foregroundStyle(.secondary)
@@ -52,5 +65,34 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Einstellungen")
+        .task { loadAISettings() }
+        .onChange(of: selectedModel) { _, newValue in
+            try? model.database?.setSetting(newValue, forKey: AIConfiguration.modelSettingKey)
+        }
+        .onChange(of: selectedEffort) { _, newValue in
+            try? model.database?.setSetting(newValue, forKey: AIConfiguration.reasoningEffortSettingKey)
+        }
+    }
+
+    private func loadAISettings() {
+        guard let database = model.database else { return }
+        selectedModel = (try? database.setting(OpenAIModel.self, forKey: AIConfiguration.modelSettingKey))
+            ?? .default
+        selectedEffort = (try? database.setting(ReasoningEffort.self, forKey: AIConfiguration.reasoningEffortSettingKey))
+            ?? .default
+    }
+
+    private func saveAPIKey() {
+        let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        APIKeyStore.save(trimmed)
+        apiKeyInput = ""
+        hasAPIKey = true
+    }
+
+    private func removeAPIKey() {
+        APIKeyStore.remove()
+        apiKeyInput = ""
+        hasAPIKey = false
     }
 }

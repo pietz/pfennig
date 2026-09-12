@@ -43,6 +43,8 @@ targets:
         product: Database
       - package: ZifferPackages
         product: DocumentStore
+      - package: ZifferPackages
+        product: AI
     settings:
       base:
         PRODUCT_NAME: Ziffer

@@ -1,71 +1,19 @@
-import AppKit
 import Database
 import Domain
 import SwiftUI
 
-/// First launch: choose or create an archive folder, then describe the
-/// business (spec 20 and 17.1).
+/// First launch: describe the business, straight after the archive at its
+/// fixed location has been created (spec 20 and 17.1).
 struct OnboardingView: View {
-    @Environment(AppModel.self) private var model
-
     var body: some View {
         VStack(spacing: 24) {
-            switch model.stage {
-            case .welcome:
-                welcome
-            case .profile:
-                BusinessProfileForm()
-            case .ready:
-                EmptyView()
-            }
+            BusinessProfileForm()
         }
         .padding(40)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         // Let the content run into the title bar: no toolbar, no divider.
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .navigationTitle("")
-    }
-
-    private var welcome: some View {
-        VStack(spacing: 20) {
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.largeTitle)
-                .foregroundStyle(.tint)
-            VStack(spacing: 6) {
-                Text("Willkommen bei Ziffer")
-                    .font(.largeTitle.weight(.semibold))
-                Text("Buchhaltung für Selbstständige. Alle Daten bleiben in einem Ordner auf diesem Mac.")
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            HStack {
-                Button("Archiv öffnen …", action: openArchive)
-                Button("Archiv erstellen …", action: createArchive)
-                    .buttonStyle(.borderedProminent)
-            }
-        }
-        .frame(maxWidth: 460)
-    }
-
-    private func createArchive() {
-        let panel = NSSavePanel()
-        panel.title = String(localized: "Neues Ziffer-Archiv")
-        panel.prompt = String(localized: "Erstellen")
-        panel.nameFieldStringValue = "Ziffer"
-        panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.createArchive(at: url)
-    }
-
-    private func openArchive() {
-        let panel = NSOpenPanel()
-        panel.title = String(localized: "Ziffer-Archiv öffnen")
-        panel.prompt = String(localized: "Öffnen")
-        panel.canChooseDirectories = true
-        panel.canChooseFiles = false
-        panel.allowsMultipleSelection = false
-        guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.openArchive(at: url)
     }
 }
 
@@ -94,26 +42,26 @@ struct BusinessProfileForm: View {
             Form {
                 Section {
                     TextField("Name", text: $name, prompt: Text("Vor- und Nachname oder Firma"))
-                    TextField("Rechtlicher Name", text: $legalName, prompt: Text("optional"))
-                    Picker("Betriebsart", selection: $businessType) {
-                        Text("Freiberuflich").tag(BusinessType.freelancer)
-                        Text("Einzelunternehmen").tag(BusinessType.soleProprietor)
+                    TextField("Unternehmensname", text: $legalName, prompt: Text("optional"))
+                    Picker("Unternehmensform", selection: $businessType) {
+                        Text("Freiberufler").tag(BusinessType.freelancer)
+                        Text("Einzelunternehmer").tag(BusinessType.soleProprietor)
                     }
                 }
                 Section {
                     TextField("Steuernummer", text: $taxNumber, prompt: Text("optional"))
                     TextField("USt-IdNr.", text: $vatId, prompt: Text("z. B. DE123456789"))
                     Picker("Umsatzsteuer", selection: $vatStatus) {
-                        Text("Regelbesteuert").tag(VATStatus.taxable)
+                        Text("Umsatzsteuerpflichtig").tag(VATStatus.taxable)
                         Text("Kleinunternehmer (§ 19 UStG)").tag(VATStatus.smallBusiness)
                     }
-                    Picker("Versteuerung", selection: $accountingMethod) {
+                    Picker("Besteuerung", selection: $accountingMethod) {
                         Text("Ist-Versteuerung (§ 20 UStG)").tag(VATAccountingMethod.cash)
                         Text("Soll-Versteuerung").tag(VATAccountingMethod.accrual)
                     }
-                    Picker("Voranmeldung", selection: $ustvaPeriod) {
+                    Picker("UStVA-Zeitraum", selection: $ustvaPeriod) {
                         Text("Monatlich").tag(UStVAPeriodicity.monthly)
-                        Text("Vierteljährlich").tag(UStVAPeriodicity.quarterly)
+                        Text("Quartalsweise").tag(UStVAPeriodicity.quarterly)
                         Text("Jährlich").tag(UStVAPeriodicity.yearly)
                     }
                 }

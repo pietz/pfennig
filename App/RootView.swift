@@ -38,7 +38,7 @@ struct RootView: View {
         @Bindable var model = model
         Group {
             switch model.stage {
-            case .welcome, .profile:
+            case .profile:
                 OnboardingView()
             case .ready:
                 NavigationSplitView {
