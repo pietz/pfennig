@@ -200,13 +200,13 @@ public enum BookkeepingEngine {
     private static func reasoning(for treatment: TaxTreatment, direction: Direction) -> String {
         switch treatment {
         case .domesticVAT:
-            "Inländische Gegenpartei mit ausgewiesener Umsatzsteuer (§ 13 UStG)."
+            "Inländische Firma mit ausgewiesener Umsatzsteuer (§ 13 UStG)."
         case .reverseCharge where direction == .income:
             "EU-B2B-Dienstleistung ohne Umsatzsteuer - Reverse Charge (§ 3a UStG)."
         case .reverseCharge:
-            "Ausländische Gegenpartei, Dienstleistung ohne Umsatzsteuer - Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)."
+            "Ausländische Firma, Dienstleistung ohne Umsatzsteuer - Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)."
         case .intraCommunityAcquisition:
-            "EU-Gegenpartei, Warenlieferung ohne Umsatzsteuer - innergemeinschaftlicher Erwerb (§ 1a UStG)."
+            "EU-Firma, Warenlieferung ohne Umsatzsteuer - innergemeinschaftlicher Erwerb (§ 1a UStG)."
         case .export:
             "Einnahme aus einem Drittland ohne Umsatzsteuer - Ausfuhrlieferung (§ 4 Nr. 1 UStG)."
         case .nonTaxable:

@@ -65,7 +65,7 @@ struct ReviewView: View {
         return HStack(alignment: .top, spacing: 12) {
             Image(systemName: "sparkles").foregroundStyle(.orange)
             VStack(alignment: .leading, spacing: 2) {
-                Text(summary?.counterpartyName ?? "Unbekannte Gegenpartei").font(.headline)
+                Text(summary?.counterpartyName ?? "Unbekannte Firma").font(.headline)
                 Text(line(summary)).foregroundStyle(.secondary)
                 ForEach(proposal.issues.indices, id: \.self) { index in
                     IssueRow(severity: proposal.issues[index].severity, message: proposal.issues[index].message)

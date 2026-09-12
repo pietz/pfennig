@@ -82,7 +82,7 @@ public enum ExtractionNormalizer {
 
         var draft = TransactionDraft(
             businessProfileId: profile.id,
-            counterpartyName: normalizedName(extraction.counterparty.name) ?? "Unbekannte Gegenpartei",
+            counterpartyName: normalizedName(extraction.counterparty.name) ?? "Unbekannte Firma",
             counterpartyCountryCode: extraction.counterparty.countryCode?.trimmed.uppercased().nilIfEmpty,
             counterpartyVatId: extraction.counterparty.vatId?.trimmed.nilIfEmpty,
             direction: extraction.direction,

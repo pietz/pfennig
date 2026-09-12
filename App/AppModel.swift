@@ -64,9 +64,12 @@ final class AppModel {
     private func open(_ archive: Archive) {
         run {
             let database = try AppDatabase(path: archive.databaseURL.path(percentEncoded: false))
-            let profile = try database.businessProfile()
+            // Set these before the profile lookup: if it throws, the model
+            // still has a usable archive/database instead of silently
+            // stranding the user on a non-functional onboarding form.
             self.archive = archive
             self.database = database
+            let profile = try database.businessProfile()
             self.profile = profile
             categories = (try? database.categories()) ?? []
             coordinator = ImportCoordinator(database: database, archive: archive) {

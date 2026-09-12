@@ -173,7 +173,7 @@ struct TransactionInspector: View {
     private var fieldsSection: some View {
         Section("Felder") {
             field("counterpartyId") {
-                TextField("Gegenpartei", text: $draft.counterpartyName, prompt: Text("Firma oder Person"))
+                TextField("Firma", text: $draft.counterpartyName, prompt: Text("Firma oder Person"))
             }
             TextField("Land", text: $draft.counterpartyCountryCode.orEmpty, prompt: Text("DE"))
             TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))

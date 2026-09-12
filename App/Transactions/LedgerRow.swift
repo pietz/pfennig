@@ -36,7 +36,7 @@ struct LedgerRow: Identifiable, Hashable {
         let summary = proposal.summary
         id = proposal.id
         isProposal = true
-        name = summary?.counterpartyName ?? "Unbekannte Gegenpartei"
+        name = summary?.counterpartyName ?? "Unbekannte Firma"
         subtitle = summary?.categoryName
         date = summary?.invoiceDate
         dateOrigin = "Rechnung"

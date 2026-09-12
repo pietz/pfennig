@@ -21,6 +21,7 @@ struct TransactionsView: View {
     @State private var newDraft: TransactionDraft?
     @State private var deletingID: String?
     @State private var search = ""
+    @State private var directionFilter: DirectionFilter = .all
     @State private var showsInspector = true
     @State private var isTargeted = false
 
@@ -34,7 +35,7 @@ struct TransactionsView: View {
 
     var body: some View {
         table
-            .searchable(text: $search, prompt: Text("Gegenpartei, Titel, Rechnungsnummer, Betrag"))
+            .searchable(text: $search, prompt: Text("Firma, Titel, Rechnungsnummer, Betrag"))
             .navigationTitle("Buchungen")
             .navigationSubtitle(Text(subtitle))
             .toolbar { toolbar }
@@ -76,7 +77,7 @@ struct TransactionsView: View {
             } message: {
                 Text("Die Buchung wird archiviert und aus der Liste entfernt. Die Daten bleiben im Archiv erhalten.")
             }
-            .task(id: search) { await observeTransactions() }
+            .task(id: ObservationKey(search: search, direction: directionFilter)) { await observeTransactions() }
             .task { await observeProposals() }
             .task { await observeImports() }
             .task(id: selection) { await observeDetail() }
@@ -86,7 +87,7 @@ struct TransactionsView: View {
 
     private var table: some View {
         Table(rows, selection: $selection) {
-            TableColumn("Gegenpartei") { row in
+            TableColumn("Firma") { row in
                 VStack(alignment: .leading, spacing: 1) {
                     HStack(spacing: 5) {
                         if row.isProposal {
@@ -165,6 +166,16 @@ struct TransactionsView: View {
 
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            Picker("Richtung", selection: $directionFilter) {
+                ForEach(DirectionFilter.allCases) { filter in
+                    Text(filter.label).tag(filter)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: 320)
+        }
+
         ToolbarItemGroup {
             if activeImports > 0 {
                 ProgressView().controlSize(.small)
@@ -225,7 +236,8 @@ struct TransactionsView: View {
 
     private func observeTransactions() async {
         do {
-            for try await value in TransactionListQuery.observation(search: search).values(in: database.reader) {
+            let observation = TransactionListQuery.observation(search: search, direction: directionFilter.direction)
+            for try await value in observation.values(in: database.reader) {
                 items = value
             }
         } catch {
@@ -267,6 +279,39 @@ struct TransactionsView: View {
             detail = nil
         }
     }
+}
+
+// MARK: - Direction filter
+
+/// The "Alle / Eingang / Ausgang" segmented control in the toolbar.
+enum DirectionFilter: String, CaseIterable, Identifiable {
+    case all, income, expense
+
+    var id: String { rawValue }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .all: "Alle"
+        case .income: "Eingang"
+        case .expense: "Ausgang"
+        }
+    }
+
+    /// `nil` means "no filter", matching every direction.
+    var direction: Direction? {
+        switch self {
+        case .all: nil
+        case .income: .income
+        case .expense: .expense
+        }
+    }
+}
+
+/// Identifies one (search, direction) combination so a single `.task`
+/// restarts the observation whenever either changes.
+private struct ObservationKey: Equatable {
+    var search: String
+    var direction: DirectionFilter
 }
 
 // MARK: - Row status

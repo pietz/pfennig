@@ -64,7 +64,8 @@ public struct TransactionListItem: FetchableRecord, Decodable, Identifiable, Sen
 public enum TransactionListQuery {
     /// Transactions for the main table, newest relevant date first.
     /// `search` matches counterparty, title, invoice number and amount.
-    public static func fetch(_ db: Database, search: String = "") throws -> [TransactionListItem] {
+    /// `direction`, when set, restricts the result to that direction only.
+    public static func fetch(_ db: Database, search: String = "", direction: Direction? = nil) throws -> [TransactionListItem] {
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         var arguments = StatementArguments()
         var filter = ""
@@ -72,17 +73,21 @@ public enum TransactionListQuery {
             let pattern = "%\(trimmed.lowercased())%"
             let digits = trimmed.replacingOccurrences(of: ",", with: ".")
                 .filter { $0.isNumber || $0 == "." || $0 == "-" }
-            filter = """
+            filter += """
               AND (LOWER(COALESCE(c.display_name, '')) LIKE :pattern
                    OR LOWER(COALESCE(t.title, '')) LIKE :pattern
                    OR LOWER(COALESCE(t.invoice_number, '')) LIKE :pattern
                    OR (:digits <> '' AND CAST(ABS(COALESCE(t.booked_gross_minor, 0)) AS TEXT) LIKE :amountPattern))
             """
-            arguments = [
+            arguments = arguments + [
                 "pattern": pattern,
                 "digits": digits,
                 "amountPattern": "%\(digits.replacingOccurrences(of: ".", with: ""))%"
             ]
+        }
+        if let direction {
+            filter += " AND t.direction = :direction"
+            arguments = arguments + ["direction": direction.rawValue]
         }
         let sql = """
         SELECT
@@ -117,10 +122,10 @@ public enum TransactionListQuery {
     }
 
     /// Live query for SwiftUI; emits a new array on every relevant write.
-    public static func observation(search: String = "")
+    public static func observation(search: String = "", direction: Direction? = nil)
         -> ValueObservation<ValueReducers.Fetch<[TransactionListItem]>>
     {
-        ValueObservation.tracking { try fetch($0, search: search) }
+        ValueObservation.tracking { try fetch($0, search: search, direction: direction) }
     }
 }
 
@@ -128,6 +133,13 @@ public extension AppDatabase {
     /// The single business profile of V1, if onboarding completed.
     func businessProfile() throws -> BusinessProfile? {
         try reader.read { try BusinessProfile.fetchOne($0) }
+    }
+
+    /// Whether onboarding still needs to run: true unless the archive
+    /// already has a saved business profile. Pure function of the database
+    /// so it can be unit-tested without any UI (spec 20).
+    func needsOnboarding() throws -> Bool {
+        try businessProfile() == nil
     }
 
     func saveBusinessProfile(_ profile: BusinessProfile) throws {

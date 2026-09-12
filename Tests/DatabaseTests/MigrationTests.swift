@@ -40,13 +40,26 @@ struct MigrationTests {
         let path = folder.appending(path: "bookkeeping.sqlite").path(percentEncoded: false)
 
         let first = try AppDatabase(path: path)
+        #expect(try first.needsOnboarding() == true)
         try first.saveBusinessProfile(BusinessProfile(name: "Testbetrieb"))
         #expect(try first.businessProfile()?.name == "Testbetrieb")
+        #expect(try first.needsOnboarding() == false)
 
+        // A restart reopens the same file: the saved profile, and therefore
+        // the "onboarding done" decision, must still be there.
         let second = try AppDatabase(path: path)
         #expect(try second.appliedMigrations() == ["v001_initial"])
         #expect(try second.businessProfile()?.name == "Testbetrieb")
+        #expect(try second.needsOnboarding() == false)
         #expect(try second.categories().count == SystemCategories.all.count)
+    }
+
+    @Test("needsOnboarding reflects whether a business profile has been saved")
+    func needsOnboarding() throws {
+        let database = try AppDatabase(inMemoryNamed: "needs-onboarding")
+        #expect(try database.needsOnboarding() == true)
+        try database.saveBusinessProfile(BusinessProfile(name: "Testbetrieb"))
+        #expect(try database.needsOnboarding() == false)
     }
 
     @Test("System categories are seeded exactly once")
