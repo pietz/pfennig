@@ -48,6 +48,8 @@ let package = Package(
         .testTarget(name: "DomainTests", dependencies: ["Domain"]),
         .testTarget(name: "DatabaseTests", dependencies: ["Database", "Domain"]),
         .testTarget(name: "DocumentStoreTests", dependencies: ["DocumentStore"]),
+        .testTarget(name: "TaxTests", dependencies: ["Tax", "Domain"]),
+        .testTarget(name: "ValidationTests", dependencies: ["Validation", "Domain"]),
     ],
     swiftLanguageModes: [.v6]
 )
