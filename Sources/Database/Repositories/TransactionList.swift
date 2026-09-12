@@ -109,7 +109,7 @@ public enum TransactionListQuery {
         LEFT JOIN counterparties c ON c.id = t.counterparty_id
         LEFT JOIN v_transaction_status v ON v.id = t.id
         LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
-        WHERE t.deleted_at IS NULL
+        WHERE t.deleted_at IS NULL AND t.workflow_status <> 'archived'
         \(filter)
         ORDER BY COALESCE(last_payment_date, t.invoice_date, DATE(t.created_at)) DESC, t.created_at DESC
         """

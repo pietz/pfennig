@@ -4,8 +4,10 @@ Native macOS bookkeeping for German freelancers. Local-first: everything lives
 in one archive folder with an SQLite database and the original documents.
 
 The binding specification is [`concept.md`](concept.md). This repository
-currently implements milestones M0-M2: repository foundation, local app shell
-and the complete database schema.
+currently implements milestones M0-M3: repository foundation, local app shell,
+the complete database schema and manual bookkeeping (create and edit
+transactions with allocations, tax components, tax assessment, documents and
+payments).
 
 ## Requirements
 
@@ -60,12 +62,15 @@ Ziffer/
 
 There is no folder picker; the location is fixed. `ArchiveLocator` can still
 open an arbitrary path, which the test suite uses and a later "Archiv
-verschieben" feature will build on. Debug builds seed three sample
+verschieben" feature will build on. Debug builds seed four sample
 transactions into a freshly created archive.
 
 ## Tests
 
 `scripts/test.sh` covers `Money` parsing and rounding, `LocalDate`, the stable
 raw values of every stored enum, database migration and seeding, the derived
-`v_transaction_status` view, statement-line deduplication, the archive layout
-and the schema documentation in `docs/schema.md`.
+`v_transaction_status` view, statement-line deduplication, the archive layout,
+the schema documentation in `docs/schema.md`, and the manual bookkeeping write
+path: save/reload round trip, provenance and audit on manual edits, the
+manual-override protection of spec 17.15, partial payments, document
+deduplication, derived tax points and blocked hard validations.

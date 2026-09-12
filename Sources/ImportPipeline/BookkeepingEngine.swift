@@ -74,6 +74,7 @@ public enum BookkeepingEngine {
             )
         )
         let treatment = draft.treatmentOverride ?? decision.treatment
+        let reasoning = Self.reasoning(for: decision.treatment, direction: draft.direction)
 
         // 2 - tax points (spec 5.1).
         let paymentDates = draft.payments.map(\.paymentDate)
@@ -115,7 +116,7 @@ public enum BookkeepingEngine {
             inputVatDate: points.inputVATDate,
             outputVatDate: points.outputVATDate,
             status: draft.treatmentOverride == nil ? .proposed : .manualOverride,
-            reasoning: draft.treatmentOverride == nil ? decision.reasoning : nil
+            reasoning: draft.treatmentOverride == nil ? reasoning : nil
         )
 
         // 4 - asset candidates (spec 5.6).
@@ -185,9 +186,32 @@ public enum BookkeepingEngine {
         return DerivedTransaction(
             draft: draft,
             issues: (result.hard + result.soft).map(Self.issueDraft),
-            reasoning: decision.reasoning,
+            reasoning: reasoning,
             isTreatmentAutomatic: draft.treatmentOverride == nil
         )
+    }
+
+    /// The decider reasons in English (it is a pure rule engine); the UI and
+    /// `tax_assessments.reasoning` are German.
+    private static func reasoning(for treatment: TaxTreatment, direction: Direction) -> String {
+        switch treatment {
+        case .domesticVAT:
+            "Inländische Gegenpartei mit ausgewiesener Umsatzsteuer (§ 13 UStG)."
+        case .reverseCharge where direction == .income:
+            "EU-B2B-Dienstleistung ohne Umsatzsteuer - Reverse Charge (§ 3a UStG)."
+        case .reverseCharge:
+            "Ausländische Gegenpartei, Dienstleistung ohne Umsatzsteuer - Steuerschuldnerschaft des Leistungsempfängers (§ 13b UStG)."
+        case .intraCommunityAcquisition:
+            "EU-Gegenpartei, Warenlieferung ohne Umsatzsteuer - innergemeinschaftlicher Erwerb (§ 1a UStG)."
+        case .export:
+            "Einnahme aus einem Drittland ohne Umsatzsteuer - Ausfuhrlieferung (§ 4 Nr. 1 UStG)."
+        case .nonTaxable:
+            "Kein Umsatzsteuerausweis, nicht steuerbarer Vorgang."
+        case .exempt:
+            "Kein Umsatzsteuerausweis, steuerfreier Umsatz (§ 4 UStG)."
+        default:
+            "Die Angaben passen zu keiner bekannten Regel - bitte steuerliche Behandlung manuell wählen."
+        }
     }
 
     private static func issueDraft(_ issue: ValidationIssue) -> ValidationIssueDraft {

@@ -4,8 +4,9 @@
     import GRDB
 
     public extension AppDatabase {
-        /// Three sample transactions - paid, partially paid, unpaid - written once
-        /// into a freshly created archive. Debug builds only.
+        /// Four sample transactions - paid, partially paid, unpaid and a
+        /// second reverse-charge case - written once into a freshly created
+        /// archive. Debug builds only.
         func seedSampleData(businessProfileID: String) throws {
             try writer.write { db in
                 guard try TransactionRecord.fetchCount(db) == 0 else { return }
@@ -45,27 +46,27 @@
                 bookedNetMinor: 7139, bookedTaxMinor: 0, bookedGrossMinor: 7139,
                 reviewStatus: .confirmed
             )
-            try adobeTransaction.insert(db)
-            try BookkeepingAllocation(
-                transactionId: adobeTransaction.id,
-                categoryId: "software_subscriptions",
-                amountMinor: 7139,
-                description: "Creative Cloud All Apps"
-            ).insert(db)
-            try TaxAssessment(
-                transactionId: adobeTransaction.id,
-                treatment: .reverseCharge,
-                taxCountry: "DE",
-                customerType: .b2b,
-                supplyType: .digitalService,
-                taxableBaseMinor: 7139,
-                vatShownMinor: 0,
-                selfAssessedVatMinor: 1356,
-                deductibleInputVatMinor: 1356,
-                inputVatDate: LocalDate(year: 2026, month: 8, day: 31),
-                status: .confirmed,
-                reasoning: "Irischer Anbieter, deutsche USt-IdNr. auf der Rechnung"
-            ).insert(db)
+            try book(
+                db,
+                transaction: adobeTransaction,
+                category: "software_subscriptions",
+                description: "Creative Cloud All Apps",
+                components: [(.reverseChargeNote, "0", 7139, 0)],
+                assessment: TaxAssessment(
+                    transactionId: adobeTransaction.id,
+                    treatment: .reverseCharge,
+                    taxCountry: "DE",
+                    customerType: .b2b,
+                    supplyType: .digitalService,
+                    taxableBaseMinor: 7139,
+                    vatShownMinor: 0,
+                    selfAssessedVatMinor: 1356,
+                    deductibleInputVatMinor: 1356,
+                    inputVatDate: LocalDate(year: 2026, month: 8, day: 31),
+                    status: .confirmed,
+                    reasoning: "Irischer Anbieter, deutsche USt-IdNr. auf der Rechnung"
+                )
+            )
             try pay(
                 db,
                 account: account,
@@ -92,25 +93,25 @@
                 bookedNetMinor: 200_000, bookedTaxMinor: 38000, bookedGrossMinor: 238_000,
                 reviewStatus: .unreviewed
             )
-            try invoice.insert(db)
-            try BookkeepingAllocation(
-                transactionId: invoice.id,
-                categoryId: "revenue_services",
-                amountMinor: 200_000
-            ).insert(db)
-            try TaxAssessment(
-                transactionId: invoice.id,
-                treatment: .domesticVAT,
-                taxCountry: "DE",
-                customerType: .b2b,
-                supplyType: .service,
-                customerVatId: "DE123456789",
-                taxableBaseMinor: 200_000,
-                vatShownMinor: 38000,
-                outputVatMinor: 38000,
-                outputVatDate: LocalDate(year: 2026, month: 9, day: 10),
-                status: .proposed
-            ).insert(db)
+            try book(
+                db,
+                transaction: invoice,
+                category: "revenue_services",
+                components: [(.standard, "19", 200_000, 38000)],
+                assessment: TaxAssessment(
+                    transactionId: invoice.id,
+                    treatment: .domesticVAT,
+                    taxCountry: "DE",
+                    customerType: .b2b,
+                    supplyType: .service,
+                    customerVatId: "DE123456789",
+                    taxableBaseMinor: 200_000,
+                    vatShownMinor: 38000,
+                    outputVatMinor: 38000,
+                    outputVatDate: LocalDate(year: 2026, month: 9, day: 10),
+                    status: .proposed
+                )
+            )
             try pay(
                 db,
                 account: account,
@@ -121,7 +122,7 @@
                 counterparty: "Muster GmbH"
             )
 
-            // 3 - unpaid expense invoice
+            // 3 - unpaid expense invoice, domestic VAT with two rates
             let telekom = Counterparty(displayName: "Telekom Deutschland GmbH", countryCode: "DE", vatId: "DE122797249")
             try telekom.insert(db)
             let telekomTransaction = TransactionRecord(
@@ -132,27 +133,123 @@
                 title: "Mobilfunk September",
                 invoiceNumber: "R-2026-9912",
                 invoiceDate: LocalDate(year: 2026, month: 9, day: 5),
+                serviceDate: LocalDate(year: 2026, month: 9, day: 5),
                 originalNetMinor: 4197, originalTaxMinor: 798, originalGrossMinor: 4995,
                 bookedNetMinor: 4197, bookedTaxMinor: 798, bookedGrossMinor: 4995,
                 reviewStatus: .needsReview
             )
-            try telekomTransaction.insert(db)
+            try book(
+                db,
+                transaction: telekomTransaction,
+                category: "telecom",
+                components: [(.standard, "19", 4197, 798)],
+                assessment: TaxAssessment(
+                    transactionId: telekomTransaction.id,
+                    treatment: .domesticVAT,
+                    taxCountry: "DE",
+                    supplyType: .service,
+                    taxableBaseMinor: 4197,
+                    vatShownMinor: 798,
+                    deductibleInputVatMinor: 798,
+                    inputVatDate: LocalDate(year: 2026, month: 9, day: 5),
+                    status: .proposed
+                )
+            )
+
+            // 4 - third-country SaaS, §13b reverse charge with self-assessed VAT (spec 5.4)
+            let vercel = Counterparty(displayName: "Vercel Inc.", countryCode: "US")
+            try vercel.insert(db)
+            let hosting = TransactionRecord(
+                businessProfileId: businessProfileID,
+                counterpartyId: vercel.id,
+                direction: .expense,
+                transactionType: .invoice,
+                title: "Pro Plan September",
+                invoiceNumber: "INV-2026-4471",
+                invoiceDate: LocalDate(year: 2026, month: 9, day: 1),
+                servicePeriodStart: LocalDate(year: 2026, month: 9, day: 1),
+                servicePeriodEnd: LocalDate(year: 2026, month: 9, day: 30),
+                originalNetMinor: 2000, originalTaxMinor: 0, originalGrossMinor: 2000,
+                bookedNetMinor: 2000, bookedTaxMinor: 0, bookedGrossMinor: 2000,
+                reviewStatus: .unreviewed
+            )
+            try book(
+                db,
+                transaction: hosting,
+                category: "hosting_cloud",
+                description: "Vercel Pro",
+                components: [(.reverseChargeNote, "0", 2000, 0)],
+                assessment: TaxAssessment(
+                    transactionId: hosting.id,
+                    treatment: .reverseCharge,
+                    taxCountry: "DE",
+                    customerType: .b2b,
+                    supplyType: .digitalService,
+                    taxableBaseMinor: 2000,
+                    vatShownMinor: 0,
+                    selfAssessedVatMinor: 380,
+                    deductibleInputVatMinor: 380,
+                    inputVatDate: LocalDate(year: 2026, month: 9, day: 1),
+                    status: .proposed,
+                    reasoning: "Drittland-Anbieter, Dienstleistung ohne Umsatzsteuer - § 13b UStG"
+                )
+            )
+            try pay(
+                db,
+                account: account,
+                transaction: hosting,
+                amountMinor: 2000,
+                date: LocalDate(year: 2026, month: 9, day: 3),
+                direction: .outflow,
+                counterparty: "VERCEL INC"
+            )
+        }
+
+        /// Writes one transaction with its allocation, tax components, current
+        /// assessment, provenance and the audit event that created it.
+        private static func book(
+            _ db: Database,
+            transaction: TransactionRecord,
+            category: String,
+            description: String? = nil,
+            components: [(TaxComponentKind, String?, Int64, Int64)],
+            assessment: TaxAssessment
+        ) throws {
+            try transaction.insert(db)
             try BookkeepingAllocation(
-                transactionId: telekomTransaction.id,
-                categoryId: "telecom",
-                amountMinor: 4197
+                transactionId: transaction.id,
+                categoryId: category,
+                amountMinor: transaction.bookedNetMinor ?? 0,
+                description: description
             ).insert(db)
-            try TaxAssessment(
-                transactionId: telekomTransaction.id,
-                treatment: .domesticVAT,
-                taxCountry: "DE",
-                supplyType: .service,
-                taxableBaseMinor: 4197,
-                vatShownMinor: 798,
-                deductibleInputVatMinor: 798,
-                inputVatDate: LocalDate(year: 2026, month: 9, day: 5),
-                status: .proposed
-            ).insert(db)
+            for (index, component) in components.enumerated() {
+                try TaxComponent(
+                    transactionId: transaction.id,
+                    kind: component.0,
+                    rate: component.1,
+                    netMinor: component.2,
+                    taxMinor: component.3,
+                    sortOrder: index
+                ).insert(db)
+            }
+            try assessment.insert(db)
+            for field in ["counterpartyId", "invoiceDate", "invoiceNumber", "netAmount", "taxAmount", "grossAmount"] {
+                try FieldProvenance(
+                    entityType: FieldProvenance.Entity.transaction,
+                    entityId: transaction.id,
+                    fieldName: field,
+                    provenance: .document
+                ).insert(db)
+            }
+            for field in ["treatment", "selfAssessedVat", "deductibleInputVat", "inputVatDate", "outputVatDate"] {
+                try FieldProvenance(
+                    entityType: FieldProvenance.Entity.taxAssessment,
+                    entityId: assessment.id,
+                    fieldName: field,
+                    provenance: .calculated
+                ).insert(db)
+            }
+            try AuditEvent(entityId: transaction.id, action: .create, actor: .import).insert(db)
         }
 
         private static func pay(
@@ -182,6 +279,7 @@
                 allocatedMinor: amountMinor,
                 matchMethod: .exact
             ).insert(db)
+            try AuditEvent(entityId: transaction.id, action: .link, actor: .import).insert(db)
         }
     }
 #endif

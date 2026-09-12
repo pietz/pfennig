@@ -45,6 +45,8 @@ targets:
         product: DocumentStore
       - package: ZifferPackages
         product: AI
+      - package: ZifferPackages
+        product: ImportPipeline
     settings:
       base:
         PRODUCT_NAME: Ziffer

@@ -7,14 +7,14 @@ import SwiftUI
 struct TransactionsView: View {
     let database: AppDatabase
 
+    @Environment(AppModel.self) private var model
     @State private var rows: [TransactionListItem] = []
     @State private var selection: TransactionListItem.ID?
+    @State private var detail: TransactionDetail?
+    @State private var editing: TransactionDraft?
+    @State private var deletingID: String?
     @State private var search = ""
     @State private var showsInspector = true
-
-    private var selected: TransactionListItem? {
-        rows.first { $0.id == selection }
-    }
 
     var body: some View {
         Table(rows, selection: $selection) {
@@ -37,11 +37,13 @@ struct TransactionsView: View {
 
             TableColumn("Betrag") { row in
                 VStack(alignment: .trailing, spacing: 1) {
-                    Text(row.bookedAmount?.formatted() ?? "–")
+                    Text(row.bookedAmount?.formatted(locale: Format.german) ?? "–")
                         .monospacedDigit()
                         .foregroundStyle(row.direction == .expense ? .primary : Color.green)
                     if let original = row.originalAmount {
-                        Text(original.formatted()).font(.caption).foregroundStyle(.secondary)
+                        Text(original.formatted(locale: Format.german))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .trailing)
@@ -60,16 +62,49 @@ struct TransactionsView: View {
             .width(140)
 
             TableColumn("Status") { row in
-                Label(row.reviewStatus.label, systemImage: row.reviewStatus.symbol)
-                    .foregroundStyle(row.reviewStatus.tint)
+                Label(row.displayStatus.label, systemImage: row.displayStatus.symbol)
+                    .foregroundStyle(row.displayStatus.tint)
             }
             .width(130)
+        }
+        .contextMenu(forSelectionType: TransactionListItem.ID.self) { ids in
+            if let id = ids.first {
+                Button("Bearbeiten") { edit(id) }
+                Button("Löschen", role: .destructive) { deletingID = id }
+            }
+        } primaryAction: { ids in
+            if let id = ids.first {
+                edit(id)
+            }
         }
         .searchable(text: $search, prompt: Text("Gegenpartei, Titel, Rechnungsnummer, Betrag"))
         .navigationTitle("Buchungen")
         .navigationSubtitle(Text("\(rows.count) Buchungen"))
         .toolbar {
-            ToolbarItem {
+            ToolbarItemGroup {
+                Button {
+                    editing = model.newDraft()
+                } label: {
+                    Label("Neue Buchung", systemImage: "plus")
+                }
+                .keyboardShortcut("n", modifiers: .command)
+
+                Button {
+                    if let selection {
+                        edit(selection)
+                    }
+                } label: {
+                    Label("Bearbeiten", systemImage: "pencil")
+                }
+                .disabled(detail == nil)
+
+                Button {
+                    deletingID = selection
+                } label: {
+                    Label("Löschen", systemImage: "trash")
+                }
+                .disabled(selection == nil)
+
                 Button {
                     showsInspector.toggle()
                 } label: {
@@ -78,8 +113,33 @@ struct TransactionsView: View {
             }
         }
         .inspector(isPresented: $showsInspector) {
-            TransactionInspector(item: selected)
-                .inspectorColumnWidth(min: 260, ideal: 320, max: 420)
+            TransactionInspector(detail: detail)
+                .inspectorColumnWidth(min: 280, ideal: 340, max: 460)
+        }
+        .sheet(item: $editing) { draft in
+            TransactionEditor(draft: draft)
+        }
+        .confirmationDialog(
+            "Buchung löschen?",
+            isPresented: Binding(get: { deletingID != nil }, set: {
+                if !$0 {
+                    deletingID = nil
+                }
+            }),
+            titleVisibility: .visible
+        ) {
+            Button("Löschen", role: .destructive) {
+                if let deletingID {
+                    model.delete(deletingID)
+                    if selection == deletingID {
+                        selection = nil
+                    }
+                }
+                deletingID = nil
+            }
+            Button("Abbrechen", role: .cancel) { deletingID = nil }
+        } message: {
+            Text("Die Buchung wird archiviert und aus der Liste entfernt. Die Daten bleiben im Archiv erhalten.")
         }
         .task(id: search) {
             do {
@@ -91,12 +151,55 @@ struct TransactionsView: View {
                 rows = []
             }
         }
+        .task(id: selection) {
+            guard let selection else {
+                detail = nil
+                return
+            }
+            do {
+                for try await value in TransactionDetail.observation(id: selection).values(in: database.reader) {
+                    detail = value
+                }
+            } catch {
+                detail = nil
+            }
+        }
+    }
+
+    private func edit(_ id: String) {
+        selection = id
+        editing = (try? model.repository?.detail(id: id))??.draft
+    }
+}
+
+/// One compact status per row, derived from the stored review status and the
+/// derived payment status (spec 19).
+struct DisplayStatus {
+    let label: LocalizedStringKey
+    let symbol: String
+    let tint: Color
+}
+
+extension TransactionListItem {
+    var displayStatus: DisplayStatus {
+        switch reviewStatus {
+        case .conflict:
+            DisplayStatus(label: "Konflikt", symbol: "xmark.octagon", tint: .red)
+        case .needsReview:
+            DisplayStatus(label: "Prüfen", symbol: "exclamationmark.triangle", tint: .orange)
+        case .unreviewed:
+            DisplayStatus(label: "Ungeprüft", symbol: "circle.dashed", tint: .secondary)
+        case .confirmed:
+            paymentStatus == .paid
+                ? DisplayStatus(label: "Abgeschlossen", symbol: "checkmark.seal.fill", tint: .green)
+                : DisplayStatus(label: "Bestätigt", symbol: "checkmark.seal", tint: .green)
+        }
     }
 }
 
 extension LocalDate {
     var formattedShort: String {
-        date().formatted(.dateTime.day(.twoDigits).month(.twoDigits).year())
+        date().formatted(.dateTime.day(.twoDigits).month(.twoDigits).year().locale(Format.german))
     }
 }
 
