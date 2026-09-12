@@ -25,7 +25,9 @@ public enum AllocationValidator {
         guard let sum = try? allocations.reduce(Money.zero(expectedTotal.currency), { try $0 + $1.amount }) else {
             return nil
         }
-        guard let diff = try? sum - expectedTotal, diff.absolute > tolerance else { return nil }
+        guard let diff = try? sum - expectedTotal,
+              diff.absolute > MoneyValidator.limit(tolerance, in: diff.currency)
+        else { return nil }
         return ValidationIssue(
             code: .allocationSumMismatch,
             fieldName: "bookkeeping_allocations",

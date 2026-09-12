@@ -136,9 +136,8 @@ public extension IssueCode {
     /// Whether an issue of this code, given the actual monetary deviation
     /// that triggered it, may be overridden without a full correction.
     func isOverridable(deviation: Money) -> Bool {
-        guard isToleranceMismatchFamily, deviation.currency == Self.overridableToleranceLimit.currency else {
-            return false
-        }
-        return deviation.absolute <= Self.overridableToleranceLimit
+        guard isToleranceMismatchFamily else { return false }
+        let limit = Money(minorUnits: Self.overridableToleranceLimit.minorUnits, currency: deviation.currency)
+        return deviation.absolute <= limit
     }
 }

@@ -1,0 +1,525 @@
+{
+  "id": "resp_0fe27818da4a8f37006aa55e470b2887d2a62996b02e92ae55",
+  "object": "response",
+  "created_at": 1789222471,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1789222482,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": 32000,
+  "max_tool_calls": null,
+  "model": "gpt-5.6-luna",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0fe27818da4a8f37006aa55e48054887d2a40025e69bf5a274",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqpV5T6bq_tfajLnmI_yr_Y1j77k-0NfQvmaIyn-maQ4h7ooB3TsRDuHzbfRfZdI-iG6reyxMa00sDv3MiokEvxKo9p0k2ojX4wd0g4sR_zkiIE6ISGRuIobMcl0ch5YDU2DGMQZ3PhFdPpIJwHc_RiXA9o1R1Bh3jCRkIXJ5X1NPoYQb-R8fo2fqk924ZUHlyctVgME2EKYfWS3DH_BUsRre4_iIejL-7ndCkRgUpQu68Z4WeHQYdxakfL7fxm0NPdZs-0JA30sq_StDn-u0HxNn6xb80IvwPshhXL88dF7s81-paSAERAQ-wOSrLg5DpiFCZ1sMj1a4FwO7SOfZ0juMLvfaKQatDccqME8GtQoMa8-iKWngVcgfq2tQODc-RnTZb0O-xjHWX0kQfREghrNHhLCzyIpe2J9vF8DYUrHKVu1yuAGVQWv7ApoV1ot8buLAhfDIOz3OmljG4Fv7dgH5OOZ1JBStJlXoBi6Bi-jQHvZQxfqQihWUak5DlnIknMSruZtnfASpVISNJbakbR-1UGfvokJ8StAZ9pLhHPKpTGUIWZ1ehiqVrpPQTFWnDBxORd6RSC8X-voGDomSsP8A3XfATT9S85fgsxCb6PwsNaW0uHgzwWPt2nfZzyY6qDkK1WwfDpy3pjZMLcEakCbiZRaw_Oj7pDOajV1Cp3CfdjLbgWGKn2R1qpfWvRz1WehJ0MCBG7_6qD9YFfEv84QSnaO4EsKKkGer_B5No7D7buZ19QXlhZIn4h89YrKze9HTKAU9jshLvtwagZ_6x5L5barAMbhFSOzmWUcKssPRgPQQObQDV5DmRtjaLcJaI6biCIw1vGAaWOXqlz3Ai4tD-Nyi2J1nxu88gPfGJe-3VbbINvrTgtSFTSebtX7h_lfnE9Tsy6v6Kq600Q-iMA2BdIJMnN4KrvR7-xRZ2mhXWCnabUGbnTEzq3Pa2DPiRZGJSW0Fa9XS0aLk-rqxaf571WarF2KKULC2U7Bk8N6HCrHjzVXzQ52ij-QRcLr2CnGLYw_ZvQ7j87Vok4NiFfEm4JtS_Hi2-G5bzQmbo2Givn194NEcJD0_CuHceu0nlI7H_pUJf8-s0p5mIxxgJqLe98u9kY80_Xh-wAQlJQcM49MqLwT7GFtT7_eu25UOWEdAGf_41csYJ4H7IEWyKEbuTZ5JlcDiu_TYv0kun5apnl2cMSg-QB6cx27OnxwKWCjx1fDMvqBVZ8HY1nutADLrD7V3XuYmfw7WMIyAh54Xg38OYpdUVE1dQj7ssM31LwATEPPqY_r6iQy2HzehFBX7jOdhwrRCaUs4WKTekCB7ancg1RKbaGWiQkz1vY3ueu-wALNke8KtOkHKBREyQJceb6n4YyZTAZ-k-h0bVLMpU9kb_mvt6rLG26Z4gcObn2Xv3NMNQx5RFDafnAb5bJen_efdNPRUiLIJdcojEVW5XeSGcmW4-0VZlx8plbdicga2-XWbN7O8npk2ZKG_BDfJY3nQvCu7FlGLt3j3VdZDGnlgDvI2HonPw16APPkPfyXUFIChx92gh6kMp1lu5sCCZOS2vv-0xtMCefHBXrSwVg1e6IiBrxANk_tNlI1Wg-p8JJTIrF7nR8GNLdCUBXdm25Md_LxqGkediJa-TNwlnL6MdIX5JJt3JA5LyErNUimq_s9gCymNB6i4cPz57FFImpunGiBJfChlUTlokPL1EISoB351Uj9--Z9l465VR9qZEmyNQq4jlxGCx12Q9n9fKTaoN0bgl8BJISIMyq8Pqr5YBYq-JvWh9ErvpIwS_t77WPPFpTySE1xj0ftGtpKGBSu9oGZSNKPY4vrqgFM0aUme5XQU6dZc1x6t0IkSVxVj-XJakvsxICCK_PjkIxh5Y_JBRpjFbTl1L4p4AM2xg7vKn0UdvdMbcjxfDR5pXyzZ_JuHvmBhUgIb-aYiSyjYPA1bkud3xBnEh_9y9b2ze7kRp4rgCctBfywFuyplR1rOH_Yec1ESHWAzsBN5gxsiy6TAyHbsnE96MxfIBc79cwz3ItFSrFsSnj2NRvH8M_9Y8iGHjb28mML1VMM15P7QpMbwSIzUdCw-1m1aVJhJkjaGRkKFV9rofoPjwHTeSIVMRTHn6hfoH21-a263D50CNeksYgxQglScEtbb8xLGB0IAdrHWDmTCOTrNvFGohGWIIBywHTZNHusJsRWPYhHfv52IJBvoKcrG1lePB6yP8ZtCy_1aUgj87qTtISyuyyxdZozedujBNUVadXPL4rpcVOE5GogYM49I-5nAbhFtN-6NqaYxQ59128ZpfeJboLsdwmON5rZBs8LWRqUxI-CyYIC4pbE027emT_URS45ctPNR26gAoSsMOwxuSk9RC74fHZ7J71-4ymTIUZS5oocY2-NS4zxnT8tnsXfpDre3GnkakGSJHN8wndirJUbynixoub9d_cSKbcd71HicGtQaC_g7tIwRe5eZTRxsTAxWx980l8CJVcpE_HAzv22r5-u5K_DX8zkhUCS4r7MjWBWschhf3Uc-DN5frFqzUNH22zwC3OCIe3mg6eM1Jggg7Cx3c7wlaRq5qjlrbONKqUwTzT9665A6VPT5Eq1EaLL--bRwKXpHNOkbdbGDvTdb3Ra75RCNT7Fvs-OaXw2A1VIop5605saBYKf0PUiq0C9hbHuEGFxK_e7Lxdl92c4OqTRSpY0bFwBXxx1cruxWE6b7CC-oHdc6JNwK4egkxF0jDY54cDYhAxca9YKlM-0pfongHQe1EWkrXjFXNof6vVkWZSsJBxjAx4s6KPXZGAJmsHZL4TZGMu27cWV_cZ71LxxtOHfJg5ZWj-6ZJ3TRZP8csOqzK4LnO0TXG_tzcWf1xVx3OPvfZrzkm_s5MFYLivWFefBKECxs5bZbK9K_jnKMR56Ad2Cv-dK3yoYB4hVUF8QMqkdIa5o0G8jhuhioKfxcoNggOnOwsZHT9o72EQgzYovjY5TO_iYHYU_LWEjiC3fYmOsVRlxYQHUWEj5qKBLPs3Z813WFSGS7_MYPAmozWW38U7M0fgrE2yDUkWr6mImOHFHjpXXpIDbaP4UCa6TzdfubTTaIauMWvaGZbW1Bdt6-BIYmszGSndQZuyuiSowChHJhL838ZnJWi8x9vRWLhzlPCxYG8m2CQPUwlWIbNL_1Mrp0-6SXD0gKNTOqy9GGe_fbq_LmVdIVWoDV_w0nFosneick9nwrAHYXC3kII3H1oMKPYM8E8aEQMsivHReLxbQUUVcizHjL7FipSyVF8Go22NfQx5UwED50oi6sI3GnYGlryhL-0-bC1Uipc5dK6um4aRDl_IHt58uRpRqfTiZSvVEZvvNViLHTXIAAxxAU6krFXDJg5FjRrFRLzn6aB0YWtMLz1Ks13N3oYHwUkTSdcKXAhBXIZZRvW_p_jcmWtHRl_nrqQTh6dvEXBOTncDJkHFz83K8WjN9aqF0FmFs1f3wsvQ_SYSnLxe93YHFQboB1xIy5lcJU92DeG9qggJh-12aIZb-mhi1mbcQOLyxT7YaroePZOhJI8JJp51-u_auxnr4hES45vA5rCLsOnKEKvG--LUSkiwHVsh22J23h3e23c2tJcqfHCFUjlgblebk-olKTwqmNRCKhUVVYr4DOa6Pbtv3lI36kxTc0nUTTqUkHd_VqVRmp2jvcT9psJRwsYg5zhXEUZngxYKRz-7IHpwqzg05MNYtCtVWklJNOVingWLdsiMPuUe0IWqIRuXY4GUuG50KWirinoFswjoYAASdzapW4S48jh9ophAjJmJQE6dMaH6ugMuzrS4Xeot-BU5KzzhOD_qSQBrOhWcj_gjjoLq4H9kWJ8YNgPbU1K5rqgSrWJEiOipnxuEUCkdC1hq7kWBRCwNf3jmOLo7jo_aOs-ZJXCsMcSWhHGyoO8Mq5JeHa0U1EQVI41S4DRHA0EruWzlgnUaJkOsm9gmP_K436XxNAmZy8gJtdrbV_4g_NTb-NcHbdvzvgZaJq-cjuCEoy-YaUJhmQJwHUc18NPPKTFJRVmxwVhgleIkM-TcUSIJZzaLmePZAu5Gw9W41fIrjM5EQ4y-OwuA_9G_-dpOGzCT-WVeKjeIAk2v0DXDjwGxYv8pGtrspcFB95e7ejA8cTfKHnbpU_zSE4Uc--8pkf8ahqSqHh9aOwKXHk4rgIUgpZlwNltoUpKlhsuY72vqd8pqdJh7MSeYoKnIcEiLY56twEGe1I7LsKFLvV4dfs8rQoqIvwjUnUsNmLcXOC6KsDve3q4M_nEhZVNVsztALv2Y8XVUK5AvzlyYXni00pcH9D3sq9ULw9472ebnaeW78L9DA_IlHpnCpOMKOQATLBWnpCc9g8gTaVMaqi3bXeZcvM72VLFfvs-_eV2M_1ILbhtCbafw_e05FmrNFxdvm4FRdXbeG1d46LWkZPRTVvorPSFaax6RoVe82zQUiB43zjNzIgAYz9sKsA=",
+      "summary": []
+    },
+    {
+      "id": "msg_0fe27818da4a8f37006aa55e4e2ddc87d288a4bab80c502b20",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "{\"counterparty\":{\"city\":\"Dublin\",\"countryCode\":\"IE\",\"name\":\"CloudForge Software Ireland Limited\",\"postalCode\":\"D02 XY45\",\"street\":\"14 Harbour Quay\",\"vatId\":\"IE1234567X\"},\"direction\":\"expense\",\"documentType\":\"invoice\",\"evidence\":[{\"field\":\"counterparty.name\",\"page\":1,\"snippet\":\"CloudForge Software Ireland Limited\"},{\"field\":\"counterparty.street\",\"page\":1,\"snippet\":\"14 Harbour Quay\"},{\"field\":\"counterparty.postalCode\",\"page\":1,\"snippet\":\"D02 XY45 Dublin\"},{\"field\":\"counterparty.countryCode\",\"page\":1,\"snippet\":\"Ireland\"},{\"field\":\"counterparty.vatId\",\"page\":1,\"snippet\":\"USt-IdNr.: IE1234567X\"},{\"field\":\"invoice.invoiceNumber\",\"page\":1,\"snippet\":\"Invoice no.: CF-2026-08931\"},{\"field\":\"invoice.invoiceDate\",\"page\":1,\"snippet\":\"Invoice date: 2026-08-31\"},{\"field\":\"invoice.servicePeriodStart\",\"page\":1,\"snippet\":\"Service period: Aug 1-31, 2026\"},{\"field\":\"invoice.servicePeriodEnd\",\"page\":1,\"snippet\":\"Service period: Aug 1-31, 2026\"},{\"field\":\"invoice.currency\",\"page\":1,\"snippet\":\"CloudForge Suite - Team plan (5 seats) EUR 71.39\"},{\"field\":\"invoice.netAmount\",\"page\":1,\"snippet\":\"Subtotal EUR 71.39\"},{\"field\":\"invoice.taxAmount\",\"page\":1,\"snippet\":\"Total VAT EUR 0.00\"},{\"field\":\"invoice.grossAmount\",\"page\":1,\"snippet\":\"Total amount EUR 71.39\"},{\"field\":\"lineItems[0].description\",\"page\":1,\"snippet\":\"CloudForge Suite - Team plan (5 seats)\"},{\"field\":\"lineItems[0].netAmount\",\"page\":1,\"snippet\":\"EUR 71.39\"},{\"field\":\"taxComponents[0]\",\"page\":1,\"snippet\":\"VAT reverse charged. Customer is liable for VAT under Article 196 of Council Directive 2006/112/EC.\"},{\"field\":\"paymentInfo.paymentMethodHint\",\"page\":1,\"snippet\":\"Payment method: credit card on file\"}],\"invoice\":{\"currency\":\"EUR\",\"grossAmount\":\"71.39\",\"invoiceDate\":\"2026-08-31\",\"invoiceNumber\":\"CF-2026-08931\",\"netAmount\":\"71.39\",\"serviceDate\":null,\"servicePeriodEnd\":\"2026-08-31\",\"servicePeriodStart\":\"2026-08-01\",\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"CloudForge Suite - Team plan (5 seats)\",\"netAmount\":\"71.39\"}],\"missingFields\":[\"invoice.serviceDate\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.paidIndicator\",\"paymentInfo.paymentDate\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"unknown\",\"paymentDate\":null,\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"reverseChargeNote\",\"netAmount\":\"71.39\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.99,\"reasoning\":\"The supplier is established in Ireland, the customer has a German VAT ID, and the invoice explicitly states that VAT is reverse charged under Article 196 of Council Directive 2006/112/EC.\",\"treatment\":\"reverseCharge\"},\"warnings\":[]}"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "high",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": null,
+      "name": "document_extraction",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "counterparty": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "countryCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "street": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vatId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "city",
+              "countryCode",
+              "name",
+              "postalCode",
+              "street",
+              "vatId"
+            ],
+            "type": "object"
+          },
+          "direction": {
+            "enum": [
+              "income",
+              "expense",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "documentType": {
+            "enum": [
+              "invoice",
+              "receipt",
+              "creditNote",
+              "statement",
+              "contract",
+              "other",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "snippet": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "page",
+                "snippet"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "invoice": {
+            "additionalProperties": false,
+            "properties": {
+              "currency": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "grossAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "invoiceDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "invoiceNumber": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "netAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "serviceDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "servicePeriodEnd": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "servicePeriodStart": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "statedEurEquivalent": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "taxAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "currency",
+              "grossAmount",
+              "invoiceDate",
+              "invoiceNumber",
+              "netAmount",
+              "serviceDate",
+              "servicePeriodEnd",
+              "servicePeriodStart",
+              "statedEurEquivalent",
+              "taxAmount"
+            ],
+            "type": "object"
+          },
+          "lineItems": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "assetCandidate": {
+                  "type": "boolean"
+                },
+                "categoryHint": {
+                  "enum": [
+                    "revenue_services",
+                    "revenue_goods",
+                    "revenue_licenses",
+                    "other_income",
+                    "vat_refund",
+                    "interest_income",
+                    "software_subscriptions",
+                    "hosting_cloud",
+                    "telecom",
+                    "office_supplies",
+                    "office_rent",
+                    "hardware_small",
+                    "advertising",
+                    "professional_services",
+                    "contractors_freelancers",
+                    "travel_transport",
+                    "travel_lodging",
+                    "meals_entertainment",
+                    "training_books",
+                    "insurance_business",
+                    "bank_fees",
+                    "payment_provider_fees",
+                    "memberships",
+                    "postage_shipping",
+                    "vat_payment",
+                    "other_expense",
+                    "hardware_equipment",
+                    "furniture",
+                    "vehicles",
+                    "uncategorized",
+                    null
+                  ],
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "netAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "assetCandidate",
+                "categoryHint",
+                "description",
+                "netAmount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "missingFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "paymentInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "iban": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paidIndicator": {
+                "enum": [
+                  "paid",
+                  "unpaid",
+                  "partiallyPaid",
+                  "unknown",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paymentDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paymentMethodHint": {
+                "enum": [
+                  "bankTransfer",
+                  "card",
+                  "paypal",
+                  "directDebit",
+                  "cash",
+                  "other",
+                  "unknown",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reference": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "iban",
+              "paidIndicator",
+              "paymentDate",
+              "paymentMethodHint",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "taxComponents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "standard",
+                    "reduced",
+                    "zero",
+                    "reverseChargeNote",
+                    "exempt",
+                    "fee",
+                    "deposit",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "netAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "taxAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "netAmount",
+                "rate",
+                "taxAmount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "taxTreatmentHint": {
+            "additionalProperties": false,
+            "properties": {
+              "confidence": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "reasoning": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "treatment": {
+                "enum": [
+                  "domesticVAT",
+                  "reverseCharge",
+                  "intraCommunityAcquisition",
+                  "intraCommunitySupply",
+                  "export",
+                  "importVAT",
+                  "nonTaxable",
+                  "exempt",
+                  "smallBusiness",
+                  "unknown"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "confidence",
+              "reasoning",
+              "treatment"
+            ],
+            "type": "object"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "counterparty",
+          "direction",
+          "documentType",
+          "evidence",
+          "invoice",
+          "lineItems",
+          "missingFields",
+          "paymentInfo",
+          "taxComponents",
+          "taxTreatmentHint",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 2305,
+    "input_tokens_details": {
+      "cache_write_tokens": 2302,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1253,
+    "output_tokens_details": {
+      "reasoning_tokens": 516
+    },
+    "total_tokens": 3558
+  },
+  "user": null,
+  "metadata": {}
+}

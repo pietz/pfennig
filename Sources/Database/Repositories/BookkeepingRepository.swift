@@ -67,7 +67,8 @@ public struct BookkeepingRepository: Sendable {
     public func save(
         _ draft: TransactionDraft,
         issues: [ValidationIssueDraft] = [],
-        actor: AuditActor = .user
+        actor: AuditActor = .user,
+        context: WriteContext = WriteContext()
     ) throws -> String {
         if let blocking = issues.filter(\.isHard).map(\.code).nilIfEmpty {
             throw BookkeepingError.hardValidation(blocking)
@@ -122,19 +123,22 @@ public struct BookkeepingRepository: Sendable {
 
             try replaceAllocations(db, draft: draft, transactionID: id, now: now)
             try replaceComponents(db, draft: draft, transactionID: id, now: now)
-            try saveAssessment(db, draft: draft, transactionID: id, actor: actor, now: now)
-            try savePayments(db, draft: draft, transactionID: id, actor: actor, now: now)
-            try saveDocuments(db, draft: draft, transactionID: id, actor: actor, now: now)
+            try saveAssessment(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
+            try savePayments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
+            try saveDocuments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
 
             // Provenance for every field the actor actually set (spec 8.3, 44).
             for field in changed.keys where after[field] ?? nil != nil || existing != nil {
+                let entry = context.entry(FieldProvenance.Entity.transaction, field)
                 try writeProvenance(
                     db,
                     entity: FieldProvenance.Entity.transaction,
                     id: id,
                     field: field,
-                    provenance: actor == .user ? .manual : .agent,
-                    isManualOverride: actor == .user,
+                    provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
+                    isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
+                    entry: entry,
+                    context: context,
                     now: now
                 )
             }
@@ -143,6 +147,7 @@ public struct BookkeepingRepository: Sendable {
                     entityId: id,
                     action: existing == nil ? .create : .update,
                     actor: actor,
+                    proposalId: context.proposalID,
                     beforeJson: existing == nil ? nil : json(before.filter { changed.keys.contains($0.key) }),
                     afterJson: json(changed),
                     createdAt: now
@@ -228,6 +233,7 @@ public struct BookkeepingRepository: Sendable {
         draft: TransactionDraft,
         transactionID: String,
         actor: AuditActor,
+        context: WriteContext,
         now: String
     ) throws {
         guard let assessment = draft.assessment else { return }
@@ -274,14 +280,17 @@ public struct BookkeepingRepository: Sendable {
 
         // The treatment is the user's choice or Swift's decision; the amounts
         // and tax points are always calculated (spec 8.3, 5.1).
+        let treatmentEntry = context.entry(FieldProvenance.Entity.taxAssessment, "treatment")
         let manualTreatment = draft.treatmentOverride != nil && actor == .user
         try writeProvenance(
             db,
             entity: FieldProvenance.Entity.taxAssessment,
             id: record.id,
             field: "treatment",
-            provenance: manualTreatment ? .manual : .calculated,
-            isManualOverride: manualTreatment,
+            provenance: treatmentEntry?.provenance ?? (manualTreatment ? .manual : .calculated),
+            isManualOverride: treatmentEntry.map { $0.provenance == .manual } ?? manualTreatment,
+            entry: treatmentEntry,
+            context: context,
             now: now
         )
         for field in ["selfAssessedVat", "deductibleInputVat", "outputVat", "inputVatDate", "outputVatDate"] {
@@ -292,6 +301,7 @@ public struct BookkeepingRepository: Sendable {
                 field: field,
                 provenance: .calculated,
                 isManualOverride: false,
+                context: context,
                 now: now
             )
         }
@@ -318,6 +328,7 @@ public struct BookkeepingRepository: Sendable {
         draft: TransactionDraft,
         transactionID: String,
         actor: AuditActor,
+        context: WriteContext,
         now: String
     ) throws {
         for payment in draft.payments where payment.id == nil {
@@ -353,6 +364,7 @@ public struct BookkeepingRepository: Sendable {
                     field: field,
                     provenance: actor == .user ? .manual : .imported,
                     isManualOverride: actor == .user,
+                    context: context,
                     now: now
                 )
             }
@@ -375,6 +387,7 @@ public struct BookkeepingRepository: Sendable {
         draft: TransactionDraft,
         transactionID: String,
         actor: AuditActor,
+        context: WriteContext,
         now: String
     ) throws {
         for document in draft.documents {
@@ -458,6 +471,8 @@ public struct BookkeepingRepository: Sendable {
         field: String,
         provenance: Provenance,
         isManualOverride: Bool,
+        entry: ProvenanceEntry? = nil,
+        context: WriteContext = WriteContext(),
         now: String
     ) throws {
         try db.execute(
@@ -467,12 +482,23 @@ public struct BookkeepingRepository: Sendable {
             """,
             arguments: [now, entity, id, field]
         )
+        var evidenceJson: String?
+        if let entry, entry.evidencePage != nil || entry.evidenceSnippet != nil {
+            evidenceJson = json([
+                "page": entry.evidencePage.map(String.init),
+                "snippet": entry.evidenceSnippet
+            ])
+        }
         try FieldProvenance(
             entityType: entity,
             entityId: id,
             fieldName: field,
             provenance: provenance,
             isManualOverride: isManualOverride,
+            sourceDocumentId: provenance == .document ? context.sourceDocumentID : nil,
+            modelRunId: provenance == .agent || provenance == .document ? context.modelRunID : nil,
+            confidence: entry?.confidence,
+            evidenceJson: evidenceJson,
             createdAt: now
         ).insert(db)
     }

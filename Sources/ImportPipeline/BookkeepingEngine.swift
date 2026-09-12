@@ -41,7 +41,9 @@ public enum BookkeepingEngine {
     public static func derive(
         _ input: TransactionDraft,
         profile: BusinessProfile,
-        categories: [Database.Category] = []
+        categories: [Database.Category] = [],
+        hint: ModelTreatmentHint? = nil,
+        reverseChargeNote: Bool = false
     ) -> DerivedTransaction {
         var draft = input
         let currency = draft.currency
@@ -69,8 +71,10 @@ public enum BookkeepingEngine {
                 supplyType: supplyType,
                 document: DocumentTaxFacts(
                     taxShown: tax.minorUnits != 0,
+                    reverseChargeNotePresent: reverseChargeNote,
                     rateComponents: draft.components.compactMap(\.rate)
-                )
+                ),
+                modelHint: hint
             )
         )
         let treatment = draft.treatmentOverride ?? decision.treatment

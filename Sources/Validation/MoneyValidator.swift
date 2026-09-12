@@ -36,7 +36,14 @@ public enum MoneyValidator {
     /// absolute deviation when it exceeds tolerance.
     private static func deviation(actual: Money, expected: Money, tolerance: Money) -> Money? {
         guard let diff = try? actual - expected else { return nil }
-        return diff.absolute > tolerance ? diff.absolute : nil
+        return diff.absolute > Self.limit(tolerance, in: diff.currency) ? diff.absolute : nil
+    }
+
+    /// V1 books in the document's own currency (spec 5.7), so a tolerance
+    /// stated in EUR is applied as the same number of minor units in
+    /// whichever currency is being compared.
+    static func limit(_ tolerance: Money, in currency: CurrencyCode) -> Money {
+        tolerance.currency == currency ? tolerance : Money(minorUnits: tolerance.minorUnits, currency: currency)
     }
 
     /// Spec 14.1: `sum(taxComponents.net) ≠ invoice.net` beyond tolerance.

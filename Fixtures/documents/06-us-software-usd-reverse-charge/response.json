@@ -1,0 +1,532 @@
+{
+  "id": "resp_0ff087b2d151b5d7006aa55e63ff1887d2811290b0c458210e",
+  "object": "response",
+  "created_at": 1789222500,
+  "status": "completed",
+  "background": false,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1789222514,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": 32000,
+  "max_tool_calls": null,
+  "model": "gpt-5.6-luna",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_0ff087b2d151b5d7006aa55e651e1887d2b75658d3bcce4eea",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqpV5yfPv7BeatK1gjz0XRESYkvUUikRWme2KPXEH8b1gfcEBr8uJ_gY31ggvz3cOYlLAxdMQR_S-wvCgcSuksNR1KxW53RD1f7ycHwWWrlNRRR3lgVJG9r1bQbYZBCH25ZdqmScSb-6U8rkb3spKz1QzpPsr3JFzx2zxtIL8-HG4XAjD7jwN1sR7TkPWRet70b85eucGb9HX2waheW_bSk_F0HAanj7wxyrBI7mWOl7LGrAhHyROClEpaPDRE3N6lKmPo1pctN9D6wAyIHDrIjrPzbzv4un1yBxMIJby3faztAgTIYxcw6kLF-wPPVxEJdp8tpyjI3jlPR20ZkrD7TCmq_k8m1C2Sz9gRz5PttslyCvFC5c47YEyAg9PoGmeh11kAb8nv1CkCXiArc3fWxWJvMq77H2zwau2f7Zrq8Y7l20qX5FQVnQgGVyBNKL9qyExNQ-1J_52VbD_RccGBC6nIfDo4FUiMDFvwXecc0ZSI7FVTIrcWUrFC04LLXhrESf0zoyt03JsSKXKM14SkCYufTRdDWuzCi7YmjvVYPHXRhVDfakmoZE55aJPoBnkXK44Uco_wVY_Btp61u2d5tiNG-w6uArb_kAPE5Vv7ziZlBNrMolz8E3AvhfpdYaVVIrKar61g_fo12JCUUvkt0bW2rbz93EFl3DrPznjFzMoT3rgmnuC_tJJzDUnZRj1o4HS5DpaGfJFvid0uNP8Zl_MiV3hw9cuBdPW7p7vvpHE-F7-pLjm4CeT63DTlf-Ko-a9Peg6knCvkQaPbmbOsaY6Xbs18f0qNPFWLutsrLgYDKnVS-W_1JDgIYgL5T1DXRHJVDZocBpQbuHhq602snXoKZ_xMtMgx90PAscYzPAYOoXt29kwXdJuYj4yHzVgIpCVEIF3SacN4yUcd_z0pnDALZU6yTWqVmh-DUA6m5tYCuoZxFVSVcev7x1lPo6nWkMC2HiRqpYnpQr0tuCP0MY8Fbb9r5-45jEs3tBrsp1MAtiHACVaSQwJoG7SnHhON2cjVakfXBsPKIRzzsxMSAZGEvrgk1CcijiWa3D18VPO2woXt2oFEdb-Kmky-XyRWusIfuQ9g3JWGpd-IjQsCNUBV6mAcPwDRIiOYOLCWCcclKNu1DcfcklxKtq78893asp2qXsjfSuOkcugNZ5X_lFVcxv7K6-FosoA_QLV52IP8W4f4lR9ZbPl6ThQAFV7-Ao3Dn8zIPm_AkKNeg10S4N00rqzeb7L6HUMKyG533G2xZRdY8FkEvnfOpIzcuicHSvhLab11wsZdfWhchO9L3_kjZDBYWTpSdnnrbB4B5fxoFBnmoGN1LrFZLTyawSKZAKoZxHJTQI0cKqCrgkqbobus9ouG-URixi5b1cxMsANxgYhQGgGlvbJuVyTsKEH_KRCrNEGI66mn1hQ07RTA-a05tWb_aFBlDCsT-TXv02NjhzZ7U5hD6HXyIQMvUdGv2utbtHkwi33XJY_2B3G3AolwktvNUKBMV226-X-XWB9-sIJkxUk9IhijonP7D7MQ7ZAezaOXw8DE3xDvUhlB3nlRRTrYfcr0a6G5-ECuh2DmZYFsu52vsa6OPNjaSsKiP98DaOpphndmRtKHu_SLr9EjJ1o6CKKDf0vcOmIfj45MX9tGec6xMKloz1JRC9B2xhm69ou_P8opAHIGUQWYkqHcUgi-CzA7W4cpdUb5peQ-xtQ6FlJTsg7EH62A9sm2EQdwEF5mpzl3Ou4WJuJEPh7A3AgiR0cBvWMqH9P6M4v530kb5WlDO4YpaKswka8Mtq-AKkxFqIxmELghHplUk9yGOo90-Z9HEM9AO8ZT_Ucv2dBwBOg2v-n12F0fvNGhTJQatR2NY246wp7lQG7qwgTlyVpwkVqzOX-A0Sxb7s23RQ6ciR7DD2248RvD6oglw52MqFYdEA9yxoXtB5Lu6Za1TH-SjznGrklqAOLIYQI-eMhNspGYpXMRxgSO3KBfLKhPmeGtQh4i0kDOJlbh7AkW6fz2QMbXwDWQG1Vjpj6XOYAvSUre9w0FDusQWn5WF71ymdOdlCj8yjZ5MCIrs1ZkKJTp0gskYs9IkOfiRCVlGea7wDZ4RwVcyW6vILEjO_ZYaVRoKzEYlyWLG1hRhfuce8v8Ng-Jho2PK7LZy6te7_fuXvMopkVc0bWzAEn3ak-GEKA7aC7fbuX6sY9Gxc0p4VMsYcnIImCqlfsQrspbwbAHrbaOR6Ckd5yulszmdLCAZeSD9xrxsPdRUrNZHe36Cv8s7gvGayh3gfPsYzRjnNsO2-76ztbL9g_LWnqQVa8C_Yqc6R-tJNDD8SmBa7CR-cfE1zVjmNHAkGPQIOE42V9cKlzIbBvJPVJcAjg-b1UPboXmvnNAu6gWViEKEELGGHfuzj60P9q3IZVlf-jRDWDdxBGzbZztpWaYIN-zyI0Dnwjs9WMB44HgI8_SZx6H99MZEtoMGVe_v0CYeqPKMfDiHJfyRMmqOCxizpRQc9F8W0SBYzxjcgU1evkI-BhO6mrJw3CrIhafN7ga0LdOLdsxGP4TP8xrPvPwk74DyM_d3b8Qx5p2Qte83LeQZ3WiHzRCodNZfISR6AKYXt33q7QYLm2xvxbHn95IrjWcx8AvTiYHlWlgvCxv6w-IUFIUvMKaXCSOur53FckAR9xVVXjN50agVI5-5eGMLQKjO4KMFuG5V6V6usKrUKKNmpiKiPdW0vvuK741wCiCU4lqgKjlhlyilVHPF9XkkSAfbxm8wsA2lxOyVC8XnfAVLdEVY2VnmRh5N0izYoeWZctZAlU_8nUVwkYPOoeEY8BNh5rxyutxx8-kkWqJC0-asB0HJIvt-rjmixu96CCUmmEggRVn-IQME1M_OTSrKdsFl2lANkMRYOn1nl-Z6VPO05lvFgWhXSn1jpPZzaPa26po16SqRkiDBocr9lmjzNS9WsVh5fa7TcNjusbw2kPQkqKB9vkrf94aiVpY11xcIUtRPOW-81t7EUMEaUfxozS9iek2e2UDqyjwi_Rj1Gj869Gk4x0i32s2O7NhcnNqVIkqvF_JU2n2fZwUPz8ot6oK1htt-xc5jTwWBZ0xyEahK_Sfn2JDmpgpam-X4jGWkwtW8XKpE64hsiWIVgBKgRf3L0vbCuzgBgO7GvAHavpyPGV2oT4sI_I__tYLyJ-QGdum-h3M7Fxj8EB44yPm32JWChZx21FUiPEH6Ai7pQYwMtbUNACJTP-6aZ16Or23vyHwO-2YyYBBox9JszQak5nq9Nf0Yi4_xNGkLWGAh2q6wVWXhW9vPhApEb0-ji_IdArSc2LKobP0Z_HcyTttE2j2cTKMJPAJaA4sLIfW8h_3XUz0xIKQSHJ-fUqpkjBns-02NV92H0FcQYDCvrDydRt7T12XN7DDvoLeF2XyCbGWhyG8smcbRqPVCopzqqi-ghtaiJbVcmUTc--PWBFYdpcAFEk_EpnaQgVDWKHxbJzUyu_lD5KybZtEN4LZo44NK_MpO1wAj9nVS1QifM_WIU9wAfzSK_YXW0XxvkIgPVYtTw7dt1TTs0fPBB9zRfyD1Y940c2qRJu6HIkqaVyfXI_TnIbETHFeEYShMI_pOavBsGHj10Nrv87us76wVu8A38lfqu-1DZgL_H3H6ZMxzursn1FNPjtS6RFAKqyp-tsnRhMAD_7hV6HaOnqK-WHaRJyuY8eMoo6jdpaBodVabN4F3AEGpQlSlQhRqopopYvR_q6z25XNF-3NWPDsxSwq3_HLNTo23t6txao5wS-i211LrfGIpKtYF6vX8TpJm3jZErQXyjmWKr1DZbCjIKwK3RqhnKiUKoP5zbIX5yriBmEAJjAD-8PlMmP2heiO2qa_nqpwRZosjn49B4sXJSdw5rbsctmHeGdZeEq8qBx5dD03I31f3VaFgfPnqX4OHIhWDYF9GLSYVJ6-Yydb9pyTUi9DAaYGlkWcy64JDtAXLagCMCUS-cuku-7aOm1Fy11yPhi6LuEve9M-YgzWJ_MhDk6tQBirC5ilajSZg5udAUVNVFz1p7vwXkhlSXSmwP2IhB8DbBDWQb0CWsW_JCSQDrTy5qTQQ7p_MQrGe9RluRNeZ2V0MHXRNRPZcfgtfweBDvjjyL44zkYwrRPDFNlhA0ykr37ViRYPiSqG6zYBPsWdBmxAVLsDG3wDEVyeEdFYrqqIZJe_5Lii3Xx-_G25QN8K5eI5skme2LT2uzLLD6n4XGSvdPiG59zxV9ngjZj8-7bch1Q3pSrr2CQ40VripuzHhvQwaT8B84nt2HdXFfZHfS6VzTEHL9w1ZZTetFs_lmLD-X8HOHCk-r0E59Pha-xz7Ud8MoRcjeNYimBhuUjgVzzP5ZZDvzNfMgLsTlNGyrbKzx1DflWYmx058r1UOMinUHh8szc10c8Odda3yzeebUboQBejSWiFrS9aTkhF0Cl6omA4JT2vOr9QJkn7rYxm8KEJj6VutI4NoXL2D-7W137ziv89e4I5krlXEwFii5O8x-WenHhDM8jhOvXFf7UogN8nR13BEjdZc5p8z8-j7iI3qbOBd6pZ8KD_JGlRZ31n13ljqevrELZLdYsOc4FCcN2N-llTlqs-c48GD0MLclbiZzXZ3AY4LwnKTMnqx7rkPQpgWcmmDIAA1aXrykiFEXE=",
+      "summary": []
+    },
+    {
+      "id": "rs_0ff087b2d151b5d7006aa55e6a4e1887d2835cb095015e6271",
+      "type": "reasoning",
+      "content": [],
+      "encrypted_content": "gAAAAABqpV5yrhWBGIaPD4wbALRht9oVPPrfwDBwUUyBhokQ1i3b07MeCNM1eA1yuaJnOszubP05yJfem-GPSpYgq9SObDXaFM8vR-_SpmMWVzvLbzD_F6WwRawQuMQRVZXhtQUo9yeK48JWIKbpwIt_2wiyh0SjshvF7WadO4WoovWB7kJ23hkscMeCJGwqfpHPCDpWEsaFQl6D2FFFHIEPSicrEZn91eJ4-6GMmSEROsFGj-UquqgeJx8eVs1qRYHNJ8oKGChnsu0J48DmCwK1mQx8xFrLz1_DfiQTWTHp2gOiFIL6ES6DhzbVNdg8C3Ca9CEcHfNaU3d2h--kSuURxJ8i2UJARgViAx2_OG5Vn712ssnkQsjvdRNjt7JH7VElalNf0JkxHWdq5d_3czfwRt5BkfFDmCxGjpK14VhFFpEaxUjJgd9BpHIj8HAuQEOXQa1eAOpwxVLPi8YQ9HwDiZSD6W61cUEXJNszpGeGVsm4H25YrrIERy-MxktKCThtBJQpY-A363uaCbTpKkNGT9JGaGYYbcw_QpEyh2WrrDdPL8uIbeq0xhL9a1kyR3BqcHs2SwGcby69T18cUAcMmOTtDyWVMKft33Ub8BCYecyywB3kuPuaTrgmDQf-XAl2mRmBmtQ9Iot3eGGmpmaa81DuxqPS9enGxZwpexNgWt458mRMnAluI2lqpEKCfyToPp_FBSjbtLY7nNtLpVYP7ybKoT3ISn1utxElQC5JUtTM31kekMHBhK3_B23sbdetX8cgGAyfUhahUcwlHXgrkQmp6pbNcxCK_u1i90mN3BuL93JgGivEIfJ_GsCBLM_xbdKMBHFlBj9AEwgIR2KIP26eBzi8baExm3fdzHuEAskxMm_a8D1D8tnM1fK_CHPEXf4EiPaDfu1xDtWyPSgbfjWO1DxffCPqwMjAquZlM_yO6y6EOFldhVZtPhZdeO7W-dQ77kY_zjgf0BromCVqz1lZwWAWxCrqjZwJyPWyMhKBoADYMM1wJ4A_JO9ZEb5p6Pt-OfCPEkW9QcF53p-mcLaSNPfrlkYQLeqgoAnGy2ZdR7DMMoe0-Aq7wHODxak3czwXTkOFaSpDO8IAaChomYMA5pF6ikSPl9xm810C5i8EcgguMSplK-hgEUXvxd01TASuiqzE5j86VcEyd6tOIzH1i_UxR52JM7QC_0Vkdnc8BUFhTwcmfN9TwEDvYq2Fg5dqL5sZGTOXcQ3B2f0SovuqA9lJnzhRbaTgB3aO6wQNvI1efi--GyYp5HGO8buwOTL-PnBpxTNXWUxUB5Tl-bcS2lrKWLSpEM_OBVFXnA7WY-L698Xvj_Zh4qDDub-GjeMeZWgnfcX6cwZXgQ7zzEM_MVpid0oA95UDTmS7xdDGe8yfNxm1RJKsX4GNMDzhndD_tLXFikTOseQ2m55BZXMlqulooPr5keA_DPuOr9oJXxSLszVezafibwihng24MJvr31MCPEh-1yp_0yAShAe3LPG2KDvp1M6V2YYab0llNQkI6V5d4cZg1j3GNyeSC1w9CgNpZGPjEQ6loMpAB9XMv-FPGZpKbeZHHB7p-rkfUSJkySmvAqgUg8mj6Ox-_fkwN_L3G8i7nlB4FSskUS08kaI_BnS_oMugV7JWjtsFeOFVwZ4V-wrLo8qfyK6uYaAJDdr8mcqDDBR6avzqhsPwzEven2B47zTGU899vP7YSvfM8FFbdXn25IaEdyZ9W0ld4in0x_7poaf807S-Q2fnuld_Vs0QlSpD4ztfniz-Qx1gjoZIvd4tPcOZ0JmSY3snGWt1dCu7GA0fEixfZ0mcH5a_-4_jjtFRcOW8iBgXNJQZRknFJUh8FGfd-tqmAw8EjaJ77Rpqryl7Isvaf8FuXMgbumO8NFCkdgyPtaJIdswBKYbHNY7DNLTBSiYiyCJ68E3qvf-gXDZG1RwlSe8Pq7ztytgAYBBH7qtHBVSP6opth6YYjvNB4FJgVDDvIQhG5w9UIwh5tgv13kcN4Gkie2-9N7BiQ0HIpgGheKkDsFbDoI6z_gbc0mWwcRB3S8i8weylIf5SKDJo-yhr7TCeyK2JR0JgyiBjlZSobWARQsYLHvS3MDy4K2YkDIBwsgYsqDniM-rxjlWFSb98gH0Q7UVj6ItFhX1zjLFA_UcU5yawNgtDJdwgb_oR0NnqJ7Oy0gABEEdUaDzLJ3e41BExOKJy0PE98llwwpm8AXIwurFpqBNgoDqUykoW4wRwzOVMkqzksTjqIuBK_-NsvoLbR-ngrAX_afxg2g0acCA4oiGpwAGM-OUnS4QhbESs1SpOV3Rq0lZdH9ftVPKBWZtijeQrTkTgHHB0bTgz6S1AJ9-C25AUYiPreIKR7cmBwz_yx069umn2dEFy8LHYUAAtloC9pseNt4H7Xvuzl9q4mgohjmA48QeEAExIBf-LOHfDxr3aMcp7RR8GmmDViQf81QIOOQ0Ho9wCnaKX5b0CCbF5FXyHNCGI8FRpDyml2BcZK433H4eU3XEItusV6zpRJ2RmTv499EAySfZ6kFrzwuW2w-wKq3zcvvmFLVTpbP0PWiGwDO7ciT6KNYgxdd9he3CrzPBw5v4UdbiqKVN8BKDhWMT0KHNiUilhTQV-7PjS8GSpGOSMdjw4tykBi4yW33HKJht7aekNzuQSM8EzfQVB_HiMpBMJiMjcihBGmrySa20z4aLv63oqi0Y5fN7ga9DTEpoNawqbgWB84ztvxqS-Rrg-YTBrvp-StV350K1kfT5TJW0Nc8Y1M7SbarMlRkycscx6rqTMlfjsN-mf6uFSShS4kpdJM_2tBIazUs0g_nYFneHeadbd_n8zwRAPCrHwq-BnMOitSgIhDHrOVIl3XWuHjReb98J58H8v5U9v7jrIfXEsPIKCt2-wvZV8mtM686xwcZEZvyrSOYO5JrELbvo-cZc025wRjkUqgC_QLCdO3PMxZTKLUFHe0evsp49xXSq92SXMZlL-PICKwP1ACoNpM5AlXibjQ3nKR-2o80NB9MKVvp1u5MzWcOJtRthFyMWLoLzz8ioZjWVSMHJW9-Gixq5U-G8_QGNJ9-vC37F_Pxpx6qt1YHoMdcOmASLj2VySBsUd9h6d-a60nwH9AaObQJRdpLdmOrjwNlhRlOBm8CLwt-B75CBCc7MoA1FtUfy3DypFRPrOt0Vew_H_uk49_M39ErbIRSdBlJ13Wd10JHheHSXdWOPKegTEpefkJcGhnfuS1kpb3wzZA8vvmKbd34pwkGIT4P02iOTTu2yWz5SGpaaD8GbvJuRBj14vfc3q_3tWJC3ZlCb9jbfEpsh_Q-5Wpp5VeqSl9r_hSgSCswtiwj4NWZ-lMQT-YRk6iv_HXMETcN1vuz6AILv_4Y6XVBTqXRPVnZDskqzMtaDOkKSxccPyXc3rGzkkNLawXbsj33SheJxx0VInMNrTsH06xc94sulS3NFYhesZea7plZDVfpPnlwnK_ABkZQkgS5sPtV6XdkBPZzg5Lo0UyYqsURcfA1tYSjyHfi7HujmDKPGZPFIRUETGBJ4jY86tLa2wAQCIt6MMrfqhJe0ps3L9X-zzGs_GHIceiYoswRQB7wpky25jDQJWuSuzKmvqe6K2PlNXUmbx5OlE2qWviWfLkkhuM8TZRAr2Qr_WINbS2JKbgTo8VmYrzTKfr9NPDQwPRtPommdCp7TNWB1NK9JnxWVIiOK7qxAWuOGgbRp_neLsq89kU2-cDqUOyN8w78BVU6LT2RIg3YCXicBZkNpsyTySbgigElI5JpLfw9QIXXKqIBcA57gQn_3L6MF3W6XhWCsuKm5K9b4OtHLVH67wNIUwOJHTQfpNo95eC1jlwxlxhb126r2g0CXPQcY0L_XDuuFR2kMRYkQ-90O4ziUnb_I8zEoKfwzusJRGm9qX4OGz2fBcJKVM9WsSv7YR-MP2fGHk4ud4SuSes26Hs2YOJxGGah3M8C4Df7e4ccEF3gZXgnvXNQFEWzS_2TM89v4zOnRWcojk35ugwJQFh0jnZD865OrnT3Ds2NEjITKt9R0c82WsZtS-Kgd10GiHKlygH5LcpfwTIOnEaqyRlnZtAxx4kJ1Uha9KuwmNPhFPm5UlKgSb2sgP1oQvoJXR0kZ80QXpiqBEp1O1cAygZ0layQnbqKU_x39Bzg2qI4llUhGjKhLaZiNQDhX55-3lkCkoDkM0hkchbAkSVHERitUVaDFoBPNtEBhUlK9Iqz-NFllJ69r7v28RGvxl5RifFZOz6fhqoIuhkuUoGRaXEvit0nQnVRZVXKXztJQP85ki9WKPX3_d5FLQoDTWWpIh4aqQG5r-QdiJvZuDFVcKJ-PBkZLa5mj_4R7hzXgjLPyH",
+      "summary": []
+    },
+    {
+      "id": "msg_0ff087b2d151b5d7006aa55e6f141487d29a2ab094860d134a",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "{\"counterparty\":{\"city\":\"San Francisco\",\"countryCode\":\"US\",\"name\":\"Bright Peak Software Inc.\",\"postalCode\":\"94107\",\"street\":\"880 Beacon Hill Ave\",\"vatId\":null},\"direction\":\"expense\",\"documentType\":\"invoice\",\"evidence\":[{\"field\":\"counterparty.name\",\"page\":1,\"snippet\":\"Bright Peak Software Inc.\"},{\"field\":\"counterparty.street\",\"page\":1,\"snippet\":\"880 Beacon Hill Ave\"},{\"field\":\"counterparty.city\",\"page\":1,\"snippet\":\"CA 94107 San Francisco\"},{\"field\":\"counterparty.countryCode\",\"page\":1,\"snippet\":\"United States\"},{\"field\":\"invoice.invoiceNumber\",\"page\":1,\"snippet\":\"Invoice no.: BP-INV-20264471\"},{\"field\":\"invoice.invoiceDate\",\"page\":1,\"snippet\":\"Invoice date: 2026-07-15\"},{\"field\":\"invoice.currency\",\"page\":1,\"snippet\":\"Currency: USD\"},{\"field\":\"invoice.netAmount\",\"page\":1,\"snippet\":\"Subtotal USD 1,000.00\"},{\"field\":\"invoice.taxAmount\",\"page\":1,\"snippet\":\"Total VAT USD 0.00\"},{\"field\":\"invoice.grossAmount\",\"page\":1,\"snippet\":\"Total amount USD 1,000.00\"},{\"field\":\"invoice.taxTreatment\",\"page\":1,\"snippet\":\"No VAT/sales tax applies.\"},{\"field\":\"paymentInfo.paymentMethodHint\",\"page\":1,\"snippet\":\"Paid by credit card\"},{\"field\":\"paymentInfo.paymentDate\",\"page\":1,\"snippet\":\"on 2026-07-15\"}],\"invoice\":{\"currency\":\"USD\",\"grossAmount\":\"1000.00\",\"invoiceDate\":\"2026-07-15\",\"invoiceNumber\":\"BP-INV-20264471\",\"netAmount\":\"1000.00\",\"serviceDate\":null,\"servicePeriodEnd\":null,\"servicePeriodStart\":null,\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"Annual Enterprise License - DevTools Suite\",\"netAmount\":\"1000.00\"}],\"missingFields\":[\"counterparty.vatId\",\"invoice.serviceDate\",\"invoice.servicePeriodStart\",\"invoice.servicePeriodEnd\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"paid\",\"paymentDate\":\"2026-07-15\",\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"zero\",\"netAmount\":\"1000.00\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.88,\"reasoning\":\"The US supplier charges no VAT or sales tax and invoices a German VAT-registered business for an annual software license. This suggests recipient-side reverse charge, although no reverse-charge note is printed on the invoice.\",\"treatment\":\"reverseCharge\"},\"warnings\":[\"The supplier's EIN is stated, but it is not a VAT ID.\",\"No EUR equivalent is stated on the invoice.\"]}"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "high",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_schema",
+      "description": null,
+      "name": "document_extraction",
+      "schema": {
+        "additionalProperties": false,
+        "properties": {
+          "counterparty": {
+            "additionalProperties": false,
+            "properties": {
+              "city": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "countryCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "postalCode": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "street": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "vatId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "city",
+              "countryCode",
+              "name",
+              "postalCode",
+              "street",
+              "vatId"
+            ],
+            "type": "object"
+          },
+          "direction": {
+            "enum": [
+              "income",
+              "expense",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "documentType": {
+            "enum": [
+              "invoice",
+              "receipt",
+              "creditNote",
+              "statement",
+              "contract",
+              "other",
+              "unknown"
+            ],
+            "type": "string"
+          },
+          "evidence": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "field": {
+                  "type": "string"
+                },
+                "page": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "snippet": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "field",
+                "page",
+                "snippet"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "invoice": {
+            "additionalProperties": false,
+            "properties": {
+              "currency": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "grossAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "invoiceDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "invoiceNumber": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "netAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "serviceDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "servicePeriodEnd": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "servicePeriodStart": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "statedEurEquivalent": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "taxAmount": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "currency",
+              "grossAmount",
+              "invoiceDate",
+              "invoiceNumber",
+              "netAmount",
+              "serviceDate",
+              "servicePeriodEnd",
+              "servicePeriodStart",
+              "statedEurEquivalent",
+              "taxAmount"
+            ],
+            "type": "object"
+          },
+          "lineItems": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "assetCandidate": {
+                  "type": "boolean"
+                },
+                "categoryHint": {
+                  "enum": [
+                    "revenue_services",
+                    "revenue_goods",
+                    "revenue_licenses",
+                    "other_income",
+                    "vat_refund",
+                    "interest_income",
+                    "software_subscriptions",
+                    "hosting_cloud",
+                    "telecom",
+                    "office_supplies",
+                    "office_rent",
+                    "hardware_small",
+                    "advertising",
+                    "professional_services",
+                    "contractors_freelancers",
+                    "travel_transport",
+                    "travel_lodging",
+                    "meals_entertainment",
+                    "training_books",
+                    "insurance_business",
+                    "bank_fees",
+                    "payment_provider_fees",
+                    "memberships",
+                    "postage_shipping",
+                    "vat_payment",
+                    "other_expense",
+                    "hardware_equipment",
+                    "furniture",
+                    "vehicles",
+                    "uncategorized",
+                    null
+                  ],
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "description": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "netAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "assetCandidate",
+                "categoryHint",
+                "description",
+                "netAmount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "missingFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "paymentInfo": {
+            "additionalProperties": false,
+            "properties": {
+              "iban": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paidIndicator": {
+                "enum": [
+                  "paid",
+                  "unpaid",
+                  "partiallyPaid",
+                  "unknown",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paymentDate": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "paymentMethodHint": {
+                "enum": [
+                  "bankTransfer",
+                  "card",
+                  "paypal",
+                  "directDebit",
+                  "cash",
+                  "other",
+                  "unknown",
+                  null
+                ],
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "reference": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "iban",
+              "paidIndicator",
+              "paymentDate",
+              "paymentMethodHint",
+              "reference"
+            ],
+            "type": "object"
+          },
+          "taxComponents": {
+            "items": {
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "enum": [
+                    "standard",
+                    "reduced",
+                    "zero",
+                    "reverseChargeNote",
+                    "exempt",
+                    "fee",
+                    "deposit",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "netAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "rate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "taxAmount": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "kind",
+                "netAmount",
+                "rate",
+                "taxAmount"
+              ],
+              "type": "object"
+            },
+            "type": "array"
+          },
+          "taxTreatmentHint": {
+            "additionalProperties": false,
+            "properties": {
+              "confidence": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "reasoning": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "treatment": {
+                "enum": [
+                  "domesticVAT",
+                  "reverseCharge",
+                  "intraCommunityAcquisition",
+                  "intraCommunitySupply",
+                  "export",
+                  "importVAT",
+                  "nonTaxable",
+                  "exempt",
+                  "smallBusiness",
+                  "unknown"
+                ],
+                "type": "string"
+              }
+            },
+            "required": [
+              "confidence",
+              "reasoning",
+              "treatment"
+            ],
+            "type": "object"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "counterparty",
+          "direction",
+          "documentType",
+          "evidence",
+          "invoice",
+          "lineItems",
+          "missingFields",
+          "paymentInfo",
+          "taxComponents",
+          "taxTreatmentHint",
+          "warnings"
+        ],
+        "type": "object"
+      },
+      "strict": true
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 2285,
+    "input_tokens_details": {
+      "cache_write_tokens": 240,
+      "cached_tokens": 2042
+    },
+    "output_tokens": 1654,
+    "output_tokens_details": {
+      "reasoning_tokens": 1034
+    },
+    "total_tokens": 3939
+  },
+  "user": null,
+  "metadata": {}
+}

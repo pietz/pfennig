@@ -34,7 +34,7 @@ let package = Package(
         .target(name: "Validation", dependencies: ["Domain"]),
 
         // Domain only (see spec 22).
-        .target(name: "AI", dependencies: ["Domain"]),
+        .target(name: "AI", dependencies: ["Domain"], resources: [.process("Prompts")]),
 
         .target(name: "StatementImport", dependencies: ["Domain"]),
 
@@ -50,6 +50,10 @@ let package = Package(
         .testTarget(name: "DocumentStoreTests", dependencies: ["DocumentStore"]),
         .testTarget(name: "TaxTests", dependencies: ["Tax", "Domain"]),
         .testTarget(name: "ValidationTests", dependencies: ["Validation", "Domain"]),
+        .testTarget(
+            name: "ImportTests",
+            dependencies: ["AI", "Database", "Domain", "DocumentStore", "ImportPipeline"]
+        ),
         .testTarget(
             name: "BookkeepingTests",
             dependencies: ["Database", "Domain", "DocumentStore", "ImportPipeline"]
