@@ -1,0 +1,10 @@
+balance_transaction_id,created,available_on,currency,gross,fee,net,reporting_category,description
+txn_1PBeispiel00001,2026-08-05 10:14:22,2026-08-07 00:00:00,eur,3570.00,-103.80,3466.20,charge,"Invoice RE-2026-0042 - Nordwind Handels GmbH"
+txn_1PBeispiel00002,2026-08-10 03:00:00,2026-08-10 03:00:00,eur,-3400.00,0.00,-3400.00,payout,"STRIPE PAYOUT to bank account ****3456"
+txn_1PBeispiel00003,2026-08-15 16:42:09,2026-08-17 00:00:00,eur,45.00,-1.56,43.44,charge,"Subscription invoice in_1PBeispielSub01 - Plan Pro Monthly - Studio Nordlicht GmbH"
+txn_1PBeispiel00004,2026-08-20 09:05:44,2026-08-20 09:05:44,eur,0.00,-3.20,-3.20,adjustment,"Currency conversion fee"
+txn_1PBeispiel00005,2026-08-22 12:30:00,2026-08-22 12:30:00,eur,-500.00,0.00,-500.00,transfer,"Transfer to connected account acct_1PBeispielConn - Freelancer Kollaboration"
+txn_1PBeispiel00006,2026-08-27 08:55:31,2026-08-29 00:00:00,eur,850.00,-24.90,825.10,charge,"Invoice RE-2026-0051 - Nordwind Handels GmbH"
+txn_1PBeispiel00007,2026-08-28 11:12:07,2026-08-28 11:12:07,eur,-120.00,0.00,-120.00,refund,"Refund for charge ch_1PBeispielChg01 (partial, RE-2026-0042)"
+txn_1PBeispiel00008,2026-08-30 07:20:18,2026-08-30 07:20:18,eur,0.00,-15.00,-15.00,dispute,"Dispute fee for charge ch_1PBeispielChg02 (case 6735)"
+txn_1PBeispiel00009,2026-08-31 23:59:00,2026-08-31 23:59:00,eur,0.00,-1.00,-1.00,fee,"Stripe Tax - Umsatzsteuerberechnung 08/2026"

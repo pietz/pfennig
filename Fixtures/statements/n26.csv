@@ -1,0 +1,10 @@
+Datum,Empfänger,Kontonummer,Transaktionstyp,Verwendungszweck,Kategorie,Betrag (EUR),Betrag (Fremdwährung),Fremdwährung,Wechselkurs
+2026-08-03,Adobe Systems Software Ireland Limited,,Lastschrift,Adobe Creative Cloud Abo 08/2026 Rechnung ADB-2026-88213,Abos,-23.79,,,
+2026-08-05,Nordwind Handels GmbH,DE00300000001234567890,Überweisung,Rechnung RE-2026-0042 Webdesign Relaunch Projekt Phase 2,Einkommen,3570.00,,,
+2026-08-10,Finanzamt Muenchen,DE00700500000070001054,Überweisung,Einkommensteuervorauszahlung IV/2026 St-Nr 143/815/09211,Steuern,-1850.00,,,
+2026-08-12,Julia Beispiel,DE00500105170009876543,Überweisung,Ruecklage Steuern Q3 2026,Transfers,-2000.00,,,
+2026-08-15,N26 Bank AG,,Gebuehr,Kontofuehrungsgebuehr 3. Quartal 2026,Bankgebuehren,-4.90,,,
+2026-08-18,PayPal Europe S.a.r.l. et Cie SCA,LU00TEST012345678901,Überweisung,PP.9821.PP Auszahlung Guthaben,Transfers,312.40,,,
+2026-08-20,REWE SAGT DANKE,,Kartenzahlung,,Lebensmittel,-64.23,,,
+2026-08-22,Google Ireland Limited,,Lastschrift,Google Workspace Business Starter 08/2026,Abos,-6.80,,,
+2026-08-27,Nordwind Handels GmbH,DE00300000001234567890,Überweisung,Anzahlung Rechnung RE-2026-0051 Logo Design,Einkommen,850.00,,,
