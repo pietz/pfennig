@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- No App Sandbox in V1: the user picks an arbitrary archive folder
+	     (spec 2.2 lists security-scoped bookmarks as a later step). -->
+	<key>com.apple.security.app-sandbox</key>
+	<false/>
+</dict>
+</plist>
