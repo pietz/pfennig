@@ -1,0 +1,65 @@
+{
+  "documentType": "invoice",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Hotel Am Stadtpark GmbH",
+    "countryCode": "DE",
+    "vatId": "DE334455667",
+    "street": "Parkring 22",
+    "postalCode": "80331",
+    "city": "München"
+  },
+  "invoice": {
+    "invoiceNumber": "HSP-2026-4471",
+    "invoiceDate": "2026-05-12",
+    "serviceDate": null,
+    "servicePeriodStart": "2026-05-10",
+    "servicePeriodEnd": "2026-05-12",
+    "currency": "EUR",
+    "netAmount": "210.00",
+    "taxAmount": "18.30",
+    "grossAmount": "228.30",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "7",
+      "netAmount": "180.00",
+      "taxAmount": "12.60",
+      "kind": "reduced"
+    },
+    {
+      "rate": "19",
+      "netAmount": "30.00",
+      "taxAmount": "5.70",
+      "kind": "standard"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.95,
+    "reasoning": "German hotel invoice, reduced rate for lodging and standard rate for breakfast"
+  },
+  "lineItems": [
+    {
+      "description": "Übernachtung Doppelzimmer zur Einzelnutzung, 2 Nächte",
+      "netAmount": "180.00",
+      "categoryHint": "travel_lodging",
+      "assetCandidate": false
+    },
+    {
+      "description": "Frühstücksbuffet, 2x",
+      "netAmount": "30.00",
+      "categoryHint": "meals_entertainment",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "card",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-05-12",
+    "iban": null,
+    "reference": "HSP-2026-4471"
+  },
+  "missingFields": []
+}

@@ -1,0 +1,67 @@
+{
+  "documentType": "receipt",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Schreibwaren Müller e.K.",
+    "countryCode": "DE",
+    "vatId": null,
+    "street": "Kastanienallee 51",
+    "postalCode": "10435",
+    "city": "Berlin"
+  },
+  "invoice": {
+    "invoiceNumber": null,
+    "invoiceDate": "2026-07-14",
+    "serviceDate": "2026-07-14",
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "EUR",
+    "netAmount": "21.12",
+    "taxAmount": "2.68",
+    "grossAmount": "23.80",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "19",
+      "netAmount": "10.00",
+      "taxAmount": "1.90",
+      "kind": "standard"
+    },
+    {
+      "rate": "7",
+      "netAmount": "11.12",
+      "taxAmount": "0.78",
+      "kind": "reduced"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.9,
+    "reasoning": "German retail till receipt, gross amount below 250 EUR (Kleinbetragsrechnung)"
+  },
+  "lineItems": [
+    {
+      "description": "Kugelschreiber-Set",
+      "netAmount": "10.00",
+      "categoryHint": "office_supplies",
+      "assetCandidate": false
+    },
+    {
+      "description": "Notizbuch A5",
+      "netAmount": "11.12",
+      "categoryHint": "office_supplies",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "cash",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-07-14",
+    "iban": null,
+    "reference": null
+  },
+  "missingFields": [
+    "invoiceNumber"
+  ]
+}

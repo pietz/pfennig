@@ -1,0 +1,53 @@
+{
+  "documentType": "invoice",
+  "direction": "expense",
+  "counterparty": {
+    "name": "ByteWerk Computer GmbH",
+    "countryCode": "DE",
+    "vatId": "DE445566778",
+    "street": "Ringstraße 77",
+    "postalCode": "50667",
+    "city": "Köln"
+  },
+  "invoice": {
+    "invoiceNumber": "BW-2026-33210",
+    "invoiceDate": "2026-03-05",
+    "serviceDate": "2026-03-05",
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "EUR",
+    "netAmount": "1850.00",
+    "taxAmount": "351.50",
+    "grossAmount": "2201.50",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "19",
+      "netAmount": "1850.00",
+      "taxAmount": "351.50",
+      "kind": "standard"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.97,
+    "reasoning": "German hardware retailer, standard German VAT rate"
+  },
+  "lineItems": [
+    {
+      "description": "Notebook ProBook X15 (16GB RAM / 1TB SSD)",
+      "netAmount": "1850.00",
+      "categoryHint": "hardware_equipment",
+      "assetCandidate": true
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "bankTransfer",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-03-06",
+    "iban": "DE00370400440532013000",
+    "reference": "BW-2026-33210"
+  },
+  "missingFields": []
+}

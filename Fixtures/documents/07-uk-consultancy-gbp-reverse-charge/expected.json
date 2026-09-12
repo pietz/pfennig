@@ -1,0 +1,53 @@
+{
+  "documentType": "invoice",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Thornfield Consulting Ltd",
+    "countryCode": "GB",
+    "vatId": "GB123456789",
+    "street": "19 Lancer Row",
+    "postalCode": "EC2A 4NE",
+    "city": "London"
+  },
+  "invoice": {
+    "invoiceNumber": "TC-2026-0187",
+    "invoiceDate": "2026-04-22",
+    "serviceDate": null,
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "GBP",
+    "netAmount": "850.00",
+    "taxAmount": "0.00",
+    "grossAmount": "850.00",
+    "statedEurEquivalent": "988.50"
+  },
+  "taxComponents": [
+    {
+      "rate": "0",
+      "netAmount": "850.00",
+      "taxAmount": "0.00",
+      "kind": "reverseChargeNote"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "reverseCharge",
+    "confidence": 0.9,
+    "reasoning": "UK (third country) consultancy service, reverse charge note present, EUR equivalent stated"
+  },
+  "lineItems": [
+    {
+      "description": "Strategy Consulting - Q2 2026 Engagement",
+      "netAmount": "850.00",
+      "categoryHint": "professional_services",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "bankTransfer",
+    "paidIndicator": "unpaid",
+    "paymentDate": null,
+    "iban": null,
+    "reference": "TC-2026-0187"
+  },
+  "missingFields": []
+}

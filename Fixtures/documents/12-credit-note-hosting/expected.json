@@ -1,0 +1,53 @@
+{
+  "documentType": "creditNote",
+  "direction": "expense",
+  "counterparty": {
+    "name": "NordServe Hosting GmbH",
+    "countryCode": "DE",
+    "vatId": "DE123456789",
+    "street": "Speicherstraße 8",
+    "postalCode": "20457",
+    "city": "Hamburg"
+  },
+  "invoice": {
+    "invoiceNumber": "NH-CN-100256",
+    "invoiceDate": "2026-09-05",
+    "serviceDate": null,
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "EUR",
+    "netAmount": "-40.00",
+    "taxAmount": "-7.60",
+    "grossAmount": "-47.60",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "19",
+      "netAmount": "-40.00",
+      "taxAmount": "-7.60",
+      "kind": "standard"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.96,
+    "reasoning": "Credit note referencing a prior domestic standard-rate VAT invoice (NH-100234)"
+  },
+  "lineItems": [
+    {
+      "description": "Erstattung wegen Serviceausfall (Rechnung NH-100234)",
+      "netAmount": "-40.00",
+      "categoryHint": "hosting_cloud",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "bankTransfer",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-09-10",
+    "iban": "DE00200105170234567890",
+    "reference": "NH-100234"
+  },
+  "missingFields": []
+}

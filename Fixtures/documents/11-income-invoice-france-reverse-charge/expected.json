@@ -1,0 +1,53 @@
+{
+  "documentType": "invoice",
+  "direction": "income",
+  "counterparty": {
+    "name": "Lumière Digitale SARL",
+    "countryCode": "FR",
+    "vatId": "FR12345678901",
+    "street": "12 Rue des Tisserands",
+    "postalCode": "69002",
+    "city": "Lyon"
+  },
+  "invoice": {
+    "invoiceNumber": "RE-2026-0043",
+    "invoiceDate": "2026-08-28",
+    "serviceDate": null,
+    "servicePeriodStart": "2026-08-01",
+    "servicePeriodEnd": "2026-08-31",
+    "currency": "EUR",
+    "netAmount": "3200.00",
+    "taxAmount": "0.00",
+    "grossAmount": "3200.00",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "0",
+      "netAmount": "3200.00",
+      "taxAmount": "0.00",
+      "kind": "reverseChargeNote"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "reverseCharge",
+    "confidence": 0.95,
+    "reasoning": "EU B2B service to French customer with valid VAT ID, reverse charge note on invoice"
+  },
+  "lineItems": [
+    {
+      "description": "Backend-Entwicklung - Projekt Icarus",
+      "netAmount": "3200.00",
+      "categoryHint": "revenue_services",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "bankTransfer",
+    "paidIndicator": "unpaid",
+    "paymentDate": null,
+    "iban": "DE00500105170123456789",
+    "reference": "RE-2026-0043"
+  },
+  "missingFields": []
+}

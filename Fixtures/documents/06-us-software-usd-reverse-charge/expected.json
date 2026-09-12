@@ -1,0 +1,55 @@
+{
+  "documentType": "invoice",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Bright Peak Software Inc.",
+    "countryCode": "US",
+    "vatId": null,
+    "street": "880 Beacon Hill Ave",
+    "postalCode": "CA 94107",
+    "city": "San Francisco"
+  },
+  "invoice": {
+    "invoiceNumber": "BP-INV-20264471",
+    "invoiceDate": "2026-07-15",
+    "serviceDate": null,
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "USD",
+    "netAmount": "1000.00",
+    "taxAmount": "0.00",
+    "grossAmount": "1000.00",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "0",
+      "netAmount": "1000.00",
+      "taxAmount": "0.00",
+      "kind": "zero"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "reverseCharge",
+    "confidence": 0.85,
+    "reasoning": "US software vendor, digital service to a German business, no VAT shown - §13b reverse charge applies regardless of EU/non-EU origin"
+  },
+  "lineItems": [
+    {
+      "description": "Annual Enterprise License - DevTools Suite",
+      "netAmount": "1000.00",
+      "categoryHint": "software_subscriptions",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "card",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-07-15",
+    "iban": null,
+    "reference": "BP-INV-20264471"
+  },
+  "missingFields": [
+    "statedEurEquivalent"
+  ]
+}

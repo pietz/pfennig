@@ -1,0 +1,73 @@
+{
+  "documentType": "receipt",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Cafe Sonnenblick",
+    "countryCode": "DE",
+    "vatId": null,
+    "street": "Karl-Liebknecht-Str. 44",
+    "postalCode": "04107",
+    "city": "Leipzig"
+  },
+  "invoice": {
+    "invoiceNumber": null,
+    "invoiceDate": "2026-06-18",
+    "serviceDate": "2026-06-18",
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "EUR",
+    "netAmount": "16.44",
+    "taxAmount": "2.06",
+    "grossAmount": "18.50",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "19",
+      "netAmount": "7.56",
+      "taxAmount": "1.44",
+      "kind": "standard"
+    },
+    {
+      "rate": "7",
+      "netAmount": "8.88",
+      "taxAmount": "0.62",
+      "kind": "reduced"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.85,
+    "reasoning": "German cafe till receipt (photographed), mixed standard/reduced rates typical for eat-in vs takeaway"
+  },
+  "lineItems": [
+    {
+      "description": "Cappuccino",
+      "netAmount": "3.53",
+      "categoryHint": "meals_entertainment",
+      "assetCandidate": false
+    },
+    {
+      "description": "Kuchenstueck",
+      "netAmount": "4.03",
+      "categoryHint": "meals_entertainment",
+      "assetCandidate": false
+    },
+    {
+      "description": "Sandwich to go",
+      "netAmount": "8.88",
+      "categoryHint": "meals_entertainment",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "cash",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-06-18",
+    "iban": null,
+    "reference": null
+  },
+  "missingFields": [
+    "invoiceNumber"
+  ]
+}

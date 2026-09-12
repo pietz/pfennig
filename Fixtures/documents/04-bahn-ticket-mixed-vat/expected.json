@@ -1,0 +1,65 @@
+{
+  "documentType": "receipt",
+  "direction": "expense",
+  "counterparty": {
+    "name": "Bahn Express AG",
+    "countryCode": "DE",
+    "vatId": "DE223456789",
+    "street": "Gleisallee 1",
+    "postalCode": "60329",
+    "city": "Frankfurt am Main"
+  },
+  "invoice": {
+    "invoiceNumber": "BE-778812345",
+    "invoiceDate": "2026-06-03",
+    "serviceDate": "2026-06-03",
+    "servicePeriodStart": null,
+    "servicePeriodEnd": null,
+    "currency": "EUR",
+    "netAmount": "87.75",
+    "taxAmount": "7.15",
+    "grossAmount": "94.90",
+    "statedEurEquivalent": null
+  },
+  "taxComponents": [
+    {
+      "rate": "7",
+      "netAmount": "79.35",
+      "taxAmount": "5.55",
+      "kind": "reduced"
+    },
+    {
+      "rate": "19",
+      "netAmount": "8.40",
+      "taxAmount": "1.60",
+      "kind": "standard"
+    }
+  ],
+  "taxTreatmentHint": {
+    "treatment": "domesticVAT",
+    "confidence": 0.95,
+    "reasoning": "Domestic long-distance rail ticket, reduced rate on transport plus standard rate on seat reservation"
+  },
+  "lineItems": [
+    {
+      "description": "Fahrkarte 2. Klasse Berlin Hbf - München Hbf",
+      "netAmount": "79.35",
+      "categoryHint": "travel_transport",
+      "assetCandidate": false
+    },
+    {
+      "description": "Sitzplatzreservierung",
+      "netAmount": "8.40",
+      "categoryHint": "travel_transport",
+      "assetCandidate": false
+    }
+  ],
+  "paymentInfo": {
+    "paymentMethodHint": "card",
+    "paidIndicator": "paid",
+    "paymentDate": "2026-06-03",
+    "iban": null,
+    "reference": "BE-778812345"
+  },
+  "missingFields": []
+}
