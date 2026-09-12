@@ -23,4 +23,22 @@ public enum AssetDetection {
         }
         return netAmount.absolute > Thresholds.gwgNetThreshold
     }
+
+    /// Category IDs that spec 5.6 calls "a hardware/equipment category" - the
+    /// only ones the net > 800 EUR branch applies to (spec 17.4 seeds).
+    public static let hardwareCategoryIDs: Set<String> = [
+        "hardware_small", "hardware_equipment", "furniture", "vehicles"
+    ]
+
+    /// Category-aware variant: `assetCandidate` categories always flag, every
+    /// other category only when it is a hardware/equipment one above the GWG
+    /// threshold. Use this whenever the category ID is known, so that an
+    /// expensive consulting invoice does not raise an asset warning.
+    public static func assetFlagApplies(categoryID: String, categoryKind: CategoryKind, netAmount: Money) -> Bool {
+        if categoryKind == .assetCandidate {
+            return true
+        }
+        guard hardwareCategoryIDs.contains(categoryID) else { return false }
+        return assetFlagApplies(categoryKind: categoryKind, netAmount: netAmount)
+    }
 }

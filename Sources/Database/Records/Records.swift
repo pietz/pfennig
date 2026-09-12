@@ -605,3 +605,263 @@ public struct StatementLine: ZifferRecord, Identifiable, Sendable, Hashable {
         self.updatedAt = updatedAt
     }
 }
+
+// MARK: - 17.7 tax_components
+
+public struct TaxComponent: ZifferRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "tax_components"
+
+    public var id: String = IDGenerator.new()
+    public var transactionId: String
+    public var kind: TaxComponentKind
+    public var rate: String?
+    public var netMinor: Int64
+    public var taxMinor: Int64
+    public var currency: String = "EUR"
+    public var sortOrder: Int = 0
+    public var createdAt: String = Timestamp.string()
+
+    public init(
+        id: String = IDGenerator.new(),
+        transactionId: String,
+        kind: TaxComponentKind,
+        rate: String? = nil,
+        netMinor: Int64,
+        taxMinor: Int64,
+        currency: String = "EUR",
+        sortOrder: Int = 0,
+        createdAt: String = Timestamp.string()
+    ) {
+        self.id = id
+        self.transactionId = transactionId
+        self.kind = kind
+        self.rate = rate
+        self.netMinor = netMinor
+        self.taxMinor = taxMinor
+        self.currency = currency
+        self.sortOrder = sortOrder
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - 17.10 documents
+
+public struct DocumentRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "documents"
+
+    public var id: String = IDGenerator.new()
+    public var originalFilename: String
+    public var storedFilename: String
+    public var relativePath: String
+    public var mimeType: String?
+    public var sha256: String
+    public var byteSize: Int64
+    public var pageCount: Int?
+    public var documentType: DocumentType?
+    public var source: DocumentSource
+    public var importedAt: String = Timestamp.string()
+    public var createdAt: String = Timestamp.string()
+
+    public init(
+        id: String = IDGenerator.new(),
+        originalFilename: String,
+        storedFilename: String,
+        relativePath: String,
+        mimeType: String? = nil,
+        sha256: String,
+        byteSize: Int64,
+        pageCount: Int? = nil,
+        documentType: DocumentType? = nil,
+        source: DocumentSource = .fileImport,
+        importedAt: String = Timestamp.string(),
+        createdAt: String = Timestamp.string()
+    ) {
+        self.id = id
+        self.originalFilename = originalFilename
+        self.storedFilename = storedFilename
+        self.relativePath = relativePath
+        self.mimeType = mimeType
+        self.sha256 = sha256
+        self.byteSize = byteSize
+        self.pageCount = pageCount
+        self.documentType = documentType
+        self.source = source
+        self.importedAt = importedAt
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - 17.11 transaction_documents
+
+public struct TransactionDocument: ZifferRecord, Sendable, Hashable {
+    public static let databaseTableName = "transaction_documents"
+
+    public var transactionId: String
+    public var documentId: String
+    public var role: DocumentRole
+    public var createdAt: String = Timestamp.string()
+
+    public init(
+        transactionId: String,
+        documentId: String,
+        role: DocumentRole = .invoice,
+        createdAt: String = Timestamp.string()
+    ) {
+        self.transactionId = transactionId
+        self.documentId = documentId
+        self.role = role
+        self.createdAt = createdAt
+    }
+}
+
+// MARK: - 17.15 field_provenance
+
+public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "field_provenance"
+
+    public var id: String = IDGenerator.new()
+    public var entityType: String
+    public var entityId: String
+    public var fieldName: String
+    public var provenance: Provenance
+    public var isManualOverride: Bool = false
+    public var sourceDocumentId: String?
+    public var modelRunId: String?
+    public var ruleId: String?
+    public var confidence: String?
+    public var evidenceJson: String?
+    public var createdAt: String = Timestamp.string()
+    public var supersededAt: String?
+
+    public init(
+        id: String = IDGenerator.new(),
+        entityType: String,
+        entityId: String,
+        fieldName: String,
+        provenance: Provenance,
+        isManualOverride: Bool = false,
+        sourceDocumentId: String? = nil,
+        modelRunId: String? = nil,
+        ruleId: String? = nil,
+        confidence: String? = nil,
+        evidenceJson: String? = nil,
+        createdAt: String = Timestamp.string(),
+        supersededAt: String? = nil
+    ) {
+        self.id = id
+        self.entityType = entityType
+        self.entityId = entityId
+        self.fieldName = fieldName
+        self.provenance = provenance
+        self.isManualOverride = isManualOverride
+        self.sourceDocumentId = sourceDocumentId
+        self.modelRunId = modelRunId
+        self.ruleId = ruleId
+        self.confidence = confidence
+        self.evidenceJson = evidenceJson
+        self.createdAt = createdAt
+        self.supersededAt = supersededAt
+    }
+
+    /// `entity_type` values used by V1 (spec 17.15).
+    public enum Entity {
+        public static let transaction = "transaction"
+        public static let taxAssessment = "taxAssessment"
+        public static let payment = "payment"
+        public static let allocation = "allocation"
+    }
+}
+
+// MARK: - 17.20 validation_issues
+
+public struct ValidationIssueRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "validation_issues"
+
+    public var id: String = IDGenerator.new()
+    public var entityType: String
+    public var entityId: String
+    public var severity: IssueSeverity
+    public var code: String
+    public var messageKey: String
+    public var paramsJson: String?
+    public var fieldName: String?
+    public var status: IssueStatus = .open
+    public var createdAt: String = Timestamp.string()
+    public var resolvedAt: String?
+
+    public init(
+        id: String = IDGenerator.new(),
+        entityType: String = "transaction",
+        entityId: String,
+        severity: IssueSeverity,
+        code: String,
+        messageKey: String,
+        paramsJson: String? = nil,
+        fieldName: String? = nil,
+        status: IssueStatus = .open,
+        createdAt: String = Timestamp.string(),
+        resolvedAt: String? = nil
+    ) {
+        self.id = id
+        self.entityType = entityType
+        self.entityId = entityId
+        self.severity = severity
+        self.code = code
+        self.messageKey = messageKey
+        self.paramsJson = paramsJson
+        self.fieldName = fieldName
+        self.status = status
+        self.createdAt = createdAt
+        self.resolvedAt = resolvedAt
+    }
+
+    /// German message for display; falls back to the stored code.
+    public var message: String {
+        guard let paramsJson, let data = paramsJson.data(using: .utf8),
+              let params = try? JSONDecoder().decode([String: String].self, from: data),
+              let message = params["message"]
+        else { return code }
+        return message
+    }
+}
+
+// MARK: - 17.22 audit_events
+
+public struct AuditEvent: ZifferRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "audit_events"
+
+    public var id: String = IDGenerator.new()
+    public var entityType: String
+    public var entityId: String
+    public var action: AuditAction
+    public var actor: AuditActor
+    public var proposalId: String?
+    public var beforeJson: String?
+    public var afterJson: String?
+    public var reason: String?
+    public var createdAt: String = Timestamp.string()
+
+    public init(
+        id: String = IDGenerator.new(),
+        entityType: String = "transaction",
+        entityId: String,
+        action: AuditAction,
+        actor: AuditActor = .user,
+        proposalId: String? = nil,
+        beforeJson: String? = nil,
+        afterJson: String? = nil,
+        reason: String? = nil,
+        createdAt: String = Timestamp.string()
+    ) {
+        self.id = id
+        self.entityType = entityType
+        self.entityId = entityId
+        self.action = action
+        self.actor = actor
+        self.proposalId = proposalId
+        self.beforeJson = beforeJson
+        self.afterJson = afterJson
+        self.reason = reason
+        self.createdAt = createdAt
+    }
+}

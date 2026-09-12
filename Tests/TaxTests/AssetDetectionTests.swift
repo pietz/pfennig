@@ -40,3 +40,48 @@ struct AssetDetectionTests {
         #expect(!AssetDetection.assetFlagApplies(categoryKind: .neutral, netAmount: net))
     }
 }
+
+/// The category-aware overload (spec 5.6: the amount branch applies to
+/// hardware/equipment categories only).
+@Suite("AssetDetection by category")
+struct AssetDetectionByCategoryTests {
+    @Test("Expensive consulting is not an asset candidate")
+    func consultingStaysClear() {
+        #expect(
+            AssetDetection.assetFlagApplies(
+                categoryID: "professional_services",
+                categoryKind: .expense,
+                netAmount: Money(minorUnits: 500_000, currency: .eur)
+            ) == false
+        )
+    }
+
+    @Test("Hardware above the GWG threshold flags")
+    func hardwareAboveThreshold() {
+        #expect(
+            AssetDetection.assetFlagApplies(
+                categoryID: "hardware_small",
+                categoryKind: .expense,
+                netAmount: Money(minorUnits: 120_000, currency: .eur)
+            )
+        )
+        #expect(
+            AssetDetection.assetFlagApplies(
+                categoryID: "hardware_small",
+                categoryKind: .expense,
+                netAmount: Money(minorUnits: 40000, currency: .eur)
+            ) == false
+        )
+    }
+
+    @Test("assetCandidate categories flag regardless of amount and ID")
+    func assetCandidateAlways() {
+        #expect(
+            AssetDetection.assetFlagApplies(
+                categoryID: "hardware_equipment",
+                categoryKind: .assetCandidate,
+                netAmount: Money(minorUnits: 100, currency: .eur)
+            )
+        )
+    }
+}
