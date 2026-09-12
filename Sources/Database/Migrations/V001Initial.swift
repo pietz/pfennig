@@ -1,0 +1,470 @@
+import Foundation
+import GRDB
+
+/// Initial schema. Mirrors spec section 17 table by table; tables are created
+/// in dependency order so that foreign keys resolve immediately.
+/// Never edit this migration once released - add `v002_...` instead (spec 47).
+enum V001Initial {
+    static func migrate(_ db: Database) throws {
+        for statement in statements {
+            try db.execute(sql: statement)
+        }
+        try SystemCategories.seed(db)
+    }
+
+    static let statements: [String] = [
+        // 17.1 business_profiles
+        """
+        CREATE TABLE business_profiles (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            legal_name TEXT,
+            country_code TEXT NOT NULL DEFAULT 'DE',
+            tax_number TEXT,
+            vat_id TEXT,
+            vat_status TEXT NOT NULL,
+            vat_accounting_method TEXT NOT NULL,
+            ustva_period TEXT NOT NULL,
+            business_type TEXT NOT NULL,
+            fiscal_year_start_month INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        // 17.4 categories
+        """
+        CREATE TABLE categories (
+            id TEXT PRIMARY KEY,
+            parent_id TEXT REFERENCES categories(id),
+            name_de TEXT NOT NULL,
+            name_en TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            document_expected INTEGER NOT NULL DEFAULT 1,
+            is_system INTEGER NOT NULL DEFAULT 1,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            archived_at TEXT
+        )
+        """,
+        // 17.3 counterparties
+        """
+        CREATE TABLE counterparties (
+            id TEXT PRIMARY KEY,
+            normalized_name TEXT NOT NULL,
+            display_name TEXT NOT NULL,
+            country_code TEXT,
+            vat_id TEXT,
+            street TEXT, postal_code TEXT, city TEXT,
+            default_category_id TEXT REFERENCES categories(id),
+            default_tax_treatment TEXT,
+            aliases_json TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE UNIQUE INDEX idx_counterparties_normalized ON counterparties(normalized_name)",
+        // 17.21 rules
+        """
+        CREATE TABLE rules (
+            id TEXT PRIMARY KEY,
+            kind TEXT NOT NULL,
+            scope_json TEXT NOT NULL,
+            action_json TEXT NOT NULL,
+            confirmation_count INTEGER NOT NULL DEFAULT 0,
+            auto_apply INTEGER NOT NULL DEFAULT 0,
+            is_tax_relevant INTEGER NOT NULL DEFAULT 0,
+            created_by TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        // 17.2 accounts
+        """
+        CREATE TABLE accounts (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            name TEXT NOT NULL,
+            kind TEXT NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            iban TEXT,
+            last4 TEXT,
+            is_business INTEGER NOT NULL DEFAULT 1,
+            statement_mapping_rule_id TEXT REFERENCES rules(id),
+            archived_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        // 17.10 documents
+        """
+        CREATE TABLE documents (
+            id TEXT PRIMARY KEY,
+            original_filename TEXT NOT NULL,
+            stored_filename TEXT NOT NULL,
+            relative_path TEXT NOT NULL,
+            mime_type TEXT,
+            sha256 TEXT NOT NULL UNIQUE,
+            byte_size INTEGER NOT NULL,
+            page_count INTEGER,
+            document_type TEXT,
+            source TEXT NOT NULL,
+            imported_at TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+        """,
+        // 17.5 transactions
+        """
+        CREATE TABLE transactions (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            counterparty_id TEXT REFERENCES counterparties(id),
+
+            direction TEXT NOT NULL,
+            transaction_type TEXT NOT NULL,
+
+            title TEXT,
+            invoice_number TEXT,
+            invoice_date TEXT,
+            service_date TEXT,
+            service_period_start TEXT,
+            service_period_end TEXT,
+            is_advance_payment INTEGER NOT NULL DEFAULT 0,
+
+            original_currency TEXT NOT NULL DEFAULT 'EUR',
+            original_net_minor INTEGER,
+            original_tax_minor INTEGER,
+            original_gross_minor INTEGER,
+
+            booked_currency TEXT NOT NULL DEFAULT 'EUR',
+            booked_net_minor INTEGER,
+            booked_tax_minor INTEGER,
+            booked_gross_minor INTEGER,
+            exchange_rate TEXT,
+            exchange_rate_source TEXT,
+
+            eur_year_override INTEGER,
+            deductibility_note TEXT,
+
+            workflow_status TEXT NOT NULL,
+            review_status TEXT NOT NULL,
+
+            notes TEXT,
+            deleted_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        // 17.6 bookkeeping_allocations
+        """
+        CREATE TABLE bookkeeping_allocations (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            category_id TEXT NOT NULL REFERENCES categories(id),
+            amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            description TEXT,
+            asset_flag INTEGER NOT NULL DEFAULT 0,
+            private_share_percent TEXT,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_alloc_transaction ON bookkeeping_allocations(transaction_id)",
+        "CREATE INDEX idx_alloc_category ON bookkeeping_allocations(category_id)",
+        // 17.7 tax_components
+        """
+        CREATE TABLE tax_components (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            kind TEXT NOT NULL,
+            rate TEXT,
+            net_minor INTEGER NOT NULL,
+            tax_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_taxcomp_transaction ON tax_components(transaction_id)",
+        // 17.8 tax_assessments
+        """
+        CREATE TABLE tax_assessments (
+            id TEXT PRIMARY KEY,
+            transaction_id TEXT NOT NULL REFERENCES transactions(id),
+
+            treatment TEXT NOT NULL,
+            tax_country TEXT,
+            customer_type TEXT NOT NULL DEFAULT 'unknown',
+            supply_type TEXT NOT NULL DEFAULT 'unknown',
+            customer_vat_id TEXT,
+
+            taxable_base_minor INTEGER,
+            vat_shown_minor INTEGER,
+            self_assessed_vat_minor INTEGER,
+            deductible_input_vat_minor INTEGER,
+            output_vat_minor INTEGER,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+
+            input_vat_date TEXT,
+            output_vat_date TEXT,
+
+            status TEXT NOT NULL,
+            reasoning TEXT,
+            superseded_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id, superseded_at)",
+        // 17.9 transaction_relations
+        """
+        CREATE TABLE transaction_relations (
+            id TEXT PRIMARY KEY,
+            from_transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            to_transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            relation_type TEXT NOT NULL,
+            amount_minor INTEGER,
+            currency TEXT,
+            note TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE(from_transaction_id, to_transaction_id, relation_type)
+        )
+        """,
+        // 17.11 transaction_documents
+        """
+        CREATE TABLE transaction_documents (
+            transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            document_id TEXT NOT NULL REFERENCES documents(id),
+            role TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            PRIMARY KEY (transaction_id, document_id)
+        )
+        """,
+        // 17.13 payments
+        """
+        CREATE TABLE payments (
+            id TEXT PRIMARY KEY,
+            account_id TEXT REFERENCES accounts(id),
+            direction TEXT NOT NULL,
+            payment_date TEXT NOT NULL,
+
+            original_currency TEXT NOT NULL,
+            original_amount_minor INTEGER NOT NULL,
+            booked_currency TEXT NOT NULL DEFAULT 'EUR',
+            booked_amount_minor INTEGER,
+            exchange_rate TEXT,
+            exchange_rate_source TEXT,
+
+            counterparty_name_raw TEXT,
+            reference TEXT,
+            payment_method TEXT,
+            source TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_payments_date ON payments(payment_date)",
+        "CREATE INDEX idx_payments_account ON payments(account_id)",
+        // 17.12 statement_lines
+        """
+        CREATE TABLE statement_lines (
+            id TEXT PRIMARY KEY,
+            account_id TEXT NOT NULL REFERENCES accounts(id),
+            document_id TEXT REFERENCES documents(id),
+            line_fingerprint TEXT NOT NULL,
+            external_id TEXT,
+
+            booking_date TEXT NOT NULL,
+            value_date TEXT,
+            amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL,
+            counterparty_raw TEXT,
+            counterparty_iban TEXT,
+            reference TEXT,
+            booking_text TEXT,
+            raw_json TEXT,
+
+            classification TEXT NOT NULL,
+            classification_subtype TEXT,
+            payment_id TEXT REFERENCES payments(id),
+            counter_account_id TEXT REFERENCES accounts(id),
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            UNIQUE(account_id, line_fingerprint)
+        )
+        """,
+        "CREATE INDEX idx_stmt_account_date ON statement_lines(account_id, booking_date)",
+        "CREATE INDEX idx_stmt_classification ON statement_lines(classification)",
+        // 17.14 payment_allocations
+        """
+        CREATE TABLE payment_allocations (
+            id TEXT PRIMARY KEY,
+            payment_id TEXT NOT NULL REFERENCES payments(id),
+            transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            allocated_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL DEFAULT 'EUR',
+            match_method TEXT NOT NULL,
+            confidence TEXT,
+            created_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_payalloc_transaction ON payment_allocations(transaction_id)",
+        "CREATE INDEX idx_payalloc_payment ON payment_allocations(payment_id)",
+        // 17.16 import_batches
+        """
+        CREATE TABLE import_batches (
+            id TEXT PRIMARY KEY,
+            started_at TEXT NOT NULL,
+            completed_at TEXT,
+            status TEXT NOT NULL,
+            file_count INTEGER NOT NULL
+        )
+        """,
+        // 17.17 import_items
+        """
+        CREATE TABLE import_items (
+            id TEXT PRIMARY KEY,
+            batch_id TEXT NOT NULL REFERENCES import_batches(id),
+            document_id TEXT REFERENCES documents(id),
+            original_filename TEXT NOT NULL,
+            status TEXT NOT NULL,
+            error_code TEXT,
+            error_message TEXT,
+            attempt_count INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_import_items_batch ON import_items(batch_id)",
+        // 17.18 model_runs
+        """
+        CREATE TABLE model_runs (
+            id TEXT PRIMARY KEY,
+            import_item_id TEXT REFERENCES import_items(id),
+            provider TEXT NOT NULL,
+            model TEXT NOT NULL,
+            operation TEXT NOT NULL,
+            prompt_version TEXT NOT NULL,
+            schema_version TEXT NOT NULL,
+            request_metadata_json TEXT,
+            response_json TEXT,
+            input_tokens INTEGER, output_tokens INTEGER,
+            started_at TEXT NOT NULL,
+            completed_at TEXT,
+            status TEXT NOT NULL
+        )
+        """,
+        // 17.15 field_provenance
+        """
+        CREATE TABLE field_provenance (
+            id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            field_name TEXT NOT NULL,
+            provenance TEXT NOT NULL,
+            is_manual_override INTEGER NOT NULL DEFAULT 0,
+            source_document_id TEXT REFERENCES documents(id),
+            model_run_id TEXT REFERENCES model_runs(id),
+            rule_id TEXT REFERENCES rules(id),
+            confidence TEXT,
+            evidence_json TEXT,
+            created_at TEXT NOT NULL,
+            superseded_at TEXT
+        )
+        """,
+        "CREATE UNIQUE INDEX idx_prov_current ON field_provenance(entity_type, entity_id, field_name) WHERE superseded_at IS NULL",
+        // 17.19 proposals
+        """
+        CREATE TABLE proposals (
+            id TEXT PRIMARY KEY,
+            import_item_id TEXT REFERENCES import_items(id),
+            idempotency_key TEXT NOT NULL UNIQUE,
+            kind TEXT NOT NULL,
+            operations_json TEXT NOT NULL,
+            summary_json TEXT NOT NULL,
+            issues_json TEXT NOT NULL,
+            policy_decision TEXT NOT NULL,
+            status TEXT NOT NULL,
+            committed_at TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_proposals_status ON proposals(status)",
+        // 17.20 validation_issues
+        """
+        CREATE TABLE validation_issues (
+            id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            severity TEXT NOT NULL,
+            code TEXT NOT NULL,
+            message_key TEXT NOT NULL,
+            params_json TEXT,
+            field_name TEXT,
+            status TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            resolved_at TEXT
+        )
+        """,
+        "CREATE INDEX idx_issues_entity ON validation_issues(entity_type, entity_id, status)",
+        // 17.22 audit_events
+        """
+        CREATE TABLE audit_events (
+            id TEXT PRIMARY KEY,
+            entity_type TEXT NOT NULL,
+            entity_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            actor TEXT NOT NULL,
+            proposal_id TEXT,
+            before_json TEXT,
+            after_json TEXT,
+            reason TEXT,
+            created_at TEXT NOT NULL
+        )
+        """,
+        "CREATE INDEX idx_audit_entity ON audit_events(entity_type, entity_id)",
+        // 17.23 settings
+        """
+        CREATE TABLE settings (
+            key TEXT PRIMARY KEY,
+            value_json TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        )
+        """,
+        // 17.24 locked_periods
+        """
+        CREATE TABLE locked_periods (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            scope TEXT NOT NULL,
+            period_start TEXT NOT NULL,
+            period_end TEXT NOT NULL,
+            locked_at TEXT NOT NULL,
+            note TEXT,
+            UNIQUE(business_profile_id, scope, period_start, period_end)
+        )
+        """,
+        // 17.25 derived status view
+        """
+        CREATE VIEW v_transaction_status AS
+        SELECT t.id,
+          CASE
+            WHEN t.booked_gross_minor IS NULL THEN 'unknown'
+            WHEN COALESCE(pa.allocated, 0) = 0 THEN 'unpaid'
+            WHEN pa.allocated < t.booked_gross_minor THEN 'partiallyPaid'
+            ELSE 'paid' END AS payment_status,
+          CASE
+            WHEN td.doc_count IS NULL AND t.transaction_type IN ('paymentOnly') THEN 'missing'
+            WHEN td.doc_count IS NULL THEN 'missing'
+            ELSE 'complete' END AS document_status,
+          COALESCE(ta.status, 'unknown') AS tax_status
+        FROM transactions t
+        LEFT JOIN (SELECT transaction_id, SUM(allocated_minor) AS allocated FROM payment_allocations GROUP BY transaction_id) pa ON pa.transaction_id = t.id
+        LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
+        LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
+        WHERE t.deleted_at IS NULL
+        """
+    ]
+}
