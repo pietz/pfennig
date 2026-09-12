@@ -43,7 +43,7 @@ struct FixtureReplayTests {
         let currency = CurrencyCode(detail.transaction.bookedCurrency)
         let gross = try #require(expected.invoice.grossAmount)
         #expect(
-            detail.transaction.bookedGrossMinor == (try Money.fromDecimalString(gross, currency: currency).minorUnits),
+            try detail.transaction.bookedGrossMinor == (Money.fromDecimalString(gross, currency: currency).minorUnits),
             "\(fixture.name): Bruttobetrag"
         )
         // The recorded extraction is the pipeline's input, so the invoice
@@ -66,7 +66,7 @@ struct FixtureReplayTests {
     }
 
     @Test("Ein zweiter Lauf ersetzt den offenen Vorschlag, statt ihn zu doppeln")
-    func idempotency() async throws {
+    func idempotency() throws {
         let recorded = Support.fixtures().filter(\.hasRecording)
         let fixture = try #require(recorded.first)
         let workspace = try Support.workspace()

@@ -83,10 +83,12 @@ public struct CommitService: Sendable {
 
     /// Material fields the user changed in the review inspector. Used to mark
     /// them `manual` so no later AI run overwrites them (spec 8.3, 17.15).
-    static func changedFields(from original: TransactionDraft, to edited: TransactionDraft) -> Set<String> {
+    public static func changedFields(from original: TransactionDraft, to edited: TransactionDraft) -> Set<String> {
         var fields: Set<String> = []
         func compare<Value: Equatable>(_ name: String, _ lhs: Value, _ rhs: Value) {
-            if lhs != rhs { fields.insert(name) }
+            if lhs != rhs {
+                fields.insert(name)
+            }
         }
         compare("counterpartyId", original.counterpartyName, edited.counterpartyName)
         compare("direction", original.direction, edited.direction)

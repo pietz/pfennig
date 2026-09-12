@@ -32,7 +32,7 @@ public struct ImportRepository: Sendable {
                 arguments: [
                     failed > 0 ? ImportBatchStatus.completedWithErrors.rawValue : ImportBatchStatus.completed.rawValue,
                     Timestamp.string(),
-                    id,
+                    id
                 ]
             )
         }
@@ -71,7 +71,7 @@ public struct ImportRepository: Sendable {
                     "errorMessage": errorMessage,
                     "increment": incrementAttempt ? 1 : 0,
                     "now": Timestamp.string(),
-                    "id": id,
+                    "id": id
                 ]
             )
         }
@@ -144,7 +144,7 @@ public struct ImportRepository: Sendable {
                     "response": responseJSON,
                     "inputTokens": inputTokens,
                     "outputTokens": outputTokens,
-                    "id": id,
+                    "id": id
                 ]
             )
         }
@@ -242,7 +242,7 @@ public struct ImportRepository: Sendable {
                     arguments: [
                         (status == .committed ? ImportItemStatus.committed : ImportItemStatus.skipped).rawValue,
                         now,
-                        item,
+                        item
                     ]
                 )
             }
@@ -250,6 +250,6 @@ public struct ImportRepository: Sendable {
     }
 
     static func json(_ value: some Encodable) throws -> String {
-        String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
+        try String(decoding: JSONEncoder().encode(value), as: UTF8.self)
     }
 }

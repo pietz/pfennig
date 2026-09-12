@@ -43,12 +43,15 @@ struct RootView: View {
             case .ready:
                 NavigationSplitView {
                     List(SidebarItem.allCases, selection: $selection) { item in
-                        Label(item.title, systemImage: item.symbol).tag(item)
+                        Label(item.title, systemImage: item.symbol)
+                            .badge(item == .review ? model.pendingProposalCount : 0)
+                            .tag(item)
                     }
                     .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
                 } detail: {
                     detail
                 }
+                .task { await model.observePendingProposals() }
             }
         }
         .alert("Es ist ein Fehler aufgetreten", isPresented: .constant(model.errorMessage != nil)) {
@@ -74,11 +77,9 @@ struct RootView: View {
                 description: "Kontoauszüge importieren und Zahlungen zuordnen. Kommt mit Meilenstein M6."
             )
         case .review:
-            placeholder(
-                "Prüfen",
-                symbol: "checkmark.seal",
-                description: "Vorschläge der KI prüfen und bestätigen. Kommt mit Meilenstein M4."
-            )
+            if let database = model.database {
+                ReviewView(database: database)
+            }
         case .analysis:
             placeholder(
                 "Auswertung",

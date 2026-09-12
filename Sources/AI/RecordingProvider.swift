@@ -48,8 +48,8 @@ public struct RecordingProvider: DocumentIntelligenceProvider {
             throw AIError.invalidResponse("Die Aufzeichnung war kein UTF-8.")
         }
         do {
-            return ExtractionOutcome(
-                extraction: try JSONDecoder().decode(DocumentExtraction.self, from: payload),
+            return try ExtractionOutcome(
+                extraction: JSONDecoder().decode(DocumentExtraction.self, from: payload),
                 model: json["model"] as? String ?? "recorded",
                 usage: OpenAIResponsesClient.usage(of: json),
                 rawResponseJSON: String(decoding: data, as: UTF8.self)

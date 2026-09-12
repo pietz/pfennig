@@ -34,7 +34,7 @@ public enum ExtractionNormalizer {
         "invoice.grossAmount": "grossAmount",
         "counterparty.name": "counterpartyId",
         "documentType": "transactionType",
-        "direction": "direction",
+        "direction": "direction"
     ]
 
     public static func normalize(
@@ -61,11 +61,11 @@ public enum ExtractionNormalizer {
         }
 
         let components = try extraction.taxComponents.map { component in
-            TaxComponentDraft(
+            try TaxComponentDraft(
                 kind: component.kind,
                 rate: component.rate?.trimmed.nilIfEmpty,
-                netMinor: try minor(component.netAmount, currency) ?? 0,
-                taxMinor: try minor(component.taxAmount, currency) ?? 0
+                netMinor: minor(component.netAmount, currency) ?? 0,
+                taxMinor: minor(component.taxAmount, currency) ?? 0
             )
         }
 
@@ -172,7 +172,9 @@ public enum ExtractionNormalizer {
         }
         var drafts = order.map { AllocationDraft(categoryId: $0, amountMinor: amounts[$0] ?? 0) }
         let difference = total - drafts.reduce(0) { $0 + $1.amountMinor }
-        if difference != 0, let index = drafts.indices.max(by: { abs(drafts[$0].amountMinor) < abs(drafts[$1].amountMinor) }) {
+        if difference != 0,
+           let index = drafts.indices.max(by: { abs(drafts[$0].amountMinor) < abs(drafts[$1].amountMinor) })
+        {
             drafts[index].amountMinor += difference
         }
         return drafts

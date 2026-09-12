@@ -40,6 +40,10 @@ public enum AllocationValidator {
     public static func validateAssetCandidates(allocations: [AllocationSnapshot]) -> [ValidationIssue] {
         allocations
             .filter(\.assetFlag)
-            .map { ValidationIssue(code: .assetCandidate, fieldName: $0.categoryID, params: ["amount": $0.amount.decimalString]) }
+            .map { ValidationIssue(
+                code: .assetCandidate,
+                fieldName: $0.categoryID,
+                params: ["amount": $0.amount.decimalString]
+            ) }
     }
 }

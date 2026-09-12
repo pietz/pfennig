@@ -7,7 +7,7 @@ import ImportPipeline
 
 /// Repository paths and the in-memory archive the import tests run against.
 enum Support {
-    static let repositoryRoot: URL = URL(filePath: #filePath)
+    static let repositoryRoot: URL = .init(filePath: #filePath)
         .deletingLastPathComponent() // ImportTests
         .deletingLastPathComponent() // Tests
         .deletingLastPathComponent() // repo
@@ -23,7 +23,7 @@ enum Support {
             includingPropertiesForKeys: nil
         )) ?? []
         return contents
-            .filter { $0.hasDirectoryPath }
+            .filter(\.hasDirectoryPath)
             .sorted { $0.lastPathComponent < $1.lastPathComponent }
             .compactMap(Fixture.init)
     }
@@ -81,14 +81,14 @@ enum Support {
     }
 
     static func context(_ workspace: Workspace) throws -> ExtractionContext {
-        ExtractionContext(
+        try ExtractionContext(
             business: .init(
                 name: workspace.profile.name,
                 legalName: workspace.profile.legalName,
                 countryCode: workspace.profile.countryCode,
                 vatId: workspace.profile.vatId
             ),
-            categories: try workspace.database.categories().map { .init(id: $0.id, nameDE: $0.nameDe) }
+            categories: workspace.database.categories().map { .init(id: $0.id, nameDE: $0.nameDe) }
         )
     }
 }

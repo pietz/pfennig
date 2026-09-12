@@ -22,7 +22,7 @@ public enum ExtractionSchema {
                 "vatId": nullable("string"),
                 "street": nullable("string"),
                 "postalCode": nullable("string"),
-                "city": nullable("string"),
+                "city": nullable("string")
             ]),
             "invoice": object([
                 "invoiceNumber": nullable("string"),
@@ -34,39 +34,39 @@ public enum ExtractionSchema {
                 "netAmount": nullable("string"),
                 "taxAmount": nullable("string"),
                 "grossAmount": nullable("string"),
-                "statedEurEquivalent": nullable("string"),
+                "statedEurEquivalent": nullable("string")
             ]),
             "taxComponents": array(object([
                 "rate": nullable("string"),
                 "netAmount": nullable("string"),
                 "taxAmount": nullable("string"),
-                "kind": enumeration(TaxComponentKind.allCases.map(\.rawValue)),
+                "kind": enumeration(TaxComponentKind.allCases.map(\.rawValue))
             ])),
             "taxTreatmentHint": object([
                 "treatment": enumeration(TaxTreatment.allCases.map(\.rawValue)),
                 "confidence": nullable("number"),
-                "reasoning": nullable("string"),
+                "reasoning": nullable("string")
             ]),
             "lineItems": array(object([
                 "description": nullable("string"),
                 "netAmount": nullable("string"),
                 "categoryHint": nullableEnumeration(categoryIDs),
-                "assetCandidate": ["type": "boolean"],
+                "assetCandidate": ["type": "boolean"]
             ])),
             "paymentInfo": object([
                 "paymentMethodHint": nullableEnumeration(PaymentMethod.allCases.map(\.rawValue)),
                 "paidIndicator": nullableEnumeration(DocumentExtraction.PaidIndicator.allCases.map(\.rawValue)),
                 "paymentDate": nullable("string"),
                 "iban": nullable("string"),
-                "reference": nullable("string"),
+                "reference": nullable("string")
             ]),
             "missingFields": array(["type": "string"]),
             "warnings": array(["type": "string"]),
             "evidence": array(object([
                 "field": ["type": "string"],
                 "page": nullable("integer"),
-                "snippet": nullable("string"),
-            ])),
+                "snippet": nullable("string")
+            ]))
         ])
     }
 
@@ -76,7 +76,7 @@ public enum ExtractionSchema {
             "type": "json_schema",
             "name": name,
             "strict": true,
-            "schema": schema(categoryIDs: categoryIDs),
+            "schema": schema(categoryIDs: categoryIDs)
         ]
     }
 
@@ -88,7 +88,7 @@ public enum ExtractionSchema {
             "type": "object",
             "properties": properties,
             "required": properties.keys.sorted(),
-            "additionalProperties": false,
+            "additionalProperties": false
         ]
     }
 

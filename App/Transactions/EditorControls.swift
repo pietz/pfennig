@@ -104,17 +104,20 @@ struct OptionalDateField: View {
 }
 
 /// Where a value came from (spec 8.3), shown next to the field it belongs to.
+/// `help` carries the model's evidence snippet when there is one.
 struct ProvenanceBadge: View {
-    let provenance: FieldProvenance?
+    let provenance: Provenance?
+    var help: String?
 
     var body: some View {
         if let provenance {
-            Text(label(provenance.provenance))
+            Text(label(provenance))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 1)
                 .background(.quaternary, in: Capsule())
+                .help(help ?? "Herkunft: \(label(provenance))")
         }
     }
 
@@ -254,6 +257,23 @@ extension TaxAssessmentStatus {
         case .proposed: "Vorgeschlagen"
         case .confirmed: "Bestätigt"
         case .manualOverride: "Manuell gesetzt"
+        }
+    }
+}
+
+extension TaxTreatment {
+    var text: String {
+        switch self {
+        case .domesticVAT: "Umsatzsteuer (DE)"
+        case .reverseCharge: "Reverse Charge"
+        case .intraCommunityAcquisition: "Innergem. Erwerb"
+        case .intraCommunitySupply: "Innergem. Lieferung"
+        case .export: "Ausfuhr"
+        case .importVAT: "Einfuhrumsatzsteuer"
+        case .nonTaxable: "Nicht steuerbar"
+        case .exempt: "Steuerfrei"
+        case .smallBusiness: "Kleinunternehmer"
+        case .unknown: "Unbekannt"
         }
     }
 }

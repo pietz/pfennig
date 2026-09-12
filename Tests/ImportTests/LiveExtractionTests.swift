@@ -13,7 +13,9 @@ struct LiveExtractionTests {
     /// Fixtures recorded by default; `ZIFFER_LIVE_FIXTURES=all` records every one.
     static var selected: [Support.Fixture] {
         let wanted = ProcessInfo.processInfo.environment["ZIFFER_LIVE_FIXTURES"] ?? "01,03,06"
-        if wanted == "all" { return Support.fixtures() }
+        if wanted == "all" {
+            return Support.fixtures()
+        }
         let prefixes = wanted.split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }
         return Support.fixtures().filter { fixture in prefixes.contains { fixture.name.hasPrefix($0) } }
     }
@@ -55,7 +57,9 @@ struct LiveExtractionTests {
     static func differences(expected: DocumentExtraction, actual: DocumentExtraction) -> [String] {
         var diffs: [String] = []
         func check(_ name: String, _ lhs: String?, _ rhs: String?) {
-            if lhs != rhs { diffs.append("\(name): erwartet \(lhs ?? "null"), erhalten \(rhs ?? "null")") }
+            if lhs != rhs {
+                diffs.append("\(name): erwartet \(lhs ?? "null"), erhalten \(rhs ?? "null")")
+            }
         }
         check("documentType", expected.documentType.rawValue, actual.documentType.rawValue)
         check("direction", expected.direction.rawValue, actual.direction.rawValue)
@@ -72,7 +76,11 @@ struct LiveExtractionTests {
         check("taxAmount", expected.invoice.taxAmount, actual.invoice.taxAmount)
         check("grossAmount", expected.invoice.grossAmount, actual.invoice.grossAmount)
         check("statedEurEquivalent", expected.invoice.statedEurEquivalent, actual.invoice.statedEurEquivalent)
-        check("taxTreatmentHint", expected.taxTreatmentHint.treatment.rawValue, actual.taxTreatmentHint.treatment.rawValue)
+        check(
+            "taxTreatmentHint",
+            expected.taxTreatmentHint.treatment.rawValue,
+            actual.taxTreatmentHint.treatment.rawValue
+        )
         check("taxComponents", "\(expected.taxComponents.count)", "\(actual.taxComponents.count)")
         check(
             "categoryHints",

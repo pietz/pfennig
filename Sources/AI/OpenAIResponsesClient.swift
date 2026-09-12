@@ -40,8 +40,8 @@ public struct OpenAIResponsesClient: DocumentIntelligenceProvider {
             throw AIError.invalidResponse("Die Ausgabe war kein UTF-8.")
         }
         do {
-            return ExtractionOutcome(
-                extraction: try JSONDecoder().decode(DocumentExtraction.self, from: data),
+            return try ExtractionOutcome(
+                extraction: JSONDecoder().decode(DocumentExtraction.self, from: data),
                 model: model.rawValue,
                 usage: Self.usage(of: response.json),
                 rawResponseJSON: String(decoding: response.data, as: UTF8.self),
@@ -61,18 +61,18 @@ public struct OpenAIResponsesClient: DocumentIntelligenceProvider {
             content.append([
                 "type": "input_file",
                 "filename": document.filename,
-                "file_data": document.dataURL,
+                "file_data": document.dataURL
             ])
         case .image:
             content.append([
                 "type": "input_image",
                 "image_url": document.dataURL,
-                "detail": "high",
+                "detail": "high"
             ])
         }
         content.append([
             "type": "input_text",
-            "text": "Extract the bookkeeping facts of this document as schema-valid JSON.",
+            "text": "Extract the bookkeeping facts of this document as schema-valid JSON."
         ])
         return [
             "model": model.rawValue,
@@ -81,8 +81,8 @@ public struct OpenAIResponsesClient: DocumentIntelligenceProvider {
             "text": ["format": ExtractionSchema.textFormat(categoryIDs: context.categoryIDs)],
             "input": [
                 ["role": "system", "content": ExtractionPrompt.render(context)],
-                ["role": "user", "content": content],
-            ],
+                ["role": "user", "content": content]
+            ]
         ]
     }
 
@@ -98,7 +98,7 @@ public struct OpenAIResponsesClient: DocumentIntelligenceProvider {
             "mimeType": document.mimeType,
             "byteSize": document.data.count,
             "pageCount": document.pageCount ?? 0,
-            "categoryCount": context.categories.count,
+            "categoryCount": context.categories.count
         ]
         guard let data = try? JSONSerialization.data(withJSONObject: metadata, options: [.sortedKeys]) else {
             return nil
@@ -168,7 +168,7 @@ public struct OpenAIResponsesClient: DocumentIntelligenceProvider {
 
     /// Maps an HTTP failure to a typed error (spec 33, docs/openai-responses-api.md §6).
     public static func error(status: Int, headers: [AnyHashable: Any], body: Data) -> AIError {
-        let message = self.message(in: body)
+        let message = message(in: body)
         switch status {
         case 401: return .unauthorized
         case 403: return .forbidden

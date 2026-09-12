@@ -170,7 +170,10 @@ public actor ImportCoordinator {
             try repository.updateItem(item.id, status: .proposed)
         } catch {
             let aiError = error as? AIError
-            logger.error("Import failed for item \(item.id, privacy: .public): \(aiError?.code ?? "UNKNOWN", privacy: .public)")
+            logger
+                .error(
+                    "Import failed for item \(item.id, privacy: .public): \(aiError?.code ?? "UNKNOWN", privacy: .public)"
+                )
             try? repository.updateItem(
                 item.id,
                 status: .failed,
@@ -184,7 +187,7 @@ public actor ImportCoordinator {
 
     private func extractionContext() throws -> ExtractionContext {
         let profile = try requireProfile()
-        return ExtractionContext(
+        return try ExtractionContext(
             business: ExtractionContext.Business(
                 name: profile.name,
                 legalName: profile.legalName,
@@ -193,7 +196,7 @@ public actor ImportCoordinator {
                 vatStatus: profile.vatStatus,
                 accountingMethod: profile.vatAccountingMethod
             ),
-            categories: try database.categories().map {
+            categories: database.categories().map {
                 ExtractionContext.CategoryOption(id: $0.id, nameDE: $0.nameDe)
             }
         )

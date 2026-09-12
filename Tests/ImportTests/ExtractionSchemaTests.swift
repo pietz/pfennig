@@ -38,7 +38,7 @@ struct ExtractionSchemaTests {
     }
 
     @Test("Jedes Objekt ist geschlossen und verlangt alle Felder")
-    func strict() throws {
+    func strict() {
         #expect(violations(schema()).isEmpty)
     }
 
@@ -49,7 +49,7 @@ struct ExtractionSchemaTests {
     }
 
     @Test("Die Kategorien kommen aus der übergebenen Liste")
-    func categoryEnum() throws {
+    func categoryEnum() {
         let lineItems = schema()["properties"] as? [String: Any]
         let items = (lineItems?["lineItems"] as? [String: Any])?["items"] as? [String: Any]
         let hint = (items?["properties"] as? [String: Any])?["categoryHint"] as? [String: Any]
@@ -60,7 +60,7 @@ struct ExtractionSchemaTests {
     }
 
     @Test("Alle Domain-Enums sind vollständig abgebildet")
-    func enums() throws {
+    func enums() {
         let properties = schema()["properties"] as? [String: Any]
         let documentType = properties?["documentType"] as? [String: Any]
         #expect(documentType?["enum"] as? [String] == DocumentType.allCases.map(\.rawValue))
@@ -70,7 +70,7 @@ struct ExtractionSchemaTests {
     }
 
     @Test("Der Prompt trägt Betrieb, Kategorien und Behandlungen")
-    func prompt() throws {
+    func prompt() {
         let rendered = ExtractionPrompt.render(
             ExtractionContext(
                 business: .init(name: "Mara Beispiel", vatId: "DE999999999"),

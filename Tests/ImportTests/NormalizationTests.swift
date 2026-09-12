@@ -21,7 +21,7 @@ struct NormalizationTests {
             extraction,
             document: nil,
             profile: workspace.profile,
-            categoryIDs: Set(try workspace.database.categories().map(\.id))
+            categoryIDs: Set(workspace.database.categories().map(\.id))
         )
     }
 
@@ -73,7 +73,7 @@ struct NormalizationTests {
     @Test("Die Aufteilung summiert exakt auf den Nettobetrag")
     func allocationsSumToNet() throws {
         for fixture in Support.fixtures() {
-            let result = try normalize(try fixture.expected())
+            let result = try normalize(fixture.expected())
             let total = result.draft.allocations.reduce(0) { $0 + $1.amountMinor }
             let expected = result.draft.netMinor == 0 ? (result.draft.grossMinor ?? 0) : (result.draft.netMinor ?? 0)
             #expect(total == expected, "\(fixture.name)")
@@ -85,7 +85,7 @@ struct NormalizationTests {
         let allocations = ExtractionNormalizer.allocations(
             for: [
                 .init(description: "A", netAmount: "10.00", categoryHint: "erfunden", assetCandidate: false),
-                .init(description: "B", netAmount: "5.00", categoryHint: "telecom", assetCandidate: false),
+                .init(description: "B", netAmount: "5.00", categoryHint: "telecom", assetCandidate: false)
             ],
             total: 1500,
             currency: .eur,

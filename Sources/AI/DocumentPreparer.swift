@@ -105,7 +105,11 @@ public enum DocumentPreparer {
         ) else {
             throw AIError.unsupportedDocument("\(filename) konnte nicht in JPEG umgewandelt werden.")
         }
-        CGImageDestinationAddImage(destination, image, [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary)
+        CGImageDestinationAddImage(
+            destination,
+            image,
+            [kCGImageDestinationLossyCompressionQuality: 0.9] as CFDictionary
+        )
         guard CGImageDestinationFinalize(destination) else {
             throw AIError.unsupportedDocument("\(filename) konnte nicht in JPEG umgewandelt werden.")
         }

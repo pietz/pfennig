@@ -52,7 +52,8 @@ public enum MoneyValidator {
         invoiceNet: Money,
         tolerance: Money = defaultTolerance
     ) -> ValidationIssue? {
-        guard let dev = deviation(actual: componentsNetSum, expected: invoiceNet, tolerance: tolerance) else { return nil }
+        guard let dev = deviation(actual: componentsNetSum, expected: invoiceNet, tolerance: tolerance)
+        else { return nil }
         return ValidationIssue(
             code: .taxComponentNetMismatch,
             fieldName: "taxComponents.net",
@@ -67,7 +68,8 @@ public enum MoneyValidator {
         invoiceTax: Money,
         tolerance: Money = defaultTolerance
     ) -> ValidationIssue? {
-        guard let dev = deviation(actual: componentsTaxSum, expected: invoiceTax, tolerance: tolerance) else { return nil }
+        guard let dev = deviation(actual: componentsTaxSum, expected: invoiceTax, tolerance: tolerance)
+        else { return nil }
         return ValidationIssue(
             code: .taxComponentTaxMismatch,
             fieldName: "taxComponents.tax",
@@ -77,7 +79,12 @@ public enum MoneyValidator {
     }
 
     /// Spec 14.1: `net + tax ≠ gross` beyond tolerance.
-    public static func validateGross(net: Money, tax: Money, gross: Money, tolerance: Money = defaultTolerance) -> ValidationIssue? {
+    public static func validateGross(
+        net: Money,
+        tax: Money,
+        gross: Money,
+        tolerance: Money = defaultTolerance
+    ) -> ValidationIssue? {
         guard let sum = try? net + tax else { return nil }
         guard let dev = deviation(actual: sum, expected: gross, tolerance: tolerance) else { return nil }
         return ValidationIssue(
@@ -90,8 +97,12 @@ public enum MoneyValidator {
 
     /// Spec 14.1: "Payment allocation total exceeds payment amount" - exact
     /// comparison, no tolerance.
-    public static func validatePaymentAllocationExceeds(paymentBookedAmount: Money, totalAllocated: Money) -> ValidationIssue? {
-        guard totalAllocated.currency == paymentBookedAmount.currency, totalAllocated > paymentBookedAmount else { return nil }
+    public static func validatePaymentAllocationExceeds(
+        paymentBookedAmount: Money,
+        totalAllocated: Money
+    ) -> ValidationIssue? {
+        guard totalAllocated.currency == paymentBookedAmount.currency,
+              totalAllocated > paymentBookedAmount else { return nil }
         guard let excess = try? totalAllocated - paymentBookedAmount else { return nil }
         return ValidationIssue(
             code: .paymentAllocationExceeds,
@@ -102,9 +113,17 @@ public enum MoneyValidator {
 
     /// Spec 14.2: "Payment amount differs from invoice (fee/FX) - propose
     /// difference as `fee` component."
-    public static func validatePaymentAmountDiffers(gross: Money, totalPaid: Money, tolerance: Money = defaultTolerance) -> ValidationIssue? {
+    public static func validatePaymentAmountDiffers(
+        gross: Money,
+        totalPaid: Money,
+        tolerance: Money = defaultTolerance
+    ) -> ValidationIssue? {
         guard let dev = deviation(actual: totalPaid, expected: gross, tolerance: tolerance) else { return nil }
-        return ValidationIssue(code: .paymentAmountDiffers, fieldName: "payments", params: ["deviation": dev.decimalString])
+        return ValidationIssue(
+            code: .paymentAmountDiffers,
+            fieldName: "payments",
+            params: ["deviation": dev.decimalString]
+        )
     }
 
     /// Spec 5.7 / 14.2: "Exchange rate deviates > 5 % from bank actual."

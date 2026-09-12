@@ -1,3 +1,4 @@
+import AI
 import Database
 import DocumentStore
 import Domain
@@ -21,6 +22,11 @@ final class AppModel {
     private(set) var profile: BusinessProfile?
     private(set) var categories: [Database.Category] = []
     var errorMessage: String?
+
+    private(set) var coordinator: ImportCoordinator?
+    /// Badge count of the "Prüfen" sidebar item (spec 7.2).
+    private(set) var pendingProposalCount = 0
+    var hasAPIKey = APIKeyStore.hasKey
 
     private let locator = ArchiveLocator()
 
@@ -63,6 +69,9 @@ final class AppModel {
             self.database = database
             self.profile = profile
             categories = (try? database.categories()) ?? []
+            coordinator = ImportCoordinator(database: database, archive: archive) {
+                try Self.makeProvider(database)
+            }
             stage = profile == nil ? .profile : .ready
         }
     }
@@ -120,6 +129,59 @@ final class AppModel {
 
     func delete(_ transactionID: String) {
         run { try repository?.delete(transactionID) }
+    }
+
+    // MARK: - Import (spec 39 M4)
+
+    /// The OpenAI client, built fresh per call so a key or model change in
+    /// Settings takes effect immediately. The key never leaves the Keychain
+    /// except into this request (spec 10.5).
+    nonisolated static func makeProvider(_ database: AppDatabase) throws -> any DocumentIntelligenceProvider {
+        guard let key = APIKeyStore.load() else { throw AIError.missingAPIKey }
+        return OpenAIResponsesClient(
+            apiKey: key,
+            model: (try? database.setting(OpenAIModel.self, forKey: AIConfiguration.modelSettingKey)) ?? .default,
+            effort: (try? database.setting(ReasoningEffort.self, forKey: AIConfiguration.reasoningEffortSettingKey))
+                ?? .default
+        )
+    }
+
+    /// Archives and analyses dropped or chosen files in the background; the
+    /// UI follows along through the database (spec 7.1, 12).
+    func importFiles(_ urls: [URL]) {
+        hasAPIKey = APIKeyStore.hasKey
+        guard let coordinator else { return }
+        Task.detached { await coordinator.import(urls) }
+    }
+
+    /// Keeps the sidebar badge in step with the review queue.
+    func observePendingProposals() async {
+        guard let database else { return }
+        do {
+            let observation = ImportRepository.pendingProposalsObservation()
+            for try await proposals in observation.values(in: database.reader) {
+                pendingProposalCount = proposals.count
+            }
+        } catch {
+            pendingProposalCount = 0
+        }
+    }
+
+    func retryImport(itemID: String) {
+        guard let coordinator else { return }
+        Task.detached { await coordinator.retry(itemID: itemID) }
+    }
+
+    /// Confirms a proposal, optionally with the fields the user edited in the
+    /// inspector (spec 26).
+    func acceptProposal(_ id: String, draft: TransactionDraft?) {
+        guard let database else { return }
+        run { _ = try CommitService(database).accept(proposalID: id, edited: draft) }
+    }
+
+    func rejectProposal(_ id: String) {
+        guard let database else { return }
+        run { try CommitService(database).reject(proposalID: id) }
     }
 
     private func run(_ work: () throws -> Void) {

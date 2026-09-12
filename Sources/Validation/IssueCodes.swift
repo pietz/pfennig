@@ -5,6 +5,7 @@ import Domain
 /// soft codes (14.2) allow save but require attention by autonomy level.
 public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     // MARK: Hard (14.1)
+
     case currencyInvalid = "CURRENCY_INVALID"
     case dateImpossible = "DATE_IMPOSSIBLE"
     case servicePeriodInverted = "SERVICE_PERIOD_INVERTED"
@@ -20,6 +21,7 @@ public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     case lockedPeriod = "LOCKED_PERIOD"
 
     // MARK: Soft (14.2)
+
     case taxRateUnusual = "TAX_RATE_UNUSUAL"
     case treatmentCountryMismatch = "TREATMENT_COUNTRY_MISMATCH"
     case customerVATIdMissing = "CUSTOMER_VAT_ID_MISSING"
@@ -41,7 +43,7 @@ public extension IssueCode {
         .taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch,
         .allocationSumMismatch, .paymentAllocationExceeds, .linkedEntityMissing,
         .unsupportedStateTransition, .duplicateDocumentIdentity,
-        .duplicateStatementLineFingerprint, .lockedPeriod,
+        .duplicateStatementLineFingerprint, .lockedPeriod
     ]
 
     /// True for a hard (blocking) code; false for a soft one.
@@ -53,7 +55,9 @@ public extension IssueCode {
     /// except `highAmountAgentOnly`, which is informational (spec 14.3:
     /// "Neutral = incomplete but acceptable").
     var severity: IssueSeverity {
-        if isHard { return .error }
+        if isHard {
+            return .error
+        }
         return self == .highAmountAgentOnly ? .info : .warning
     }
 

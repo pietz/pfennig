@@ -18,7 +18,10 @@ struct ClientTests {
             OpenAIResponsesClient.error(status: 429, headers: ["Retry-After": "12"], body: Data())
                 == .rateLimited(retryAfter: 12)
         )
-        #expect(OpenAIResponsesClient.error(status: 500, headers: [:], body: Data()) == .server(status: 500, message: nil))
+        #expect(OpenAIResponsesClient.error(status: 500, headers: [:], body: Data()) == .server(
+            status: 500,
+            message: nil
+        ))
         if case .badRequest = OpenAIResponsesClient.error(status: 400, headers: [:], body: body("bad schema")) {
         } else {
             Issue.record("400 muss badRequest ergeben")
@@ -53,8 +56,8 @@ struct ClientTests {
             "status": "completed",
             "output": [
                 ["type": "reasoning", "summary": []],
-                ["type": "message", "content": [["type": "output_text", "text": "{\"a\":1}"]]],
-            ],
+                ["type": "message", "content": [["type": "output_text", "text": "{\"a\":1}"]]]
+            ]
         ]
         #expect(try OpenAIResponsesClient.outputText(of: json) == "{\"a\":1}")
     }
@@ -63,13 +66,13 @@ struct ClientTests {
     func refusalAndIncomplete() {
         let refusal: [String: Any] = [
             "status": "completed",
-            "output": [["type": "message", "content": [["type": "refusal", "refusal": "nein"]]]],
+            "output": [["type": "message", "content": [["type": "refusal", "refusal": "nein"]]]]
         ]
         #expect(throws: AIError.refused("nein")) { try OpenAIResponsesClient.outputText(of: refusal) }
 
         let incomplete: [String: Any] = [
             "status": "incomplete",
-            "incomplete_details": ["reason": "max_output_tokens"],
+            "incomplete_details": ["reason": "max_output_tokens"]
         ]
         #expect(throws: AIError.incomplete(reason: "max_output_tokens")) {
             try OpenAIResponsesClient.outputText(of: incomplete)
@@ -79,9 +82,13 @@ struct ClientTests {
     @Test("Token-Verbrauch wird gelesen")
     func usage() {
         let json: [String: Any] = [
-            "usage": ["input_tokens": 10, "output_tokens": 20, "output_tokens_details": ["reasoning_tokens": 5]],
+            "usage": ["input_tokens": 10, "output_tokens": 20, "output_tokens_details": ["reasoning_tokens": 5]]
         ]
-        #expect(OpenAIResponsesClient.usage(of: json) == TokenUsage(inputTokens: 10, outputTokens: 20, reasoningTokens: 5))
+        #expect(OpenAIResponsesClient.usage(of: json) == TokenUsage(
+            inputTokens: 10,
+            outputTokens: 20,
+            reasoningTokens: 5
+        ))
     }
 
     @Test("Der Medientyp kommt aus dem Inhalt, nicht aus der Endung")
