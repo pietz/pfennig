@@ -124,6 +124,9 @@ struct TransactionInspector: View {
                 newDraft = value
             }
         }
+        .onChange(of: hasVisibleIssues, initial: true) { _, value in
+            issuesExpanded = value
+        }
         .onChange(of: hasChanges, initial: true) { _, value in
             hasUnsavedChanges = value
         }
@@ -226,40 +229,40 @@ struct TransactionInspector: View {
 
     private var primaryFieldsSection: some View {
         Section("Grunddaten") {
-            field("counterpartyId") {
+            field("counterpartyId", label: "Firma") {
                 TextField("Firma", text: $draft.counterpartyName, prompt: Text("Firma oder Person"))
             }
-            field("direction") {
+            field("direction", label: "Richtung") {
                 Picker("Richtung", selection: $draft.direction) {
                     Text("Ausgabe").tag(Direction.expense)
                     Text("Einnahme").tag(Direction.income)
                 }
             }
-            field("transactionType") {
+            field("transactionType", label: "Art") {
                 Picker("Art", selection: $draft.transactionType) {
                     ForEach(TransactionType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
             }
-            field("title") {
+            field("title", label: "Titel") {
                 TextField("Titel", text: $draft.title.orEmpty, prompt: Text("Kurzbeschreibung"))
             }
-            field("invoiceNumber") {
+            field("invoiceNumber", label: "Rechnungsnummer") {
                 TextField("Rechnungsnummer", text: $draft.invoiceNumber.orEmpty, prompt: Text("optional"))
             }
-            field("invoiceDate") {
-                OptionalDateField(label: "Rechnungsdatum", date: $draft.invoiceDate)
+            field("invoiceDate", label: "Rechnungsdatum") {
+                OptionalDateField(label: "Rechnungsdatum", date: $draft.invoiceDate, showsLabel: false)
             }
         }
     }
 
     private var amountsSection: some View {
         Section("Beträge") {
-            field("currency") {
+            field("currency", label: "Währung") {
                 Picker("Währung", selection: $draft.currency) {
                     ForEach(["EUR", "USD", "GBP", "CHF"], id: \.self) { Text($0).tag(CurrencyCode($0)) }
                 }
             }
-            field("netAmount") {
+            field("netAmount", label: "Netto") {
                 MoneyField(
                     label: "Netto",
                     minor: $draft.netMinor,
@@ -267,7 +270,7 @@ struct TransactionInspector: View {
                     onValidityChange: { setMoneyFieldValidity("netAmount", isValid: $0) }
                 )
             }
-            field("taxAmount") {
+            field("taxAmount", label: "Steuer") {
                 MoneyField(
                     label: "Steuer",
                     minor: $draft.taxMinor,
@@ -275,7 +278,7 @@ struct TransactionInspector: View {
                     onValidityChange: { setMoneyFieldValidity("taxAmount", isValid: $0) }
                 )
             }
-            field("grossAmount") {
+            field("grossAmount", label: "Brutto") {
                 MoneyField(
                     label: "Brutto",
                     minor: $draft.grossMinor,
@@ -287,31 +290,31 @@ struct TransactionInspector: View {
     }
 
     private var metadataDisclosure: some View {
-        DisclosureGroup("Weitere Angaben", isExpanded: $metadataExpanded) {
-            field("counterpartyCountryCode") {
+        Section("Weitere Angaben", isExpanded: $metadataExpanded) {
+            field("counterpartyCountryCode", label: "Land") {
                 TextField("Land", text: $draft.counterpartyCountryCode.orEmpty, prompt: Text("DE"))
             }
-            field("counterpartyVatId") {
+            field("counterpartyVatId", label: "USt-IdNr.") {
                 TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))
             }
-            field("serviceDate") {
-                OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate)
+            field("serviceDate", label: "Leistungsdatum") {
+                OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate, showsLabel: false)
             }
-            field("servicePeriodStart") {
-                OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart)
+            field("servicePeriodStart", label: "Leistung von") {
+                OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart, showsLabel: false)
             }
-            field("servicePeriodEnd") {
-                OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd)
+            field("servicePeriodEnd", label: "Leistung bis") {
+                OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd, showsLabel: false)
             }
-            field("supplyType", entity: FieldProvenance.Entity.taxAssessment) {
+            field("supplyType", label: "Leistungsart", entity: FieldProvenance.Entity.taxAssessment) {
                 Picker("Leistungsart", selection: $draft.supplyType) {
                     ForEach(SupplyType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
             }
-            field("isAdvancePayment") {
+            field("isAdvancePayment", label: "Anzahlung") {
                 Toggle("Anzahlung", isOn: $draft.isAdvancePayment)
             }
-            field("notes") {
+            field("notes", label: "Notiz") {
                 TextField("Notiz", text: $draft.notes.orEmpty, prompt: Text("optional"), axis: .vertical)
                     .lineLimit(1 ... 4)
             }
@@ -321,18 +324,20 @@ struct TransactionInspector: View {
     // MARK: - Aufteilung
 
     private var allocationsDisclosure: some View {
-        DisclosureGroup(isExpanded: $allocationsExpanded) {
+        Section(isExpanded: $allocationsExpanded) {
             if draft.allocations.isEmpty {
                 Label("Keine Aufteilung erfasst", systemImage: "square.split.2x1")
                     .foregroundStyle(.secondary)
             }
             ForEach($draft.allocations) { $allocation in
+                let rowNumber = allocationRowNumber(for: allocation.id)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Picker("Kategorie", selection: $allocation.categoryId) {
                             ForEach(categoryOptions) { Text($0.nameDe).tag($0.id) }
                         }
                         .labelsHidden()
+                        .accessibilityLabel(Text("Aufteilung \(rowNumber), Kategorie"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         MoneyField(
                             label: "Betrag",
@@ -345,26 +350,30 @@ struct TransactionInspector: View {
                                 setMoneyFieldValidity("allocation.\(allocation.id)", isValid: $0)
                             }
                         )
+                        .accessibilityLabel(Text("Aufteilung \(rowNumber), Betrag"))
                         ProvenanceBadge(provenance: allocationProvenance(allocation.id))
                     }
                     HStack(spacing: 8) {
                         TextField("Beschreibung", text: $allocation.description.orEmpty, prompt: Text("optional"))
+                            .accessibilityLabel(Text("Aufteilung \(rowNumber), Beschreibung"))
                         TextField(
                             "Privatanteil (%)",
                             text: $allocation.privateSharePercent.orEmpty,
                             prompt: Text("optional")
                         )
+                        .accessibilityLabel(Text("Aufteilung \(rowNumber), Privatanteil in Prozent"))
                         .frame(width: 118)
                     }
                     if allocation.assetFlag {
                         Label("Anlagegut prüfen", systemImage: "exclamationmark.triangle")
                             .font(.caption)
                             .foregroundStyle(.orange)
+                            .accessibilityLabel(Text("Aufteilung \(rowNumber): Anlagegut prüfen"))
                     }
                 }
                 .padding(.vertical, 4)
             }
-        } label: {
+        } header: {
             HStack {
                 Text("Aufteilung")
                 Spacer()
@@ -379,9 +388,10 @@ struct TransactionInspector: View {
     // MARK: - Steuer
 
     private var taxDisclosure: some View {
-        DisclosureGroup(isExpanded: $taxExpanded) {
+        Section(isExpanded: $taxExpanded) {
             field(
                 "treatmentOverride",
+                label: "Behandlung",
                 provenanceField: "treatment",
                 entity: FieldProvenance.Entity.taxAssessment
             ) {
@@ -398,13 +408,16 @@ struct TransactionInspector: View {
                     .foregroundStyle(.secondary)
             }
             ForEach($draft.components) { $component in
+                let rowNumber = taxComponentRowNumber(for: component.id)
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 8) {
                         Picker("Art", selection: $component.kind) {
                             ForEach(TaxComponentKind.allCases, id: \.self) { Text($0.label).tag($0) }
                         }
+                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Art"))
                         .frame(maxWidth: .infinity, alignment: .leading)
                         TextField("Satz (%)", text: $component.rate.orEmpty, prompt: Text("optional"))
+                            .accessibilityLabel(Text("Steuerposition \(rowNumber), Satz in Prozent"))
                             .frame(width: 110)
                         ProvenanceBadge(provenance: componentProvenance(component.id))
                     }
@@ -420,6 +433,7 @@ struct TransactionInspector: View {
                                 setMoneyFieldValidity("taxComponent.\(component.id).netAmount", isValid: $0)
                             }
                         )
+                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Netto"))
                         MoneyField(
                             label: "Steuer",
                             minor: Binding(
@@ -431,6 +445,7 @@ struct TransactionInspector: View {
                                 setMoneyFieldValidity("taxComponent.\(component.id).taxAmount", isValid: $0)
                             }
                         )
+                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Steuerbetrag"))
                     }
                 }
                 .padding(.vertical, 4)
@@ -466,7 +481,7 @@ struct TransactionInspector: View {
                     LabeledContent("Umsatzsteuer-Zeitpunkt") { Text(Format.date(outputVATDate)) }
                 }
             }
-        } label: {
+        } header: {
             HStack {
                 Text("Steuer")
                 Spacer()
@@ -482,7 +497,7 @@ struct TransactionInspector: View {
     // MARK: - Zahlungen
 
     private func paymentsDisclosure(_ detail: TransactionDetail) -> some View {
-        DisclosureGroup(isExpanded: $paymentsExpanded) {
+        Section(isExpanded: $paymentsExpanded) {
             if detail.payments.isEmpty {
                 Label("Keine Zahlung erfasst", systemImage: "circle")
                     .foregroundStyle(.secondary)
@@ -509,7 +524,7 @@ struct TransactionInspector: View {
                 Label("Zahlung hinzufügen", systemImage: "plus")
             }
             .disabled(!moneyFieldsAreValid)
-        } label: {
+        } header: {
             HStack {
                 Text("Zahlungen")
                 Spacer()
@@ -529,19 +544,14 @@ struct TransactionInspector: View {
 
     // MARK: - Hinweise und Verlauf
 
-    @ViewBuilder
     private var issuesDisclosure: some View {
-        if hasVisibleIssues {
-            Section("Hinweise") {
-                issuesContent
-            }
-        } else {
-            DisclosureGroup(isExpanded: $issuesExpanded) {
-                issuesContent
-            } label: {
-                HStack {
-                    Text("Hinweise")
-                    Spacer()
+        Section(isExpanded: $issuesExpanded) {
+            issuesContent
+        } header: {
+            HStack {
+                Text("Hinweise")
+                Spacer()
+                if !hasVisibleIssues {
                     Text("Keine")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -576,7 +586,7 @@ struct TransactionInspector: View {
     }
 
     private func historyDisclosure(_ detail: TransactionDetail) -> some View {
-        DisclosureGroup(isExpanded: $historyExpanded) {
+        Section(isExpanded: $historyExpanded) {
             if detail.auditEvents.isEmpty {
                 Text("Noch kein Verlauf")
                     .foregroundStyle(.secondary)
@@ -589,7 +599,7 @@ struct TransactionInspector: View {
                         .foregroundStyle(.secondary)
                 }
             }
-        } label: {
+        } header: {
             HStack {
                 Text("Verlauf")
                 Spacer()
@@ -681,6 +691,7 @@ struct TransactionInspector: View {
         }
         invalidMoneyFields.removeAll()
         operationError = nil
+        issuesExpanded = hasVisibleIssues
     }
 
     private var moneyFieldsAreValid: Bool {
@@ -693,6 +704,14 @@ struct TransactionInspector: View {
         } else {
             invalidMoneyFields.insert(name)
         }
+    }
+
+    private func allocationRowNumber(for id: String) -> Int {
+        draft.allocations.firstIndex { $0.id == id }.map { $0 + 1 } ?? 1
+    }
+
+    private func taxComponentRowNumber(for id: String) -> Int {
+        draft.components.firstIndex { $0.id == id }.map { $0 + 1 } ?? 1
     }
 
     private var categoryOptions: [Database.Category] {
@@ -718,18 +737,22 @@ struct TransactionInspector: View {
     /// A row with its provenance capsule; edited fields become `Manuell`
     /// as soon as they differ from what the subject arrived with (spec 8.3).
     private func field(
-        _ name: String,
+        _ changedField: String,
+        label: LocalizedStringKey,
         provenanceField: String? = nil,
         entity: String = FieldProvenance.Entity.transaction,
         @ViewBuilder content: () -> some View
     ) -> some View {
-        let storedField = provenanceField ?? name
-        return HStack(spacing: 8) {
-            content()
-            ProvenanceBadge(
-                provenance: provenance(changeField: name, storedField: storedField, entity: entity),
-                help: evidence(storedField, entity: entity)
-            )
+        let storedField = provenanceField ?? changedField
+        return LabeledContent(label) {
+            HStack(spacing: 8) {
+                content()
+                    .labelsHidden()
+                ProvenanceBadge(
+                    provenance: provenance(changeField: changedField, storedField: storedField, entity: entity),
+                    help: evidence(storedField, entity: entity)
+                )
+            }
         }
     }
 

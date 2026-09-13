@@ -86,10 +86,19 @@ extension Binding where Value == String? {
 struct OptionalDateField: View {
     let label: LocalizedStringKey
     @Binding var date: LocalDate?
+    var showsLabel = true
 
     var body: some View {
-        if date != nil {
-            HStack(spacing: 6) {
+        if showsLabel {
+            LabeledContent(label) { controls }
+        } else {
+            controls
+        }
+    }
+
+    private var controls: some View {
+        HStack(spacing: 6) {
+            if date != nil {
                 DatePicker(
                     label,
                     selection: Binding(
@@ -99,6 +108,7 @@ struct OptionalDateField: View {
                     displayedComponents: .date
                 )
                 .datePickerStyle(.field)
+                .labelsHidden()
                 .environment(\.locale, Format.german)
                 Button {
                     date = nil
@@ -109,15 +119,14 @@ struct OptionalDateField: View {
                 .foregroundStyle(.secondary)
                 .help("Datum entfernen")
                 .accessibilityLabel("Datum entfernen")
-            }
-        } else {
-            LabeledContent(label) {
+            } else {
                 Button("Datum setzen") {
                     date = .today()
                 }
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Datum setzen")
+                .accessibilityLabel(Text(label))
             }
         }
     }

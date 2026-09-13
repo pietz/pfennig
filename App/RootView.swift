@@ -61,7 +61,17 @@ struct RootView: View {
                 .task { await model.observePendingProposals() }
             }
         }
-        .alert("Es ist ein Fehler aufgetreten", isPresented: .constant(model.errorMessage != nil)) {
+        .alert(
+            "Es ist ein Fehler aufgetreten",
+            isPresented: Binding(
+                get: { model.errorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        model.errorMessage = nil
+                    }
+                }
+            )
+        ) {
             Button("OK") { model.errorMessage = nil }
         } message: {
             Text(model.errorMessage ?? "")
