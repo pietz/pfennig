@@ -18,7 +18,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 216 tests across 37 suites plus successful Debug and Release app builds.
+The latest verification baseline is 221 tests across 38 suites plus a successful Debug app build.
 
 ## Product boundary
 
@@ -30,13 +30,16 @@ Use transparent rules for common cases. Unsupported cases should remain visibly 
 
 ## Interface decisions
 
-Ziffer is a compact native macOS utility, not a dashboard:
+Ziffer is a compact native macOS utility with a restrained Start overview:
 
-- the sidebar starts hidden but retains Settings
+- the sidebar starts visible on Start and retains Buchungen, Prüfen, and Settings
 - the toolbar uses the compact direction menu and icon-only payment status
 - company/product rows keep their two-line presentation
 - `partiallyPaid` remains a distinct status
 - the inspector uses native sections
+- the start page reads persisted transactions and pending proposals through live local observations; its year totals and open-item rows link into the existing filtered views
+- Start totals use recorded EUR gross amounts and the ledger's relevant date, not tax-profit or cash-flow calculations; open items span all years
+- upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. Existing development databases may retain an unused legacy column; never reset them merely to make their schema look fresh.

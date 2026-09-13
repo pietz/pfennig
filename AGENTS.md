@@ -66,7 +66,8 @@ Ziffer should feel like a compact, restrained macOS utility.
 - Prefer standard SwiftUI and AppKit behavior over custom interface inventions.
 - Keep the main workspace calm and information-dense.
 - Show actions and warnings when they help the user decide something.
-- Avoid dashboards, badges, explanatory chrome, and status surfaces that do not improve the core workflow.
+- Use Start for a compact financial overview and actionable open items; do not add a separate analysis page for the same information.
+- Show upcoming items only when real dates are available. Avoid decorative charts, badges, and explanatory chrome that do not improve the workflow.
 - Preserve direct editing for ordinary, unlocked transactions.
 
 ## Engineering

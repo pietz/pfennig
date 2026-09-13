@@ -47,6 +47,8 @@ targets:
         product: AI
       - package: ZifferPackages
         product: ImportPipeline
+      - package: ZifferPackages
+        product: Analysis
     settings:
       base:
         PRODUCT_NAME: Ziffer

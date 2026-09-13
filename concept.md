@@ -244,6 +244,12 @@ SwiftUI building blocks: `NavigationSplitView`, `Table`, native toolbar, `.inspe
 
 UI language: **German first**. Add localization infrastructure when a second locale becomes a product priority rather than carrying unused translation machinery. Code, schema, identifiers, enums: English. Numbers, currencies, dates: locale-aware via `FormatStyle`.
 
+### Start overview (current implementation)
+
+Start is the default entry point, with the sidebar visible. Three compact cards show recorded income, expenses, and their difference for a selectable year. These are signed booked EUR gross amounts using the ledger's relevant date, not an EÜR profit or cash-flow calculation. Pending import proposals are excluded. Missing amounts or unknown directions remain visible as incomplete totals.
+
+Below, open review items, missing expected documents, and pending proposals link directly into the existing filtered workspaces. Open items span all years and are not added into a combined count because categories may overlap. Document-exempt categories do not create missing-document work. Upcoming items are reserved for real dates and remain hidden until supported. Keep this overview compact: no separate analysis page, recent-bookings list, or decorative chart is needed.
+
 ## 6.2 Main transaction table
 
 Initial columns: Counterparty/Title · Relevant date · Amount (booked EUR; original shown secondary if different) · Payment status · Tax treatment · Status.

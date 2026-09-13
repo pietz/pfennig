@@ -1,3 +1,4 @@
+import Database
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
@@ -24,9 +25,15 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     }
 }
 
+enum StartDestination: Equatable {
+    case transactions(TransactionListFilter)
+    case review
+}
+
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem? = .start
+    @State private var transactionFilter = TransactionListFilter()
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
@@ -84,10 +91,19 @@ struct RootView: View {
     private var detail: some View {
         switch selection {
         case .start:
-            StartView()
+            StartView { destination in
+                switch destination {
+                case let .transactions(filter):
+                    transactionFilter = filter
+                    selection = .transactions
+                case .review:
+                    selection = .review
+                }
+            }
         case .transactions:
             if let database = model.database {
-                TransactionsView(database: database)
+                TransactionsView(database: database, filter: transactionFilter)
+                    .id(transactionFilter)
             }
         case .review:
             if let database = model.database {

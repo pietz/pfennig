@@ -24,16 +24,39 @@ struct TransactionsView: View {
     @State private var isConfirmingDiscard = false
     @State private var inspectorHasChanges = false
     @State private var search = ""
-    @State private var directionFilter: DirectionFilter = .all
+    @State private var year: Int?
+    @State private var directionFilter: DirectionFilter
+    @State private var needsAttention = false
+    @State private var missingDocumentsOnly = false
     @State private var showsInspector = true
     @State private var isTargeted = false
 
+    init(database: AppDatabase, filter: TransactionListFilter = TransactionListFilter()) {
+        self.database = database
+        _year = State(initialValue: filter.year)
+        _directionFilter = State(initialValue: DirectionFilter(direction: filter.direction))
+        _needsAttention = State(initialValue: filter.needsAttention)
+        _missingDocumentsOnly = State(initialValue: filter.missingDocumentsOnly)
+    }
+
+    private var showsProposals: Bool {
+        year == nil && directionFilter == .all && !needsAttention && !missingDocumentsOnly
+    }
+
+    private var visibleProposals: [ProposalRecord] {
+        showsProposals ? proposals : []
+    }
+
     private var rows: [LedgerRow] {
-        proposals.map(LedgerRow.init) + items.map(LedgerRow.init)
+        visibleProposals.map(LedgerRow.init) + items.map(LedgerRow.init)
     }
 
     private var selectedProposal: ProposalRecord? {
-        proposals.first { $0.id == selection }
+        visibleProposals.first { $0.id == selection }
+    }
+
+    private var hasActiveFilters: Bool {
+        year != nil || directionFilter != .all || needsAttention || missingDocumentsOnly
     }
 
     var body: some View {
@@ -102,7 +125,13 @@ struct TransactionsView: View {
             } message: {
                 Text("Die Buchung wird archiviert und aus der Liste entfernt. Die Daten bleiben im Archiv erhalten.")
             }
-            .task(id: ObservationKey(search: search, direction: directionFilter)) { await observeTransactions() }
+            .task(id: ObservationKey(
+                search: search,
+                year: year,
+                direction: directionFilter.direction,
+                needsAttention: needsAttention,
+                missingDocumentsOnly: missingDocumentsOnly
+            )) { await observeTransactions() }
             .task { await observeProposals() }
             .task { await observeImports() }
             .task(id: selection) { await observeDetail() }
@@ -232,8 +261,17 @@ struct TransactionsView: View {
 
     private var subtitle: String {
         var parts = ["\(items.count) Buchungen"]
-        if !proposals.isEmpty {
-            parts.append("\(proposals.count) zu prüfen")
+        if let year {
+            parts.append(String(year))
+        }
+        if needsAttention {
+            parts.append("Offen")
+        }
+        if missingDocumentsOnly {
+            parts.append("Belege fehlen")
+        }
+        if !visibleProposals.isEmpty {
+            parts.append("\(visibleProposals.count) zu prüfen")
         }
         return parts.joined(separator: " · ")
     }
@@ -257,6 +295,20 @@ struct TransactionsView: View {
         }
 
         ToolbarItemGroup {
+            if hasActiveFilters {
+                Button {
+                    year = nil
+                    directionFilter = .all
+                    needsAttention = false
+                    missingDocumentsOnly = false
+                    selection = nil
+                } label: {
+                    Label("Filter zurücksetzen", systemImage: "xmark.circle")
+                }
+                .disabled(inspectorHasChanges)
+                .help(Text(inspectorHasChanges ? "Änderungen zuerst speichern oder verwerfen" : "Filter zurücksetzen"))
+            }
+
             if activeImports > 0 {
                 ProgressView().controlSize(.small)
             }
@@ -327,7 +379,15 @@ struct TransactionsView: View {
 
     private func observeTransactions() async {
         do {
-            let observation = TransactionListQuery.observation(search: search, direction: directionFilter.direction)
+            let observation = TransactionListQuery.observation(
+                search: search,
+                listFilter: TransactionListFilter(
+                    year: year,
+                    direction: directionFilter.direction,
+                    needsAttention: needsAttention,
+                    missingDocumentsOnly: missingDocumentsOnly
+                )
+            )
             for try await value in observation.values(in: database.reader) {
                 items = value
             }
@@ -378,6 +438,14 @@ struct TransactionsView: View {
 enum DirectionFilter: String, CaseIterable, Identifiable {
     case all, income, expense
 
+    init(direction: Direction?) {
+        switch direction {
+        case .income: self = .income
+        case .expense: self = .expense
+        case .unknown, nil: self = .all
+        }
+    }
+
     var id: String {
         rawValue
     }
@@ -412,7 +480,10 @@ enum DirectionFilter: String, CaseIterable, Identifiable {
 /// restarts the observation whenever either changes.
 private struct ObservationKey: Equatable {
     var search: String
-    var direction: DirectionFilter
+    var year: Int?
+    var direction: Direction?
+    var needsAttention: Bool
+    var missingDocumentsOnly: Bool
 }
 
 // MARK: - Row status

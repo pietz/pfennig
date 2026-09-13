@@ -34,14 +34,14 @@ public struct TransactionListItem: FetchableRecord, Decodable, Identifiable, Sen
     /// Booked amount in EUR, signed by direction.
     public var bookedAmount: Money? {
         guard let minor = bookedGrossMinor else { return nil }
-        let signed = direction == .expense ? -abs(minor) : minor
+        let signed = direction == .expense ? -minor : minor
         return Money(minorUnits: signed, currency: CurrencyCode(bookedCurrency))
     }
 
     /// Original amount, shown secondary when it differs from the booked one.
     public var originalAmount: Money? {
         guard let minor = originalGrossMinor, originalCurrency != bookedCurrency else { return nil }
-        let signed = direction == .expense ? -abs(minor) : minor
+        let signed = direction == .expense ? -minor : minor
         return Money(minorUnits: signed, currency: CurrencyCode(originalCurrency))
     }
 
@@ -61,11 +61,44 @@ public struct TransactionListItem: FetchableRecord, Decodable, Identifiable, Sen
     }
 }
 
+public struct TransactionListFilter: Equatable, Hashable, Sendable {
+    public var year: Int?
+    public var direction: Direction?
+    public var needsAttention: Bool
+    public var missingDocumentsOnly: Bool
+
+    public init(
+        year: Int? = nil,
+        direction: Direction? = nil,
+        needsAttention: Bool = false,
+        missingDocumentsOnly: Bool = false
+    ) {
+        self.year = year
+        self.direction = direction
+        self.needsAttention = needsAttention
+        self.missingDocumentsOnly = missingDocumentsOnly
+    }
+
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(year)
+        hasher.combine(direction?.rawValue)
+        hasher.combine(needsAttention)
+        hasher.combine(missingDocumentsOnly)
+    }
+}
+
 public enum TransactionListQuery {
     /// Transactions for the main table, newest relevant date first.
     /// `search` matches counterparty, title, invoice number and amount.
-    /// `direction`, when set, restricts the result to that direction only.
-    public static func fetch(_ db: Database, search: String = "", direction: Direction? = nil) throws -> [TransactionListItem] {
+    /// The filter uses the same relevant-date expression as the displayed
+    /// list and can restrict review/document exceptions without changing the
+    /// existing search and direction behaviour.
+    public static func fetch(
+        _ db: Database,
+        search: String = "",
+        direction: Direction? = nil,
+        listFilter: TransactionListFilter = TransactionListFilter()
+    ) throws -> [TransactionListItem] {
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
         var arguments = StatementArguments()
         var filter = ""
@@ -85,9 +118,42 @@ public enum TransactionListQuery {
                 "amountPattern": "%\(digits.replacingOccurrences(of: ".", with: ""))%"
             ]
         }
-        if let direction {
+        let selectedDirection = listFilter.direction ?? direction
+        if let selectedDirection {
             filter += " AND t.direction = :direction"
-            arguments = arguments + ["direction": direction.rawValue]
+            arguments = arguments + ["direction": selectedDirection.rawValue]
+        }
+        let relevantDate = "COALESCE((SELECT MAX(p.payment_date) FROM payment_allocations pa JOIN payments p ON p.id = pa.payment_id WHERE pa.transaction_id = t.id), t.invoice_date, DATE(t.created_at))"
+        if let year = listFilter.year {
+            filter += " AND \(relevantDate) >= :yearStart AND \(relevantDate) < :nextYearStart"
+            arguments = arguments + [
+                "yearStart": String(format: "%04d-01-01", year),
+                "nextYearStart": String(format: "%04d-01-01", year + 1)
+            ]
+        }
+        if listFilter.needsAttention {
+            filter += " AND t.review_status IN ('unreviewed', 'needsReview', 'conflict')"
+        }
+        if listFilter.missingDocumentsOnly {
+            filter += """
+              AND NOT EXISTS (
+                    SELECT 1 FROM transaction_documents td
+                    WHERE td.transaction_id = t.id
+                  )
+              AND (
+                    NOT EXISTS (
+                        SELECT 1 FROM bookkeeping_allocations ba
+                        WHERE ba.transaction_id = t.id
+                    )
+                    OR EXISTS (
+                        SELECT 1
+                          FROM bookkeeping_allocations ba
+                          JOIN categories expected_category ON expected_category.id = ba.category_id
+                         WHERE ba.transaction_id = t.id
+                           AND expected_category.document_expected = 1
+                    )
+                  )
+            """
         }
         let sql = """
         SELECT
@@ -122,10 +188,12 @@ public enum TransactionListQuery {
     }
 
     /// Live query for SwiftUI; emits a new array on every relevant write.
-    public static func observation(search: String = "", direction: Direction? = nil)
-        -> ValueObservation<ValueReducers.Fetch<[TransactionListItem]>>
-    {
-        ValueObservation.tracking { try fetch($0, search: search, direction: direction) }
+    public static func observation(
+        search: String = "",
+        direction: Direction? = nil,
+        listFilter: TransactionListFilter = TransactionListFilter()
+    ) -> ValueObservation<ValueReducers.Fetch<[TransactionListItem]>> {
+        ValueObservation.tracking { try fetch($0, search: search, direction: direction, listFilter: listFilter) }
     }
 }
 
