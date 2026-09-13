@@ -177,11 +177,15 @@ struct NormalizationTests {
         #expect(try normalize(extraction("08-")).draft.supplyType == .goods)
     }
 
-    @Test("Belegfelder tragen Beleg-Provenienz mit Fundstelle")
+    @Test("Belegfelder tragen Beleg-Provenienz ohne Fundstelle")
     func provenance() throws {
         let result = try normalize(extraction("01-"))
         let gross = try #require(result.provenance.first { $0.fieldName == "grossAmount" })
         #expect(gross.provenance == .document)
+        let encodedProvenance = try JSONEncoder().encode(result.provenance)
+        let provenanceJSON = String(decoding: encodedProvenance, as: UTF8.self)
+        #expect(!provenanceJSON.contains("evidencePage"))
+        #expect(!provenanceJSON.contains("evidenceSnippet"))
         let direction = try #require(result.provenance.first { $0.fieldName == "direction" })
         #expect(direction.provenance == .agent)
         let treatment = try #require(result.provenance.first { $0.entityType == "taxAssessment" })

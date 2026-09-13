@@ -13,6 +13,14 @@ struct MigrationTests {
         #expect(AppDatabase.migrationIdentifiers == ["v001_initial"])
     }
 
+    @Test("Field provenance stores provenance without evidence")
+    func fieldProvenanceHasNoEvidenceColumn() throws {
+        let database = try AppDatabase(inMemoryNamed: "field-provenance")
+        let columns = try database.reader.read { try $0.columns(in: "field_provenance").map(\.name) }
+        #expect(columns.contains("confidence"))
+        #expect(!columns.contains("evidence_json"))
+    }
+
     @Test("Foreign keys are enforced")
     func foreignKeys() throws {
         let database = try AppDatabase(inMemoryNamed: "fk")

@@ -40,7 +40,7 @@
           "type": "output_text",
           "annotations": [],
           "logprobs": [],
-          "text": "{\"counterparty\":{\"city\":\"San Francisco\",\"countryCode\":\"US\",\"name\":\"Bright Peak Software Inc.\",\"postalCode\":\"94107\",\"street\":\"880 Beacon Hill Ave\",\"vatId\":null},\"direction\":\"expense\",\"documentType\":\"invoice\",\"evidence\":[{\"field\":\"counterparty.name\",\"page\":1,\"snippet\":\"Bright Peak Software Inc.\"},{\"field\":\"counterparty.street\",\"page\":1,\"snippet\":\"880 Beacon Hill Ave\"},{\"field\":\"counterparty.city\",\"page\":1,\"snippet\":\"CA 94107 San Francisco\"},{\"field\":\"counterparty.countryCode\",\"page\":1,\"snippet\":\"United States\"},{\"field\":\"invoice.invoiceNumber\",\"page\":1,\"snippet\":\"Invoice no.: BP-INV-20264471\"},{\"field\":\"invoice.invoiceDate\",\"page\":1,\"snippet\":\"Invoice date: 2026-07-15\"},{\"field\":\"invoice.currency\",\"page\":1,\"snippet\":\"Currency: USD\"},{\"field\":\"invoice.netAmount\",\"page\":1,\"snippet\":\"Subtotal USD 1,000.00\"},{\"field\":\"invoice.taxAmount\",\"page\":1,\"snippet\":\"Total VAT USD 0.00\"},{\"field\":\"invoice.grossAmount\",\"page\":1,\"snippet\":\"Total amount USD 1,000.00\"},{\"field\":\"invoice.taxTreatment\",\"page\":1,\"snippet\":\"No VAT/sales tax applies.\"},{\"field\":\"paymentInfo.paymentMethodHint\",\"page\":1,\"snippet\":\"Paid by credit card\"},{\"field\":\"paymentInfo.paymentDate\",\"page\":1,\"snippet\":\"on 2026-07-15\"}],\"invoice\":{\"currency\":\"USD\",\"grossAmount\":\"1000.00\",\"invoiceDate\":\"2026-07-15\",\"invoiceNumber\":\"BP-INV-20264471\",\"netAmount\":\"1000.00\",\"serviceDate\":null,\"servicePeriodEnd\":null,\"servicePeriodStart\":null,\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"Annual Enterprise License - DevTools Suite\",\"netAmount\":\"1000.00\"}],\"missingFields\":[\"counterparty.vatId\",\"invoice.serviceDate\",\"invoice.servicePeriodStart\",\"invoice.servicePeriodEnd\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"paid\",\"paymentDate\":\"2026-07-15\",\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"zero\",\"netAmount\":\"1000.00\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.88,\"reasoning\":\"The US supplier charges no VAT or sales tax and invoices a German VAT-registered business for an annual software license. This suggests recipient-side reverse charge, although no reverse-charge note is printed on the invoice.\",\"treatment\":\"reverseCharge\"},\"warnings\":[\"The supplier's EIN is stated, but it is not a VAT ID.\",\"No EUR equivalent is stated on the invoice.\"]}"
+          "text": "{\"counterparty\":{\"city\":\"San Francisco\",\"countryCode\":\"US\",\"name\":\"Bright Peak Software Inc.\",\"postalCode\":\"94107\",\"street\":\"880 Beacon Hill Ave\",\"vatId\":null},\"direction\":\"expense\",\"documentType\":\"invoice\",\"invoice\":{\"currency\":\"USD\",\"grossAmount\":\"1000.00\",\"invoiceDate\":\"2026-07-15\",\"invoiceNumber\":\"BP-INV-20264471\",\"netAmount\":\"1000.00\",\"serviceDate\":null,\"servicePeriodEnd\":null,\"servicePeriodStart\":null,\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"Annual Enterprise License - DevTools Suite\",\"netAmount\":\"1000.00\"}],\"missingFields\":[\"counterparty.vatId\",\"invoice.serviceDate\",\"invoice.servicePeriodStart\",\"invoice.servicePeriodEnd\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"paid\",\"paymentDate\":\"2026-07-15\",\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"zero\",\"netAmount\":\"1000.00\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.88,\"reasoning\":\"The US supplier charges no VAT or sales tax and invoices a German VAT-registered business for an annual software license. This suggests recipient-side reverse charge, although no reverse-charge note is printed on the invoice.\",\"treatment\":\"reverseCharge\"},\"warnings\":[\"The supplier's EIN is stated, but it is not a VAT ID.\",\"No EUR equivalent is stated on the invoice.\"]}"
         }
       ],
       "phase": "final_answer",
@@ -139,35 +139,6 @@
               "unknown"
             ],
             "type": "string"
-          },
-          "evidence": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "field": {
-                  "type": "string"
-                },
-                "page": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "snippet": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "field",
-                "page",
-                "snippet"
-              ],
-              "type": "object"
-            },
-            "type": "array"
           },
           "invoice": {
             "additionalProperties": false,
@@ -477,7 +448,6 @@
           "counterparty",
           "direction",
           "documentType",
-          "evidence",
           "invoice",
           "lineItems",
           "missingFields",

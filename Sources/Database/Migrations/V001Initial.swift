@@ -368,7 +368,6 @@ enum V001Initial {
             model_run_id TEXT REFERENCES model_runs(id),
             rule_id TEXT REFERENCES rules(id),
             confidence TEXT,
-            evidence_json TEXT,
             created_at TEXT NOT NULL,
             superseded_at TEXT
         )

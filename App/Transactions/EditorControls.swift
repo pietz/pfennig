@@ -132,36 +132,6 @@ struct OptionalDateField: View {
     }
 }
 
-/// Where a value came from (spec 8.3), shown next to the field it belongs to.
-/// `help` carries the model's evidence snippet when there is one.
-struct ProvenanceBadge: View {
-    let provenance: Provenance?
-    var help: String?
-
-    var body: some View {
-        if let provenance {
-            Text(label(provenance))
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal, 6)
-                .padding(.vertical, 1)
-                .background(.quaternary, in: Capsule())
-                .help(help ?? "Herkunft: \(label(provenance))")
-        }
-    }
-
-    private func label(_ provenance: Provenance) -> String {
-        switch provenance {
-        case .document: "Beleg"
-        case .agent: "KI"
-        case .calculated: "Berechnet"
-        case .manual: "Manuell"
-        case .imported: "Import"
-        case .rule: "Regel"
-        }
-    }
-}
-
 /// One validation finding: always icon plus text, never colour alone (spec 14.3).
 struct IssueRow: View {
     let severity: IssueSeverity

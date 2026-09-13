@@ -195,19 +195,16 @@ public enum ExtractionNormalizer {
         return drafts
     }
 
-    /// Fields read off the document get `document` provenance with the
-    /// model's evidence; inferred fields get `agent` (spec 8.3).
+    /// Fields read off the document get `document` provenance; inferred fields
+    /// get `agent` (spec 8.3).
     static func provenance(for extraction: DocumentExtraction, draft: TransactionDraft) -> [ProvenanceEntry] {
         let confidence = extraction.taxTreatmentHint.confidence.map { "\($0)" }
         var entries: [ProvenanceEntry] = []
-        for (path, field) in fieldPaths.sorted(by: { $0.key < $1.key }) {
-            let evidence = extraction.evidence(for: path)
+        for (_, field) in fieldPaths.sorted(by: { $0.key < $1.key }) {
             entries.append(
                 ProvenanceEntry(
                     fieldName: field,
-                    provenance: field == "direction" || field == "transactionType" ? .agent : .document,
-                    evidencePage: evidence?.page,
-                    evidenceSnippet: evidence?.snippet
+                    provenance: field == "direction" || field == "transactionType" ? .agent : .document
                 )
             )
         }

@@ -40,7 +40,7 @@
           "type": "output_text",
           "annotations": [],
           "logprobs": [],
-          "text": "{\"counterparty\":{\"city\":\"Berlin\",\"countryCode\":\"DE\",\"name\":\"Schreibwaren M\u00fcller e.K.\",\"postalCode\":\"10435\",\"street\":\"Kastanienallee 51\",\"vatId\":null},\"direction\":\"expense\",\"documentType\":\"receipt\",\"evidence\":[{\"field\":\"counterparty.name\",\"page\":1,\"snippet\":\"Schreibwaren M\u00fcller e.K.\"},{\"field\":\"counterparty.address\",\"page\":1,\"snippet\":\"Kastanienallee 51\\n10435 Berlin\"},{\"field\":\"lineItems\",\"page\":1,\"snippet\":\"Kugelschreiber-Set 11,90 A\\nNotizbuch A5 11,90 B\"},{\"field\":\"invoice.grossAmount\",\"page\":1,\"snippet\":\"SUMME EUR 23,80\"},{\"field\":\"invoice.currency\",\"page\":1,\"snippet\":\"SUMME EUR 23,80\"},{\"field\":\"invoice.invoiceNumber\",\"page\":1,\"snippet\":\"Bon-Nr. 004821\"},{\"field\":\"invoice.invoiceDate\",\"page\":1,\"snippet\":\"14.07.2026 16:42\"},{\"field\":\"invoice.serviceDate\",\"page\":1,\"snippet\":\"14.07.2026 16:42\"},{\"field\":\"taxComponents\",\"page\":1,\"snippet\":\"A = 19% USt 10,00 + 1,90\\nB = 7% USt 11,12 + 0,78\"},{\"field\":\"paymentInfo.paymentMethodHint\",\"page\":1,\"snippet\":\"Zahlung: BAR\"},{\"field\":\"paymentInfo.paidIndicator\",\"page\":1,\"snippet\":\"Zahlung: BAR\"}],\"invoice\":{\"currency\":\"EUR\",\"grossAmount\":\"23.80\",\"invoiceDate\":\"2026-07-14\",\"invoiceNumber\":\"004821\",\"netAmount\":\"21.12\",\"serviceDate\":\"2026-07-14\",\"servicePeriodEnd\":null,\"servicePeriodStart\":null,\"statedEurEquivalent\":null,\"taxAmount\":\"2.68\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"office_supplies\",\"description\":\"Kugelschreiber-Set\",\"netAmount\":\"10.00\"},{\"assetCandidate\":false,\"categoryHint\":\"office_supplies\",\"description\":\"Notizbuch A5\",\"netAmount\":\"11.12\"}],\"missingFields\":[\"counterparty.vatId\",\"invoice.servicePeriodStart\",\"invoice.servicePeriodEnd\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.paymentDate\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"paid\",\"paymentDate\":null,\"paymentMethodHint\":\"cash\",\"reference\":null},\"taxComponents\":[{\"kind\":\"standard\",\"netAmount\":\"10.00\",\"rate\":\"19\",\"taxAmount\":\"1.90\"},{\"kind\":\"reduced\",\"netAmount\":\"11.12\",\"rate\":\"7\",\"taxAmount\":\"0.78\"}],\"taxTreatmentHint\":{\"confidence\":0.99,\"reasoning\":\"The receipt is issued by a German retailer and shows German VAT at 19% and 7%, so domestic VAT is indicated.\",\"treatment\":\"domesticVAT\"},\"warnings\":[]}"
+          "text": "{\"counterparty\":{\"city\":\"Berlin\",\"countryCode\":\"DE\",\"name\":\"Schreibwaren Müller e.K.\",\"postalCode\":\"10435\",\"street\":\"Kastanienallee 51\",\"vatId\":null},\"direction\":\"expense\",\"documentType\":\"receipt\",\"invoice\":{\"currency\":\"EUR\",\"grossAmount\":\"23.80\",\"invoiceDate\":\"2026-07-14\",\"invoiceNumber\":\"004821\",\"netAmount\":\"21.12\",\"serviceDate\":\"2026-07-14\",\"servicePeriodEnd\":null,\"servicePeriodStart\":null,\"statedEurEquivalent\":null,\"taxAmount\":\"2.68\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"office_supplies\",\"description\":\"Kugelschreiber-Set\",\"netAmount\":\"10.00\"},{\"assetCandidate\":false,\"categoryHint\":\"office_supplies\",\"description\":\"Notizbuch A5\",\"netAmount\":\"11.12\"}],\"missingFields\":[\"counterparty.vatId\",\"invoice.servicePeriodStart\",\"invoice.servicePeriodEnd\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.paymentDate\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"paid\",\"paymentDate\":null,\"paymentMethodHint\":\"cash\",\"reference\":null},\"taxComponents\":[{\"kind\":\"standard\",\"netAmount\":\"10.00\",\"rate\":\"19\",\"taxAmount\":\"1.90\"},{\"kind\":\"reduced\",\"netAmount\":\"11.12\",\"rate\":\"7\",\"taxAmount\":\"0.78\"}],\"taxTreatmentHint\":{\"confidence\":0.99,\"reasoning\":\"The receipt is issued by a German retailer and shows German VAT at 19% and 7%, so domestic VAT is indicated.\",\"treatment\":\"domesticVAT\"},\"warnings\":[]}"
         }
       ],
       "phase": "final_answer",
@@ -139,35 +139,6 @@
               "unknown"
             ],
             "type": "string"
-          },
-          "evidence": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "field": {
-                  "type": "string"
-                },
-                "page": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "snippet": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "field",
-                "page",
-                "snippet"
-              ],
-              "type": "object"
-            },
-            "type": "array"
           },
           "invoice": {
             "additionalProperties": false,
@@ -477,7 +448,6 @@
           "counterparty",
           "direction",
           "documentType",
-          "evidence",
           "invoice",
           "lineItems",
           "missingFields",

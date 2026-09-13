@@ -798,13 +798,6 @@ public struct BookkeepingRepository: Sendable {
             """,
             arguments: [now, entity, id, field]
         )
-        var evidenceJson: String?
-        if let entry, entry.evidencePage != nil || entry.evidenceSnippet != nil {
-            evidenceJson = json([
-                "page": entry.evidencePage.map(String.init),
-                "snippet": entry.evidenceSnippet
-            ])
-        }
         try FieldProvenance(
             entityType: entity,
             entityId: id,
@@ -814,7 +807,6 @@ public struct BookkeepingRepository: Sendable {
             sourceDocumentId: provenance == .document ? context.sourceDocumentID : nil,
             modelRunId: provenance == .agent || provenance == .document ? context.modelRunID : nil,
             confidence: entry?.confidence,
-            evidenceJson: evidenceJson,
             createdAt: now
         ).insert(db)
     }

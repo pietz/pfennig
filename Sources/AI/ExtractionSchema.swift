@@ -61,12 +61,7 @@ public enum ExtractionSchema {
                 "reference": nullable("string")
             ]),
             "missingFields": array(["type": "string"]),
-            "warnings": array(["type": "string"]),
-            "evidence": array(object([
-                "field": ["type": "string"],
-                "page": nullable("integer"),
-                "snippet": nullable("string")
-            ]))
+            "warnings": array(["type": "string"])
         ])
     }
 

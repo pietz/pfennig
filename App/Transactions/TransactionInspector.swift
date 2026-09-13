@@ -36,8 +36,8 @@ enum InspectorSubject: Equatable {
 }
 
 /// The inspector of one transaction or proposal (spec 6.4, 27). Editing
-/// happens inline: every field is a control, provenance sits next to it
-/// (spec 8.3), and the footer offers what the subject allows.
+/// happens inline: every field is a control, and the footer offers what the
+/// subject allows.
 struct TransactionInspector: View {
     @Environment(AppModel.self) private var model
 
@@ -229,27 +229,27 @@ struct TransactionInspector: View {
 
     private var primaryFieldsSection: some View {
         Section("Grunddaten") {
-            field("counterpartyId", label: "Firma") {
+            field(label: "Firma") {
                 TextField("Firma", text: $draft.counterpartyName, prompt: Text("Firma oder Person"))
             }
-            field("direction", label: "Richtung") {
+            field(label: "Richtung") {
                 Picker("Richtung", selection: $draft.direction) {
                     Text("Ausgabe").tag(Direction.expense)
                     Text("Einnahme").tag(Direction.income)
                 }
             }
-            field("transactionType", label: "Art") {
+            field(label: "Art") {
                 Picker("Art", selection: $draft.transactionType) {
                     ForEach(TransactionType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
             }
-            field("title", label: "Titel") {
+            field(label: "Titel") {
                 TextField("Titel", text: $draft.title.orEmpty, prompt: Text("Kurzbeschreibung"))
             }
-            field("invoiceNumber", label: "Rechnungsnummer") {
+            field(label: "Rechnungsnummer") {
                 TextField("Rechnungsnummer", text: $draft.invoiceNumber.orEmpty, prompt: Text("optional"))
             }
-            field("invoiceDate", label: "Rechnungsdatum") {
+            field(label: "Rechnungsdatum") {
                 OptionalDateField(label: "Rechnungsdatum", date: $draft.invoiceDate, showsLabel: false)
             }
         }
@@ -257,12 +257,12 @@ struct TransactionInspector: View {
 
     private var amountsSection: some View {
         Section("Beträge") {
-            field("currency", label: "Währung") {
+            field(label: "Währung") {
                 Picker("Währung", selection: $draft.currency) {
                     ForEach(["EUR", "USD", "GBP", "CHF"], id: \.self) { Text($0).tag(CurrencyCode($0)) }
                 }
             }
-            field("netAmount", label: "Netto") {
+            field(label: "Netto") {
                 MoneyField(
                     label: "Netto",
                     minor: $draft.netMinor,
@@ -270,7 +270,7 @@ struct TransactionInspector: View {
                     onValidityChange: { setMoneyFieldValidity("netAmount", isValid: $0) }
                 )
             }
-            field("taxAmount", label: "Steuer") {
+            field(label: "Steuer") {
                 MoneyField(
                     label: "Steuer",
                     minor: $draft.taxMinor,
@@ -278,7 +278,7 @@ struct TransactionInspector: View {
                     onValidityChange: { setMoneyFieldValidity("taxAmount", isValid: $0) }
                 )
             }
-            field("grossAmount", label: "Brutto") {
+            field(label: "Brutto") {
                 MoneyField(
                     label: "Brutto",
                     minor: $draft.grossMinor,
@@ -291,30 +291,30 @@ struct TransactionInspector: View {
 
     private var metadataDisclosure: some View {
         Section("Weitere Angaben", isExpanded: $metadataExpanded) {
-            field("counterpartyCountryCode", label: "Land") {
+            field(label: "Land") {
                 TextField("Land", text: $draft.counterpartyCountryCode.orEmpty, prompt: Text("DE"))
             }
-            field("counterpartyVatId", label: "USt-IdNr.") {
+            field(label: "USt-IdNr.") {
                 TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))
             }
-            field("serviceDate", label: "Leistungsdatum") {
+            field(label: "Leistungsdatum") {
                 OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate, showsLabel: false)
             }
-            field("servicePeriodStart", label: "Leistung von") {
+            field(label: "Leistung von") {
                 OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart, showsLabel: false)
             }
-            field("servicePeriodEnd", label: "Leistung bis") {
+            field(label: "Leistung bis") {
                 OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd, showsLabel: false)
             }
-            field("supplyType", label: "Leistungsart", entity: FieldProvenance.Entity.taxAssessment) {
+            field(label: "Leistungsart") {
                 Picker("Leistungsart", selection: $draft.supplyType) {
                     ForEach(SupplyType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
             }
-            field("isAdvancePayment", label: "Anzahlung") {
+            field(label: "Anzahlung") {
                 Toggle("Anzahlung", isOn: $draft.isAdvancePayment)
             }
-            field("notes", label: "Notiz") {
+            field(label: "Notiz") {
                 TextField("Notiz", text: $draft.notes.orEmpty, prompt: Text("optional"), axis: .vertical)
                     .lineLimit(1 ... 4)
             }
@@ -351,7 +351,6 @@ struct TransactionInspector: View {
                             }
                         )
                         .accessibilityLabel(Text("Aufteilung \(rowNumber), Betrag"))
-                        ProvenanceBadge(provenance: allocationProvenance(allocation.id))
                     }
                     HStack(spacing: 8) {
                         TextField("Beschreibung", text: $allocation.description.orEmpty, prompt: Text("optional"))
@@ -389,12 +388,7 @@ struct TransactionInspector: View {
 
     private var taxDisclosure: some View {
         Section(isExpanded: $taxExpanded) {
-            field(
-                "treatmentOverride",
-                label: "Behandlung",
-                provenanceField: "treatment",
-                entity: FieldProvenance.Entity.taxAssessment
-            ) {
+            field(label: "Behandlung") {
                 Picker("Behandlung", selection: $draft.treatmentOverride) {
                     Text("Automatisch").tag(TaxTreatment?.none)
                     Divider()
@@ -419,7 +413,6 @@ struct TransactionInspector: View {
                         TextField("Satz (%)", text: $component.rate.orEmpty, prompt: Text("optional"))
                             .accessibilityLabel(Text("Steuerposition \(rowNumber), Satz in Prozent"))
                             .frame(width: 110)
-                        ProvenanceBadge(provenance: componentProvenance(component.id))
                     }
                     HStack(spacing: 8) {
                         MoneyField(
@@ -452,10 +445,7 @@ struct TransactionInspector: View {
             }
             if let assessment = derived?.draft.assessment {
                 LabeledContent("Entschieden als") {
-                    HStack(spacing: 6) {
-                        Text(assessment.treatment.label)
-                        ProvenanceBadge(provenance: treatmentProvenance)
-                    }
+                    Text(assessment.treatment.label)
                 }
                 LabeledContent("Status", value: assessment.status.text)
                 if let reasoning = assessment.reasoning ?? derived?.reasoning {
@@ -723,95 +713,14 @@ struct TransactionInspector: View {
         }
     }
 
-    private var treatmentProvenance: Provenance? {
-        switch subject {
-        case let .transaction(detail):
-            detail.provenance(of: "treatment", entity: FieldProvenance.Entity.taxAssessment)?.provenance
-        case .proposal:
-            draft.treatmentOverride == nil ? .calculated : .manual
-        default:
-            nil
-        }
-    }
-
-    /// A row with its provenance capsule; edited fields become `Manuell`
-    /// as soon as they differ from what the subject arrived with (spec 8.3).
     private func field(
-        _ changedField: String,
         label: LocalizedStringKey,
-        provenanceField: String? = nil,
-        entity: String = FieldProvenance.Entity.transaction,
         @ViewBuilder content: () -> some View
     ) -> some View {
-        let storedField = provenanceField ?? changedField
-        return LabeledContent(label) {
-            HStack(spacing: 8) {
-                content()
-                    .labelsHidden()
-                ProvenanceBadge(
-                    provenance: provenance(changeField: changedField, storedField: storedField, entity: entity),
-                    help: evidence(storedField, entity: entity)
-                )
-            }
+        LabeledContent(label) {
+            content()
+                .labelsHidden()
         }
-    }
-
-    private func provenance(
-        changeField: String,
-        storedField: String,
-        entity: String = FieldProvenance.Entity.transaction
-    ) -> Provenance? {
-        if changed(changeField) {
-            return .manual
-        }
-        switch subject {
-        case let .transaction(detail):
-            return detail.provenance(of: storedField, entity: entity)?.provenance
-        case let .proposal(proposal):
-            return proposal.summary?.provenance(of: storedField, entity: entity)?.provenance
-        default:
-            return nil
-        }
-    }
-
-    private func evidence(_ name: String, entity: String) -> String? {
-        guard case let .proposal(proposal) = subject else { return nil }
-        return proposal.summary?.provenance(of: name, entity: entity)?.evidenceText
-    }
-
-    private func allocationProvenance(_ id: String) -> Provenance? {
-        guard draft.allocations.first(where: { $0.id == id }) == original.allocations.first(where: { $0.id == id })
-        else { return .manual }
-        switch subject {
-        case let .transaction(detail):
-            return detail.provenance.first {
-                $0.entityType == FieldProvenance.Entity.allocation && $0.entityId == id && $0.fieldName == "categoryId"
-            }?.provenance
-        case let .proposal(proposal):
-            return proposal.summary?.provenance(of: "categoryId", entity: FieldProvenance.Entity.allocation)?.provenance
-                ?? .agent
-        default:
-            return nil
-        }
-    }
-
-    private func componentProvenance(_ id: String) -> Provenance? {
-        guard draft.components.first(where: { $0.id == id }) == original.components.first(where: { $0.id == id })
-        else { return .manual }
-        switch subject {
-        case let .transaction(detail):
-            return detail.provenance.first {
-                $0.entityType == "taxComponent" && $0.entityId == id && $0.fieldName == "kind"
-            }?.provenance
-        case let .proposal(proposal):
-            return proposal.summary?.provenance(of: "kind", entity: "taxComponent")?.provenance ?? .document
-        default:
-            return nil
-        }
-    }
-
-    private func changed(_ name: String) -> Bool {
-        CommitService.changedFields(from: original, to: draft).contains(name)
     }
 }
 

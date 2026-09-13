@@ -154,12 +154,11 @@ struct ImportFoundationTests {
         let item = try #require(try items(in: workspace.database, batchID: batchID).first)
         let proposal = try #require(try repository.pendingProposals().first)
         #expect(proposal.summary?.treatment == .nonTaxable)
-        #expect(proposal.summary?.provenance.contains {
-            $0.entityType == "proposalContext" && $0.fieldName == "modelTreatmentHint"
-        } == true)
-        #expect(proposal.summary?.provenance.contains {
-            $0.entityType == "proposalContext" && $0.fieldName == "reverseChargeNote"
-        } == true)
+        let derivationContext = try #require(proposal.summary?.derivationContext)
+        #expect(derivationContext.modelTreatmentHint == .nonTaxable)
+        #expect(derivationContext.modelTreatmentHintConfidence == 0.91)
+        #expect(derivationContext.reverseChargeNote == false)
+        #expect(proposal.summary?.provenance.allSatisfy { $0.entityType != "proposalContext" } == true)
 
         var edited = try #require(proposal.draft)
         edited.title = "Manuell ergänzt"
@@ -231,7 +230,7 @@ struct ImportFoundationTests {
           "taxTreatmentHint": {"treatment": "\(treatment.rawValue)", "confidence": 0.91, "reasoning": "fixture"},
           "lineItems": [{"description": "Testleistung", "netAmount": "100.00", "categoryHint": "uncategorized", "assetCandidate": false}],
           "paymentInfo": {"paymentMethodHint": null, "paidIndicator": "unknown", "paymentDate": null, "iban": null, "reference": null},
-          "missingFields": [], "warnings": [], "evidence": []
+          "missingFields": [], "warnings": []
         }
         """
         return try JSONDecoder().decode(DocumentExtraction.self, from: Data(json.utf8))

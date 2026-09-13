@@ -33,7 +33,7 @@
           "type": "output_text",
           "annotations": [],
           "logprobs": [],
-          "text": "{\"counterparty\":{\"city\":\"Dublin\",\"countryCode\":\"IE\",\"name\":\"CloudForge Software Ireland Limited\",\"postalCode\":\"D02 XY45\",\"street\":\"14 Harbour Quay\",\"vatId\":\"IE1234567X\"},\"direction\":\"expense\",\"documentType\":\"invoice\",\"evidence\":[{\"field\":\"counterparty.name\",\"page\":1,\"snippet\":\"CloudForge Software Ireland Limited\"},{\"field\":\"counterparty.street\",\"page\":1,\"snippet\":\"14 Harbour Quay\"},{\"field\":\"counterparty.postalCode\",\"page\":1,\"snippet\":\"D02 XY45 Dublin\"},{\"field\":\"counterparty.countryCode\",\"page\":1,\"snippet\":\"Ireland\"},{\"field\":\"counterparty.vatId\",\"page\":1,\"snippet\":\"USt-IdNr.: IE1234567X\"},{\"field\":\"invoice.invoiceNumber\",\"page\":1,\"snippet\":\"Invoice no.: CF-2026-08931\"},{\"field\":\"invoice.invoiceDate\",\"page\":1,\"snippet\":\"Invoice date: 2026-08-31\"},{\"field\":\"invoice.servicePeriodStart\",\"page\":1,\"snippet\":\"Service period: Aug 1-31, 2026\"},{\"field\":\"invoice.servicePeriodEnd\",\"page\":1,\"snippet\":\"Service period: Aug 1-31, 2026\"},{\"field\":\"invoice.currency\",\"page\":1,\"snippet\":\"CloudForge Suite - Team plan (5 seats) EUR 71.39\"},{\"field\":\"invoice.netAmount\",\"page\":1,\"snippet\":\"Subtotal EUR 71.39\"},{\"field\":\"invoice.taxAmount\",\"page\":1,\"snippet\":\"Total VAT EUR 0.00\"},{\"field\":\"invoice.grossAmount\",\"page\":1,\"snippet\":\"Total amount EUR 71.39\"},{\"field\":\"lineItems[0].description\",\"page\":1,\"snippet\":\"CloudForge Suite - Team plan (5 seats)\"},{\"field\":\"lineItems[0].netAmount\",\"page\":1,\"snippet\":\"EUR 71.39\"},{\"field\":\"taxComponents[0]\",\"page\":1,\"snippet\":\"VAT reverse charged. Customer is liable for VAT under Article 196 of Council Directive 2006/112/EC.\"},{\"field\":\"paymentInfo.paymentMethodHint\",\"page\":1,\"snippet\":\"Payment method: credit card on file\"}],\"invoice\":{\"currency\":\"EUR\",\"grossAmount\":\"71.39\",\"invoiceDate\":\"2026-08-31\",\"invoiceNumber\":\"CF-2026-08931\",\"netAmount\":\"71.39\",\"serviceDate\":null,\"servicePeriodEnd\":\"2026-08-31\",\"servicePeriodStart\":\"2026-08-01\",\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"CloudForge Suite - Team plan (5 seats)\",\"netAmount\":\"71.39\"}],\"missingFields\":[\"invoice.serviceDate\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.paidIndicator\",\"paymentInfo.paymentDate\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"unknown\",\"paymentDate\":null,\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"reverseChargeNote\",\"netAmount\":\"71.39\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.99,\"reasoning\":\"The supplier is established in Ireland, the customer has a German VAT ID, and the invoice explicitly states that VAT is reverse charged under Article 196 of Council Directive 2006/112/EC.\",\"treatment\":\"reverseCharge\"},\"warnings\":[]}"
+          "text": "{\"counterparty\":{\"city\":\"Dublin\",\"countryCode\":\"IE\",\"name\":\"CloudForge Software Ireland Limited\",\"postalCode\":\"D02 XY45\",\"street\":\"14 Harbour Quay\",\"vatId\":\"IE1234567X\"},\"direction\":\"expense\",\"documentType\":\"invoice\",\"invoice\":{\"currency\":\"EUR\",\"grossAmount\":\"71.39\",\"invoiceDate\":\"2026-08-31\",\"invoiceNumber\":\"CF-2026-08931\",\"netAmount\":\"71.39\",\"serviceDate\":null,\"servicePeriodEnd\":\"2026-08-31\",\"servicePeriodStart\":\"2026-08-01\",\"statedEurEquivalent\":null,\"taxAmount\":\"0.00\"},\"lineItems\":[{\"assetCandidate\":false,\"categoryHint\":\"software_subscriptions\",\"description\":\"CloudForge Suite - Team plan (5 seats)\",\"netAmount\":\"71.39\"}],\"missingFields\":[\"invoice.serviceDate\",\"invoice.statedEurEquivalent\",\"paymentInfo.iban\",\"paymentInfo.paidIndicator\",\"paymentInfo.paymentDate\",\"paymentInfo.reference\"],\"paymentInfo\":{\"iban\":null,\"paidIndicator\":\"unknown\",\"paymentDate\":null,\"paymentMethodHint\":\"card\",\"reference\":null},\"taxComponents\":[{\"kind\":\"reverseChargeNote\",\"netAmount\":\"71.39\",\"rate\":\"0\",\"taxAmount\":\"0.00\"}],\"taxTreatmentHint\":{\"confidence\":0.99,\"reasoning\":\"The supplier is established in Ireland, the customer has a German VAT ID, and the invoice explicitly states that VAT is reverse charged under Article 196 of Council Directive 2006/112/EC.\",\"treatment\":\"reverseCharge\"},\"warnings\":[]}"
         }
       ],
       "phase": "final_answer",
@@ -132,35 +132,6 @@
               "unknown"
             ],
             "type": "string"
-          },
-          "evidence": {
-            "items": {
-              "additionalProperties": false,
-              "properties": {
-                "field": {
-                  "type": "string"
-                },
-                "page": {
-                  "type": [
-                    "integer",
-                    "null"
-                  ]
-                },
-                "snippet": {
-                  "type": [
-                    "string",
-                    "null"
-                  ]
-                }
-              },
-              "required": [
-                "field",
-                "page",
-                "snippet"
-              ],
-              "type": "object"
-            },
-            "type": "array"
           },
           "invoice": {
             "additionalProperties": false,
@@ -470,7 +441,6 @@
           "counterparty",
           "direction",
           "documentType",
-          "evidence",
           "invoice",
           "lineItems",
           "missingFields",

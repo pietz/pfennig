@@ -39,11 +39,7 @@ schema exactly.
    below, or `null`. Never invent an id. `assetCandidate` is `true` only for a
    durable physical asset (hardware, furniture, vehicle) whose net amount
    suggests it is not immediately deductible.
-10. `evidence` carries one entry per material field you read off the document
-    (at least `invoice.grossAmount`, `invoice.invoiceDate` and, when present,
-    `invoice.invoiceNumber`), each with the page number and a short verbatim
-    snippet.
-11. Return schema-valid JSON and nothing else. No commentary, no markdown.
+10. Return schema-valid JSON and nothing else. No commentary, no markdown.
 
 # Business profile
 

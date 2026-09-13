@@ -377,7 +377,6 @@ User-supplied OpenAI API key stored in the **macOS Keychain** (requires a stably
 - Enums for all categorical fields. No free-form strings where an enum exists.
 - Amounts are returned as **decimal strings** (`"71.39"`) plus ISO currency code; Swift converts to minor units.
 - Dates as `YYYY-MM-DD` strings or null.
-- Each material field is accompanied by an `evidence` entry (page, snippet) where possible.
 
 ---
 
@@ -445,8 +444,7 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
   ],
   "paymentInfo": { "paymentMethodHint": "creditCard", "paidIndicator": "paid", "paymentDate": null, "iban": null, "reference": null },
   "missingFields": ["serviceDate"],
-  "warnings": [],
-  "evidence": [ { "field": "invoice.grossAmount", "page": 1, "snippet": "Total EUR 71.39" } ]
+  "warnings": []
 }
 ```
 
@@ -926,7 +924,6 @@ CREATE TABLE field_provenance (
     model_run_id TEXT REFERENCES model_runs(id),
     rule_id TEXT REFERENCES rules(id),
     confidence TEXT,
-    evidence_json TEXT,                    -- {page, snippet}
     created_at TEXT NOT NULL,
     superseded_at TEXT
 );
@@ -1522,7 +1519,7 @@ Invoice first, payment later · payment first, invoice later · overlapping stat
 
 # 41. Prompting Principles
 
-Extraction system prompt emphasizes: extract only supported facts; never invent; distinguish observed from inferred; preserve original currency and exact decimal strings; determine direction relative to the supplied business profile; identify document type; give a tax-treatment **hint** with reasoning, not a decision; return `missingFields` explicitly; return evidence; produce only schema-valid output; use canonical category IDs from the supplied list or null.
+Extraction system prompt emphasizes: extract only supported facts; never invent; distinguish observed from inferred; preserve original currency and exact decimal strings; determine direction relative to the supplied business profile; identify document type; give a tax-treatment **hint** with reasoning, not a decision; return `missingFields` explicitly; produce only schema-valid output; use canonical category IDs from the supplied list or null.
 
 Prompts are versioned (`prompt_version`) and stored in `AI/Prompts/` as resources; changing a prompt requires re-running the fixture suite.
 

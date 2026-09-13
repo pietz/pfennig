@@ -27,30 +27,36 @@ public struct ProvenanceEntry: Codable, Sendable, Hashable {
     public var fieldName: String
     public var provenance: Provenance
     public var confidence: String?
-    public var evidencePage: Int?
-    public var evidenceSnippet: String?
 
     public init(
         entityType: String = "transaction",
         fieldName: String,
         provenance: Provenance,
-        confidence: String? = nil,
-        evidencePage: Int? = nil,
-        evidenceSnippet: String? = nil
+        confidence: String? = nil
     ) {
         self.entityType = entityType
         self.fieldName = fieldName
         self.provenance = provenance
         self.confidence = confidence
-        self.evidencePage = evidencePage
-        self.evidenceSnippet = evidenceSnippet
     }
+}
 
-    /// Short German evidence line for the inspector, if the model gave one.
-    public var evidenceText: String? {
-        guard let evidenceSnippet, !evidenceSnippet.isEmpty else { return nil }
-        guard let evidencePage else { return evidenceSnippet }
-        return "Seite \(evidencePage): \(evidenceSnippet)"
+/// Facts from model extraction that are needed if a reviewer edits a proposal
+/// before acceptance. These are kept separate from field provenance because
+/// they are derivation inputs, not evidence for a particular stored field.
+public struct ProposalDerivationContext: Codable, Sendable, Hashable {
+    public var modelTreatmentHint: TaxTreatment?
+    public var modelTreatmentHintConfidence: Double?
+    public var reverseChargeNote: Bool
+
+    public init(
+        modelTreatmentHint: TaxTreatment? = nil,
+        modelTreatmentHintConfidence: Double? = nil,
+        reverseChargeNote: Bool = false
+    ) {
+        self.modelTreatmentHint = modelTreatmentHint
+        self.modelTreatmentHintConfidence = modelTreatmentHintConfidence
+        self.reverseChargeNote = reverseChargeNote
     }
 }
 
@@ -68,6 +74,7 @@ public struct ProposalSummary: Codable, Sendable, Hashable {
     public var documentRelativePath: String?
     public var originalFilename: String?
     public var provenance: [ProvenanceEntry]
+    public var derivationContext: ProposalDerivationContext?
 
     public init(
         counterpartyName: String,
@@ -81,7 +88,8 @@ public struct ProposalSummary: Codable, Sendable, Hashable {
         treatmentReasoning: String? = nil,
         documentRelativePath: String? = nil,
         originalFilename: String? = nil,
-        provenance: [ProvenanceEntry] = []
+        provenance: [ProvenanceEntry] = [],
+        derivationContext: ProposalDerivationContext? = nil
     ) {
         self.counterpartyName = counterpartyName
         self.direction = direction
@@ -95,6 +103,7 @@ public struct ProposalSummary: Codable, Sendable, Hashable {
         self.documentRelativePath = documentRelativePath
         self.originalFilename = originalFilename
         self.provenance = provenance
+        self.derivationContext = derivationContext
     }
 
     /// Signed amount, the way the table and the review card show it.

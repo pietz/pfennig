@@ -162,38 +162,23 @@ public struct CommitService: Sendable {
         var reverseChargeNote: Bool
     }
 
-    private static let proposalContextEntity = "proposalContext"
-
     private static func derivationContext(
         summary: ProposalSummary?,
         original: TransactionDraft,
         edited: TransactionDraft,
         changedFields: Set<String>
     ) -> DerivationContext {
-        let contextHint = summary?.provenance.first {
-            $0.entityType == proposalContextEntity && $0.fieldName == "modelTreatmentHint"
-        }.flatMap { entry -> ModelTreatmentHint? in
-            guard let raw = entry.evidenceSnippet, let treatment = TaxTreatment(rawValue: raw) else { return nil }
-            return ModelTreatmentHint(treatment: treatment, confidence: Double(entry.confidence ?? "") ?? 0)
+        let context = summary?.derivationContext
+        let modelHint = context?.modelTreatmentHint.map {
+            ModelTreatmentHint(
+                treatment: $0,
+                confidence: context?.modelTreatmentHintConfidence ?? 0
+            )
         }
-        let fallbackHint: ModelTreatmentHint? = {
-            guard let treatment = summary?.treatment, treatment == .nonTaxable || treatment == .exempt else {
-                return nil
-            }
-            let confidence = summary?.provenance.first {
-                $0.entityType == FieldProvenance.Entity.taxAssessment && $0.fieldName == "treatment"
-            }.flatMap { Double($0.confidence ?? "") } ?? 0
-            return ModelTreatmentHint(treatment: treatment, confidence: confidence)
-        }()
-        let modelHint = contextHint ?? fallbackHint
-
-        let explicitReverseChargeNote = summary?.provenance.first {
-            $0.entityType == proposalContextEntity && $0.fieldName == "reverseChargeNote"
-        }.flatMap { Bool($0.evidenceSnippet ?? "") }
         let reverseChargeNote: Bool = if changedFields.contains("components") {
             edited.components.contains { $0.kind == .reverseChargeNote }
-        } else if let explicitReverseChargeNote {
-            explicitReverseChargeNote
+        } else if let context {
+            context.reverseChargeNote
         } else {
             original.components.contains { $0.kind == .reverseChargeNote }
         }

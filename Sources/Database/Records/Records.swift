@@ -729,7 +729,6 @@ public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
     public var modelRunId: String?
     public var ruleId: String?
     public var confidence: String?
-    public var evidenceJson: String?
     public var createdAt: String = Timestamp.string()
     public var supersededAt: String?
 
@@ -744,7 +743,6 @@ public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
         modelRunId: String? = nil,
         ruleId: String? = nil,
         confidence: String? = nil,
-        evidenceJson: String? = nil,
         createdAt: String = Timestamp.string(),
         supersededAt: String? = nil
     ) {
@@ -758,7 +756,6 @@ public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
         self.modelRunId = modelRunId
         self.ruleId = ruleId
         self.confidence = confidence
-        self.evidenceJson = evidenceJson
         self.createdAt = createdAt
         self.supersededAt = supersededAt
     }

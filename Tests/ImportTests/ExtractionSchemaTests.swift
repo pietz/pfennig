@@ -42,6 +42,12 @@ struct ExtractionSchemaTests {
         #expect(violations(schema()).isEmpty)
     }
 
+    @Test("Das Schema enthält keine Dokumentbelege")
+    func excludesEvidence() {
+        let properties = schema()["properties"] as? [String: Any]
+        #expect(properties?["evidence"] == nil)
+    }
+
     @Test("Das Schema ist gültiges JSON")
     func serializable() throws {
         let data = try JSONSerialization.data(withJSONObject: schema())
@@ -81,6 +87,8 @@ struct ExtractionSchemaTests {
         #expect(rendered.contains("DE999999999"))
         #expect(rendered.contains("`software_subscriptions` — Software-Abonnements"))
         #expect(rendered.contains("`reverseCharge`"))
+        #expect(!rendered.contains("evidence"))
+        #expect(!rendered.contains("snippet"))
         #expect(!rendered.contains("{{"))
     }
 }

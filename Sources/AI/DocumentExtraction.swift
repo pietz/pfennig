@@ -61,13 +61,6 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         public var reference: String?
     }
 
-    /// Where a field was read on the document (spec 10.6).
-    public struct Evidence: Codable, Sendable, Hashable {
-        public var field: String
-        public var page: Int?
-        public var snippet: String?
-    }
-
     public var documentType: DocumentType
     public var direction: Direction
     public var counterparty: Counterparty
@@ -78,10 +71,9 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
     public var paymentInfo: PaymentInfo
     public var missingFields: [String]
     public var warnings: [String]
-    public var evidence: [Evidence]
 
-    /// `warnings` and `evidence` default to empty so the ground-truth
-    /// `expected.json` fixtures, which omit them, decode unchanged.
+    /// `missingFields` and `warnings` default to empty so the ground-truth
+    /// `expected.json` fixtures, which may omit them, decode unchanged.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         documentType = try container.decode(DocumentType.self, forKey: .documentType)
@@ -94,11 +86,5 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         paymentInfo = try container.decode(PaymentInfo.self, forKey: .paymentInfo)
         missingFields = try container.decodeIfPresent([String].self, forKey: .missingFields) ?? []
         warnings = try container.decodeIfPresent([String].self, forKey: .warnings) ?? []
-        evidence = try container.decodeIfPresent([Evidence].self, forKey: .evidence) ?? []
-    }
-
-    /// The evidence entry for a schema path such as `invoice.grossAmount`.
-    public func evidence(for field: String) -> Evidence? {
-        evidence.first { $0.field == field }
     }
 }

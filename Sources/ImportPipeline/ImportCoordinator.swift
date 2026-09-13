@@ -148,28 +148,10 @@ public actor ImportCoordinator {
                 hint: normalized.hint,
                 reverseChargeNote: normalized.reverseChargeNote
             )
-            var proposalProvenance = normalized.provenance
-            // ProposalSummary is already durable JSON. Keep the two facts that
-            // are not reconstructible from a plain TransactionDraft alongside
-            // the review data for edited acceptance.
-            if let hint = normalized.hint {
-                proposalProvenance.append(
-                    ProvenanceEntry(
-                        entityType: "proposalContext",
-                        fieldName: "modelTreatmentHint",
-                        provenance: .calculated,
-                        confidence: hint.confidence.description,
-                        evidenceSnippet: hint.treatment.rawValue
-                    )
-                )
-            }
-            proposalProvenance.append(
-                ProvenanceEntry(
-                    entityType: "proposalContext",
-                    fieldName: "reverseChargeNote",
-                    provenance: .document,
-                    evidenceSnippet: normalized.reverseChargeNote ? "true" : "false"
-                )
+            let derivationContext = ProposalDerivationContext(
+                modelTreatmentHint: normalized.hint?.treatment,
+                modelTreatmentHintConfidence: normalized.hint?.confidence,
+                reverseChargeNote: normalized.reverseChargeNote
             )
             let summary = ProposalSummary(
                 counterpartyName: derived.draft.counterpartyName,
@@ -185,7 +167,8 @@ public actor ImportCoordinator {
                 treatmentReasoning: derived.draft.assessment?.reasoning ?? derived.reasoning,
                 documentRelativePath: stored.relativePath,
                 originalFilename: stored.originalFilename,
-                provenance: proposalProvenance
+                provenance: normalized.provenance,
+                derivationContext: derivationContext
             )
             // Autonomy is Manual in V1: nothing commits itself (spec 9).
             try repository.upsertProposal(
