@@ -61,6 +61,23 @@ final class AppModel {
         }
     }
 
+    /// Updates the active profile without reprocessing historical bookings.
+    /// The new values are used for future imports and subsequent edits.
+    @discardableResult
+    func updateProfile(_ profile: BusinessProfile) -> Bool {
+        guard let database else { return false }
+        do {
+            var updated = profile
+            updated.updatedAt = Timestamp.string()
+            try database.saveBusinessProfile(updated)
+            self.profile = updated
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
     private func open(_ archive: Archive) {
         run {
             let database = try AppDatabase(path: archive.databaseURL.path(percentEncoded: false))
