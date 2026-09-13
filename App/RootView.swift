@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case transactions, accounts, review, analysis, taxes, settings
+    case transactions, review
 
     var id: String {
         rawValue
@@ -10,22 +10,14 @@ enum SidebarItem: String, CaseIterable, Identifiable {
     var title: LocalizedStringResource {
         switch self {
         case .transactions: "Buchungen"
-        case .accounts: "Konten"
         case .review: "Prüfen"
-        case .analysis: "Auswertung"
-        case .taxes: "Steuern"
-        case .settings: "Einstellungen"
         }
     }
 
     var symbol: String {
         switch self {
         case .transactions: "list.bullet.rectangle"
-        case .accounts: "building.columns"
         case .review: "checkmark.seal"
-        case .analysis: "chart.bar"
-        case .taxes: "percent"
-        case .settings: "gearshape"
         }
     }
 }
@@ -42,10 +34,24 @@ struct RootView: View {
                 OnboardingView()
             case .ready:
                 NavigationSplitView {
-                    List(SidebarItem.allCases, selection: $selection) { item in
-                        Label(item.title, systemImage: item.symbol)
-                            .badge(item == .review ? model.pendingProposalCount : 0)
-                            .tag(item)
+                    VStack(spacing: 0) {
+                        List(SidebarItem.allCases, selection: $selection) { item in
+                            Label(item.title, systemImage: item.symbol)
+                                .badge(item == .review ? model.pendingProposalCount : 0)
+                                .tag(item)
+                        }
+                        .listStyle(.sidebar)
+
+                        Divider()
+
+                        SettingsLink {
+                            Label("Einstellungen", systemImage: "gearshape")
+                        }
+                        .buttonStyle(.borderless)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
                     }
                     .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 260)
                 } detail: {
@@ -68,45 +74,12 @@ struct RootView: View {
             if let database = model.database {
                 TransactionsView(database: database)
             }
-        case .settings:
-            SettingsView()
-        case .accounts:
-            placeholder(
-                "Konten",
-                symbol: "building.columns",
-                description: "Kontoauszüge importieren und Zahlungen zuordnen. Kommt mit Meilenstein M6."
-            )
         case .review:
             if let database = model.database {
                 ReviewView(database: database)
             }
-        case .analysis:
-            placeholder(
-                "Auswertung",
-                symbol: "chart.bar",
-                description: "Einnahmen, Ausgaben und Umsatzsteuer je Zeitraum. Kommt mit Meilenstein M9."
-            )
-        case .taxes:
-            placeholder(
-                "Steuern",
-                symbol: "percent",
-                description: "UStVA und EÜR vorbereiten. Kommt mit Meilenstein M10."
-            )
         case nil:
             ContentUnavailableView("Nichts ausgewählt", systemImage: "sidebar.left")
         }
-    }
-
-    private func placeholder(
-        _ title: LocalizedStringKey,
-        symbol: String,
-        description: LocalizedStringKey
-    ) -> some View {
-        ContentUnavailableView {
-            Label(title, systemImage: symbol)
-        } description: {
-            Text(description)
-        }
-        .navigationTitle(Text(title))
     }
 }

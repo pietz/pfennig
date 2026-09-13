@@ -11,9 +11,20 @@ struct SettingsView: View {
     @State private var hasAPIKey = APIKeyStore.hasKey
     @State private var selectedModel = OpenAIModel.default
     @State private var selectedEffort = ReasoningEffort.default
+    @AppStorage(AppearancePreference.storageKey) private var appearancePreferenceRawValue = AppearancePreference.system
+        .rawValue
 
     var body: some View {
         Form {
+            Section("Darstellung") {
+                Picker("Erscheinungsbild", selection: $appearancePreferenceRawValue) {
+                    ForEach(AppearancePreference.allCases) { preference in
+                        Text(preference.title)
+                            .tag(preference.rawValue)
+                    }
+                }
+            }
+
             Section("Archiv") {
                 LabeledContent("Ordner") {
                     Text(model.archive?.rootURL.path(percentEncoded: false) ?? "–")
@@ -65,6 +76,7 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .navigationTitle("Einstellungen")
+        .frame(width: 620, height: 560)
         .task { loadAISettings() }
         .onChange(of: selectedModel) { _, newValue in
             try? model.database?.setSetting(newValue, forKey: AIConfiguration.modelSettingKey)
@@ -78,7 +90,10 @@ struct SettingsView: View {
         guard let database = model.database else { return }
         selectedModel = (try? database.setting(OpenAIModel.self, forKey: AIConfiguration.modelSettingKey))
             ?? .default
-        selectedEffort = (try? database.setting(ReasoningEffort.self, forKey: AIConfiguration.reasoningEffortSettingKey))
+        selectedEffort = (try? database.setting(
+            ReasoningEffort.self,
+            forKey: AIConfiguration.reasoningEffortSettingKey
+        ))
             ?? .default
     }
 

@@ -81,23 +81,24 @@ extension Binding where Value == String? {
     }
 }
 
-/// A calendar date that may be absent (spec 23).
+/// A calendar date that may be absent (spec 23). The value is edited with
+/// the native macOS date field; an unset value never masquerades as today.
 struct OptionalDateField: View {
     let label: LocalizedStringKey
     @Binding var date: LocalDate?
 
     var body: some View {
-        LabeledContent(label) {
-            HStack(spacing: 4) {
+        if date != nil {
+            HStack(spacing: 6) {
                 DatePicker(
-                    "",
+                    label,
                     selection: Binding(
-                        get: { (date ?? .today()).date() },
+                        get: { date?.date() ?? Date() },
                         set: { date = LocalDate($0) }
                     ),
                     displayedComponents: .date
                 )
-                .labelsHidden()
+                .datePickerStyle(.field)
                 .environment(\.locale, Format.german)
                 Button {
                     date = nil
@@ -107,8 +108,16 @@ struct OptionalDateField: View {
                 .buttonStyle(.borderless)
                 .foregroundStyle(.secondary)
                 .help("Datum entfernen")
-                .opacity(date == nil ? 0 : 1)
-                .disabled(date == nil)
+                .accessibilityLabel("Datum entfernen")
+            }
+        } else {
+            LabeledContent(label) {
+                Button("Datum setzen") {
+                    date = .today()
+                }
+                .buttonStyle(.borderless)
+                .foregroundStyle(.secondary)
+                .help("Datum setzen")
             }
         }
     }
@@ -207,6 +216,17 @@ extension PaymentMethod {
         case .cash: "Bar"
         case .other: "Sonstiges"
         case .unknown: "Unbekannt"
+        }
+    }
+}
+
+extension SupplyType {
+    var label: LocalizedStringKey {
+        switch self {
+        case .service: "Dienstleistung"
+        case .digitalService: "Digitale Leistung"
+        case .goods: "Ware"
+        case .unknown: "Automatisch"
         }
     }
 }

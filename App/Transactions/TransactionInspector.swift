@@ -43,6 +43,7 @@ struct TransactionInspector: View {
 
     let subject: InspectorSubject
     @Binding var newDraft: TransactionDraft?
+    @Binding var hasUnsavedChanges: Bool
 
     @State private var draft = TransactionDraft(businessProfileId: "")
     @State private var original = TransactionDraft(businessProfileId: "")
@@ -51,6 +52,12 @@ struct TransactionInspector: View {
     @State private var loadedSubjectIdentity: String?
     @State private var loadedProposalUpdatedAt: String?
     @State private var operationError: String?
+    @State private var metadataExpanded = false
+    @State private var allocationsExpanded = false
+    @State private var taxExpanded = false
+    @State private var paymentsExpanded = true
+    @State private var issuesExpanded = false
+    @State private var historyExpanded = false
 
     private var derived: DerivedTransaction? {
         model.derive(draft)
@@ -79,16 +86,17 @@ struct TransactionInspector: View {
                 VStack(spacing: 0) {
                     Form {
                         documentSection
-                        fieldsSection
+                        primaryFieldsSection
                         amountsSection
-                        allocationsSection
-                        taxSection
+                        metadataDisclosure
+                        allocationsDisclosure
+                        taxDisclosure
                         if case let .transaction(detail) = subject {
-                            paymentsSection(detail)
+                            paymentsDisclosure(detail)
                         }
-                        issuesSection
+                        issuesDisclosure
                         if case let .transaction(detail) = subject {
-                            historySection(detail)
+                            historyDisclosure(detail)
                         }
                     }
                     .formStyle(.grouped)
@@ -116,6 +124,12 @@ struct TransactionInspector: View {
                 newDraft = value
             }
         }
+        .onChange(of: hasChanges, initial: true) { _, value in
+            hasUnsavedChanges = value
+        }
+        .onDisappear {
+            hasUnsavedChanges = false
+        }
     }
 
     // MARK: - Beleg
@@ -125,20 +139,48 @@ struct TransactionInspector: View {
         if let path = documentPath, let archive = model.archive {
             Section("Beleg") {
                 DocumentPreview(url: archive.url(forRelativePath: path))
-                if let name = documentName {
-                    LabeledContent("Datei") {
-                        Text(name).lineLimit(1).truncationMode(.middle)
+                HStack(spacing: 8) {
+                    Label {
+                        Text(documentName ?? "Beleg")
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                    } icon: {
+                        Image(systemName: "doc.text")
                     }
-                }
-                Button("Im Finder zeigen") {
-                    NSWorkspace.shared.activateFileViewerSelecting([archive.url(forRelativePath: path)])
+                    .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Button {
+                        NSWorkspace.shared.open(archive.url(forRelativePath: path))
+                    } label: {
+                        Image(systemName: "arrow.up.right.square")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Beleg öffnen")
+                    .accessibilityLabel("Beleg öffnen")
+                    Button {
+                        NSWorkspace.shared.activateFileViewerSelecting([archive.url(forRelativePath: path)])
+                    } label: {
+                        Image(systemName: "folder")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Im Finder zeigen")
+                    .accessibilityLabel("Im Finder zeigen")
                 }
             }
         } else if case .transaction = subject {
             Section("Beleg") {
-                Label("Kein Beleg", systemImage: "doc.badge.plus").foregroundStyle(.secondary)
-                Button("Beleg anhängen") { attachDocument() }
+                HStack(spacing: 8) {
+                    Label("Kein Beleg", systemImage: "doc.badge.plus")
+                        .foregroundStyle(.secondary)
+                    Spacer(minLength: 8)
+                    Button(action: attachDocument) {
+                        Image(systemName: "paperclip")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Beleg anhängen")
+                    .accessibilityLabel("Beleg anhängen")
                     .disabled(!moneyFieldsAreValid)
+                }
             }
         }
     }
@@ -164,33 +206,6 @@ struct TransactionInspector: View {
         operationError = nil
     }
 
-    private func paymentsSection(_ detail: TransactionDetail) -> some View {
-        Section("Zahlungen") {
-            if detail.payments.isEmpty {
-                Label("Keine Zahlung erfasst", systemImage: "circle").foregroundStyle(.secondary)
-            }
-            ForEach(detail.payments) { entry in
-                LabeledContent(Format.date(entry.payment.paymentDate)) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(entry.allocated.formatted(locale: Format.german)).monospacedDigit()
-                        Text(
-                            [entry.accountName, entry.payment.paymentMethod?.text, entry.payment.reference]
-                                .compactMap(\.self)
-                                .joined(separator: " · ")
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    }
-                }
-            }
-            Button("Zahlung hinzufügen") {
-                operationError = nil
-                addingPayment = true
-            }
-            .disabled(!moneyFieldsAreValid)
-        }
-    }
-
     private var documentPath: String? {
         switch subject {
         case let .transaction(detail): detail.documents.first?.document.relativePath
@@ -207,15 +222,13 @@ struct TransactionInspector: View {
         }
     }
 
-    // MARK: - Felder
+    // MARK: - Primäre Felder
 
-    private var fieldsSection: some View {
-        Section("Felder") {
+    private var primaryFieldsSection: some View {
+        Section("Grunddaten") {
             field("counterpartyId") {
                 TextField("Firma", text: $draft.counterpartyName, prompt: Text("Firma oder Person"))
             }
-            TextField("Land", text: $draft.counterpartyCountryCode.orEmpty, prompt: Text("DE"))
-            TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))
             field("direction") {
                 Picker("Richtung", selection: $draft.direction) {
                     Text("Ausgabe").tag(Direction.expense)
@@ -227,25 +240,24 @@ struct TransactionInspector: View {
                     ForEach(TransactionType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
             }
-            TextField("Titel", text: $draft.title.orEmpty, prompt: Text("Kurzbeschreibung"))
+            field("title") {
+                TextField("Titel", text: $draft.title.orEmpty, prompt: Text("Kurzbeschreibung"))
+            }
             field("invoiceNumber") {
                 TextField("Rechnungsnummer", text: $draft.invoiceNumber.orEmpty, prompt: Text("optional"))
             }
             field("invoiceDate") {
                 OptionalDateField(label: "Rechnungsdatum", date: $draft.invoiceDate)
             }
-            OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate)
-            OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart)
-            OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd)
-            TextField("Notiz", text: $draft.notes.orEmpty, prompt: Text("optional"), axis: .vertical)
-                .lineLimit(1 ... 4)
         }
     }
 
     private var amountsSection: some View {
         Section("Beträge") {
-            Picker("Währung", selection: $draft.currency) {
-                ForEach(["EUR", "USD", "GBP", "CHF"], id: \.self) { Text($0).tag(CurrencyCode($0)) }
+            field("currency") {
+                Picker("Währung", selection: $draft.currency) {
+                    ForEach(["EUR", "USD", "GBP", "CHF"], id: \.self) { Text($0).tag(CurrencyCode($0)) }
+                }
             }
             field("netAmount") {
                 MoneyField(
@@ -271,53 +283,157 @@ struct TransactionInspector: View {
                     onValidityChange: { setMoneyFieldValidity("grossAmount", isValid: $0) }
                 )
             }
-            ForEach(draft.components) { component in
-                LabeledContent("\(component.rate ?? "–") %") {
-                    Text(
-                        Format.money(component.netMinor, currency: draft.currency) + " + "
-                            + Format.money(component.taxMinor, currency: draft.currency)
-                    )
-                    .monospacedDigit()
+        }
+    }
+
+    private var metadataDisclosure: some View {
+        DisclosureGroup("Weitere Angaben", isExpanded: $metadataExpanded) {
+            field("counterpartyCountryCode") {
+                TextField("Land", text: $draft.counterpartyCountryCode.orEmpty, prompt: Text("DE"))
+            }
+            field("counterpartyVatId") {
+                TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))
+            }
+            field("serviceDate") {
+                OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate)
+            }
+            field("servicePeriodStart") {
+                OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart)
+            }
+            field("servicePeriodEnd") {
+                OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd)
+            }
+            field("supplyType", entity: FieldProvenance.Entity.taxAssessment) {
+                Picker("Leistungsart", selection: $draft.supplyType) {
+                    ForEach(SupplyType.allCases, id: \.self) { Text($0.label).tag($0) }
                 }
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            }
+            field("isAdvancePayment") {
+                Toggle("Anzahlung", isOn: $draft.isAdvancePayment)
+            }
+            field("notes") {
+                TextField("Notiz", text: $draft.notes.orEmpty, prompt: Text("optional"), axis: .vertical)
+                    .lineLimit(1 ... 4)
             }
         }
     }
 
-    private var allocationsSection: some View {
-        Section("Aufteilung") {
+    // MARK: - Aufteilung
+
+    private var allocationsDisclosure: some View {
+        DisclosureGroup(isExpanded: $allocationsExpanded) {
+            if draft.allocations.isEmpty {
+                Label("Keine Aufteilung erfasst", systemImage: "square.split.2x1")
+                    .foregroundStyle(.secondary)
+            }
             ForEach($draft.allocations) { $allocation in
-                HStack(spacing: 8) {
-                    Picker("", selection: $allocation.categoryId) {
-                        ForEach(categoryOptions) { Text($0.nameDe).tag($0.id) }
-                    }
-                    .labelsHidden()
-                    MoneyField(
-                        label: "Betrag",
-                        minor: Binding(
-                            get: { allocation.amountMinor },
-                            set: { allocation.amountMinor = $0 ?? 0 }
-                        ),
-                        currency: draft.currency,
-                        onValidityChange: {
-                            setMoneyFieldValidity("allocation.\(allocation.id)", isValid: $0)
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Picker("Kategorie", selection: $allocation.categoryId) {
+                            ForEach(categoryOptions) { Text($0.nameDe).tag($0.id) }
                         }
-                    )
-                    ProvenanceBadge(provenance: isProposal ? .agent : nil)
+                        .labelsHidden()
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        MoneyField(
+                            label: "Betrag",
+                            minor: Binding(
+                                get: { allocation.amountMinor },
+                                set: { allocation.amountMinor = $0 ?? 0 }
+                            ),
+                            currency: draft.currency,
+                            onValidityChange: {
+                                setMoneyFieldValidity("allocation.\(allocation.id)", isValid: $0)
+                            }
+                        )
+                        ProvenanceBadge(provenance: allocationProvenance(allocation.id))
+                    }
+                    HStack(spacing: 8) {
+                        TextField("Beschreibung", text: $allocation.description.orEmpty, prompt: Text("optional"))
+                        TextField(
+                            "Privatanteil (%)",
+                            text: $allocation.privateSharePercent.orEmpty,
+                            prompt: Text("optional")
+                        )
+                        .frame(width: 118)
+                    }
+                    if allocation.assetFlag {
+                        Label("Anlagegut prüfen", systemImage: "exclamationmark.triangle")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                 }
+                .padding(.vertical, 4)
+            }
+        } label: {
+            HStack {
+                Text("Aufteilung")
+                Spacer()
+                Text("\(draft.allocations.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
         }
     }
 
-    private var taxSection: some View {
-        Section("Steuer") {
-            Picker("Behandlung", selection: $draft.treatmentOverride) {
-                Text("Automatisch").tag(TaxTreatment?.none)
-                Divider()
-                ForEach(TaxTreatment.allCases.filter { $0 != .smallBusiness }, id: \.self) {
-                    Text($0.label).tag(TaxTreatment?.some($0))
+    // MARK: - Steuer
+
+    private var taxDisclosure: some View {
+        DisclosureGroup(isExpanded: $taxExpanded) {
+            field(
+                "treatmentOverride",
+                provenanceField: "treatment",
+                entity: FieldProvenance.Entity.taxAssessment
+            ) {
+                Picker("Behandlung", selection: $draft.treatmentOverride) {
+                    Text("Automatisch").tag(TaxTreatment?.none)
+                    Divider()
+                    ForEach(TaxTreatment.allCases.filter { $0 != .smallBusiness }, id: \.self) {
+                        Text($0.label).tag(TaxTreatment?.some($0))
+                    }
                 }
+            }
+            if draft.components.isEmpty {
+                Label("Keine Steuerpositionen erfasst", systemImage: "percent")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach($draft.components) { $component in
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Picker("Art", selection: $component.kind) {
+                            ForEach(TaxComponentKind.allCases, id: \.self) { Text($0.label).tag($0) }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        TextField("Satz (%)", text: $component.rate.orEmpty, prompt: Text("optional"))
+                            .frame(width: 110)
+                        ProvenanceBadge(provenance: componentProvenance(component.id))
+                    }
+                    HStack(spacing: 8) {
+                        MoneyField(
+                            label: "Netto",
+                            minor: Binding(
+                                get: { component.netMinor },
+                                set: { component.netMinor = $0 ?? 0 }
+                            ),
+                            currency: draft.currency,
+                            onValidityChange: {
+                                setMoneyFieldValidity("taxComponent.\(component.id).netAmount", isValid: $0)
+                            }
+                        )
+                        MoneyField(
+                            label: "Steuer",
+                            minor: Binding(
+                                get: { component.taxMinor },
+                                set: { component.taxMinor = $0 ?? 0 }
+                            ),
+                            currency: draft.currency,
+                            onValidityChange: {
+                                setMoneyFieldValidity("taxComponent.\(component.id).taxAmount", isValid: $0)
+                            }
+                        )
+                    }
+                }
+                .padding(.vertical, 4)
             }
             if let assessment = derived?.draft.assessment {
                 LabeledContent("Entschieden als") {
@@ -326,8 +442,12 @@ struct TransactionInspector: View {
                         ProvenanceBadge(provenance: treatmentProvenance)
                     }
                 }
+                LabeledContent("Status", value: assessment.status.text)
                 if let reasoning = assessment.reasoning ?? derived?.reasoning {
-                    Text(reasoning).font(.callout).foregroundStyle(.secondary)
+                    Text(reasoning)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 if let selfAssessed = assessment.selfAssessedVatMinor {
                     LabeledContent("Selbst berechnete USt.") {
@@ -346,39 +466,137 @@ struct TransactionInspector: View {
                     LabeledContent("Umsatzsteuer-Zeitpunkt") { Text(Format.date(outputVATDate)) }
                 }
             }
-        }
-    }
-
-    private var issuesSection: some View {
-        Section("Hinweise") {
-            let issues = derived?.issues ?? []
-            if let operationError {
-                IssueRow(severity: .error, message: operationError)
-            }
-            if !moneyFieldsAreValid {
-                IssueRow(
-                    severity: .error,
-                    message: "Bitte korrigieren Sie ungültige Beträge, bevor Sie speichern oder weitere Daten anhängen."
-                )
-            }
-            if issues.isEmpty, operationError == nil, moneyFieldsAreValid {
-                Label("Keine Hinweise", systemImage: "checkmark.circle").foregroundStyle(.secondary)
-            }
-            ForEach(issues.indices, id: \.self) { index in
-                IssueRow(severity: issues[index].severity, message: issues[index].message)
+        } label: {
+            HStack {
+                Text("Steuer")
+                Spacer()
+                if !draft.components.isEmpty {
+                    Text("\(draft.components.count) Positionen")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
     }
 
-    private func historySection(_ detail: TransactionDetail) -> some View {
-        Section {
-            DisclosureGroup("Verlauf") {
-                ForEach(detail.auditEvents) { event in
-                    VStack(alignment: .leading, spacing: 1) {
-                        Text("\(event.action.text) · \(event.actor.text)")
-                        Text(Format.timestamp(event.createdAt)).font(.caption).foregroundStyle(.secondary)
+    // MARK: - Zahlungen
+
+    private func paymentsDisclosure(_ detail: TransactionDetail) -> some View {
+        DisclosureGroup(isExpanded: $paymentsExpanded) {
+            if detail.payments.isEmpty {
+                Label("Keine Zahlung erfasst", systemImage: "circle")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(detail.payments) { entry in
+                LabeledContent(Format.date(entry.payment.paymentDate)) {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(entry.allocated.formatted(locale: Format.german)).monospacedDigit()
+                        Text(
+                            [entry.accountName, entry.payment.paymentMethod?.text, entry.payment.reference]
+                                .compactMap(\.self)
+                                .joined(separator: " · ")
+                        )
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
                     }
                 }
+            }
+            Button {
+                operationError = nil
+                addingPayment = true
+            } label: {
+                Label("Zahlung hinzufügen", systemImage: "plus")
+            }
+            .disabled(!moneyFieldsAreValid)
+        } label: {
+            HStack {
+                Text("Zahlungen")
+                Spacer()
+                if detail.payments.isEmpty {
+                    Text("Keine")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("\(detail.payments.count)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+        }
+    }
+
+    // MARK: - Hinweise und Verlauf
+
+    @ViewBuilder
+    private var issuesDisclosure: some View {
+        if hasVisibleIssues {
+            Section("Hinweise") {
+                issuesContent
+            }
+        } else {
+            DisclosureGroup(isExpanded: $issuesExpanded) {
+                issuesContent
+            } label: {
+                HStack {
+                    Text("Hinweise")
+                    Spacer()
+                    Text("Keine")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var issuesContent: some View {
+        let issues = derived?.issues ?? []
+        if let operationError {
+            IssueRow(severity: .error, message: operationError)
+        }
+        if !moneyFieldsAreValid {
+            IssueRow(
+                severity: .error,
+                message: "Bitte korrigieren Sie ungültige Beträge, bevor Sie speichern oder weitere Daten anhängen."
+            )
+        }
+        if issues.isEmpty, operationError == nil, moneyFieldsAreValid {
+            Label("Keine Hinweise", systemImage: "checkmark.circle")
+                .foregroundStyle(.secondary)
+        }
+        ForEach(issues.indices, id: \.self) { index in
+            IssueRow(severity: issues[index].severity, message: issues[index].message)
+        }
+    }
+
+    private var hasVisibleIssues: Bool {
+        operationError != nil || !moneyFieldsAreValid || !(derived?.issues.isEmpty ?? true)
+    }
+
+    private func historyDisclosure(_ detail: TransactionDetail) -> some View {
+        DisclosureGroup(isExpanded: $historyExpanded) {
+            if detail.auditEvents.isEmpty {
+                Text("Noch kein Verlauf")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(detail.auditEvents) { event in
+                VStack(alignment: .leading, spacing: 1) {
+                    Text("\(event.action.text) · \(event.actor.text)")
+                    Text(Format.timestamp(event.createdAt))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } label: {
+            HStack {
+                Text("Verlauf")
+                Spacer()
+                Text("\(detail.auditEvents.count)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
         }
     }
@@ -499,30 +717,74 @@ struct TransactionInspector: View {
 
     /// A row with its provenance capsule; edited fields become `Manuell`
     /// as soon as they differ from what the subject arrived with (spec 8.3).
-    private func field(_ name: String, @ViewBuilder content: () -> some View) -> some View {
-        HStack(spacing: 8) {
+    private func field(
+        _ name: String,
+        provenanceField: String? = nil,
+        entity: String = FieldProvenance.Entity.transaction,
+        @ViewBuilder content: () -> some View
+    ) -> some View {
+        let storedField = provenanceField ?? name
+        return HStack(spacing: 8) {
             content()
-            ProvenanceBadge(provenance: provenance(name), help: evidence(name))
+            ProvenanceBadge(
+                provenance: provenance(changeField: name, storedField: storedField, entity: entity),
+                help: evidence(storedField, entity: entity)
+            )
         }
     }
 
-    private func provenance(_ name: String) -> Provenance? {
-        if changed(name) {
+    private func provenance(
+        changeField: String,
+        storedField: String,
+        entity: String = FieldProvenance.Entity.transaction
+    ) -> Provenance? {
+        if changed(changeField) {
             return .manual
         }
         switch subject {
         case let .transaction(detail):
-            return detail.provenance(of: name)?.provenance
+            return detail.provenance(of: storedField, entity: entity)?.provenance
         case let .proposal(proposal):
-            return proposal.summary?.provenance(of: name)?.provenance
+            return proposal.summary?.provenance(of: storedField, entity: entity)?.provenance
         default:
             return nil
         }
     }
 
-    private func evidence(_ name: String) -> String? {
+    private func evidence(_ name: String, entity: String) -> String? {
         guard case let .proposal(proposal) = subject else { return nil }
-        return proposal.summary?.provenance(of: name)?.evidenceText
+        return proposal.summary?.provenance(of: name, entity: entity)?.evidenceText
+    }
+
+    private func allocationProvenance(_ id: String) -> Provenance? {
+        guard draft.allocations.first(where: { $0.id == id }) == original.allocations.first(where: { $0.id == id })
+        else { return .manual }
+        switch subject {
+        case let .transaction(detail):
+            return detail.provenance.first {
+                $0.entityType == FieldProvenance.Entity.allocation && $0.entityId == id && $0.fieldName == "categoryId"
+            }?.provenance
+        case let .proposal(proposal):
+            return proposal.summary?.provenance(of: "categoryId", entity: FieldProvenance.Entity.allocation)?.provenance
+                ?? .agent
+        default:
+            return nil
+        }
+    }
+
+    private func componentProvenance(_ id: String) -> Provenance? {
+        guard draft.components.first(where: { $0.id == id }) == original.components.first(where: { $0.id == id })
+        else { return .manual }
+        switch subject {
+        case let .transaction(detail):
+            return detail.provenance.first {
+                $0.entityType == "taxComponent" && $0.entityId == id && $0.fieldName == "kind"
+            }?.provenance
+        case let .proposal(proposal):
+            return proposal.summary?.provenance(of: "kind", entity: "taxComponent")?.provenance ?? .document
+        default:
+            return nil
+        }
     }
 
     private func changed(_ name: String) -> Bool {
@@ -530,42 +792,35 @@ struct TransactionInspector: View {
     }
 }
 
-/// Belegvorschau: the archived file itself, rendered (spec 6.4).
+/// Belegvorschau: a small first-page thumbnail rather than a live PDF view.
 struct DocumentPreview: View {
     let url: URL
+    @State private var image: NSImage?
 
     var body: some View {
-        Group {
-            if url.pathExtension.lowercased() == "pdf" {
-                PDFPreview(url: url)
-            } else if let image = NSImage(contentsOf: url) {
-                Image(nsImage: image).resizable().aspectRatio(contentMode: .fit)
+        ZStack {
+            Color(nsColor: .textBackgroundColor)
+            if let image {
+                Image(nsImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(8)
             } else {
-                RoundedRectangle(cornerRadius: 6)
-                    .fill(.quaternary)
-                    .overlay(Image(systemName: "doc").foregroundStyle(.secondary))
+                Image(systemName: "doc.text")
+                    .foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: 260)
-    }
-}
-
-private struct PDFPreview: NSViewRepresentable {
-    let url: URL
-
-    func makeNSView(context: Context) -> PDFView {
-        let view = PDFView()
-        view.autoScales = true
-        view.displayMode = .singlePageContinuous
-        view.backgroundColor = .clear
-        view.document = PDFDocument(url: url)
-        return view
+        .frame(height: 148)
+        .overlay(Rectangle().strokeBorder(.separator, lineWidth: 1))
+        .task(id: url) { image = Self.load(url) }
     }
 
-    func updateNSView(_ view: PDFView, context: Context) {
-        if view.document?.documentURL != url {
-            view.document = PDFDocument(url: url)
+    private static func load(_ url: URL) -> NSImage? {
+        if url.pathExtension.lowercased() == "pdf" {
+            guard let page = PDFDocument(url: url)?.page(at: 0) else { return nil }
+            return page.thumbnail(of: CGSize(width: 480, height: 640), for: .mediaBox)
         }
+        return NSImage(contentsOf: url)
     }
 }

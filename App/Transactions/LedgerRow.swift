@@ -15,7 +15,6 @@ struct LedgerRow: Identifiable, Hashable {
     var amount: Money?
     var secondaryAmount: Money?
     var paymentStatus: PaymentStatus?
-    var treatment: TaxTreatment?
     var status: DisplayStatus
 
     init(_ item: TransactionListItem) {
@@ -28,7 +27,6 @@ struct LedgerRow: Identifiable, Hashable {
         amount = item.bookedAmount
         secondaryAmount = item.originalAmount
         paymentStatus = item.paymentStatus
-        treatment = item.taxTreatment
         status = item.displayStatus
     }
 
@@ -43,7 +41,6 @@ struct LedgerRow: Identifiable, Hashable {
         amount = summary?.amount
         secondaryAmount = nil
         paymentStatus = nil
-        treatment = summary?.treatment
         status = proposal.policyDecision == .blocked
             ? DisplayStatus(label: "Konflikt", symbol: "xmark.octagon", tint: .red)
             : DisplayStatus(label: "Vorschlag", symbol: "sparkles", tint: .orange)

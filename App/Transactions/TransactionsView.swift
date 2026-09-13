@@ -20,6 +20,9 @@ struct TransactionsView: View {
     @State private var detail: TransactionDetail?
     @State private var newDraft: TransactionDraft?
     @State private var deletingID: String?
+    @State private var pendingSelection: LedgerRow.ID?
+    @State private var isConfirmingDiscard = false
+    @State private var inspectorHasChanges = false
     @State private var search = ""
     @State private var directionFilter: DirectionFilter = .all
     @State private var showsInspector = true
@@ -40,8 +43,12 @@ struct TransactionsView: View {
             .navigationSubtitle(Text(subtitle))
             .toolbar { toolbar }
             .inspector(isPresented: $showsInspector) {
-                TransactionInspector(subject: subject, newDraft: $newDraft)
-                    .inspectorColumnWidth(min: 320, ideal: 420, max: 600)
+                TransactionInspector(
+                    subject: subject,
+                    newDraft: $newDraft,
+                    hasUnsavedChanges: $inspectorHasChanges
+                )
+                .inspectorColumnWidth(min: 320, ideal: 420, max: 600)
             }
             .dropDestination(for: URL.self) { urls, _ in
                 model.importFiles(urls)
@@ -54,6 +61,24 @@ struct TransactionsView: View {
                         .padding(8)
                         .allowsHitTesting(false)
                 }
+            }
+            .confirmationDialog(
+                "Ungespeicherte Änderungen verwerfen?",
+                isPresented: $isConfirmingDiscard,
+                titleVisibility: .visible
+            ) {
+                Button("Änderungen verwerfen", role: .destructive) {
+                    if pendingSelection == nil, newDraft != nil {
+                        newDraft = nil
+                    }
+                    selection = pendingSelection
+                    pendingSelection = nil
+                }
+                Button("Weiter bearbeiten", role: .cancel) {
+                    pendingSelection = nil
+                }
+            } message: {
+                Text("Speichern Sie die aktuelle Buchung zuerst, wenn Sie Ihre Änderungen behalten möchten.")
             }
             .confirmationDialog(
                 "Buchung löschen?",
@@ -86,69 +111,117 @@ struct TransactionsView: View {
     // MARK: - Table
 
     private var table: some View {
-        Table(rows, selection: $selection) {
-            TableColumn("Firma") { row in
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 5) {
-                        if row.isProposal {
-                            Image(systemName: "sparkles").foregroundStyle(.orange)
+        VStack(spacing: 0) {
+            Table(rows, selection: guardedSelection) {
+                TableColumn("Firma") { row in
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(row.name)
+                            if row.isProposal {
+                                Image(systemName: row.status.symbol)
+                                    .font(.caption)
+                                    .foregroundStyle(row.status.tint)
+                                    .help(Text(row.status.label))
+                                    .accessibilityLabel(Text(row.status.label))
+                            }
                         }
-                        Text(row.name)
-                    }
-                    if let subtitle = row.subtitle {
-                        Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                        if let subtitle = row.subtitle {
+                            Text(subtitle).font(.caption).foregroundStyle(.secondary)
+                        }
                     }
                 }
-            }
-            .width(min: 180, ideal: 260)
+                .width(min: 180, ideal: 260)
 
-            TableColumn("Datum") { row in
-                Text(row.date.map(Format.date) ?? "–")
-                    .monospacedDigit()
-                    .help(Text("Herkunft: \(row.dateOrigin)"))
-            }
-            .width(90)
-
-            TableColumn("Betrag") { row in
-                VStack(alignment: .trailing, spacing: 1) {
-                    Text(row.amount?.formatted(locale: Format.german) ?? "–")
+                TableColumn("Datum") { row in
+                    Text(row.date.map(Format.date) ?? "–")
                         .monospacedDigit()
-                        .foregroundStyle((row.amount?.minorUnits ?? 0) < 0 ? Color.primary : Color.green)
-                    if let secondary = row.secondaryAmount {
-                        Text(secondary.formatted(locale: Format.german))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        .help(Text("Herkunft: \(row.dateOrigin)"))
+                }
+                .width(90)
+
+                TableColumn("Betrag") { row in
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(row.amount?.formatted(locale: Format.german) ?? "–")
+                            .monospacedDigit()
+                            .foregroundStyle((row.amount?.minorUnits ?? 0) < 0 ? Color.primary : Color.green)
+                        if let secondary = row.secondaryAmount {
+                            Text(secondary.formatted(locale: Format.german))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .width(110)
+
+                TableColumn("Zahlung") { row in
+                    if let status = row.paymentStatus {
+                        Label(status.label, systemImage: status.symbol).foregroundStyle(status.tint)
+                    } else {
+                        Text("–").foregroundStyle(.secondary)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .trailing)
+                .width(140)
             }
-            .width(110)
-
-            TableColumn("Zahlung") { row in
-                if let status = row.paymentStatus {
-                    Label(status.label, systemImage: status.symbol).foregroundStyle(status.tint)
-                } else {
-                    Text("–").foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .contextMenu(forSelectionType: LedgerRow.ID.self) { ids in
+                if let id = ids.first, !rows.contains(where: { $0.id == id && $0.isProposal }) {
+                    Button("Löschen", role: .destructive) { deletingID = id }
                 }
             }
-            .width(140)
 
-            TableColumn("Steuer") { row in
-                Text(row.treatment?.label ?? "–")
-            }
-            .width(140)
+            Divider()
+            tableFooter
+        }
+    }
 
-            TableColumn("Status") { row in
-                Label(row.status.label, systemImage: row.status.symbol)
-                    .foregroundStyle(row.status.tint)
+    private var tableFooter: some View {
+        HStack(spacing: 8) {
+            Text(filteredRowCountLabel)
+
+            Spacer(minLength: 12)
+
+            if let filteredTotal {
+                Text("Summe")
+                Text(filteredTotal.formatted(locale: Format.german))
+                    .monospacedDigit()
             }
-            .width(130)
         }
-        .contextMenu(forSelectionType: LedgerRow.ID.self) { ids in
-            if let id = ids.first, !rows.contains(where: { $0.id == id && $0.isProposal }) {
-                Button("Löschen", role: .destructive) { deletingID = id }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 5)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.bar)
+    }
+
+    private var committedRows: [LedgerRow] {
+        rows.filter { !$0.isProposal }
+    }
+
+    private var filteredRowCountLabel: String {
+        let bookings = "\(committedRows.count) \(committedRows.count == 1 ? "Buchung" : "Buchungen")"
+        let proposalCount = rows.count - committedRows.count
+        guard proposalCount > 0 else { return bookings }
+        return "\(bookings) · \(proposalCount) \(proposalCount == 1 ? "Vorschlag" : "Vorschläge")"
+    }
+
+    /// Pending proposals are deliberately excluded: they are not booked yet.
+    /// A total is shown only when every visible booking has one currency.
+    private var filteredTotal: Money? {
+        guard let firstAmount = committedRows.first?.amount else { return nil }
+        var totalMinorUnits: Int64 = 0
+
+        for row in committedRows {
+            guard let amount = row.amount, amount.currency == firstAmount.currency else {
+                return nil
             }
+            let result = totalMinorUnits.addingReportingOverflow(amount.minorUnits)
+            guard !result.overflow else { return nil }
+            totalMinorUnits = result.partialValue
         }
+
+        return Money(minorUnits: totalMinorUnits, currency: firstAmount.currency)
     }
 
     private var subtitle: String {
@@ -187,11 +260,14 @@ struct TransactionsView: View {
                 Label("Neue Buchung", systemImage: "plus")
             }
             .keyboardShortcut("n", modifiers: .command)
+            .disabled(inspectorHasChanges)
+            .help(Text(inspectorHasChanges ? "Änderungen zuerst speichern oder verwerfen" : "Neue Buchung"))
 
             Button(action: chooseFiles) {
                 Label("Importieren", systemImage: "square.and.arrow.down")
             }
             .keyboardShortcut("i", modifiers: .command)
+            .help(Text("Belege importieren"))
 
             Button {
                 deletingID = selection
@@ -199,12 +275,14 @@ struct TransactionsView: View {
                 Label("Löschen", systemImage: "trash")
             }
             .disabled(detail == nil)
+            .help(Text("Ausgewählte Buchung löschen"))
 
             Button {
                 showsInspector.toggle()
             } label: {
                 Label("Informationen", systemImage: "sidebar.trailing")
             }
+            .help(Text("Informationen ein-/ausblenden"))
         }
     }
 
@@ -220,6 +298,20 @@ struct TransactionsView: View {
     }
 
     // MARK: - State
+
+    private var guardedSelection: Binding<LedgerRow.ID?> {
+        Binding(
+            get: { selection },
+            set: { newSelection in
+                guard inspectorHasChanges, newSelection != selection else {
+                    selection = newSelection
+                    return
+                }
+                pendingSelection = newSelection
+                isConfirmingDiscard = true
+            }
+        )
+    }
 
     private var subject: InspectorSubject {
         if let proposal = selectedProposal {
@@ -287,7 +379,9 @@ struct TransactionsView: View {
 enum DirectionFilter: String, CaseIterable, Identifiable {
     case all, income, expense
 
-    var id: String { rawValue }
+    var id: String {
+        rawValue
+    }
 
     var label: LocalizedStringKey {
         switch self {
