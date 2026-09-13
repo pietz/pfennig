@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum SidebarItem: String, CaseIterable, Identifiable {
-    case transactions, review
+    case start, transactions, review
 
     var id: String {
         rawValue
@@ -9,6 +9,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var title: LocalizedStringResource {
         switch self {
+        case .start: "Start"
         case .transactions: "Buchungen"
         case .review: "Prüfen"
         }
@@ -16,6 +17,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
     var symbol: String {
         switch self {
+        case .start: "rectangle.grid.1x2"
         case .transactions: "list.bullet.rectangle"
         case .review: "checkmark.seal"
         }
@@ -24,8 +26,8 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
-    @State private var selection: SidebarItem? = .transactions
-    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
+    @State private var selection: SidebarItem? = .start
+    @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
         @Bindable var model = model
@@ -81,6 +83,8 @@ struct RootView: View {
     @ViewBuilder
     private var detail: some View {
         switch selection {
+        case .start:
+            StartView()
         case .transactions:
             if let database = model.database {
                 TransactionsView(database: database)
