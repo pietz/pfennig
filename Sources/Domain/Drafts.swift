@@ -26,6 +26,9 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
     public var serviceDate: LocalDate?
     public var servicePeriodStart: LocalDate?
     public var servicePeriodEnd: LocalDate?
+    /// Date fields supplied by the model that were nonempty but could not be
+    /// parsed. Kept on the draft so derivation can emit DATE_IMPOSSIBLE.
+    public var unparseableDateFields: [String]?
     public var isAdvancePayment: Bool
 
     public var currency: CurrencyCode
@@ -65,6 +68,7 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         serviceDate: LocalDate? = nil,
         servicePeriodStart: LocalDate? = nil,
         servicePeriodEnd: LocalDate? = nil,
+        unparseableDateFields: [String]? = nil,
         isAdvancePayment: Bool = false,
         currency: CurrencyCode = .eur,
         netMinor: Int64? = nil,
@@ -95,6 +99,7 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         self.serviceDate = serviceDate
         self.servicePeriodStart = servicePeriodStart
         self.servicePeriodEnd = servicePeriodEnd
+        self.unparseableDateFields = unparseableDateFields
         self.isAdvancePayment = isAdvancePayment
         self.currency = currency
         self.netMinor = netMinor

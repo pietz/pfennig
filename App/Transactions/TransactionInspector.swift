@@ -22,6 +22,17 @@ enum InspectorSubject: Equatable {
         case .draft: "draft"
         }
     }
+
+    /// Stable identity used to distinguish a database refresh from selecting
+    /// a different subject. Refreshes must not replace an in-progress draft.
+    var identity: String {
+        switch self {
+        case .none: "none"
+        case let .transaction(detail): "t-\(detail.id)"
+        case let .proposal(proposal): "p-\(proposal.id)"
+        case .draft: "draft"
+        }
+    }
 }
 
 /// The inspector of one transaction or proposal (spec 6.4, 27). Editing
@@ -36,6 +47,10 @@ struct TransactionInspector: View {
     @State private var draft = TransactionDraft(businessProfileId: "")
     @State private var original = TransactionDraft(businessProfileId: "")
     @State private var addingPayment = false
+    @State private var invalidMoneyFields: Set<String> = []
+    @State private var loadedSubjectIdentity: String?
+    @State private var loadedProposalUpdatedAt: String?
+    @State private var operationError: String?
 
     private var derived: DerivedTransaction? {
         model.derive(draft)
@@ -82,12 +97,21 @@ struct TransactionInspector: View {
             }
         }
         .sheet(isPresented: $addingPayment) {
-            if case let .transaction(detail) = subject {
-                PaymentEditor(detail: detail)
+            if case .transaction = subject {
+                PaymentEditor(draft: $draft) { savedDraft in
+                    draft = savedDraft
+                    original = savedDraft
+                    operationError = nil
+                }
             }
         }
-        .onChange(of: subject.key, initial: true) { _, _ in load() }
+        .onChange(of: subject.key, initial: true) { _, _ in
+            if loadedSubjectIdentity != subject.identity || !hasChanges {
+                load()
+            }
+        }
         .onChange(of: draft) { _, value in
+            operationError = nil
             if case .draft = subject {
                 newDraft = value
             }
@@ -110,15 +134,20 @@ struct TransactionInspector: View {
                     NSWorkspace.shared.activateFileViewerSelecting([archive.url(forRelativePath: path)])
                 }
             }
-        } else if case let .transaction(detail) = subject {
+        } else if case .transaction = subject {
             Section("Beleg") {
                 Label("Kein Beleg", systemImage: "doc.badge.plus").foregroundStyle(.secondary)
-                Button("Beleg anhängen") { attachDocument(to: detail) }
+                Button("Beleg anhängen") { attachDocument() }
+                    .disabled(!moneyFieldsAreValid)
             }
         }
     }
 
-    private func attachDocument(to detail: TransactionDetail) {
+    private func attachDocument() {
+        guard moneyFieldsAreValid else {
+            operationError = "Bitte korrigieren Sie die ungültigen Beträge, bevor Sie einen Beleg anhängen."
+            return
+        }
         let panel = NSOpenPanel()
         panel.allowedContentTypes = DocumentStore.supportedTypes
         panel.allowsMultipleSelection = false
@@ -126,7 +155,13 @@ struct TransactionInspector: View {
         panel.prompt = "Anhängen"
         panel.message = "Beleg zu dieser Buchung auswählen"
         guard panel.runModal() == .OK, let url = panel.url else { return }
-        model.attachDocument(at: url, to: detail)
+        guard let updatedDraft = model.attachDocument(at: url, to: draft) else {
+            operationError = "Beleg konnte nicht gespeichert werden. Ihre Änderungen bleiben erhalten."
+            return
+        }
+        draft = updatedDraft
+        original = updatedDraft
+        operationError = nil
     }
 
     private func paymentsSection(_ detail: TransactionDetail) -> some View {
@@ -148,7 +183,11 @@ struct TransactionInspector: View {
                     }
                 }
             }
-            Button("Zahlung hinzufügen") { addingPayment = true }
+            Button("Zahlung hinzufügen") {
+                operationError = nil
+                addingPayment = true
+            }
+            .disabled(!moneyFieldsAreValid)
         }
     }
 
@@ -209,13 +248,28 @@ struct TransactionInspector: View {
                 ForEach(["EUR", "USD", "GBP", "CHF"], id: \.self) { Text($0).tag(CurrencyCode($0)) }
             }
             field("netAmount") {
-                MoneyField(label: "Netto", minor: $draft.netMinor, currency: draft.currency)
+                MoneyField(
+                    label: "Netto",
+                    minor: $draft.netMinor,
+                    currency: draft.currency,
+                    onValidityChange: { setMoneyFieldValidity("netAmount", isValid: $0) }
+                )
             }
             field("taxAmount") {
-                MoneyField(label: "Steuer", minor: $draft.taxMinor, currency: draft.currency)
+                MoneyField(
+                    label: "Steuer",
+                    minor: $draft.taxMinor,
+                    currency: draft.currency,
+                    onValidityChange: { setMoneyFieldValidity("taxAmount", isValid: $0) }
+                )
             }
             field("grossAmount") {
-                MoneyField(label: "Brutto", minor: $draft.grossMinor, currency: draft.currency)
+                MoneyField(
+                    label: "Brutto",
+                    minor: $draft.grossMinor,
+                    currency: draft.currency,
+                    onValidityChange: { setMoneyFieldValidity("grossAmount", isValid: $0) }
+                )
             }
             ForEach(draft.components) { component in
                 LabeledContent("\(component.rate ?? "–") %") {
@@ -245,7 +299,10 @@ struct TransactionInspector: View {
                             get: { allocation.amountMinor },
                             set: { allocation.amountMinor = $0 ?? 0 }
                         ),
-                        currency: draft.currency
+                        currency: draft.currency,
+                        onValidityChange: {
+                            setMoneyFieldValidity("allocation.\(allocation.id)", isValid: $0)
+                        }
                     )
                     ProvenanceBadge(provenance: isProposal ? .agent : nil)
                 }
@@ -295,7 +352,16 @@ struct TransactionInspector: View {
     private var issuesSection: some View {
         Section("Hinweise") {
             let issues = derived?.issues ?? []
-            if issues.isEmpty {
+            if let operationError {
+                IssueRow(severity: .error, message: operationError)
+            }
+            if !moneyFieldsAreValid {
+                IssueRow(
+                    severity: .error,
+                    message: "Bitte korrigieren Sie ungültige Beträge, bevor Sie speichern oder weitere Daten anhängen."
+                )
+            }
+            if issues.isEmpty, operationError == nil, moneyFieldsAreValid {
                 Label("Keine Hinweise", systemImage: "checkmark.circle").foregroundStyle(.secondary)
             }
             ForEach(issues.indices, id: \.self) { index in
@@ -350,19 +416,28 @@ struct TransactionInspector: View {
     }
 
     private var canSave: Bool {
-        !draft.counterpartyName.trimmingCharacters(in: .whitespaces).isEmpty && derived?.canSave == true
+        moneyFieldsAreValid
+            && !draft.counterpartyName.trimmingCharacters(in: .whitespaces).isEmpty
+            && derived?.canSave == true
     }
 
     private func save() {
         switch subject {
         case let .proposal(proposal):
-            model.acceptProposal(proposal.id, draft: hasChanges ? draft : nil)
+            model.acceptProposal(
+                proposal.id,
+                draft: hasChanges ? draft : nil,
+                expectedUpdatedAt: loadedProposalUpdatedAt
+            )
         case .draft:
             if model.save(draft) != nil {
+                original = draft
                 newDraft = nil
             }
         default:
-            model.save(draft)
+            if model.save(draft) != nil {
+                original = draft
+            }
         }
     }
 
@@ -380,6 +455,26 @@ struct TransactionInspector: View {
             draft = TransactionDraft(businessProfileId: model.profile?.id ?? "")
         }
         original = draft
+        loadedSubjectIdentity = subject.identity
+        loadedProposalUpdatedAt = if case let .proposal(proposal) = subject {
+            proposal.updatedAt
+        } else {
+            nil
+        }
+        invalidMoneyFields.removeAll()
+        operationError = nil
+    }
+
+    private var moneyFieldsAreValid: Bool {
+        invalidMoneyFields.isEmpty
+    }
+
+    private func setMoneyFieldValidity(_ name: String, isValid: Bool) {
+        if isValid {
+            invalidMoneyFields.remove(name)
+        } else {
+            invalidMoneyFields.insert(name)
+        }
     }
 
     private var categoryOptions: [Database.Category] {

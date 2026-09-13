@@ -51,19 +51,16 @@ public actor ImportCoordinator {
     public func retry(itemID: String) async {
         let repository = ImportRepository(database)
         guard let item = try? repository.item(itemID),
-              let path = try? storedPath(ofDocument: item.documentId)
+              item.status == .failed,
+              let documentID = item.documentId,
+              let document = try? repository.archivedDocument(documentID)
         else { return }
         await process(
-            archive.url(forRelativePath: path),
+            archive.url(forRelativePath: document.relativePath),
             batchID: item.batchId,
             repository: repository,
             existingItem: item
         )
-    }
-
-    private func storedPath(ofDocument id: String?) throws -> String? {
-        guard let id else { return nil }
-        return try database.reader.read { try DocumentRecord.fetchOne($0, key: id)?.relativePath }
     }
 
     // MARK: - One document
@@ -86,15 +83,25 @@ public actor ImportCoordinator {
         do {
             // 1 - archive the original under its SHA-256 (spec 12, 25).
             try repository.updateItem(item.id, status: .archiving, incrementAttempt: true)
-            let stored = try DocumentStore(archive: archive).store(fileAt: url, source: .dragDrop)
-            let documentID = try documentID(forSHA: stored.sha256)
-            if try hasPendingProposal(forSHA: stored.sha256) {
-                try repository.updateItem(item.id, status: .duplicate, documentID: documentID)
-                return
+            let stored: DocumentDraft
+            if existingItem != nil, let documentID = item.documentId {
+                // A post-archive retry reads the canonical archive row. It
+                // must not register its own document as a duplicate.
+                guard let archived = try repository.archivedDocument(documentID) else {
+                    throw ImportRepositoryError.archivedDocumentNotFound(documentID)
+                }
+                stored = archived
+            } else {
+                let candidate = try archiveCopy(of: url)
+                let registration = try repository.registerArchivedDocument(candidate, forItem: item.id)
+                if registration.isDuplicate {
+                    return
+                }
+                stored = registration.document
             }
 
-            // 2 - prepare and extract (spec 10.4, 10.1).
-            try repository.updateItem(item.id, status: .analyzing, documentID: documentID)
+            // The document row and import-item link exist before analysis.
+            try repository.updateItem(item.id, status: .analyzing, documentID: stored.id)
             let prepared = try DocumentPreparer.prepare(
                 fileAt: archive.url(forRelativePath: stored.relativePath),
                 pageLimit: pageLimit
@@ -141,6 +148,29 @@ public actor ImportCoordinator {
                 hint: normalized.hint,
                 reverseChargeNote: normalized.reverseChargeNote
             )
+            var proposalProvenance = normalized.provenance
+            // ProposalSummary is already durable JSON. Keep the two facts that
+            // are not reconstructible from a plain TransactionDraft alongside
+            // the review data for edited acceptance.
+            if let hint = normalized.hint {
+                proposalProvenance.append(
+                    ProvenanceEntry(
+                        entityType: "proposalContext",
+                        fieldName: "modelTreatmentHint",
+                        provenance: .calculated,
+                        confidence: hint.confidence.description,
+                        evidenceSnippet: hint.treatment.rawValue
+                    )
+                )
+            }
+            proposalProvenance.append(
+                ProvenanceEntry(
+                    entityType: "proposalContext",
+                    fieldName: "reverseChargeNote",
+                    provenance: .document,
+                    evidenceSnippet: normalized.reverseChargeNote ? "true" : "false"
+                )
+            )
             let summary = ProposalSummary(
                 counterpartyName: derived.draft.counterpartyName,
                 direction: derived.draft.direction,
@@ -155,7 +185,7 @@ public actor ImportCoordinator {
                 treatmentReasoning: derived.draft.assessment?.reasoning ?? derived.reasoning,
                 documentRelativePath: stored.relativePath,
                 originalFilename: stored.originalFilename,
-                provenance: normalized.provenance
+                provenance: proposalProvenance
             )
             // Autonomy is Manual in V1: nothing commits itself (spec 9).
             try repository.upsertProposal(
@@ -183,6 +213,18 @@ public actor ImportCoordinator {
         }
     }
 
+    private func archiveCopy(of url: URL) throws -> DocumentDraft {
+        let store = DocumentStore(archive: archive)
+        do {
+            return try store.store(fileAt: url, source: .dragDrop)
+        } catch {
+            // Two coordinators can race on the same SHA-named destination.
+            // Retrying after the first copy wins makes the filesystem step
+            // converge before the serialized database registration.
+            return try store.store(fileAt: url, source: .dragDrop)
+        }
+    }
+
     // MARK: - Context
 
     private func extractionContext() throws -> ExtractionContext {
@@ -207,19 +249,5 @@ public actor ImportCoordinator {
             throw AIError.unsupportedDocument("Es ist noch kein Betrieb eingerichtet.")
         }
         return profile
-    }
-
-    private func documentID(forSHA sha: String) throws -> String? {
-        try database.reader.read { db in
-            try DocumentRecord.fetchOne(db, sql: "SELECT * FROM documents WHERE sha256 = ?", arguments: [sha])?.id
-        }
-    }
-
-    /// The same file dropped twice while its proposal is still open is a
-    /// duplicate, not a second analysis (spec 25).
-    private func hasPendingProposal(forSHA sha: String) throws -> Bool {
-        try ImportRepository(database).pendingProposals().contains {
-            $0.summary?.documentRelativePath?.contains(sha) == true
-        }
     }
 }

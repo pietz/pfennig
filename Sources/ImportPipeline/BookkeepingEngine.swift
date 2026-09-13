@@ -80,6 +80,19 @@ public enum BookkeepingEngine {
         let treatment = draft.treatmentOverride ?? decision.treatment
         let reasoning = Self.reasoning(for: decision.treatment, direction: draft.direction)
 
+        // A model parse failure remains blocking while its field is still
+        // missing. If a reviewer supplies a valid replacement, the stale
+        // import metadata no longer applies.
+        let unparseableDateFields = (draft.unparseableDateFields ?? []).filter { field in
+            switch field {
+            case "invoiceDate": draft.invoiceDate == nil
+            case "serviceDate": draft.serviceDate == nil
+            case "servicePeriodStart": draft.servicePeriodStart == nil
+            case "servicePeriodEnd": draft.servicePeriodEnd == nil
+            default: true
+            }
+        }
+
         // 2 - tax points (spec 5.1).
         let paymentDates = draft.payments.map(\.paymentDate)
         let points = TaxPointDeriver.derive(
@@ -139,6 +152,7 @@ public enum BookkeepingEngine {
 
         // 5 - deterministic validation (spec 14).
         let snapshot = TransactionSnapshot(
+            unparseableDateFields: unparseableDateFields,
             invoiceDate: draft.invoiceDate,
             serviceDate: draft.serviceDate,
             servicePeriodStart: draft.servicePeriodStart,

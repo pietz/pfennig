@@ -120,13 +120,20 @@ final class AppModel {
     }
 
     /// Copies a file into the archive and links it to the transaction. An
-    /// identical file is reused, never stored twice (spec 17.10).
-    func attachDocument(at url: URL, to detail: TransactionDetail) {
-        guard let archive else { return }
-        run {
-            var draft = detail.draft
-            try draft.documents.append(DocumentStore(archive: archive).store(fileAt: url))
-            save(draft)
+    /// identical file is reused, never stored twice (spec 17.10). The caller
+    /// supplies the inspector's current draft so attaching a document also
+    /// persists any edits made before the file picker opened.
+    @discardableResult
+    func attachDocument(at url: URL, to draft: TransactionDraft) -> TransactionDraft? {
+        guard let archive else { return nil }
+        do {
+            var updatedDraft = draft
+            try updatedDraft.documents.append(DocumentStore(archive: archive).store(fileAt: url))
+            guard save(updatedDraft) != nil else { return nil }
+            return updatedDraft
+        } catch {
+            errorMessage = error.localizedDescription
+            return nil
         }
     }
 
@@ -177,9 +184,15 @@ final class AppModel {
 
     /// Confirms a proposal, optionally with the fields the user edited in the
     /// inspector (spec 26).
-    func acceptProposal(_ id: String, draft: TransactionDraft?) {
+    func acceptProposal(_ id: String, draft: TransactionDraft?, expectedUpdatedAt: String? = nil) {
         guard let database else { return }
-        run { _ = try CommitService(database).accept(proposalID: id, edited: draft) }
+        run {
+            _ = try CommitService(database).accept(
+                proposalID: id,
+                edited: draft,
+                expectedUpdatedAt: expectedUpdatedAt
+            )
+        }
     }
 
     func rejectProposal(_ id: String) {

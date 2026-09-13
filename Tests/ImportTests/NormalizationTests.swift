@@ -43,6 +43,66 @@ struct NormalizationTests {
         #expect(result.hint?.treatment == .reverseCharge)
     }
 
+    @Test("Unmögliche Modell-Daten bleiben als harte DATE_IMPOSSIBLE-Fehler erhalten")
+    func impossibleDatesAreHardIssues() throws {
+        let workspace = try Support.workspace()
+        defer { workspace.cleanUp() }
+        var input = try extraction("01-")
+        input.invoice.invoiceDate = "2026-02-30"
+        input.invoice.serviceDate = "2026-02-31"
+        input.invoice.servicePeriodStart = "2026-13-01"
+        input.invoice.servicePeriodEnd = "2026-04-31"
+
+        let normalized = try ExtractionNormalizer.normalize(
+            input,
+            document: nil,
+            profile: workspace.profile,
+            categoryIDs: Set(workspace.database.categories().map(\.id))
+        )
+        #expect((normalized.draft.unparseableDateFields ?? []) == [
+            "invoiceDate", "serviceDate", "servicePeriodStart", "servicePeriodEnd"
+        ])
+
+        let derived = try BookkeepingEngine.derive(
+            normalized.draft,
+            profile: workspace.profile,
+            categories: workspace.database.categories(),
+            hint: normalized.hint,
+            reverseChargeNote: normalized.reverseChargeNote
+        )
+        let dateIssueFields = derived.hardIssues
+            .filter { $0.code == "DATE_IMPOSSIBLE" }
+            .compactMap(\.fieldName)
+        #expect(dateIssueFields == [
+            "invoiceDate", "serviceDate", "servicePeriodStart", "servicePeriodEnd"
+        ])
+    }
+
+    @Test("Gültige, leere und null Daten bleiben normale Werte oder fehlen")
+    func validAndAbsentDates() throws {
+        let workspace = try Support.workspace()
+        defer { workspace.cleanUp() }
+        var input = try extraction("01-")
+        input.invoice.serviceDate = ""
+        input.invoice.servicePeriodStart = nil
+        input.invoice.servicePeriodEnd = ""
+
+        let normalized = try ExtractionNormalizer.normalize(
+            input,
+            document: nil,
+            profile: workspace.profile,
+            categoryIDs: Set(workspace.database.categories().map(\.id))
+        )
+        #expect(normalized.draft.invoiceDate == LocalDate(year: 2026, month: 8, day: 31))
+        #expect(normalized.draft.serviceDate == nil)
+        #expect(normalized.draft.servicePeriodStart == nil)
+        #expect(normalized.draft.servicePeriodEnd == nil)
+        #expect(normalized.draft.unparseableDateFields == nil)
+
+        let derived = BookkeepingEngine.derive(normalized.draft, profile: workspace.profile)
+        #expect(!derived.hardIssues.contains { $0.code == "DATE_IMPOSSIBLE" })
+    }
+
     @Test("Fremdwährung bleibt die Währung des Belegs")
     func foreignCurrency() throws {
         let usd = try normalize(extraction("06-"))

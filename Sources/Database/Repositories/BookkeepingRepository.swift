@@ -7,6 +7,8 @@ public enum BookkeepingError: Error, LocalizedError, Sendable, Equatable {
     case hardValidation([String])
     /// Spec 17.15: only the user may change a manually overridden field.
     case manualOverrideProtected(field: String, actor: AuditActor)
+    case invalidPaymentAmount
+    case invalidPaymentAllocation
     case transactionNotFound(String)
 
     public var errorDescription: String? {
@@ -15,6 +17,10 @@ public enum BookkeepingError: Error, LocalizedError, Sendable, Equatable {
             "Die Buchung kann nicht gespeichert werden: \(codes.joined(separator: ", "))."
         case let .manualOverrideProtected(field, actor):
             "Das Feld \(field) wurde manuell gesetzt und darf von \(actor.rawValue) nicht geändert werden."
+        case .invalidPaymentAmount:
+            "Der Zahlungsbetrag muss größer als 0 sein."
+        case .invalidPaymentAllocation:
+            "Der zugeordnete Zahlungsbetrag muss größer als 0 sein und darf den Zahlungsbetrag nicht überschreiten."
         case let .transactionNotFound(id):
             "Buchung \(id) existiert nicht."
         }
@@ -39,6 +45,9 @@ public struct BookkeepingRepository: Sendable {
     }
 
     /// Material transaction fields that carry provenance and are audited.
+    private static let counterpartyEntity = "counterparty"
+    private static let taxComponentEntity = "taxComponent"
+
     private static func fields(of record: TransactionRecord) -> [String: String?] {
         [
             "direction": record.direction.rawValue,
@@ -60,6 +69,35 @@ public struct BookkeepingRepository: Sendable {
         ]
     }
 
+    private static func fields(of record: Counterparty) -> [String: String?] {
+        [
+            "displayName": record.displayName,
+            "countryCode": record.countryCode,
+            "vatId": record.vatId
+        ]
+    }
+
+    private static func fields(of record: BookkeepingAllocation) -> [String: String?] {
+        [
+            "categoryId": record.categoryId,
+            "amountMinor": String(record.amountMinor),
+            "description": record.description,
+            "assetFlag": String(record.assetFlag),
+            "privateSharePercent": record.privateSharePercent,
+            "sortOrder": String(record.sortOrder)
+        ]
+    }
+
+    private static func fields(of record: TaxComponent) -> [String: String?] {
+        [
+            "kind": record.kind.rawValue,
+            "rate": record.rate,
+            "netAmount": String(record.netMinor),
+            "taxAmount": String(record.taxMinor),
+            "sortOrder": String(record.sortOrder)
+        ]
+    }
+
     // MARK: - Save
 
     /// Persists `draft` and returns the transaction id.
@@ -70,70 +108,126 @@ public struct BookkeepingRepository: Sendable {
         actor: AuditActor = .user,
         context: WriteContext = WriteContext()
     ) throws -> String {
+        try database.writer.write { db in
+            try save(draft, issues: issues, actor: actor, context: context, in: db)
+        }
+    }
+
+    /// Persists into an already-open SQLite write transaction. Commit flows
+    /// use this overload so bookkeeping and import workflow state share one
+    /// transaction rather than nesting writer transactions.
+    public func save(
+        _ draft: TransactionDraft,
+        issues: [ValidationIssueDraft] = [],
+        actor: AuditActor = .user,
+        context: WriteContext = WriteContext(),
+        in db: Database
+    ) throws -> String {
         if let blocking = issues.filter(\.isHard).map(\.code).nilIfEmpty {
             throw BookkeepingError.hardValidation(blocking)
         }
-        return try database.writer.write { db in
-            let now = Timestamp.string()
-            let existing = try draft.id.flatMap { try TransactionRecord.fetchOne(db, key: $0) }
-            let counterpartyID = try resolveCounterparty(db, draft: draft, now: now)
-            let id = existing?.id ?? draft.id ?? IDGenerator.new()
+        let now = Timestamp.string()
+        let existing = try draft.id.flatMap { try TransactionRecord.fetchOne(db, key: $0) }
+        // Resolution updates a shared counterparty row. Snapshot the row it
+        // will match before that mutation so diffs and protection checks use
+        // the real before/after values, including for new transactions.
+        let previousCounterparty = try counterpartyToResolve(db, draft: draft)
+        let counterpartyID = try resolveCounterparty(
+            db,
+            draft: draft,
+            preserveMissingFields: existing == nil || actor != .user,
+            now: now
+        )
+        let counterparty = try counterpartyID.flatMap { try Counterparty.fetchOne(db, key: $0) }
+        let id = existing?.id ?? draft.id ?? IDGenerator.new()
 
-            var record = existing ?? TransactionRecord(id: id, businessProfileId: draft.businessProfileId)
-            record.counterpartyId = counterpartyID
-            record.direction = draft.direction
-            record.transactionType = draft.transactionType
-            record.title = draft.title?.nilIfBlank
-            record.invoiceNumber = draft.invoiceNumber?.nilIfBlank
-            record.invoiceDate = draft.invoiceDate
-            record.serviceDate = draft.serviceDate
-            record.servicePeriodStart = draft.servicePeriodStart
-            record.servicePeriodEnd = draft.servicePeriodEnd
-            record.isAdvancePayment = draft.isAdvancePayment
-            // V1 books in the document currency; FX conversion arrives with M7 (spec 5.7).
-            record.originalCurrency = draft.currency.rawValue
-            record.originalNetMinor = draft.netMinor
-            record.originalTaxMinor = draft.taxMinor
-            record.originalGrossMinor = draft.grossMinor
-            record.bookedCurrency = draft.currency.rawValue
-            record.bookedNetMinor = draft.netMinor
-            record.bookedTaxMinor = draft.taxMinor
-            record.bookedGrossMinor = draft.grossMinor
-            record.notes = draft.notes?.nilIfBlank
-            record.reviewStatus = draft.reviewStatus
-            record.workflowStatus = draft.workflowStatus
-            record.updatedAt = now
+        var record = existing ?? TransactionRecord(id: id, businessProfileId: draft.businessProfileId)
+        record.counterpartyId = counterpartyID
+        record.direction = draft.direction
+        record.transactionType = draft.transactionType
+        record.title = draft.title?.nilIfBlank
+        record.invoiceNumber = draft.invoiceNumber?.nilIfBlank
+        record.invoiceDate = draft.invoiceDate
+        record.serviceDate = draft.serviceDate
+        record.servicePeriodStart = draft.servicePeriodStart
+        record.servicePeriodEnd = draft.servicePeriodEnd
+        record.isAdvancePayment = draft.isAdvancePayment
+        // V1 books in the document currency; FX conversion arrives with M7 (spec 5.7).
+        record.originalCurrency = draft.currency.rawValue
+        record.originalNetMinor = draft.netMinor
+        record.originalTaxMinor = draft.taxMinor
+        record.originalGrossMinor = draft.grossMinor
+        record.bookedCurrency = draft.currency.rawValue
+        record.bookedNetMinor = draft.netMinor
+        record.bookedTaxMinor = draft.taxMinor
+        record.bookedGrossMinor = draft.grossMinor
+        record.notes = draft.notes?.nilIfBlank
+        record.reviewStatus = draft.reviewStatus
+        record.workflowStatus = draft.workflowStatus
+        record.updatedAt = now
 
-            let before = existing.map(Self.fields) ?? [:]
-            let after = Self.fields(of: record)
-            let changed = after.filter { before[$0.key] ?? nil != $0.value }
+        let before = existing.map(Self.fields) ?? [:]
+        let after = Self.fields(of: record)
+        let changed = after.filter { before[$0.key] ?? nil != $0.value }
+        try requireNoManualOverride(
+            db,
+            entity: FieldProvenance.Entity.transaction,
+            id: id,
+            fields: Set(changed.keys),
+            actor: actor
+        )
+
+        let previousCounterpartyFields = previousCounterparty.map(Self.fields) ?? [:]
+        let counterpartyFields = counterparty.map(Self.fields) ?? [:]
+        let counterpartyChanged = counterpartyFields.filter {
+            previousCounterpartyFields[$0.key] ?? nil != $0.value
+        }
+        if let counterpartyID {
             try requireNoManualOverride(
                 db,
-                entity: FieldProvenance.Entity.transaction,
-                id: id,
-                fields: Set(changed.keys),
+                entity: Self.counterpartyEntity,
+                id: counterpartyID,
+                fields: Set(counterpartyChanged.keys),
                 actor: actor
             )
+        }
 
-            if existing == nil {
-                try record.insert(db)
-            } else {
-                try record.update(db)
-            }
+        if existing == nil {
+            try record.insert(db)
+        } else {
+            try record.update(db)
+        }
 
-            try replaceAllocations(db, draft: draft, transactionID: id, now: now)
-            try replaceComponents(db, draft: draft, transactionID: id, now: now)
-            try saveAssessment(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
-            try savePayments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
-            try saveDocuments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
+        try replaceAllocations(
+            db,
+            draft: draft,
+            transactionID: id,
+            actor: actor,
+            context: context,
+            now: now
+        )
+        try replaceComponents(
+            db,
+            draft: draft,
+            transactionID: id,
+            actor: actor,
+            context: context,
+            now: now
+        )
+        try saveAssessment(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
+        try savePayments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
+        try saveDocuments(db, draft: draft, transactionID: id, actor: actor, context: context, now: now)
 
-            // Provenance for every field the actor actually set (spec 8.3, 44).
-            for field in changed.keys where after[field] ?? nil != nil || existing != nil {
-                let entry = context.entry(FieldProvenance.Entity.transaction, field)
+        // Counterparty fields are material too, but live on their own entity.
+        if let counterpartyID {
+            for field in counterpartyChanged.keys
+                where counterpartyFields[field] ?? nil != nil || previousCounterparty != nil
+            {
+                let entry = context.entry(Self.counterpartyEntity, field)
                 try writeProvenance(
                     db,
-                    entity: FieldProvenance.Entity.transaction,
-                    id: id,
+                    entity: Self.counterpartyEntity,
+                    id: counterpartyID,
                     field: field,
                     provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
                     isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
@@ -142,25 +236,71 @@ public struct BookkeepingRepository: Sendable {
                     now: now
                 )
             }
-            if !changed.isEmpty || existing == nil {
+            if !counterpartyChanged.isEmpty {
                 try AuditEvent(
-                    entityId: id,
-                    action: existing == nil ? .create : .update,
+                    entityType: Self.counterpartyEntity,
+                    entityId: counterpartyID,
+                    action: .update,
                     actor: actor,
                     proposalId: context.proposalID,
-                    beforeJson: existing == nil ? nil : json(before.filter { changed.keys.contains($0.key) }),
-                    afterJson: json(changed),
+                    beforeJson: json(previousCounterpartyFields.filter { counterpartyChanged.keys.contains($0.key) }),
+                    afterJson: json(counterpartyChanged),
                     createdAt: now
                 ).insert(db)
             }
-            try refreshIssues(db, transactionID: id, issues: issues, now: now)
-            return id
         }
+
+        // Provenance for every transaction field the actor actually set (spec 8.3, 44).
+        for field in changed.keys where after[field] ?? nil != nil || existing != nil {
+            let entry = context.entry(FieldProvenance.Entity.transaction, field)
+            try writeProvenance(
+                db,
+                entity: FieldProvenance.Entity.transaction,
+                id: id,
+                field: field,
+                provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
+                isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
+                entry: entry,
+                context: context,
+                now: now
+            )
+        }
+        if !changed.isEmpty || existing == nil {
+            try AuditEvent(
+                entityId: id,
+                action: existing == nil ? .create : .update,
+                actor: actor,
+                proposalId: context.proposalID,
+                beforeJson: existing == nil ? nil : json(before.filter { changed.keys.contains($0.key) }),
+                afterJson: json(changed),
+                createdAt: now
+            ).insert(db)
+        }
+        try refreshIssues(db, transactionID: id, issues: issues, now: now)
+        return id
     }
 
     // MARK: - Children
 
-    private func resolveCounterparty(_ db: Database, draft: TransactionDraft, now: String) throws -> String? {
+    private func counterpartyToResolve(_ db: Database, draft: TransactionDraft) throws -> Counterparty? {
+        let name = draft.counterpartyName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !name.isEmpty {
+            return try Counterparty.fetchOne(
+                db,
+                sql: "SELECT * FROM counterparties WHERE normalized_name = ?",
+                arguments: [Counterparty.normalize(name)]
+            )
+        }
+        guard let id = draft.counterpartyId else { return nil }
+        return try Counterparty.fetchOne(db, key: id)
+    }
+
+    private func resolveCounterparty(
+        _ db: Database,
+        draft: TransactionDraft,
+        preserveMissingFields: Bool,
+        now: String
+    ) throws -> String? {
         let name = draft.counterpartyName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !name.isEmpty else { return draft.counterpartyId }
         let normalized = Counterparty.normalize(name)
@@ -169,8 +309,11 @@ public struct BookkeepingRepository: Sendable {
             sql: "SELECT * FROM counterparties WHERE normalized_name = ?",
             arguments: [normalized]
         ) {
-            existing.countryCode = draft.counterpartyCountryCode?.nilIfBlank ?? existing.countryCode
-            existing.vatId = draft.counterpartyVatId?.nilIfBlank ?? existing.vatId
+            existing.displayName = name
+            existing.countryCode = draft.counterpartyCountryCode?.nilIfBlank
+                ?? (preserveMissingFields ? existing.countryCode : nil)
+            existing.vatId = draft.counterpartyVatId?.nilIfBlank
+                ?? (preserveMissingFields ? existing.vatId : nil)
             existing.updatedAt = now
             try existing.update(db)
             return existing.id
@@ -191,11 +334,39 @@ public struct BookkeepingRepository: Sendable {
         _ db: Database,
         draft: TransactionDraft,
         transactionID: String,
+        actor: AuditActor,
+        context: WriteContext,
         now: String
     ) throws {
+        let existing = try BookkeepingAllocation.fetchAll(
+            db,
+            sql: "SELECT * FROM bookkeeping_allocations WHERE transaction_id = ?",
+            arguments: [transactionID]
+        )
+        let existingByID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
+        let allocationFields = Set([
+            "categoryId",
+            "amountMinor",
+            "description",
+            "assetFlag",
+            "privateSharePercent",
+            "sortOrder"
+        ])
+        let retainedIDs = Set(draft.allocations.map(\.id))
+
+        for row in existing where !retainedIDs.contains(row.id) {
+            try requireNoManualOverride(
+                db,
+                entity: FieldProvenance.Entity.allocation,
+                id: row.id,
+                fields: allocationFields,
+                actor: actor
+            )
+        }
+
         try db.execute(sql: "DELETE FROM bookkeeping_allocations WHERE transaction_id = ?", arguments: [transactionID])
         for (index, allocation) in draft.allocations.enumerated() {
-            try BookkeepingAllocation(
+            let row = BookkeepingAllocation(
                 id: allocation.id,
                 transactionId: transactionID,
                 categoryId: allocation.categoryId,
@@ -207,14 +378,65 @@ public struct BookkeepingRepository: Sendable {
                 sortOrder: index,
                 createdAt: now,
                 updatedAt: now
-            ).insert(db)
+            )
+            let before = existingByID[allocation.id].map(Self.fields) ?? [:]
+            let after = Self.fields(of: row)
+            let changed = after.filter { before[$0.key] ?? nil != $0.value }
+            try requireNoManualOverride(
+                db,
+                entity: FieldProvenance.Entity.allocation,
+                id: row.id,
+                fields: Set(changed.keys),
+                actor: actor
+            )
+            try row.insert(db)
+            for field in changed.keys where after[field] ?? nil != nil || existingByID[allocation.id] != nil {
+                let entry = context.entry(FieldProvenance.Entity.allocation, field)
+                try writeProvenance(
+                    db,
+                    entity: FieldProvenance.Entity.allocation,
+                    id: row.id,
+                    field: field,
+                    provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
+                    isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
+                    entry: entry,
+                    context: context,
+                    now: now
+                )
+            }
         }
     }
 
-    private func replaceComponents(_ db: Database, draft: TransactionDraft, transactionID: String, now: String) throws {
+    private func replaceComponents(
+        _ db: Database,
+        draft: TransactionDraft,
+        transactionID: String,
+        actor: AuditActor,
+        context: WriteContext,
+        now: String
+    ) throws {
+        let existing = try TaxComponent.fetchAll(
+            db,
+            sql: "SELECT * FROM tax_components WHERE transaction_id = ?",
+            arguments: [transactionID]
+        )
+        let existingByID = Dictionary(uniqueKeysWithValues: existing.map { ($0.id, $0) })
+        let componentFields = Set(["kind", "rate", "netAmount", "taxAmount", "sortOrder"])
+        let retainedIDs = Set(draft.components.map(\.id))
+
+        for row in existing where !retainedIDs.contains(row.id) {
+            try requireNoManualOverride(
+                db,
+                entity: Self.taxComponentEntity,
+                id: row.id,
+                fields: componentFields,
+                actor: actor
+            )
+        }
+
         try db.execute(sql: "DELETE FROM tax_components WHERE transaction_id = ?", arguments: [transactionID])
         for (index, component) in draft.components.enumerated() {
-            try TaxComponent(
+            let row = TaxComponent(
                 id: component.id,
                 transactionId: transactionID,
                 kind: component.kind,
@@ -224,7 +446,32 @@ public struct BookkeepingRepository: Sendable {
                 currency: draft.currency.rawValue,
                 sortOrder: index,
                 createdAt: now
-            ).insert(db)
+            )
+            let before = existingByID[component.id].map(Self.fields) ?? [:]
+            let after = Self.fields(of: row)
+            let changed = after.filter { before[$0.key] ?? nil != $0.value }
+            try requireNoManualOverride(
+                db,
+                entity: Self.taxComponentEntity,
+                id: row.id,
+                fields: Set(changed.keys),
+                actor: actor
+            )
+            try row.insert(db)
+            for field in changed.keys where after[field] ?? nil != nil || existingByID[component.id] != nil {
+                let entry = context.entry(Self.taxComponentEntity, field)
+                try writeProvenance(
+                    db,
+                    entity: Self.taxComponentEntity,
+                    id: row.id,
+                    field: field,
+                    provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
+                    isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
+                    entry: entry,
+                    context: context,
+                    now: now
+                )
+            }
         }
     }
 
@@ -242,8 +489,52 @@ public struct BookkeepingRepository: Sendable {
             sql: "SELECT * FROM tax_assessments WHERE transaction_id = ? AND superseded_at IS NULL",
             arguments: [transactionID]
         )
+        let currentTreatmentWasManual: Bool = if let current {
+            try FieldProvenance.fetchOne(
+                db,
+                sql: """
+                SELECT * FROM field_provenance
+                 WHERE entity_type = ? AND entity_id = ? AND field_name = 'treatment' AND superseded_at IS NULL
+                """,
+                arguments: [FieldProvenance.Entity.taxAssessment, current.id]
+            )?.isManualOverride == true
+        } else {
+            false
+        }
         if let current {
-            guard !matches(current, assessment) else { return }
+            let treatmentEntry = context.entry(FieldProvenance.Entity.taxAssessment, "treatment")
+            let requestedManualTreatment = treatmentEntry?.provenance == .manual
+                || (draft.treatmentOverride != nil && actor == .user)
+            if matches(current, assessment) {
+                // Selecting an override that happens to produce the same
+                // treatment still changes its protection state.
+                if actor == .user {
+                    let currentProvenance = try FieldProvenance.fetchOne(
+                        db,
+                        sql: """
+                        SELECT * FROM field_provenance
+                         WHERE entity_type = ? AND entity_id = ? AND field_name = ? AND superseded_at IS NULL
+                        """,
+                        arguments: [FieldProvenance.Entity.taxAssessment, current.id, "treatment"]
+                    )
+                    if currentProvenance?.isManualOverride != requestedManualTreatment
+                        || currentProvenance?.provenance != (requestedManualTreatment ? .manual : .calculated)
+                    {
+                        try writeProvenance(
+                            db,
+                            entity: FieldProvenance.Entity.taxAssessment,
+                            id: current.id,
+                            field: "treatment",
+                            provenance: requestedManualTreatment ? .manual : .calculated,
+                            isManualOverride: requestedManualTreatment,
+                            entry: treatmentEntry,
+                            context: context,
+                            now: now
+                        )
+                    }
+                }
+                return
+            }
             try requireNoManualOverride(
                 db,
                 entity: FieldProvenance.Entity.taxAssessment,
@@ -281,15 +572,30 @@ public struct BookkeepingRepository: Sendable {
         // The treatment is the user's choice or Swift's decision; the amounts
         // and tax points are always calculated (spec 8.3, 5.1).
         let treatmentEntry = context.entry(FieldProvenance.Entity.taxAssessment, "treatment")
-        let manualTreatment = draft.treatmentOverride != nil && actor == .user
+        let manualTreatment = treatmentEntry?.provenance == .manual
+            || draft.treatmentOverride != nil
+            || currentTreatmentWasManual
         try writeProvenance(
             db,
             entity: FieldProvenance.Entity.taxAssessment,
             id: record.id,
             field: "treatment",
             provenance: treatmentEntry?.provenance ?? (manualTreatment ? .manual : .calculated),
-            isManualOverride: treatmentEntry.map { $0.provenance == .manual } ?? manualTreatment,
+            isManualOverride: manualTreatment,
             entry: treatmentEntry,
+            context: context,
+            now: now
+        )
+        let supplyTypeEntry = context.entry(FieldProvenance.Entity.taxAssessment, "supplyType")
+        let manualSupplyType = supplyTypeEntry?.provenance == .manual || (supplyTypeEntry == nil && actor == .user)
+        try writeProvenance(
+            db,
+            entity: FieldProvenance.Entity.taxAssessment,
+            id: record.id,
+            field: "supplyType",
+            provenance: supplyTypeEntry?.provenance ?? (manualSupplyType ? .manual : .calculated),
+            isManualOverride: manualSupplyType,
+            entry: supplyTypeEntry,
             context: context,
             now: now
         )
@@ -331,6 +637,14 @@ public struct BookkeepingRepository: Sendable {
         context: WriteContext,
         now: String
     ) throws {
+        for payment in draft.payments {
+            guard payment.amountMinor > 0 else {
+                throw BookkeepingError.invalidPaymentAmount
+            }
+            guard payment.allocated > 0, payment.allocated <= payment.amountMinor else {
+                throw BookkeepingError.invalidPaymentAllocation
+            }
+        }
         for payment in draft.payments where payment.id == nil {
             let record = Payment(
                 accountId: payment.accountId,
@@ -356,14 +670,16 @@ public struct BookkeepingRepository: Sendable {
                 matchMethod: payment.matchMethod,
                 createdAt: now
             ).insert(db)
-            for field in ["paymentDate", "amount"] {
+            for field in ["paymentDate", "amount", "reference", "paymentMethod"] {
+                let entry = context.entry(FieldProvenance.Entity.payment, field)
                 try writeProvenance(
                     db,
                     entity: FieldProvenance.Entity.payment,
                     id: record.id,
                     field: field,
-                    provenance: actor == .user ? .manual : .imported,
-                    isManualOverride: actor == .user,
+                    provenance: entry?.provenance ?? (actor == .user ? .manual : .imported),
+                    isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
+                    entry: entry,
                     context: context,
                     now: now
                 )

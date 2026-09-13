@@ -5,6 +5,49 @@ import GRDB
 /// Persistence for the import pipeline (spec 17.16-17.19). All SQL for
 /// batches, items, model runs and proposals lives here so `ImportPipeline`
 /// stays free of GRDB.
+public enum ImportRepositoryError: Error, LocalizedError, Sendable, Equatable {
+    case proposalNotFound(String)
+    case proposalNotPending(String, ProposalStatus)
+    case proposalChanged(String)
+    case importItemNotFound(String)
+    case archivedDocumentNotFound(String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .proposalNotFound:
+            "Der Vorschlag existiert nicht mehr."
+        case let .proposalNotPending(_, status):
+            "Der Vorschlag kann nicht mehr bestätigt werden (Status: \(status.rawValue))."
+        case .proposalChanged:
+            "Der Vorschlag wurde inzwischen geändert."
+        case .importItemNotFound:
+            "Das Import-Element existiert nicht mehr."
+        case .archivedDocumentNotFound:
+            "Der archivierte Beleg existiert nicht mehr."
+        }
+    }
+}
+
+public struct ArchivedDocumentRegistration: Sendable, Equatable {
+    public let document: DocumentDraft
+    public let isDuplicate: Bool
+
+    public init(document: DocumentDraft, isDuplicate: Bool) {
+        self.document = document
+        self.isDuplicate = isDuplicate
+    }
+}
+
+public struct ImportLineage: Sendable, Equatable {
+    public let sourceDocumentID: String?
+    public let modelRunID: String?
+
+    public init(sourceDocumentID: String?, modelRunID: String?) {
+        self.sourceDocumentID = sourceDocumentID
+        self.modelRunID = modelRunID
+    }
+}
+
 public struct ImportRepository: Sendable {
     private let database: AppDatabase
 
@@ -77,8 +120,110 @@ public struct ImportRepository: Sendable {
         }
     }
 
+    /// Registers the archived file before any analysis starts. The unique
+    /// document hash makes this decision durable and serializes concurrent
+    /// imports through the database writer.
+    public func registerArchivedDocument(
+        _ document: DocumentDraft,
+        forItem itemID: String
+    ) throws -> ArchivedDocumentRegistration {
+        try database.writer.write { db in
+            guard try ImportItem.fetchOne(db, key: itemID) != nil else {
+                throw ImportRepositoryError.importItemNotFound(itemID)
+            }
+
+            let now = Timestamp.string()
+            let canonical: DocumentRecord
+            let isDuplicate: Bool
+            if let existing = try DocumentRecord.fetchOne(
+                db,
+                sql: "SELECT * FROM documents WHERE sha256 = ?",
+                arguments: [document.sha256]
+            ) {
+                canonical = existing
+                isDuplicate = true
+            } else {
+                let record = DocumentRecord(
+                    id: document.id ?? IDGenerator.new(),
+                    originalFilename: document.originalFilename,
+                    storedFilename: document.storedFilename,
+                    relativePath: document.relativePath,
+                    mimeType: document.mimeType,
+                    sha256: document.sha256,
+                    byteSize: document.byteSize,
+                    documentType: document.documentType,
+                    source: document.source,
+                    importedAt: now,
+                    createdAt: now
+                )
+                try record.insert(db)
+                canonical = record
+                isDuplicate = false
+            }
+
+            try db.execute(
+                sql: """
+                UPDATE import_items
+                   SET document_id = ?,
+                       status = CASE WHEN ? THEN 'duplicate' ELSE status END,
+                       error_code = NULL,
+                       error_message = NULL,
+                       updated_at = ?
+                 WHERE id = ?
+                """,
+                arguments: [canonical.id, isDuplicate, now, itemID]
+            )
+
+            let canonicalDraft = DocumentDraft(
+                id: canonical.id,
+                sha256: canonical.sha256,
+                originalFilename: canonical.originalFilename,
+                storedFilename: canonical.storedFilename,
+                relativePath: canonical.relativePath,
+                mimeType: canonical.mimeType,
+                byteSize: canonical.byteSize,
+                documentType: canonical.documentType,
+                source: canonical.source,
+                role: document.role
+            )
+            return ArchivedDocumentRegistration(document: canonicalDraft, isDuplicate: isDuplicate)
+        }
+    }
+
+    /// Reconstructs the draft for a document already in the archive. Retry
+    /// uses this path instead of copying the user's source again.
+    public func archivedDocument(_ id: String) throws -> DocumentDraft? {
+        try database.reader.read { db in
+            guard let record = try DocumentRecord.fetchOne(db, key: id) else { return nil }
+            return Self.documentDraft(from: record)
+        }
+    }
+
     public func item(_ id: String) throws -> ImportItem? {
         try database.reader.read { try ImportItem.fetchOne($0, key: id) }
+    }
+
+    /// Lineage used when a proposal is committed. A retry gets a fresh
+    /// successful model run, so the newest successful run is the one linked.
+    public func lineage(forImportItemID itemID: String) throws -> ImportLineage {
+        try database.reader.read { db in
+            let sourceDocumentID = try String.fetchOne(
+                db,
+                sql: "SELECT document_id FROM import_items WHERE id = ?",
+                arguments: [itemID]
+            )
+            let modelRunID = try String.fetchOne(
+                db,
+                sql: """
+                SELECT id FROM model_runs
+                 WHERE import_item_id = ? AND status = 'succeeded'
+                 ORDER BY started_at DESC
+                 LIMIT 1
+                """,
+                arguments: [itemID]
+            )
+            return ImportLineage(sourceDocumentID: sourceDocumentID, modelRunID: modelRunID)
+        }
     }
 
     /// Items the app is still working on, for the toolbar progress indicator.
@@ -217,6 +362,61 @@ public struct ImportRepository: Sendable {
         try database.reader.read { try Self.pendingProposals($0) }
     }
 
+    /// Commits the bookkeeping write and both workflow state changes in one
+    /// SQLite transaction. The proposal is re-read inside the write closure,
+    /// so a second acceptance can never create another transaction.
+    @discardableResult
+    public func commitProposal(
+        _ proposalID: String,
+        draft: TransactionDraft,
+        issues: [ValidationIssueDraft],
+        actor: AuditActor,
+        context: WriteContext,
+        expectedUpdatedAt: String? = nil
+    ) throws -> String {
+        try database.writer.write { db in
+            guard let proposal = try ProposalRecord.fetchOne(db, key: proposalID) else {
+                throw ImportRepositoryError.proposalNotFound(proposalID)
+            }
+            guard proposal.status == .pending else {
+                throw ImportRepositoryError.proposalNotPending(proposalID, proposal.status)
+            }
+            if let expectedUpdatedAt, expectedUpdatedAt != proposal.updatedAt {
+                throw ImportRepositoryError.proposalChanged(proposalID)
+            }
+
+            let transactionID = try BookkeepingRepository(database).save(
+                draft,
+                issues: issues,
+                actor: actor,
+                context: context,
+                in: db
+            )
+            let now = Timestamp.string()
+            try db.execute(
+                sql: """
+                UPDATE proposals
+                   SET status = 'committed', committed_at = ?, updated_at = ?
+                 WHERE id = ? AND status = 'pending'
+                """,
+                arguments: [now, now, proposalID]
+            )
+            guard try ProposalRecord.fetchOne(db, key: proposalID)?.status == .committed else {
+                throw ImportRepositoryError.proposalNotPending(proposalID, proposal.status)
+            }
+            if let itemID = proposal.importItemId {
+                guard try ImportItem.fetchOne(db, key: itemID) != nil else {
+                    throw ImportRepositoryError.importItemNotFound(itemID)
+                }
+                try db.execute(
+                    sql: "UPDATE import_items SET status = ?, updated_at = ? WHERE id = ?",
+                    arguments: [ImportItemStatus.committed.rawValue, now, itemID]
+                )
+            }
+            return transactionID
+        }
+    }
+
     public static func pendingProposals(_ db: Database) throws -> [ProposalRecord] {
         try ProposalRecord.fetchAll(
             db,
@@ -247,6 +447,20 @@ public struct ImportRepository: Sendable {
                 )
             }
         }
+    }
+
+    private static func documentDraft(from record: DocumentRecord) -> DocumentDraft {
+        DocumentDraft(
+            id: record.id,
+            sha256: record.sha256,
+            originalFilename: record.originalFilename,
+            storedFilename: record.storedFilename,
+            relativePath: record.relativePath,
+            mimeType: record.mimeType,
+            byteSize: record.byteSize,
+            documentType: record.documentType,
+            source: record.source
+        )
     }
 
     static func json(_ value: some Encodable) throws -> String {

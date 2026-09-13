@@ -9,22 +9,29 @@ struct PaymentEditor: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
 
-    let detail: TransactionDetail
+    @Binding private var draft: TransactionDraft
+    let onSave: (TransactionDraft) -> Void
     @State private var payment: PaymentDraft
     @State private var accounts: [Account] = []
+    @State private var amountIsValid = true
+    @State private var saveError: String?
 
-    init(detail: TransactionDetail) {
-        self.detail = detail
-        let currency = CurrencyCode(detail.transaction.bookedCurrency)
-        let open = (detail.transaction.bookedGrossMinor ?? 0) - detail.totalAllocatedMinor
+    init(
+        draft: Binding<TransactionDraft>,
+        onSave: @escaping (TransactionDraft) -> Void = { _ in }
+    ) {
+        _draft = draft
+        self.onSave = onSave
+        let transaction = draft.wrappedValue
+        let open = (transaction.grossMinor ?? 0) - transaction.payments.reduce(0) { $0 + $1.allocated }
         _payment = State(
             initialValue: PaymentDraft(
-                direction: detail.transaction.direction == .income ? .inflow : .outflow,
+                direction: transaction.direction == .income ? .inflow : .outflow,
                 paymentDate: .today(),
                 amountMinor: max(open, 0),
-                currency: currency,
-                counterpartyNameRaw: detail.counterparty?.displayName,
-                reference: detail.transaction.invoiceNumber
+                currency: transaction.currency,
+                counterpartyNameRaw: transaction.counterpartyName.isEmpty ? nil : transaction.counterpartyName,
+                reference: transaction.invoiceNumber
             )
         )
     }
@@ -58,8 +65,13 @@ struct PaymentEditor: View {
                             get: { payment.amountMinor },
                             set: { payment.amountMinor = $0 ?? 0 }
                         ),
-                        currency: payment.currency
+                        currency: payment.currency,
+                        onUserEdit: { saveError = nil },
+                        onValidityChange: { amountIsValid = $0 }
                     )
+                    if let paymentAmountMessage {
+                        IssueRow(severity: .error, message: paymentAmountMessage)
+                    }
                     Picker("Konto", selection: $payment.accountId) {
                         Text("Ohne Konto").tag(String?.none)
                         ForEach(accounts) { Text($0.name).tag(String?.some($0.id)) }
@@ -73,6 +85,11 @@ struct PaymentEditor: View {
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                if let saveError {
+                    Section {
+                        IssueRow(severity: .error, message: saveError)
+                    }
+                }
             }
             .formStyle(.grouped)
             Divider()
@@ -83,7 +100,7 @@ struct PaymentEditor: View {
                 Button("Sichern", action: save)
                     .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
-                    .disabled(payment.amountMinor == 0)
+                    .disabled(paymentAmountMessage != nil)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -92,16 +109,27 @@ struct PaymentEditor: View {
         .task { accounts = (try? model.database?.accounts()) ?? [] }
     }
 
+    private var paymentAmountMessage: String? {
+        guard amountIsValid else { return "Betrag ist ungültig. Bitte geben Sie eine Zahl ein." }
+        guard payment.amountMinor > 0 else { return "Betrag muss größer als 0 sein." }
+        return nil
+    }
+
     private var openAmountHint: String {
-        let open = (detail.transaction.bookedGrossMinor ?? 0) - detail.totalAllocatedMinor
-        let currency = CurrencyCode(detail.transaction.bookedCurrency)
-        return "Offen: \(Format.money(open, currency: currency)). Ein kleinerer Betrag wird als Teilzahlung gebucht."
+        let open = (draft.grossMinor ?? 0) - draft.payments.reduce(0) { $0 + $1.allocated }
+        return "Offen: \(Format.money(open, currency: draft.currency)). Ein kleinerer Betrag wird als Teilzahlung gebucht."
     }
 
     private func save() {
-        var draft = detail.draft
-        draft.payments.append(payment)
-        guard model.save(draft) != nil else { return }
+        guard paymentAmountMessage == nil else { return }
+        var updatedDraft = draft
+        updatedDraft.payments.append(payment)
+        guard model.save(updatedDraft) != nil else {
+            saveError = "Zahlung konnte nicht gespeichert werden. Ihre Eingaben bleiben erhalten."
+            return
+        }
+        draft = updatedDraft
+        onSave(updatedDraft)
         dismiss()
     }
 }

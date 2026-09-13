@@ -53,17 +53,29 @@ struct BusinessProfileForm: View {
                     TextField("USt-IdNr.", text: $vatId, prompt: Text("z. B. DE123456789"))
                     Picker("Umsatzsteuer", selection: $vatStatus) {
                         Text("Umsatzsteuerpflichtig").tag(VATStatus.taxable)
-                        Text("Kleinunternehmer (§ 19 UStG)").tag(VATStatus.smallBusiness)
+                        // Keep a saved future value represented, but never selectable.
+                        if vatStatus != .taxable {
+                            Text("Gespeicherter Modus – in V1 nicht unterstützt")
+                                .tag(vatStatus)
+                                .disabled(true)
+                        }
                     }
                     Picker("Besteuerung", selection: $accountingMethod) {
                         Text("Ist-Versteuerung (§ 20 UStG)").tag(VATAccountingMethod.cash)
-                        Text("Soll-Versteuerung").tag(VATAccountingMethod.accrual)
+                        // Keep a saved future value represented, but never selectable.
+                        if accountingMethod != .cash {
+                            Text("Gespeicherter Modus – in V1 nicht unterstützt")
+                                .tag(accountingMethod)
+                                .disabled(true)
+                        }
                     }
                     Picker("UStVA-Zeitraum", selection: $ustvaPeriod) {
                         Text("Monatlich").tag(UStVAPeriodicity.monthly)
                         Text("Quartalsweise").tag(UStVAPeriodicity.quarterly)
                         Text("Jährlich").tag(UStVAPeriodicity.yearly)
                     }
+                } footer: {
+                    Text("V1 unterstützt nur Umsatzsteuerpflicht und Ist-Versteuerung.")
                 }
             }
             .formStyle(.grouped)

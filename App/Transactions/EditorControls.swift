@@ -36,6 +36,7 @@ struct MoneyField: View {
     @Binding var minor: Int64?
     var currency: CurrencyCode = .eur
     var onUserEdit: (() -> Void)?
+    var onValidityChange: ((Bool) -> Void)?
 
     @State private var text = ""
     @FocusState private var isFocused: Bool
@@ -45,12 +46,22 @@ struct MoneyField: View {
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .focused($isFocused)
-            .onAppear { text = Format.amount(minor, currency: currency) }
+            .onAppear {
+                text = Format.amount(minor, currency: currency)
+                onValidityChange?(true)
+            }
             .onChange(of: text) { _, new in
                 guard isFocused else { return }
                 let trimmed = new.trimmingCharacters(in: .whitespaces)
-                minor = trimmed.isEmpty ? nil : (try? Money.fromDecimalString(trimmed, currency: currency))?
-                    .minorUnits ?? minor
+                if trimmed.isEmpty {
+                    minor = nil
+                    onValidityChange?(true)
+                } else if let parsed = try? Money.fromDecimalString(trimmed, currency: currency) {
+                    minor = parsed.minorUnits
+                    onValidityChange?(true)
+                } else {
+                    onValidityChange?(false)
+                }
                 onUserEdit?()
             }
             .onChange(of: minor) { _, new in

@@ -77,6 +77,20 @@ public enum ExtractionNormalizer {
             categoryIDs: categoryIDs
         )
 
+        var unparseableDateFields: [String] = []
+        func date(_ raw: String?, fieldName: String) -> LocalDate? {
+            guard let raw, !raw.isEmpty else { return nil }
+            guard let date = LocalDate(raw) else {
+                unparseableDateFields.append(fieldName)
+                return nil
+            }
+            return date
+        }
+        let invoiceDate = date(extraction.invoice.invoiceDate, fieldName: "invoiceDate")
+        let serviceDate = date(extraction.invoice.serviceDate, fieldName: "serviceDate")
+        let servicePeriodStart = date(extraction.invoice.servicePeriodStart, fieldName: "servicePeriodStart")
+        let servicePeriodEnd = date(extraction.invoice.servicePeriodEnd, fieldName: "servicePeriodEnd")
+
         let hintedCategories = Set(allocations.map(\.categoryId))
         let supplyType: SupplyType = hintedCategories.contains(where: goodsCategoryIDs.contains) ? .goods : .service
 
@@ -89,10 +103,11 @@ public enum ExtractionNormalizer {
             transactionType: transactionType(for: extraction.documentType),
             title: title(of: extraction),
             invoiceNumber: extraction.invoice.invoiceNumber?.trimmed.nilIfEmpty,
-            invoiceDate: LocalDate(extraction.invoice.invoiceDate ?? ""),
-            serviceDate: LocalDate(extraction.invoice.serviceDate ?? ""),
-            servicePeriodStart: LocalDate(extraction.invoice.servicePeriodStart ?? ""),
-            servicePeriodEnd: LocalDate(extraction.invoice.servicePeriodEnd ?? ""),
+            invoiceDate: invoiceDate,
+            serviceDate: serviceDate,
+            servicePeriodStart: servicePeriodStart,
+            servicePeriodEnd: servicePeriodEnd,
+            unparseableDateFields: unparseableDateFields.isEmpty ? nil : unparseableDateFields,
             currency: currency,
             netMinor: net,
             taxMinor: tax,
