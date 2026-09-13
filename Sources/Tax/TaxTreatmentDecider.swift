@@ -105,7 +105,7 @@ public enum TaxTreatmentDecider {
     /// EU member states (2026), excluding Germany which is compared separately.
     public static let euMemberStates: Set<String> = [
         "AT", "BE", "BG", "HR", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HU",
-        "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK",
+        "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"
     ]
 
     public static func decide(_ input: TaxTreatmentDecisionInput) -> TaxTreatmentDecision {
@@ -120,10 +120,20 @@ public enum TaxTreatmentDecider {
         let treatment: TaxTreatment
         let reasoning: String
 
-        if isDomestic, taxShown {
+        if isDomestic, input.direction == .income, input.profile.vatStatus == .smallBusiness {
+            treatment = .smallBusiness
+            reasoning = "Domestic income for a small-business profile (§19 UStG)."
+        } else if isDomestic, taxShown {
             treatment = .domesticVAT
             reasoning = "Domestic counterparty with VAT shown on the document (§13 UStG)."
-        } else if input.direction == .expense, !isDomestic, isEU, input.supplyType == .goods, !taxShown {
+        } else if isDomestic, input.direction == .expense, !taxShown,
+                  input.modelHint?.treatment == .smallBusiness
+        {
+            treatment = .smallBusiness
+            reasoning = "Domestic supplier document without VAT; explicit small-business hint accepted (§19 UStG)."
+        } else if input.direction == .expense, !isDomestic, isEU, input.supplyType == .goods, !taxShown,
+                  input.profile.vatStatus == .taxable
+        {
             treatment = .intraCommunityAcquisition
             reasoning = "EU counterparty, goods, no VAT shown - intra-Community acquisition (§1a UStG)."
         } else if input.direction == .expense, !isDomestic, isServiceLike, !taxShown {
@@ -140,7 +150,7 @@ public enum TaxTreatmentDecider {
         } else if input.direction == .income, !isDomestic, !isEU, !taxShown {
             treatment = .export
             reasoning = "Income to a third-country customer without VAT - export (§4 Nr. 1 UStG)."
-        } else if let hint = input.modelHint, (hint.treatment == .nonTaxable || hint.treatment == .exempt), !taxShown {
+        } else if let hint = input.modelHint, hint.treatment == .nonTaxable || hint.treatment == .exempt, !taxShown {
             treatment = hint.treatment
             reasoning = "Model hint of \(hint.treatment.rawValue) accepted; no VAT shown on the document."
         } else {

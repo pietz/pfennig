@@ -79,6 +79,8 @@ public enum BookkeepingEngine {
         )
         let treatment = draft.treatmentOverride ?? decision.treatment
         let reasoning = Self.reasoning(for: decision.treatment, direction: draft.direction)
+        let isSmallBusinessExpense = draft.direction == .expense
+            && (profile.vatStatus == .smallBusiness || treatment == .smallBusiness)
 
         // A model parse failure remains blocking while its field is still
         // missing. If a reviewer supplies a valid replacement, the stale
@@ -112,10 +114,17 @@ public enum BookkeepingEngine {
             && (treatment == .reverseCharge || treatment == .intraCommunityAcquisition)
         let base = net.isZero ? gross : net
         let vatDate = points.inputVATDate ?? draft.invoiceDate ?? LocalDate.today()
-        let selfAssessed = selfAssessesVAT ? try? SelfAssessedVAT.compute(taxableBase: base, at: vatDate) : nil
+        let selfAssessed = selfAssessesVAT
+            ? try? SelfAssessedVAT.compute(
+                taxableBase: base,
+                at: vatDate,
+                fullyDeductible: !isSmallBusinessExpense
+            )
+            : nil
 
         let deductibleInputVAT: Int64? = switch draft.direction {
-        case .expense: selfAssessed?.deductibleInputVAT.minorUnits ?? tax.minorUnits
+        case .expense:
+            isSmallBusinessExpense ? 0 : (selfAssessed?.deductibleInputVAT.minorUnits ?? tax.minorUnits)
         case .income, .unknown: nil
         }
         draft.assessment = TaxAssessmentDraft(
@@ -176,7 +185,7 @@ public enum BookkeepingEngine {
                     assetFlag: $0.assetFlag
                 )
             },
-            allocationExpectedTotal: net.isZero ? gross : net,
+            allocationExpectedTotal: isSmallBusinessExpense ? gross : (net.isZero ? gross : net),
             paymentAllocations: draft.payments.map {
                 let amount = Money(minorUnits: $0.amountMinor, currency: $0.currency)
                 let allocated = Money(minorUnits: $0.allocated, currency: $0.currency)
@@ -227,6 +236,8 @@ public enum BookkeepingEngine {
             "Kein Umsatzsteuerausweis, nicht steuerbarer Vorgang."
         case .exempt:
             "Kein Umsatzsteuerausweis, steuerfreier Umsatz (§ 4 UStG)."
+        case .smallBusiness:
+            "Keine Umsatzsteuer aufgrund der Kleinunternehmerregelung (§ 19 UStG)."
         default:
             "Die Angaben passen zu keiner bekannten Regel - bitte steuerliche Behandlung manuell wählen."
         }

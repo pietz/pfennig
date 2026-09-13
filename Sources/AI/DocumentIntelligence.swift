@@ -69,13 +69,14 @@ public struct ExtractionContext: Sendable, Hashable {
 
     public var business: Business
     public var categories: [CategoryOption]
-    /// Treatments the app supports; `smallBusiness` is reserved and excluded.
+    /// Treatments the app supports, including the document-evidenced
+    /// `smallBusiness` hint (§19 UStG).
     public var treatments: [TaxTreatment]
 
     public init(
         business: Business,
         categories: [CategoryOption],
-        treatments: [TaxTreatment] = TaxTreatment.allCases.filter { $0 != .smallBusiness }
+        treatments: [TaxTreatment] = TaxTreatment.allCases
     ) {
         self.business = business
         self.categories = categories

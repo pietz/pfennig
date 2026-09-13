@@ -35,6 +35,12 @@ public enum ExtractionPrompt {
         lines.append(
             "- Accounting: \(business.accountingMethod == .cash ? "cash basis (§20 UStG)" : "accrual basis")"
         )
+        if business.vatStatus == .smallBusiness {
+            lines
+                .append(
+                    "- The owner's small-business profile is context only; it does not show that this document uses §19 UStG."
+                )
+        }
         return lines.joined(separator: "\n")
     }
 
@@ -56,7 +62,7 @@ public enum ExtractionPrompt {
         case .importVAT: "import VAT paid at the border (§21 UStG)"
         case .nonTaxable: "outside the scope of German VAT"
         case .exempt: "exempt supply (§4 UStG)"
-        case .smallBusiness: "no VAT under the small-business rule (§19 UStG)"
+        case .smallBusiness: "no VAT under an explicitly stated small-business rule (§19 UStG)"
         case .unknown: "cannot be determined from the document"
         }
     }

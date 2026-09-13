@@ -36,7 +36,7 @@ The app should feel like a polished native Mac application, not like a chatbot w
 - Freelancer / Freiberufler in Germany; Einzelunternehmer as close adjacent case
 - One business activity
 - EÜR (Einnahmenüberschussrechnung), not balance-sheet accounting
-- VAT liable, `Ist-Versteuerung` (§20 UStG)
+- Regularly VAT-taxed or Kleinunternehmer (§19 UStG), with `Ist-Versteuerung` (§20 UStG) where applicable
 - Primarily B2B services, some B2C possible
 - Typical expenses: office, software/SaaS, advertising, hardware, professional services, telecom, travel
 - Domestic, EU, and third-country invoices in multiple currencies
@@ -44,7 +44,6 @@ The app should feel like a polished native Mac application, not like a chatbot w
 
 ## 2.2 Must not be blocked by the data model (later)
 
-- Kleinunternehmer (§19 UStG)
 - Soll-Versteuerung
 - Multiple business activities
 - Zusammenfassende Meldung (ZM, §18a UStG)
@@ -169,6 +168,19 @@ invoice tax shown        = 0
 The document's own `tax_amount` is 0; `self_assessed_vat` is computed by Swift, never by the model. Rate defaults to the German standard rate applicable at `input_vat_date`.
 
 For **income** with `reverseCharge` (EU B2B service to a customer with a valid VAT ID): no VAT charged, `customer_vat_id` required (soft warning if missing). ZM reporting is a future feature; V1 only tags these transactions so they can be reported later.
+
+For a **Kleinunternehmer purchasing a typical foreign B2B service**, Ziffer computes the self-assessed VAT but sets deductible input VAT to zero. Detailed acquisition-threshold rules for EU goods remain outside the automatic rule set and require review.
+
+## 5.4.1 Kleinunternehmer (§19 UStG)
+
+Ziffer supports the common bookkeeping cases, not automated eligibility or regime administration:
+
+- Domestic income is treated as `smallBusiness` rather than ordinary taxable income.
+- VAT shown by a domestic supplier remains part of the document facts, but deductible input VAT is zero and the gross amount is allocated as cost.
+- An explicit §19 indication on a domestic supplier invoice may produce `smallBusiness`; Ziffer never invents input VAT from its gross amount.
+- Contradictory VAT on Kleinunternehmer income remains visible and produces a review warning.
+
+Turnover thresholds, waivers, status changes, mixed activities, invoice issuance, and filing automation are deferred.
 
 ## 5.5 Kleinbetragsrechnung (§33 UStDV)
 
@@ -535,7 +547,7 @@ export                     — third-country income without VAT
 importVAT                  — Einfuhrumsatzsteuer paid (expense; documented by customs/carrier invoice)
 nonTaxable                 — outside VAT scope (e.g., insurance, tax payments)
 exempt                     — §4 UStG exempt
-smallBusiness              — §19 (reserved, not used in V1)
+smallBusiness              — §19 treatment for a Kleinunternehmer supply
 unknown
 ```
 

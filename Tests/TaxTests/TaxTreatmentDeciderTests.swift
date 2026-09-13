@@ -21,7 +21,11 @@ struct TaxTreatmentDeciderTests {
         let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "IE", hasVATId: true),
-            supplyType: .service, document: DocumentTaxFacts(taxShown: false, reverseChargeNotePresent: true, rateComponents: ["0"])
+            supplyType: .service, document: DocumentTaxFacts(
+                taxShown: false,
+                reverseChargeNotePresent: true,
+                rateComponents: ["0"]
+            )
         ))
         #expect(decision.treatment == .reverseCharge)
     }
@@ -51,7 +55,11 @@ struct TaxTreatmentDeciderTests {
         let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
             profile: Self.profile, direction: .income,
             counterparty: CounterpartyTaxFacts(countryCode: "FR", hasVATId: true),
-            supplyType: .service, document: DocumentTaxFacts(taxShown: false, reverseChargeNotePresent: true, rateComponents: ["0"])
+            supplyType: .service, document: DocumentTaxFacts(
+                taxShown: false,
+                reverseChargeNotePresent: true,
+                rateComponents: ["0"]
+            )
         ))
         #expect(decision.treatment == .reverseCharge)
         #expect(!decision.softIssues.contains(.missingCustomerVATIdOnReverseChargeIncome))
@@ -76,6 +84,57 @@ struct TaxTreatmentDeciderTests {
             supplyType: .service, document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"])
         ))
         #expect(decision.treatment == .export)
+    }
+
+    @Test("Small-business profile domestic income without VAT -> smallBusiness")
+    func smallBusinessDomesticIncomeWithoutVAT() {
+        let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
+            profile: ProfileFacts(countryCode: "DE", vatStatus: .smallBusiness, accountingMethod: .cash),
+            direction: .income,
+            counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
+            supplyType: .service,
+            document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"])
+        ))
+        #expect(decision.treatment == .smallBusiness)
+    }
+
+    @Test("Explicit small-business hint may decide a domestic zero-tax supplier invoice")
+    func smallBusinessHintForDomesticSupplier() {
+        let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
+            profile: Self.profile,
+            direction: .expense,
+            counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
+            supplyType: .service,
+            document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"]),
+            modelHint: ModelTreatmentHint(treatment: .smallBusiness, confidence: 0.9)
+        ))
+        #expect(decision.treatment == .smallBusiness)
+        #expect(!decision.softIssues.contains(.hintDisagreesWithFacts))
+    }
+
+    @Test("Small-business hint cannot reclassify taxable-profile income")
+    func smallBusinessHintDoesNotReclassifyTaxableIncome() {
+        let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
+            profile: Self.profile,
+            direction: .income,
+            counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
+            supplyType: .service,
+            document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"]),
+            modelHint: ModelTreatmentHint(treatment: .smallBusiness, confidence: 0.9)
+        ))
+        #expect(decision.treatment == .unknown)
+    }
+
+    @Test("Shown domestic VAT remains domesticVAT for a small-business profile")
+    func smallBusinessProfilePreservesShownVAT() {
+        let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
+            profile: ProfileFacts(countryCode: "DE", vatStatus: .smallBusiness, accountingMethod: .cash),
+            direction: .expense,
+            counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: true),
+            supplyType: .goods,
+            document: DocumentTaxFacts(taxShown: true, rateComponents: ["19"])
+        ))
+        #expect(decision.treatment == .domesticVAT)
     }
 
     @Test("Explicit hint of nonTaxable is accepted when no VAT shown")

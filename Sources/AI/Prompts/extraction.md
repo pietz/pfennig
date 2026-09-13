@@ -34,7 +34,13 @@ schema exactly.
 8. `taxTreatmentHint` is a hint, not a decision. The app decides the binding
    treatment from the business profile, the counterparty country and the VAT
    IDs. Give your best reading with a short factual `reasoning` and a
-   `confidence` between 0 and 1.
+   `confidence` between 0 and 1. Use `smallBusiness` only when this document
+   explicitly indicates the small-business exemption under §19 UStG (for
+   example, with an explicit §19 reference or equivalent wording). Never use
+   `smallBusiness` merely because the owner's profile above says
+   `smallBusiness`; the profile is context, not support from this document.
+   Without an explicit document indication, choose another supported treatment
+   or `unknown`.
 9. `lineItems[].categoryHint` must be one of the canonical category ids listed
    below, or `null`. Never invent an id. `assetCandidate` is `true` only for a
    durable physical asset (hardware, furniture, vehicle) whose net amount

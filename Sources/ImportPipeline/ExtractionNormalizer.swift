@@ -69,7 +69,20 @@ public enum ExtractionNormalizer {
             )
         }
 
-        let allocationBase = (net ?? gross ?? 0) == 0 ? (gross ?? 0) : (net ?? 0)
+        let homeCountry = profile.countryCode.trimmed.uppercased()
+        let isDomestic = (extraction.counterparty.countryCode?.trimmed.uppercased() ?? homeCountry) == homeCountry
+        let isSmallBusinessExpense = extraction.direction == .expense
+            && (
+                profile.vatStatus == .smallBusiness
+                    || (
+                        isDomestic
+                            && extraction.taxTreatmentHint.treatment == .smallBusiness
+                            && (tax ?? 0) == 0
+                    )
+            )
+        let allocationBase = isSmallBusinessExpense
+            ? (gross ?? net ?? 0)
+            : ((net ?? gross ?? 0) == 0 ? (gross ?? 0) : (net ?? 0))
         let allocations = allocations(
             for: extraction.lineItems,
             total: allocationBase,

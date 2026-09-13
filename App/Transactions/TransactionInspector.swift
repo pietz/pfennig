@@ -392,7 +392,7 @@ struct TransactionInspector: View {
                 Picker("Behandlung", selection: $draft.treatmentOverride) {
                     Text("Automatisch").tag(TaxTreatment?.none)
                     Divider()
-                    ForEach(TaxTreatment.allCases.filter { $0 != .smallBusiness }, id: \.self) {
+                    ForEach(TaxTreatment.allCases, id: \.self) {
                         Text($0.label).tag(TaxTreatment?.some($0))
                     }
                 }

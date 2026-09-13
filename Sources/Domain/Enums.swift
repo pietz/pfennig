@@ -39,7 +39,7 @@ public enum ReviewStatus: String, Codable, CaseIterable, Sendable {
     case unreviewed, needsReview, confirmed, conflict
 }
 
-/// See spec 16.1. `smallBusiness` is reserved and unused in V1.
+/// See spec 16.1. `smallBusiness` represents a §19 UStG supply.
 public enum TaxTreatment: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
     case domesticVAT
     case reverseCharge
