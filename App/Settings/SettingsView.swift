@@ -88,6 +88,13 @@ struct SettingsView: View {
                 )
             }
 
+            Section("Über Ziffer") {
+                LabeledContent("Version", value: AppModel.appVersion)
+                Link("Quellcode und Lizenz (GPLv3)", destination: URL(string: "https://github.com/pietz/ziffer")!)
+                Text("Freie Software ohne Gewährleistung.")
+                    .foregroundStyle(.secondary)
+            }
+
             Section {
                 SecureField("OpenAI API-Schlüssel", text: $apiKeyInput, prompt: Text("sk-…"))
                     .onSubmit(saveAPIKey)

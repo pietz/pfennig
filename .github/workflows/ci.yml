@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: macos-26
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run Swift package tests
+        run: swift test
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Build app without signing
+        run: |
+          xcodebuild \
+            -project Ziffer.xcodeproj \
+            -scheme Ziffer \
+            -configuration Debug \
+            -destination "generic/platform=macOS" \
+            build \
+            CODE_SIGNING_ALLOWED=NO

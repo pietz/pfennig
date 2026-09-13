@@ -7,9 +7,10 @@
 *.xcworkspace
 !project.yml
 
-# Build
+# Build and release artifacts
 .build/
 build/
+dist/
 DerivedData/
 *.xcresult
 
