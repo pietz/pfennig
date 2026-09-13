@@ -25,6 +25,7 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem? = .transactions
+    @State private var columnVisibility: NavigationSplitViewVisibility = .detailOnly
 
     var body: some View {
         @Bindable var model = model
@@ -33,7 +34,7 @@ struct RootView: View {
             case .profile:
                 OnboardingView()
             case .ready:
-                NavigationSplitView {
+                NavigationSplitView(columnVisibility: $columnVisibility) {
                     VStack(spacing: 0) {
                         List(SidebarItem.allCases, selection: $selection) { item in
                             Label(item.title, systemImage: item.symbol)

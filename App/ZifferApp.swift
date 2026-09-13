@@ -43,7 +43,7 @@ struct ZifferApp: App {
             RootView()
                 .environment(model)
                 .preferredColorScheme(appearancePreference.colorScheme)
-                .frame(minWidth: 900, minHeight: 520)
+                .frame(minWidth: 700, minHeight: 420)
         }
         .windowToolbarStyle(.unified)
         .commands {

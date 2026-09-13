@@ -48,7 +48,7 @@ struct TransactionsView: View {
                     newDraft: $newDraft,
                     hasUnsavedChanges: $inspectorHasChanges
                 )
-                .inspectorColumnWidth(min: 320, ideal: 420, max: 600)
+                .inspectorColumnWidth(min: 280, ideal: 340, max: 520)
             }
             .dropDestination(for: URL.self) { urls, _ in
                 model.importFiles(urls)
@@ -130,14 +130,14 @@ struct TransactionsView: View {
                         }
                     }
                 }
-                .width(min: 180, ideal: 260)
+                .width(min: 150, ideal: 220)
 
                 TableColumn("Datum") { row in
                     Text(row.date.map(Format.date) ?? "–")
                         .monospacedDigit()
                         .help(Text("Herkunft: \(row.dateOrigin)"))
                 }
-                .width(90)
+                .width(80)
 
                 TableColumn("Betrag") { row in
                     VStack(alignment: .trailing, spacing: 1) {
@@ -152,16 +152,22 @@ struct TransactionsView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                .width(110)
+                .width(100)
 
                 TableColumn("Zahlung") { row in
-                    if let status = row.paymentStatus {
-                        Label(status.label, systemImage: status.symbol).foregroundStyle(status.tint)
-                    } else {
-                        Text("–").foregroundStyle(.secondary)
+                    Group {
+                        if let status = row.paymentStatus {
+                            Image(systemName: status.symbol)
+                                .foregroundStyle(status.tint)
+                                .help(Text(status.label))
+                                .accessibilityLabel(Text(status.label))
+                        } else {
+                            Text("–").foregroundStyle(.secondary)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .width(140)
+                .width(52)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contextMenu(forSelectionType: LedgerRow.ID.self) { ids in
@@ -228,9 +234,6 @@ struct TransactionsView: View {
         var parts = ["\(items.count) Buchungen"]
         if !proposals.isEmpty {
             parts.append("\(proposals.count) zu prüfen")
-        }
-        if activeImports > 0 {
-            parts.append("\(activeImports) \(activeImports == 1 ? "Dokument wird" : "Dokumente werden") analysiert")
         }
         return parts.joined(separator: " · ")
     }
