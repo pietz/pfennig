@@ -243,13 +243,17 @@ struct TransactionsView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItem(placement: .principal) {
-            Picker("Richtung", selection: $directionFilter) {
+            Menu {
                 ForEach(DirectionFilter.allCases) { filter in
-                    Text(filter.label).tag(filter)
+                    Button {
+                        directionFilter = filter
+                    } label: {
+                        Label(filter.label, systemImage: filter.symbol)
+                    }
                 }
+            } label: {
+                Label(directionFilter.label, systemImage: directionFilter.symbol)
             }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: 320)
         }
 
         ToolbarItemGroup {
@@ -271,14 +275,6 @@ struct TransactionsView: View {
             }
             .keyboardShortcut("i", modifiers: .command)
             .help(Text("Belege importieren"))
-
-            Button {
-                deletingID = selection
-            } label: {
-                Label("Löschen", systemImage: "trash")
-            }
-            .disabled(detail == nil)
-            .help(Text("Ausgewählte Buchung löschen"))
 
             Button {
                 showsInspector.toggle()
@@ -378,7 +374,7 @@ struct TransactionsView: View {
 
 // MARK: - Direction filter
 
-/// The "Alle / Eingang / Ausgang" segmented control in the toolbar.
+/// The "Alle / Eingang / Ausgang" direction menu in the toolbar.
 enum DirectionFilter: String, CaseIterable, Identifiable {
     case all, income, expense
 
@@ -391,6 +387,14 @@ enum DirectionFilter: String, CaseIterable, Identifiable {
         case .all: "Alle"
         case .income: "Eingang"
         case .expense: "Ausgang"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .all: "tray.full"
+        case .income: "arrow.down.left"
+        case .expense: "arrow.up.right"
         }
     }
 
