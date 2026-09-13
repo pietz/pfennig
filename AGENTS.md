@@ -71,9 +71,12 @@ Ziffer should feel like a compact, restrained macOS utility.
 
 ## Engineering
 
+- Read `docs/status.md` at the start of a work session and keep it current when implementation or release state changes.
 - Make the simplest coherent change that serves the current product.
 - Reuse the existing domain model and native components before adding abstractions.
 - Test common accounting paths and material boundaries first.
 - Preserve user-owned local databases and test data. Never solve a migration problem by asking users to delete an archive.
-- Never access or act on `.env` files or API keys.
+- Before the first public release, update the initial schema directly rather than adding compatibility shims; after a schema ships publicly, use forward migrations.
+- Keep ordinary confirmed transactions directly editable. Require correction semantics only when a future locked period makes them necessary.
+- Never access or act on `.env` files, API keys, signing private keys, or notarization passwords.
 - Keep changes consistent with the local-first architecture: existing data must remain browsable without network or model access.

@@ -1,6 +1,6 @@
 # Releasing Ziffer for macOS
 
-Ziffer is distributed outside the Mac App Store as a Developer ID signed and Apple-notarized ZIP. Release credentials remain in the local macOS Keychain and are never passed through environment files or committed to the repository.
+Ziffer will initially be distributed outside the Mac App Store as a Developer ID signed and Apple-notarized ZIP. Release credentials remain in the local macOS Keychain and are never passed through environment files or committed to the repository.
 
 ## One-time setup
 
@@ -33,7 +33,7 @@ The script:
 - submits a temporary ZIP to Apple and waits for `Accepted`
 - staples and validates the notarization ticket
 - runs a Gatekeeper assessment
-- creates `dist/Ziffer-<version>-macOS.zip` and its SHA-256 file
+- creates `dist/Ziffer-<version>-macOS.zip` with the app, GPLv3 license, privacy notice, and its SHA-256 file
 
 Use `scripts/release.sh --build-only` to test release signing without contacting Apple's notarization service. Override `TEAM_ID`, `SIGNING_IDENTITY`, or `NOTARY_PROFILE` in the environment when another authorized maintainer performs a release.
 

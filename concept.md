@@ -1,7 +1,7 @@
 # AI-Native Bookkeeping for macOS
 ## Product & Technical Specification — Version 2
 
-**Status:** Implementation spec (V2, supersedes V1)  
+**Status:** Target implementation spec (V2, supersedes V1); see [`docs/status.md`](docs/status.md) for what is implemented now
 **Target platform:** macOS 15+  
 **Primary user:** German freelancer / sole proprietor using EÜR and VAT cash accounting (`Ist-Versteuerung`)  
 **Development style:** local coding agent, CLI-first; XcodeGen-generated project, no hand-maintained Xcode project, Xcode GUI only for packaging/release edge cases  
@@ -242,7 +242,7 @@ Native three-column layout:
 
 SwiftUI building blocks: `NavigationSplitView`, `Table`, native toolbar, `.inspector`, native drag-and-drop, `.searchable`, `@Observable`. Avoid custom UI unless necessary.
 
-UI language: **German first**, fully localizable from day one (String Catalog). Code, schema, identifiers, enums: English. Numbers, currencies, dates: locale-aware via `FormatStyle`.
+UI language: **German first**. Add localization infrastructure when a second locale becomes a product priority rather than carrying unused translation machinery. Code, schema, identifiers, enums: English. Numbers, currencies, dates: locale-aware via `FormatStyle`.
 
 ## 6.2 Main transaction table
 
@@ -256,7 +256,7 @@ Per account: statement lines with classification, balance if derivable, unmatche
 
 ## 6.4 Inspector
 
-For a selected transaction: document preview (PDFKit / image), transaction fields, invoice fields, bookkeeping allocations, tax components and assessment (with derived tax points and their origin), payments and allocations, attached documents, relations, validation issues, missing information, provenance/audit (expandable), actions.
+For a selected transaction: document preview (PDFKit / image), transaction fields, invoice fields, bookkeeping allocations, tax components and assessment, payments and allocations, attached documents, relations, validation issues, missing information, and actions. Provenance and audit metadata remain internal rather than becoming routine interface chrome.
 
 Actions: Confirm · Edit · Attach document · Add payment · Link payment · Unlink · Split allocation · Add relation (credit note/refund) · Re-run AI analysis · Mark asset / clear asset flag · Archive · Resolve/ignore warning.
 
@@ -293,7 +293,7 @@ The application communicates through filled/partially filled records, highlighte
 
 Never force the model to invent values. `null` and `unknown` are first-class.
 
-UI distinguishes: known & validated · AI-proposed · missing · suspicious · invalid.
+UI distinguishes proposal state, missing information, suspicious values, invalid values, and validated records. Field-level provenance is not displayed in the ordinary workflow.
 
 ## 8.3 Field provenance
 
@@ -1193,10 +1193,10 @@ The UI derives one compact display status. Filters use `v_transaction_status`.
 
 # 20. Local File Layout
 
-The user chooses or creates an **archive folder** at first launch ("Archiv erstellen / öffnen"). The chosen path is stored in app preferences (later: security-scoped bookmark for sandbox).
+The app creates its archive at `~/Library/Application Support/Ziffer`. A future explicit move/export workflow may make the archive portable; onboarding does not begin with a folder picker.
 
 ```text
-Bookkeeping/
+Ziffer/
 ├── bookkeeping.sqlite
 ├── Documents/
 │   ├── 6e2….pdf
@@ -1207,7 +1207,7 @@ Bookkeeping/
 └── README.txt            — human-readable explanation of the layout
 ```
 
-Database stores relative paths only. Originals never modified. SHA-256 filenames. Thumbnails/previews live in `~/Library/Caches`, not in the archive. Multiple archives may exist; the app opens one at a time.
+Database stores relative paths only. Originals are never modified. Documents use SHA-256-based storage names. Thumbnails/previews live in `~/Library/Caches`, not in the archive.
 
 ---
 
@@ -1393,14 +1393,14 @@ The app is fully usable offline for existing data. If analysis fails: keep the d
 Repo/
 ├── project.yml                 ← XcodeGen source of truth for the app target
 ├── Package.swift               ← all non-UI modules as SwiftPM targets
-├── Bookkeeping.xcodeproj/      ← generated, git-ignored
+├── Ziffer.xcodeproj/           ← generated, git-ignored
 ├── App/                        ← app target sources (SwiftUI), Info.plist, entitlements, assets
 ├── Sources/                    ← SwiftPM module sources (see 37)
 ├── Tests/                      ← Swift Testing
 ├── Fixtures/                   ← synthetic documents + expected extractions + recorded model responses
 ├── scripts/
 │   ├── bootstrap.sh            ← brew install xcodegen, swiftformat; xcodegen generate
-│   ├── build.sh                ← xcodebuild -project … -scheme Bookkeeping -configuration Debug build
+│   ├── build.sh                ← xcodebuild -project … -scheme Ziffer -configuration Debug build
 │   ├── run.sh                  ← builds and opens the .app
 │   ├── test.sh                 ← swift test (packages) + xcodebuild test (app target if UI tests)
 │   └── lint.sh
@@ -1472,12 +1472,12 @@ Sources/
 Drop one invoice PDF into the app and end with a confirmed transaction in SQLite.
 
 1. Launch native app (`.app` bundle from XcodeGen project)
-2. Onboarding: create/open archive folder, business profile, API key into Keychain
+2. Onboarding: initialize the local archive, business profile, API key into Keychain
 3. Empty transaction table
 4. PDF drag-and-drop → copy to `Documents/`, SHA-256
 5. Extraction call (strict Structured Output), `model_runs` row
 6. Normalize → tax treatment decision → tax components → allocation → tax assessment with derived tax points
-7. Proposal persisted, validation run, shown in review UI with provenance badges
+7. Proposal persisted, validation run, shown in the review UI
 8. Manual edit of one field (provenance `manual`)
 9. Confirm → one SQLite transaction writes transaction, allocations, components, assessment, document link, provenance, audit
 10. Transaction visible in main table; app restart shows persisted data
@@ -1575,7 +1575,9 @@ Instant local browsing; never call the model to render a screen; never require n
 
 # 47. Data Migration Policy
 
-Every schema change is a numbered GRDB migration (`v001_initial`, `v002_…`). Never ask users to delete their database once real data exists. Migration tests upgrade fixture databases from each released schema version. `archive.json` records the schema version; opening a newer archive with an older app is refused with a clear message.
+Before the first public release, schema changes update `v001_initial` directly without compatibility shims. Existing local archives and test data must still never be deleted or reset; harmless legacy columns may remain in those development databases.
+
+After the first public schema ships, every schema change is a numbered GRDB migration (`v002_…`). Migration tests upgrade fixture databases from each released schema version. `archive.json` records the schema version; opening a newer archive with an older app is refused with a clear message.
 
 ---
 
@@ -1587,7 +1589,7 @@ Schema docs, privacy docs (what exactly is sent to OpenAI and when), provider ab
 
 # 49. Definition of MVP
 
-The user can: launch without an account · create/open an archive folder · configure business profile and accounts · enter an OpenAI API key · drop invoices/receipts · have information extracted · review/edit/confirm proposals with visible provenance · see transactions in a native table · attach documents · record payments manually · import statement files, classify lines, and match payments · handle reverse charge, foreign currency, and mixed-rate documents correctly · persist and restart without loss · inspect and edit all material values · export CSV and create/restore a full backup.
+The user can: launch without an account · use a local archive · configure the business profile and accounts · enter an OpenAI API key · drop invoices/receipts · have information extracted · review/edit/confirm proposals · see transactions in a native table · attach documents · record payments manually · import statement files, classify lines, and match payments · handle reverse charge, foreign currency, and mixed-rate documents correctly · persist and restart without loss · inspect and edit all material values · export CSV and create/restore a full backup.
 
 Analysis and tax preparation are the next layer.
 
@@ -1612,7 +1614,7 @@ Do not revisit unless implementation evidence proves them wrong:
 - macOS native, macOS 15+, Swift 6 strict concurrency, SwiftUI
 - Local-first, no backend, no user account
 - SQLite (GRDB) canonical; ordinary files for documents; no BLOBs
-- User-chosen archive folder; open, inspectable formats
+- Local archive in Application Support by default; open, inspectable formats and future portable move/export
 - All money as Int64 minor units; non-monetary decimals as canonical strings; never floating point
 - Transaction-first; documents, statement lines, payments, allocations, tax components, assessments are separate entities
 - Accounts and statement lines from the start; private/internal lines are not business transactions
@@ -1630,11 +1632,9 @@ Do not revisit unless implementation evidence proves them wrong:
 
 ---
 
-# 52. First Task for a Coding Agent
+# 52. Implementation Status
 
-> Create the repository described in section 35: a `Package.swift` containing the modules `Domain`, `Database`, `DocumentStore`, `StatementImport`, `ImportPipeline`, `AI`, `Validation`, `Tax`, `Analysis`, `Export` (empty where not yet needed), and an XcodeGen `project.yml` defining a macOS 15 SwiftUI app target `Bookkeeping` (Swift 6 language mode, strict concurrency, stable bundle identifier) that depends on those packages. Add `scripts/bootstrap.sh`, `build.sh`, `run.sh`, `test.sh`. Implement `Money` (Int64 minor units, currency exponent table, decimal-string parsing for German and English formats, half-up rounding), `LocalDate`, and all enums from section 18 in `Domain`. Implement `AppDatabase` with GRDB and migration `v001_initial` containing every table, index, and view from section 17, plus the seeded system categories from 17.4. Implement the onboarding flow (choose/create archive folder, business profile) and a `NavigationSplitView` with sidebar, transaction table bound to the database via GRDB observation, and an inspector placeholder. Seed three sample transactions in Debug builds. Do not integrate OpenAI yet. Write Swift Testing tests proving: database initialization and migration; Money parsing, rounding, and round-tripping; enum raw-value stability; that `v_transaction_status` derives payment status correctly for unpaid, partial, and paid fixtures; and that inserting a duplicate `(account_id, line_fingerprint)` fails.
-
-Only after that foundation is stable should the agent implement document import (M3/M4).
+The original repository-bootstrap task is complete. The app target and scheme are named `Ziffer`; current implementation state and next priorities are maintained in [`docs/status.md`](docs/status.md) and GitHub Issues.
 
 ---
 

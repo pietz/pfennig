@@ -78,7 +78,7 @@ The OpenAI API key is stored separately in the macOS Keychain and never in this 
 
 ## Development
 
-The app target lives in `App/`. Reusable modules live in `Sources/`, with Swift Testing suites in `Tests/`. `Tax` and `Validation` are deterministic and have no network or database access.
+The app target lives in `App/`. Reusable modules live in `Sources/`, with Swift Testing suites in `Tests/`. `Tax` and `Validation` are deterministic and have no network or database access. The current implementation boundary and maintainer handoff are recorded in [`docs/status.md`](docs/status.md).
 
 Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Planned work is tracked in [GitHub Issues](https://github.com/pietz/ziffer/issues). Maintainer release steps are documented in [`docs/releasing.md`](docs/releasing.md).
 

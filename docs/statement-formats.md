@@ -1,8 +1,6 @@
 # Bank / Payment Processor Statement CSV Formats
 
-Research notes for the built-in `StatementColumnMapping` parsers referenced in concept.md
-section 10.3 ("Known formats are shipped as built-in mappings") and consumed into
-`statement_lines` (section 17.12).
+Research notes for the planned `StatementColumnMapping` parsers referenced in concept.md section 10.3 and future `statement_lines` ingestion. Fixed-format statement parsers are not implemented yet; the current `StatementImport` module contains only foundational fingerprinting logic.
 
 Methodology: WebSearch/WebFetch against official bank help pages plus cross-checking
 against open-source finance-tool parsers (hledger, beancount, Firefly III import
@@ -318,7 +316,7 @@ content, not position)
 
 ## 8. PayPal — German-locale "Alle Transaktionen" activity CSV
 
-**Confidence: medium-high** on the current 42-column header (verified verbatim via raw
+**Confidence: medium-high** on the current 41-column header (verified verbatim via raw
 HTML of a dated PayPal help-article page describing a Dec 2024 format change) and on
 formatting conventions (verified via a real 2015 sample row, still consistent with
 PayPal's documented behavior). **Not independently re-confirmed against a live 2026

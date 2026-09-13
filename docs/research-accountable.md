@@ -120,7 +120,7 @@ Cross-cutting: DATEV/SKR03-04 export and direct ELSTER submission are **category
 
 Given Ziffer is local-first, macOS-native, single-user, document-driven (not invoice-first), and explicitly out to avoid ERP scope (concept.md §2, §3), the following ideas are worth stealing, each with rationale and rough size:
 
-- **AI receipt field extraction with visible provenance (date/vendor/amount/VAT rate)** — Ziffer already plans this (§8.3), but Accountable's pattern of pre-filling the *VAT rate* by expense type, not just amount/vendor, is a good concrete target. **S**
+- **AI receipt field extraction (date/vendor/amount/VAT rate)** — Accountable's pattern of pre-filling the *VAT rate* by expense type, not just amount/vendor, is a useful reference. Ziffer keeps provenance internal rather than adding field-level provenance badges. **S**
 - **GoBD claim language and mechanics (hash-on-save, read-only once linked, audit log)** — Ziffer already has a GoBD posture (§5.9); Accountable's public wording (hash detection, storno-only corrections) is a good template for our own documentation and for what "immutable once posted" should mean in the UI. **S**
 - **Deadline/reminder surfacing for UStVA and ESt** — a lightweight local notification of upcoming filing deadlines fits an AI-first, low-friction app without expanding scope into filing itself. **S**
 - **"Ask the AI why" tax-context chat scoped to the user's own data** — not a general chat interface (explicit non-goal, §3, §8.1), but a narrow, read-only "explain this categorization/this VAT treatment" affordance on a transaction could deliver similar user trust without becoming a chatbot-first product. **M**

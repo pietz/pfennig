@@ -22,6 +22,18 @@ DIST_DIR="$REPO_ROOT/dist"
 SUBMISSION_ZIP="$DIST_DIR/Ziffer-notarization.zip"
 NOTARY_RESULT="$DIST_DIR/notary-result.json"
 
+package_release() {
+  local output_zip="$1"
+  local package_dir="$DIST_DIR/Ziffer-$VERSION"
+  rm -rf "$package_dir"
+  mkdir -p "$package_dir"
+  ditto "$ARCHIVED_APP" "$package_dir/Ziffer.app"
+  cp "$REPO_ROOT/LICENSE" "$package_dir/LICENSE.txt"
+  cp "$REPO_ROOT/docs/privacy.md" "$package_dir/PRIVACY.md"
+  ditto -c -k --keepParent "$package_dir" "$output_zip"
+  rm -rf "$package_dir"
+}
+
 if ! security find-identity -v -p codesigning | grep -Fq "\"$SIGNING_IDENTITY\""; then
   echo "error: signing identity not found: $SIGNING_IDENTITY" >&2
   exit 1
@@ -72,7 +84,8 @@ rm -f "$FINAL_ZIP" "$CHECKSUM"
 ditto -c -k --keepParent "$ARCHIVED_APP" "$SUBMISSION_ZIP"
 
 if [[ "$MODE" == "--build-only" ]]; then
-  mv "$SUBMISSION_ZIP" "$FINAL_ZIP"
+  rm -f "$SUBMISSION_ZIP"
+  package_release "$FINAL_ZIP"
   (cd "$DIST_DIR" && shasum -a 256 "$(basename "$FINAL_ZIP")" > "$(basename "$CHECKSUM")")
   echo "Built signed, non-notarized archive: $FINAL_ZIP"
   exit 0
@@ -95,7 +108,7 @@ xcrun stapler validate "$ARCHIVED_APP"
 codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
 spctl --assess --type execute --verbose=4 "$ARCHIVED_APP"
 
-ditto -c -k --keepParent "$ARCHIVED_APP" "$FINAL_ZIP"
+package_release "$FINAL_ZIP"
 (cd "$DIST_DIR" && shasum -a 256 "$(basename "$FINAL_ZIP")" > "$(basename "$CHECKSUM")")
 rm -f "$SUBMISSION_ZIP"
 

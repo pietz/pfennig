@@ -15,9 +15,7 @@ Conventions (spec 17):
 - `PRAGMA foreign_keys = ON` for every connection.
 - Soft delete via `deleted_at` where noted.
 
-This file is kept in sync by `Tests/DatabaseTests/SchemaDocumentationTests.swift`,
-which diffs the lists below against `sqlite_master` of a freshly migrated
-database.
+`Tests/DatabaseTests/SchemaDocumentationTests.swift` keeps the documented table and view name lists in sync with `sqlite_master` from a freshly migrated database. Column and index details still require review when the schema changes.
 
 ## Migrations
 
