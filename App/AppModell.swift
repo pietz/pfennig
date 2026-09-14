@@ -99,13 +99,14 @@ final class AppModell {
         }
     }
 
+    /// The row leaves the list before the inspector closes, so its pending
+    /// edit cannot write the booking back.
     func loeschen(_ buchung: Buchung) {
         guard let id = buchung.id else { return }
+        buchungen.removeAll { $0.id == id }
+        auswahl = nil
         do {
             try repository.loeschen(id: id)
-            if ausgewaehlt?.id == id {
-                auswahl = nil
-            }
         } catch {
             fehler = "\(error)"
         }

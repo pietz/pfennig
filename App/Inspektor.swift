@@ -62,6 +62,7 @@ struct Inspektor: View {
 
     private func sichern() {
         guard entwurf != gesichert else { return }
+        guard modell.buchungen.contains(where: { $0.id == entwurf.id }) else { return }
         guard let gespeichert = modell.speichern(entwurf) else { return }
         entwurf = gespeichert
         gesichert = gespeichert
@@ -244,7 +245,6 @@ struct Inspektor: View {
             Picker("Behandlung", selection: $entwurf.steuerbehandlung) {
                 ForEach(Steuerbehandlung.allCases, id: \.self) { Text(beschriftung($0)).tag($0) }
             }
-            LabeledContent("Brutto", value: entwurf.brutto.formatiert)
             LabeledContent("davon USt", value: entwurf.steuer.formatiert)
         }
     }

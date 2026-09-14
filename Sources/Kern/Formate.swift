@@ -26,8 +26,8 @@ public extension Cent {
             }
         }
         let ziffern = String(ganze.filter(\.isNumber))
-        let euro: Int64? = ziffern.isEmpty ? 0 : Int64(ziffern)
-        guard let euro else { return nil }
+        // More euros than an Int64 of cents can hold is no amount.
+        guard ziffern.count <= 15, let euro = ziffern.isEmpty ? 0 : Int64(ziffern) else { return nil }
         let cent = Int64(nachkomma.padding(toLength: 2, withPad: "0", startingAt: 0)) ?? 0
         let wert = euro * 100 + cent
         self.init(negativ ? -wert : wert)

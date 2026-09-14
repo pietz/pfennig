@@ -14,6 +14,8 @@ import Testing
     #expect(Cent(text: ",5")?.wert == 50)
     #expect(Cent(text: "") == nil)
     #expect(Cent(text: "keine Zahl") == nil)
+    // More digits than an Int64 of cents holds is no amount either.
+    #expect(Cent(text: "99999999999999999") == nil)
 }
 
 @Test func datumLiestDeutscheEingabe() {

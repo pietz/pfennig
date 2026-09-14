@@ -36,11 +36,7 @@ private struct ProfilEinstellungen: View {
         }
         .formStyle(.grouped)
         .onAppear { profil = modell.profil() }
-        .onSubmit { modell.profilSpeichern(profil) }
-        .onChange(of: profil.kleinunternehmer) { modell.profilSpeichern(profil) }
-        .onChange(of: profil.rhythmus) { modell.profilSpeichern(profil) }
-        .onChange(of: profil.dauerfristverlaengerung) { modell.profilSpeichern(profil) }
-        .onDisappear { modell.profilSpeichern(profil) }
+        .onChange(of: profil) { modell.profilSpeichern(profil) }
     }
 }
 
