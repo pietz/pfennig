@@ -256,6 +256,8 @@ private func beispiel(
     #expect(try repository.profil() == Profil())
 
     let profil = Profil(
+        name: "Nordlicht Studio",
+        adresse: "Musterweg 3\n20095 Hamburg",
         steuernummer: "21/815/08150",
         ustid: "DE123456789",
         kleinunternehmer: true,
@@ -268,6 +270,8 @@ private func beispiel(
     try repository.profilSpeichern(Profil(steuernummer: "neu"))
     #expect(try repository.profil().steuernummer == "neu")
     #expect(try repository.profil().kleinunternehmer == false)
+    #expect(try repository.profil().name.isEmpty)
+    #expect(try repository.profil().adresse.isEmpty)
 }
 
 @Test(.timeLimit(.minutes(1)))

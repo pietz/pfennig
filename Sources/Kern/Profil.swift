@@ -6,6 +6,10 @@ public enum Rhythmus: String, CaseIterable, Hashable, Sendable {
 
 /// The user's own data, stored as single keys in `einstellungen`.
 public struct Profil: Hashable, Sendable {
+    /// The user's own name, person or business. The agent needs it to tell an
+    /// own outgoing invoice from an incoming one.
+    public var name: String
+    public var adresse: String
     public var steuernummer: String
     public var ustid: String
     public var kleinunternehmer: Bool
@@ -13,12 +17,16 @@ public struct Profil: Hashable, Sendable {
     public var dauerfristverlaengerung: Bool
 
     public init(
+        name: String = "",
+        adresse: String = "",
         steuernummer: String = "",
         ustid: String = "",
         kleinunternehmer: Bool = false,
         rhythmus: Rhythmus = .vierteljaehrlich,
         dauerfristverlaengerung: Bool = false
     ) {
+        self.name = name
+        self.adresse = adresse
         self.steuernummer = steuernummer
         self.ustid = ustid
         self.kleinunternehmer = kleinunternehmer

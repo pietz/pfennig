@@ -284,7 +284,9 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
 
 @Test func anleitungTraegtSchemaKategorienUndGegenparteien() throws {
     let repository = try Repository.imSpeicher()
-    try repository.profilSpeichern(Profil(ustid: "DE123456789", kleinunternehmer: true))
+    try repository.profilSpeichern(
+        Profil(name: "Nordlicht Studio", ustid: "DE123456789", kleinunternehmer: true)
+    )
     _ = try repository.speichern(
         Buchung(
             richtung: .ausgabe, art: .beleg, datum: Datum(jahr: 2026, monat: 8, tag: 1), titel: "Server",
@@ -305,6 +307,7 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     #expect(text.contains("Hetzner (DE)"))
     #expect(text.contains("DE123456789"))
     #expect(text.contains("Kleinunternehmer nach §19"))
+    #expect(text.contains("Das Unternehmen heißt Nordlicht Studio"))
     #expect(text.contains("\(Datum.heute())"))
     // Bank statements come later; this step's instructions do not mention them.
     let anweisungen = try #require(text.components(separatedBy: "## So arbeitest du").last)

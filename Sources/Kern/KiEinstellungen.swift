@@ -11,9 +11,9 @@ public enum Modell: String, CaseIterable, Hashable, Sendable, Identifiable {
 
     public var name: String {
         switch self {
-        case .sol: "GPT-5.6 Sol (genau, teuer)"
-        case .terra: "GPT-5.6 Terra (Mittelweg)"
-        case .luna: "GPT-5.6 Luna (günstig)"
+        case .sol: "GPT-5.6 Sol"
+        case .terra: "GPT-5.6 Terra"
+        case .luna: "GPT-5.6 Luna"
         }
     }
 }

@@ -290,6 +290,8 @@ public final class Repository: Sendable {
             werte[schluessel] = wert
         }
         return Profil(
+            name: werte["name"] ?? "",
+            adresse: werte["adresse"] ?? "",
             steuernummer: werte["steuernummer"] ?? "",
             ustid: werte["ustid"] ?? "",
             kleinunternehmer: werte["kleinunternehmer"] == "true",
@@ -325,6 +327,8 @@ public final class Repository: Sendable {
 
     public func profilSpeichern(_ profil: Profil) throws {
         let werte = [
+            "name": profil.name,
+            "adresse": profil.adresse,
             "steuernummer": profil.steuernummer,
             "ustid": profil.ustid,
             "kleinunternehmer": String(profil.kleinunternehmer),

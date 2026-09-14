@@ -29,6 +29,9 @@ private struct ProfilEinstellungen: View {
 
     var body: some View {
         Form {
+            TextField("Name", text: $profil.name)
+            TextField("Adresse", text: $profil.adresse, axis: .vertical)
+                .lineLimit(2 ... 3)
             TextField("Steuernummer", text: $profil.steuernummer)
             TextField("USt-IdNr.", text: $profil.ustid)
             Toggle("Kleinunternehmer", isOn: $profil.kleinunternehmer)
@@ -58,47 +61,13 @@ private struct ZugangEinstellungen: View {
 
     var body: some View {
         Form {
-            LabeledContent("Status") {
-                Label(
-                    hinterlegt ? "Schlüssel hinterlegt" : "Kein Schlüssel",
-                    systemImage: hinterlegt ? "checkmark.circle.fill" : "exclamationmark.circle"
-                )
-                .foregroundStyle(hinterlegt ? Color.green : .secondary)
-            }
-            SecureField("API-Schlüssel", text: $eingabe, prompt: Text("sk-..."))
-            HStack {
-                Spacer()
-                Button("Entfernen", role: .destructive) {
-                    Schluesselbund.entfernen()
-                    eingabe = ""
-                    pruefung = nil
-                    hinterlegt = false
-                }
-                .disabled(hinterlegt == false)
-                Button("Sichern") {
-                    Schluesselbund.schreiben(eingabe.trimmingCharacters(in: .whitespacesAndNewlines))
-                    eingabe = ""
-                    pruefung = nil
-                    hinterlegt = Schluesselbund.vorhanden
-                }
-                .keyboardShortcut(.defaultAction)
-                .disabled(eingabe.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-            LabeledContent("Prüfen") {
-                HStack(spacing: 8) {
-                    Button("Verbindung testen", action: testen)
-                        .disabled(hinterlegt == false || prueft)
-                    if prueft {
-                        ProgressView().controlSize(.small)
-                    }
-                    if let pruefung {
-                        Text(pruefung)
-                            .font(.callout)
-                            .foregroundStyle(verbunden ? Color.green : Color.red)
-                            .lineLimit(3)
-                    }
-                }
-            }
+            SecureField(
+                "API-Schlüssel",
+                text: $eingabe,
+                prompt: Text(hinterlegt ? "Hinterlegt" : "sk-...")
+            )
+            .onSubmit(uebernehmen)
+            stand
             Text("Der Schlüssel liegt im Schlüsselbund dieses Macs und verlässt ihn nur für Anfragen an OpenAI.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -109,7 +78,7 @@ private struct ZugangEinstellungen: View {
             Picker("Denkaufwand", selection: $ki.aufwand) {
                 ForEach(Denkaufwand.allCases) { Text($0.name).tag($0) }
             }
-            Toggle("Schnellere Verarbeitung (ca. doppelter Preis)", isOn: $ki.schnell)
+            Toggle("Fast Mode", isOn: $ki.schnell)
         }
         .formStyle(.grouped)
         .onAppear {
@@ -117,6 +86,42 @@ private struct ZugangEinstellungen: View {
             ki = modell.kiEinstellungen()
         }
         .onChange(of: ki) { modell.kiEinstellungenSpeichern(ki) }
+    }
+
+    /// Whether a key is stored, and what the last check said about it.
+    private var stand: some View {
+        HStack(spacing: 6) {
+            if prueft {
+                ProgressView().controlSize(.small)
+                Text("Verbindung wird geprüft …")
+                    .foregroundStyle(.secondary)
+            } else if let pruefung {
+                Label(pruefung, systemImage: verbunden ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(verbunden ? Color.green : Color.red)
+                    .lineLimit(3)
+            } else {
+                Text(hinterlegt ? "Schlüssel hinterlegt" : "Kein Schlüssel")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .font(.callout)
+    }
+
+    /// Committing the field is the whole interaction: a key is stored and
+    /// checked at once, an empty field removes the one that is there.
+    private func uebernehmen() {
+        let schluessel = eingabe.trimmingCharacters(in: .whitespacesAndNewlines)
+        eingabe = ""
+        pruefung = nil
+        guard schluessel.isEmpty == false else {
+            guard hinterlegt else { return }
+            Schluesselbund.entfernen()
+            hinterlegt = false
+            return
+        }
+        Schluesselbund.schreiben(schluessel)
+        hinterlegt = true
+        testen()
     }
 
     /// One tiny request, so a wrong key shows up here and not on the first

@@ -32,6 +32,12 @@ public enum Anleitung {
 
     private static func profiltext(_ profil: Profil) -> String {
         var zeilen = ["Heute ist der \(Datum.heute())."]
+        if profil.name.isEmpty == false {
+            zeilen.append(
+                "Das Unternehmen heißt \(profil.name); steht dieser Name als Aussteller auf dem Beleg, "
+                    + "ist es eine eigene Rechnung und damit eine Einnahme."
+            )
+        }
         if profil.steuernummer.isEmpty == false {
             zeilen.append("Steuernummer: \(profil.steuernummer).")
         }
