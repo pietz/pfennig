@@ -56,7 +56,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 297 tests across 44 suites plus a successful Debug app build.
+The latest verification baseline is 297 tests across 43 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -74,10 +74,56 @@ The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per th
 
 `tax_assessments` no longer stores per-transaction tax points or model prose. Removed: `input_vat_date` and `output_vat_date` (the UStVA calculation dates a transaction itself, from its invoice, service and payment dates), `tax_country` (it only ever held the profile's own country; the supplier country lives on the counterparty), `reasoning` (model prose that no report read; the inspector shows the freshly derived explanation instead) and `superseded_at` (unused versioning - there is one assessment per transaction, and replacing it deletes the old row).
 
-- `Tax/TaxPoints.swift` became `Tax/Periods.swift` and keeps only `UStVAPeriod` and `FiscalYear`; `TaxPointDeriver` and its persistence in `BookkeepingEngine` are gone.
+- `Tax/TaxPoints.swift` became `Tax/Periods.swift` and keeps only `UStVAPeriod` (`FiscalYear` went with the schema cleanup below); `TaxPointDeriver` and its persistence in `BookkeepingEngine` are gone.
 - `UStVACalculator` dates a §13b or intra-Community acquisition by `invoice_date`, failing that `service_date`. With neither it emits the exception "Rechnungsdatum fehlt" and leaves the transaction out of the form lines.
 - The extraction schema's `taxTreatmentHint` now carries the treatment only. Its `confidence` was never read by `TaxTreatmentDecider`, and its free-text `reasoning` was never read at all. `AIConfiguration.promptVersion` moved to `2026-09-14.1`.
 - `v001_initial` creates the slim table directly; `v002_slim_tax_assessments` rebuilds it for development databases created before this change, keeping each transaction's current assessment. No archive is reset or deleted.
+
+### Pre-release schema cleanup (2026-09-14)
+
+The schema no longer carries the scaffolding that `v001_initial` created but
+no code ever wrote.
+
+- **Tables gone:** `accounts`, `rules`, `transaction_relations`,
+  `locked_periods`, with the enums `AccountKind`, `RuleKind`, `RelationType`
+  and `LockScope` and the columns that only referenced them
+  (`payments.account_id`, `field_provenance.rule_id`,
+  `statement_lines.counter_account_id`). A statement line names its own
+  account by IBAN in `account_iban`; the `statement_lines` table and the
+  `StatementImport` module stay.
+- **Columns gone, each verified unread:** `exchange_rate_source` on
+  transactions and payments with `ExchangeRateSource`,
+  `transactions.deductibility_note`, `documents.page_count`,
+  `counterparties.aliases_json`, `default_category_id`,
+  `default_tax_treatment`, `street`, `postal_code` and `city`,
+  `categories.name_en`, `parent_id` and `is_system`,
+  `payment_allocations.confidence`, `field_provenance.confidence`,
+  `business_profiles.fiscal_year_start_month` and
+  `import_items.attempt_count`.
+- **Enum cases gone:** `DocumentRole.supportingEvidence`,
+  `MatchMethod.aiDisambiguated`, `DocumentSource.shareExtension`,
+  `PaymentSource.documentStated`, `ModelRunStatus.timedOut`,
+  `WorkflowStatus.draft` and `.resolved`. The statement and automation cases
+  stay.
+- **Code gone:** the empty `CSVExporter` and `Aggregations` placeholders
+  (`Analysis/Aggregations.swift` is now `StartOverview.swift`),
+  `Tax.FiscalYear` (a freelancer's fiscal year is the calendar year;
+  `UStVAPeriod` stays), and the locked-period validation - nothing ever
+  handed the validator a locked period, so `LockedPeriodFact`,
+  `TaxValidator.validateLockedPeriod` and the `LOCKED_PERIOD` issue code
+  could not fire. Locking returns as one piece with its milestone.
+- **Extraction:** `invoice.statedEurEquivalent`,
+  `lineItems[].assetCandidate` and the counterparty's postal address are no
+  longer requested; the asset flag is derived in Swift. `paymentInfo`,
+  `missingFields`, `warnings`, and the counterparty's name, country and VAT
+  ID stay. `AIConfiguration.promptVersion` moved to `2026-09-14.2`.
+- **Migration:** `v001_initial` creates the slim shape directly;
+  `v003_remove_unused_scaffolding` rebuilds the affected tables of an older
+  development database, carries every row over (a statement line's account
+  becomes that account's IBAN) and rewrites the few stored enum values whose
+  case is gone. A fresh database skips it. No archive is reset or deleted.
+
+New baseline: 297 tests across 43 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
