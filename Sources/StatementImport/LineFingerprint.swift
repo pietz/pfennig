@@ -20,8 +20,7 @@ public enum LineFingerprint {
             normalize(reference),
             normalize(counterpartyRaw)
         ]
-        let digest = SHA256.hash(data: Data(parts.joined(separator: "|").utf8))
-        return digest.map { String(format: "%02x", $0) }.joined()
+        return SHA256Hex.of(parts.joined(separator: "|"))
     }
 
     private static func normalize(_ value: String?) -> String {
@@ -31,5 +30,13 @@ public enum LineFingerprint {
             .components(separatedBy: .whitespacesAndNewlines)
             .filter { !$0.isEmpty }
             .joined(separator: " ")
+    }
+}
+
+/// Lowercase hex SHA-256 of a string. Shared by the line fingerprint and the
+/// header fingerprint, which both only need a stable identity.
+public enum SHA256Hex {
+    public static func of(_ text: String) -> String {
+        SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
     }
 }
