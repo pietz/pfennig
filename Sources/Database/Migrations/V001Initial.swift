@@ -1,21 +1,19 @@
 import Foundation
 import GRDB
 
-/// Initial schema. Mirrors spec section 17 table by table; tables are created
-/// in dependency order so that foreign keys resolve immediately.
-/// Never edit this migration once released - add `v00x_...` instead (spec 47).
+/// The schema. Mirrors spec section 17 table by table; tables are created in
+/// dependency order so that foreign keys resolve immediately.
+///
+/// Before the first public release this is the single schema definition:
+/// a change is made here and the development archive is rewritten once, rather
+/// than added as a forward migration. Once a schema has shipped publicly,
+/// every later change becomes a numbered `v00x_...` migration (spec 47).
 enum V001Initial {
     static func migrate(_ db: Database) throws {
         for statement in statements {
             try db.execute(sql: statement)
         }
         try SystemCategories.seed(db)
-    }
-
-    /// The `CREATE TABLE`/`CREATE INDEX` statements that belong to one table,
-    /// so a later migration can rebuild that table in its current shape.
-    static func statements(for table: String) -> [String] {
-        statements.filter { $0.contains("CREATE TABLE \(table) (") || $0.contains(" ON \(table)(") }
     }
 
     static let statements: [String] = [

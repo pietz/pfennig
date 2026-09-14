@@ -29,12 +29,12 @@ public final class AppDatabase: Sendable {
         return config
     }
 
-    /// All registered migrations, in order.
+    /// All registered migrations, in order. Before the first public release
+    /// there is exactly one: `v001_initial` is edited in place and the
+    /// development archive is rewritten once (see `AGENTS.md`, Engineering).
     public static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("v001_initial", migrate: V001Initial.migrate)
-        migrator.registerMigration("v002_slim_tax_assessments", migrate: V002SlimTaxAssessments.migrate)
-        migrator.registerMigration("v003_remove_unused_scaffolding", migrate: V003RemoveUnusedScaffolding.migrate)
         return migrator
     }
 
