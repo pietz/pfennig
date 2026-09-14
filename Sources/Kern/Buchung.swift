@@ -38,6 +38,8 @@ public struct Zahlung: Codable, Hashable, Sendable {
 /// lists inside the row; sums are computed here and never stored.
 public struct Buchung: Codable, Hashable, Sendable, FetchableRecord, MutablePersistableRecord {
     public static let databaseTableName = "buchungen"
+    public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+    public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var id: Int64?
     public var richtung: Richtung
@@ -59,29 +61,6 @@ public struct Buchung: Codable, Hashable, Sendable, FetchableRecord, MutablePers
     public var geprueftAm: Date?
     public var erstelltAm: Date
     public var geaendertAm: Date
-
-    public enum CodingKeys: String, CodingKey {
-        case id
-        case richtung
-        case art
-        case datum
-        case titel
-        case kategorie
-        case privatanteilProzent = "privatanteil_prozent"
-        case notizen
-        case gegenparteiName = "gegenpartei_name"
-        case gegenparteiLand = "gegenpartei_land"
-        case gegenparteiUstid = "gegenpartei_ustid"
-        case positionen
-        case waehrung
-        case originalbetrag
-        case steuerbehandlung
-        case zahlungen
-        case belege
-        case geprueftAm = "geprueft_am"
-        case erstelltAm = "erstellt_am"
-        case geaendertAm = "geaendert_am"
-    }
 
     public init(
         id: Int64? = nil,

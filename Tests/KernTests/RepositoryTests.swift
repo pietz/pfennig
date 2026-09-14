@@ -113,7 +113,7 @@ private func beispiel(
     var buchung = try repository.speichern(
         beispiel(zahlungen: [
             Zahlung(datum: datum, betrag: Cent(5000), richtung: .ausgabe),
-            Zahlung(id: 0, datum: datum, betrag: Cent(3000), richtung: .ausgabe)
+            Zahlung(datum: datum, betrag: Cent(3000), richtung: .ausgabe)
         ]),
         akteur: .agent
     )

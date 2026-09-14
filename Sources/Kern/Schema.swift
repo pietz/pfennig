@@ -45,7 +45,7 @@ public enum Schema {
     );
 
     CREATE TABLE aktivitaeten (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         buchung_id INTEGER NOT NULL,
         zeitpunkt TEXT NOT NULL,
         akteur TEXT NOT NULL CHECK (akteur IN ('nutzer', 'agent')),
@@ -71,11 +71,10 @@ public enum Schema {
     );
     """
 
-    static var migrator: DatabaseMigrator {
-        var migrator = DatabaseMigrator()
-        migrator.registerMigration("v1") { db in
-            try db.execute(sql: sql)
-        }
-        return migrator
+    /// Creates the tables the first time the database is opened. There is
+    /// exactly one schema definition and no migrations before the release.
+    static func anlegen(_ db: Database) throws {
+        guard try db.tableExists("buchungen") == false else { return }
+        try db.execute(sql: sql)
     }
 }

@@ -4,6 +4,8 @@ import GRDB
 /// One imported file in the archive. Dedupe is "hash exists".
 public struct Datei: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "dateien"
+    public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+    public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var sha256: String
     public var dateiname: String
@@ -12,16 +14,6 @@ public struct Datei: Codable, Hashable, Sendable, FetchableRecord, PersistableRe
     public var art: Dateiart
     public var seiten: Int?
     public var importiertAm: Date
-
-    public enum CodingKeys: String, CodingKey {
-        case sha256
-        case dateiname
-        case endung
-        case groesse
-        case art
-        case seiten
-        case importiertAm = "importiert_am"
-    }
 
     public init(
         sha256: String,
@@ -46,6 +38,8 @@ public struct Datei: Codable, Hashable, Sendable, FetchableRecord, PersistableRe
 /// the whole booking before and after the change; `vorher` is empty on insert.
 public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "aktivitaeten"
+    public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+    public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var id: Int64?
     public var buchungId: Int64
@@ -54,35 +48,12 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, Persista
     public var vorher: Buchung?
     public var nachher: Buchung
 
-    public enum CodingKeys: String, CodingKey {
-        case id
-        case buchungId = "buchung_id"
-        case zeitpunkt
-        case akteur
-        case vorher
-        case nachher
-    }
-
-    public init(
-        id: Int64? = nil,
-        buchungId: Int64,
-        zeitpunkt: Date,
-        akteur: Akteur,
-        vorher: Buchung?,
-        nachher: Buchung
-    ) {
-        self.id = id
-        self.buchungId = buchungId
-        self.zeitpunkt = zeitpunkt
-        self.akteur = akteur
-        self.vorher = vorher
-        self.nachher = nachher
-    }
-
-    /// Readable timestamps in the JSON columns; the log is shown to the user.
+    /// The logged booking keeps the column names and readable timestamps;
+    /// the log is shown to the user and read by the agent.
     public static func databaseJSONEncoder(for column: String) -> JSONEncoder {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
+        encoder.keyEncodingStrategy = .convertToSnakeCase
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         return encoder
     }
@@ -90,6 +61,7 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, Persista
     public static func databaseJSONDecoder(for column: String) -> JSONDecoder {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
         return decoder
     }
 }
@@ -98,33 +70,16 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, Persista
 /// without file bytes; its shape belongs to the agent.
 public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "anfragen"
+    public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+    public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var id: Int64?
     public var dateiSha256: String
     public var modell: String
-    public var gestartetAm: Date
+    public var gestartetAm: Date = .init()
     public var beendetAm: Date?
     public var status: Anfragestatus?
     public var eingabeTokens: Int?
     public var ausgabeTokens: Int?
     public var konversation: String?
-
-    public enum CodingKeys: String, CodingKey {
-        case id
-        case dateiSha256 = "datei_sha256"
-        case modell
-        case gestartetAm = "gestartet_am"
-        case beendetAm = "beendet_am"
-        case status
-        case eingabeTokens = "eingabe_tokens"
-        case ausgabeTokens = "ausgabe_tokens"
-        case konversation
-    }
-
-    public init(id: Int64? = nil, dateiSha256: String, modell: String, gestartetAm: Date = Date()) {
-        self.id = id
-        self.dateiSha256 = dateiSha256
-        self.modell = modell
-        self.gestartetAm = gestartetAm
-    }
 }

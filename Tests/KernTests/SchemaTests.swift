@@ -42,7 +42,7 @@ import Testing
     }
 }
 
-@Test func migrationHeisstV1UndLaeuftNurEinmal() throws {
+@Test func schemaEntstehtNurBeimErstenOeffnen() throws {
     let ordner = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     try FileManager.default.createDirectory(at: ordner, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: ordner) }
@@ -50,8 +50,6 @@ import Testing
 
     let repository = try Repository(pfad: pfad)
     try repository.einstellungSetzen("steuernummer", wert: "12/345/67890")
-    let angewendet = try repository.datenbank.read { try Schema.migrator.appliedMigrations($0) }
-    #expect(angewendet == ["v1"])
 
     // Opening the same file again must not recreate anything.
     let erneut = try Repository(pfad: pfad)

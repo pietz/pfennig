@@ -9,11 +9,11 @@ public enum KernFehler: Error {
 /// The single way into the database. Every write of a booking goes through
 /// `speichern` and leaves one row in `aktivitaeten`.
 public final class Repository: Sendable {
-    public let datenbank: DatabaseQueue
+    let datenbank: DatabaseQueue
 
     private init(_ datenbank: DatabaseQueue) throws {
         self.datenbank = datenbank
-        try Schema.migrator.migrate(datenbank)
+        try datenbank.write(Schema.anlegen)
     }
 
     public convenience init(pfad: URL) throws {
@@ -79,13 +79,11 @@ public final class Repository: Sendable {
     static func nummeriert(_ zahlungen: [Zahlung]) -> [Zahlung] {
         var naechste = (zahlungen.compactMap(\.id).max() ?? 0) + 1
         return zahlungen.map { zahlung in
-            guard let id = zahlung.id, id > 0 else {
-                var neu = zahlung
-                neu.id = naechste
-                naechste += 1
-                return neu
-            }
-            return zahlung
+            guard zahlung.id == nil else { return zahlung }
+            var neu = zahlung
+            neu.id = naechste
+            naechste += 1
+            return neu
         }
     }
 
