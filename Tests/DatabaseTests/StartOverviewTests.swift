@@ -469,4 +469,50 @@ struct StartOverviewTests {
         #expect(filtered.map(\.id).sorted() == [noAllocation.id, telecom.id].sorted())
         #expect(attention.map(\.id) == [review.id])
     }
+
+    @Test("Gutschriften zählen negativ, Erstattungen ändern die Summen nicht")
+    func creditNotesAndRefunds() throws {
+        let (database, profile) = try database()
+        let expense = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: 11900,
+            date: LocalDate(year: 2026, month: 7, day: 1)
+        )
+        var creditNote = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: -4760,
+            date: LocalDate(year: 2026, month: 9, day: 5)
+        )
+        creditNote.transactionType = .creditNote
+
+        try database.writer.write { db in
+            try expense.insert(db)
+            try creditNote.insert(db)
+            // Paid, then refunded in full: gross-recorded totals must not move.
+            for direction in [PaymentDirection.outflow, .inflow] {
+                let payment = Payment(
+                    direction: direction,
+                    paymentDate: LocalDate(year: 2026, month: 7, day: 20),
+                    originalAmountMinor: 11900,
+                    bookedAmountMinor: 11900
+                )
+                try payment.insert(db)
+                try PaymentAllocation(
+                    paymentId: payment.id,
+                    transactionId: expense.id,
+                    allocatedMinor: 11900
+                ).insert(db)
+            }
+        }
+
+        let overview = try database.reader.read {
+            try StartOverviewQuery.fetch($0, year: 2026, currentYear: 2026)
+        }
+        // 119.00 expense minus the 47.60 credit note; the refund changes nothing.
+        #expect(overview.expenseMinor == 7140)
+        #expect(overview.incomeMinor == 0)
+        #expect(overview.resultMinor == -7140)
+    }
 }

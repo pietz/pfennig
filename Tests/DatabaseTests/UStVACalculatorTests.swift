@@ -115,11 +115,12 @@ struct UStVACalculatorTests {
         _ database: AppDatabase,
         _ transaction: TransactionRecord,
         amountMinor: Int64,
-        on date: LocalDate
+        on date: LocalDate,
+        direction: PaymentDirection? = nil
     ) throws {
         try database.writer.write { db in
             let payment = Payment(
-                direction: transaction.direction == .income ? .inflow : .outflow,
+                direction: direction ?? transaction.direction.settlingPaymentDirection,
                 paymentDate: date,
                 originalAmountMinor: amountMinor,
                 bookedAmountMinor: amountMinor
@@ -632,6 +633,83 @@ struct UStVACalculatorTests {
         let q3 = try prepare(database, profile, quarter: 3)
         #expect(q3.lines.isEmpty)
         #expect(q3.exceptions.isEmpty)
+    }
+
+    // MARK: - Erstattungen und Gutschriften
+
+    @Test("Eine im Folgequartal erstattete Ausgabe hebt ihre Vorsteuer wieder auf")
+    func refundedExpenseReversesInputVAT() throws {
+        let (database, profile) = try database()
+        let expense = try insert(
+            database, profile: profile, direction: .expense, treatment: .domesticVAT,
+            invoiceDate: LocalDate(year: 2026, month: 7, day: 10),
+            net: 10000, tax: 1900,
+            components: [component("19", net: 10000, tax: 1900)],
+            counterpartyCountry: "DE"
+        )
+        try pay(database, expense, amountMinor: 11900, on: LocalDate(year: 2026, month: 7, day: 20))
+        // The money comes back: an inflow on an expense.
+        try pay(
+            database, expense, amountMinor: 11900,
+            on: LocalDate(year: 2026, month: 10, day: 20), direction: .inflow
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        let q4 = try prepare(database, profile, quarter: 4)
+        #expect(q3.line(66)?.amountMinor == 1900)
+        #expect(q4.line(66)?.amountMinor == -1900)
+        #expect((q3.line(66)?.amountMinor ?? 0) + (q4.line(66)?.amountMinor ?? 0) == 0)
+        #expect(q3.payableMinor == -1900)
+        #expect(q4.payableMinor == 1900)
+    }
+
+    @Test("Eine erstattete Einnahme hebt ihre Umsatzsteuer wieder auf")
+    func refundedIncomeReversesOutputVAT() throws {
+        let (database, profile) = try database()
+        let invoice = try insert(
+            database, profile: profile, direction: .income, treatment: .domesticVAT,
+            invoiceDate: LocalDate(year: 2026, month: 7, day: 1),
+            net: 100_000, tax: 19000,
+            components: [component("19", net: 100_000, tax: 19000)]
+        )
+        try pay(database, invoice, amountMinor: 119_000, on: LocalDate(year: 2026, month: 8, day: 15))
+        // Money returned to the customer: an outflow on an income.
+        try pay(
+            database, invoice, amountMinor: 119_000,
+            on: LocalDate(year: 2026, month: 10, day: 15), direction: .outflow
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        let q4 = try prepare(database, profile, quarter: 4)
+        #expect(q3.line(81)?.amountMinor == 100_000)
+        #expect(q4.line(81)?.amountMinor == -100_000)
+        #expect(q3.payableMinor == 1000 * 19)
+        #expect(q4.payableMinor == -1000 * 19)
+    }
+
+    @Test("Eine bezahlte Gutschrift mindert die Vorsteuer im Quartal des Geldflusses")
+    func creditNoteReducesInputVAT() throws {
+        let (database, profile) = try database()
+        let creditNote = try insert(
+            database, profile: profile, direction: .expense, treatment: .domesticVAT,
+            title: "Gutschrift Hosting",
+            invoiceDate: LocalDate(year: 2026, month: 9, day: 5),
+            net: -4000, tax: -760,
+            components: [component("19", net: -4000, tax: -760)],
+            counterpartyCountry: "DE"
+        )
+        // A supplier credit note is settled by money coming in.
+        try pay(
+            database, creditNote, amountMinor: 4760,
+            on: LocalDate(year: 2026, month: 10, day: 2), direction: .inflow
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        let q4 = try prepare(database, profile, quarter: 4)
+        #expect(q3.line(66) == nil)
+        #expect(q4.line(66)?.amountMinor == -760)
+        #expect(q4.line(66)?.contributions.first?.transactionID == creditNote.id)
+        #expect(q4.payableMinor == 760)
     }
 
     @Test("Ohne gespeicherte Komponenten wird der Steuersatz aus den Beträgen erkannt")

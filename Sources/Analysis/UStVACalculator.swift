@@ -90,6 +90,10 @@ public enum UStVACalculator {
         var id: String
         var transactionId: String
         var paymentId: String
+        /// Signed by the payment's direction: positive when the money moved
+        /// the way the transaction expects, negative for a refund. A credit
+        /// note is settled by a payment in the opposite direction and so
+        /// arrives here with the negative sign its own amounts carry.
         var allocatedMinor: Int64
         var currency: String
         var paymentDate: LocalDate
@@ -193,10 +197,16 @@ public enum UStVACalculator {
         let rows = try AllocationRow.fetchAll(
             db,
             sql: """
-            SELECT pa.id, pa.transaction_id, pa.payment_id, pa.allocated_minor, pa.currency,
+            SELECT pa.id, pa.transaction_id, pa.payment_id, pa.currency,
+                   \(TransactionQueryRules.signedAllocationExpression(
+                       allocation: "pa",
+                       payment: "p",
+                       transaction: "t"
+                   )) AS allocated_minor,
                    p.payment_date AS payment_date
               FROM payment_allocations pa
               JOIN payments p ON p.id = pa.payment_id
+              JOIN transactions t ON t.id = pa.transaction_id
              WHERE pa.transaction_id IN \(placeholders(transactionIDs.count))
              ORDER BY pa.transaction_id, p.payment_date, pa.payment_id, pa.id
             """,
