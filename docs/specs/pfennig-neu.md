@@ -1,6 +1,6 @@
 # Pfennig neu: Spezifikation für den Neuaufbau
 
-**Status:** in Arbeit, wird Thema für Thema gemeinsam geschrieben (2026-09-14). Nur bestätigte Abschnitte gelten.
+**Status:** in Arbeit. Schema, Spalten und Werte werden auf Deutsch benannt; die Umbenennung der bereits geschriebenen Abschnitte folgt nach Abschluss von Thema 2., wird Thema für Thema gemeinsam geschrieben (2026-09-14). Nur bestätigte Abschnitte gelten.
 
 Gliederung:
 
@@ -31,7 +31,7 @@ Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit
 `entries`, eine Zeile pro Buchung:
 - Identität und Einordnung: `id`, `direction` (income/expense), `kind` (invoice, receipt, credit_note, tax_payment, payment_only, ignored, other), `date` (Belegdatum), `title`, `category` (feste EÜR-Kategorienliste im Code, IDs unwiderruflich), `private_share_percent`, `notes`
 - Gegenpartei als Text: `counterparty_name`, `counterparty_country`, `counterparty_vat_id`. Die USt-IdNr. gehört zum Beleg, nicht zu einem Stammsatz.
-- Beträge in EUR-Cent als feste Spalten: `net_19`, `tax_19`, `net_7`, `tax_7`, `net_0`. `gross_minor` ist eine generierte Spalte (Summe der fünf). Es gibt keine redundanten Summenspalten. Bei Reverse Charge steht die Bemessungsgrundlage im Bucket ihres Satzes (`net_19` oder `net_7`) mit Steuer 0; `tax_treatment` macht den Fall eindeutig.
+- Beträge in EUR-Cent als JSON-Liste `positionen` = [{netto, steuersatz, steuer}]. Meist ein Element, bei Mischbelegen (Hotel mit Frühstück, Bewirtung) mehrere. Beliebige Sätze, auch ausländische. Keine Summenspalten; Brutto, Netto und Steuer rechnet Swift. Ein Dokument ist immer genau eine Zeile.
 - Fremdwährung: `currency` und `gross_original_minor` bewahren den Originalbetrag des Belegs.
 - Steuer: `tax_treatment` (domestic_vat, reverse_charge, small_business, exempt, non_taxable, unknown)
 - Zustand: `reviewed_at` (NULL = ungeprüft), `edited_by_user_at`, `created_at`, `updated_at`. Hat der Nutzer einen Eintrag geändert, darf der Agent ihn weiter bearbeiten, aber nie still: jede Agentenänderung an einem solchen Eintrag setzt ihn unabhängig von der Automatisierungsstufe auf ungeprüft und steht im Journal. Schreibwerkzeuge übergeben `updated_at` als Version; veraltete Schreibvorgänge werden abgelehnt.
@@ -49,9 +49,9 @@ Eine Tabelle `periods` für abgegebene und anstehende Zeiträume ist Thema 5 und
 
 **Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<ext>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
-**Bewusst nicht:** Tabellen für Zahlungen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Eine Zahlung gehört zu genau einer Buchung; eine Überweisung für zwei Rechnungen sind zwei Zahlungseinträge. Ein Beleg mit zwei Kategorien wird in zwei Buchungen geteilt. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
+**Bewusst nicht:** Tabellen für Zahlungen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Eine Zahlung gehört zu genau einer Buchung; eine Überweisung für zwei Rechnungen sind zwei Zahlungseinträge. Kategorie und Privatanteil gelten für den ganzen Beleg; bei zwei Kategorien auf einem Beleg zählt die dominante, ein Randfall, der bewusst nicht abgebildet wird. Einnahmen und Ausgaben stehen in derselben Tabelle, unterschieden durch die Richtung. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
-*Herkunft: Zwei-Tabellen-Entwurf vom Nutzer bestätigt; `files` und `history` aus einer unabhängigen Kritik übernommen und bestätigt. Noch nicht einzeln bestätigt und daher vorläufig: generiertes `gross_minor` ohne Summenspalten, `gross_original_minor`, Zahlungs-`id`/`reviewed`, die „nie still“-Regel mit Version, die Reverse-Charge-Bucket-Regel, `kind = ignored`.*
+*Herkunft: Zwei-Tabellen-Entwurf vom Nutzer bestätigt; `files` und `history` aus einer unabhängigen Kritik übernommen und bestätigt. Positionen als JSON statt fester Satzspalten vom Nutzer bestätigt. Noch nicht einzeln bestätigt und daher vorläufig: `gross_original_minor`, Zahlungs-`id`/`reviewed`, die „nie still“-Regel mit Version, die Reverse-Charge-Bucket-Regel, `kind = ignored`.*
 
 ## 3. Oberfläche
 
