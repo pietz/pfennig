@@ -13,7 +13,7 @@ Pfennig berechnet für einen Voranmeldungszeitraum die Formularwerte der UStVA a
 - **Umsatzsteuer auf Einnahmen** entsteht je Zahlung im Zeitraum des Zahlungsdatums. Teilzahlungen tragen anteilig bei: die Zuordnung einer Zahlung zu einem Vorgang wird proportional auf dessen Steuerkomponenten (7 %, 19 %, steuerfrei) verteilt, Rundung centgenau mit Restverteilung, so dass die Summe aller Anteile den Vorgang exakt ergibt. Unbezahlte Ausgangsrechnungen zählen nicht.
 - **Vorsteuer auf Ausgaben** wird im Zeitraum von max(Rechnungsdatum, Zahlungsdatum) angesetzt, ebenfalls anteilig je Zahlung. Das ist konservativ gegenüber §15 UStG (Vorsteuer wäre schon mit Rechnungsbesitz zulässig) und kommt ohne neues Feld „Rechnung liegt vor“ aus. Anzahlungen ohne Rechnung bleiben Ausnahme.
 - **Reverse Charge §13b** (typisch: ausländisches SaaS): Steuer und, bei Regelbesteuerung, die gleich hohe Vorsteuer entstehen mit Ausführung der Leistung, praktisch mit dem Rechnungsdatum. Zahlungsdatum ist hier nicht maßgeblich. Kleinunternehmer schulden die Steuer ohne Vorsteuer.
-- **Kleinunternehmer** haben keine Kz 81/86/66. Entsteht §13b-Steuer, ist eine Voranmeldung nur für die betroffenen Zeiträume Pflicht (§18 Abs. 4a UStG); Pfennig zeigt dann die Aufgabe trotz Einstellung „keine regelmäßigen Voranmeldungen“.
+- **Kleinunternehmer** haben keine Kz 81/86/66. Sie melden auch ihre §19-Einnahmen nicht in Kz 48: die Voranmeldung entsteht allein wegen §13b (§18 Abs. 4a UStG) und meldet nur das. Pfennig zeigt die Aufgabe dann trotz Einstellung „keine regelmäßigen Voranmeldungen“. Bei Regelbesteuerung gehen steuerfreie Umsätze weiterhin nach Kz 48.
 - **Gutschriften und Erstattungen** mindern den Zeitraum, in dem der Geldfluss stattfindet.
 - Alle Berechnungen sind deterministisch in Swift auf Minor-Units. Start-Summen werden nicht wiederverwendet.
 
@@ -36,7 +36,7 @@ Vorschlag: Kopieren und XML-Export bleiben bei offenen Ausnahmen möglich, aber 
 
 ## XML-Export
 
-Datei nach der rekonstruierten Struktur des Mein-ELSTER-Uploads (`Anmeldungssteuern` mit Namespace/Version, `Steuerfall/Umsatzsteuervoranmeldung` mit Jahr, Zeitraum 01–12 bzw. 41–44, Steuernummer, Kz-Elementen), Kodierung ISO-8859-15 mit UTF-8 als Fallback-Option. Das Format ist nicht offiziell öffentlich dokumentiert; der Export ist deshalb als „experimentell“ beschriftet, bis ein Testupload durch den Nutzer in Mein ELSTER (ohne Absenden) das Formular korrekt befüllt hat. Danach wird das Label entfernt. Schlägt der Test fehl, bleiben die kopierbaren Werte der Weg.
+Datei nach der rekonstruierten Struktur des Mein-ELSTER-Uploads (`Anmeldungssteuern` mit Namespace/Version, `Steuerfall/Umsatzsteuervoranmeldung` mit Jahr, Zeitraum 01–12 bzw. 41–44, Steuernummer, Kz-Elementen), Kodierung ISO-8859-15, wie von der Hilfeseite genannt; nicht abbildbare Zeichen werden ersetzt und gemeldet. Das Format ist nicht offiziell öffentlich dokumentiert; der Export ist deshalb als „experimentell“ beschriftet, bis ein Testupload durch den Nutzer in Mein ELSTER (ohne Absenden) das Formular korrekt befüllt hat. Danach wird das Label entfernt. Schlägt der Test fehl, bleiben die kopierbaren Werte der Weg.
 
 ## Nicht enthalten
 
@@ -46,7 +46,7 @@ Anlage EÜR (eigene Spezifikation), Dauerfristverlängerungsantrag und Sondervor
 
 - Zwei Teilzahlungen einer 19 %-Rechnung in Q3 und Q4 erscheinen anteilig in beiden Quartalen; die Summe entspricht der Rechnung.
 - Ein Mischbeleg 7 %/19 % mit einer Zahlung verteilt Bemessungsgrundlagen und Steuer centgenau.
-- Ausländisches SaaS erzeugt bei Regelbesteuerung Kz 47 und gleich hohe Kz 67 im Rechnungsmonat; bei Kleinunternehmer nur Kz 47 und die Aufgabe erscheint trotz „keine regelmäßigen Voranmeldungen“.
+- Ausländisches SaaS erzeugt bei Regelbesteuerung Kz 47 und gleich hohe Kz 67 im Rechnungsmonat; bei Kleinunternehmer nur Kz 47 und die Aufgabe erscheint trotz „keine regelmäßigen Voranmeldungen“. Die §19-Einnahmen desselben Zeitraums bleiben leer.
 - Eine Ausgabe mit Rechnung in Q3 und Zahlung in Q4 zählt zur Vorsteuer in Q4.
 - Ein Vorgang mit unbekannter Behandlung erscheint als Ausnahme, die Werte sind als Entwurf markiert, Export bleibt möglich.
 - Ein leerer Zeitraum zeigt Nullwerte und die Aufgabe, keinen Fehler.
