@@ -20,8 +20,10 @@ struct Fenster: View {
         .toolbar { werkzeuge }
         .inspector(isPresented: $modell.inspektorSichtbar) {
             inspektor
-                .inspectorColumnWidth(min: 280, ideal: 340)
+                .inspectorColumnWidth(min: 320, ideal: 380, max: 560)
         }
+        // Room for a table of about 700 points next to the inspector.
+        .frame(minWidth: 1000, minHeight: 520)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand { zuLoeschen = modell.ausgewaehlt }
         .confirmationDialog("Buchung löschen?", isPresented: loeschenLaeuft, presenting: zuLoeschen) { buchung in
@@ -56,9 +58,7 @@ struct Fenster: View {
                                 .help("Beleg vorhanden")
                         }
                     }
-                    if let zweiteZeile = buchung.zweiteZeile {
-                        Text(zweiteZeile).font(.caption).foregroundStyle(.secondary)
-                    }
+                    Text(buchung.zweiteZeile).font(.caption).foregroundStyle(.secondary)
                 }
             }
             .width(min: 140, ideal: 240)
@@ -88,7 +88,7 @@ struct Fenster: View {
                     .help(buchung.zahlungsstand.name)
                     .frame(maxWidth: .infinity, alignment: .center)
             }
-            .width(44)
+            .width(70)
             .customizationID("zahlung")
 
             TableColumn("Kategorie", value: \.kategorieName)
@@ -195,12 +195,17 @@ extension Buchung {
     /// The first line of the Firma column: the counterparty, or the title when
     /// there is none.
     var firma: String {
-        gegenparteiName ?? titel
+        if let name = gegenparteiName, name.isEmpty == false {
+            return name
+        }
+        return titel.isEmpty ? "Ohne Titel" : titel
     }
 
-    /// The caption under it, empty when the title is already the first line.
-    var zweiteZeile: String? {
-        gegenparteiName == nil || titel.isEmpty ? nil : titel
+    /// The caption under it. It is always there, so every row keeps the same
+    /// height; a space holds the line when the title is already the first one.
+    var zweiteZeile: String {
+        guard let name = gegenparteiName, name.isEmpty == false else { return " " }
+        return titel.isEmpty ? "Ohne Titel" : titel
     }
 
     /// Income counts positive and an expense negative, in the column as in the

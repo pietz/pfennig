@@ -17,6 +17,19 @@ struct Inspektor: View {
     /// True once the user asked for the foreign currency line on a booking
     /// that does not carry one yet.
     @State private var fremdwaehrung = false
+    /// A plain text field writes into the draft with every keystroke. The
+    /// draft goes to the database when the field is submitted or loses focus,
+    /// so the table shows the change right away.
+    @FocusState private var fokus: Feld?
+
+    private enum Feld {
+        case titel
+        case gegenpartei
+        case land
+        case ustid
+        case waehrung
+        case notizen
+    }
 
     init(modell: AppModell, buchung: Buchung) {
         self.modell = modell
@@ -35,6 +48,7 @@ struct Inspektor: View {
         }
         .formStyle(.grouped)
         .onSubmit(sichern)
+        .onChange(of: fokus) { sichern() }
         .onChange(of: buchung) { _, neu in
             // Follow the database unless the user has an unsaved edit in flight.
             if entwurf == gesichert {
@@ -84,9 +98,13 @@ struct Inspektor: View {
 
             TextField("Datum", value: $entwurf.datum, format: .deutsch)
             TextField("Titel", text: $entwurf.titel)
+                .focused($fokus, equals: .titel)
             TextField("Gegenpartei", text: text(\.gegenparteiName))
+                .focused($fokus, equals: .gegenpartei)
             TextField("Land", text: text(\.gegenparteiLand))
+                .focused($fokus, equals: .land)
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
+                .focused($fokus, equals: .ustid)
 
             Picker("Kategorie", selection: $entwurf.kategorie) {
                 Text("Keine").tag(String?.none)
@@ -166,6 +184,7 @@ struct Inspektor: View {
                             .labelsHidden()
                         TextField("Währung", text: text(\.waehrung))
                             .labelsHidden()
+                            .focused($fokus, equals: .waehrung)
                             .frame(width: 60)
                     }
                 }
@@ -288,6 +307,7 @@ struct Inspektor: View {
         Section("Notizen") {
             TextField("Notizen", text: text(\.notizen), axis: .vertical)
                 .labelsHidden()
+                .focused($fokus, equals: .notizen)
                 .lineLimit(3 ... 8)
         }
     }

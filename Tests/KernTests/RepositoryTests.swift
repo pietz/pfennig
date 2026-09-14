@@ -215,3 +215,18 @@ private func beispiel(
     #expect(try repository.profil().steuernummer == "neu")
     #expect(try repository.profil().kleinunternehmer == false)
 }
+
+@Test(.timeLimit(.minutes(1)))
+func beobachtungLiefertJedeAenderung() async throws {
+    let repository = try Repository.imSpeicher()
+    var werte = repository.buchungenBeobachten().makeAsyncIterator()
+    #expect(try await werte.next()?.isEmpty == true)
+
+    let gespeichert = try repository.speichern(beispiel(), akteur: .nutzer)
+    #expect(try await werte.next()?.count == 1)
+
+    var geaendert = gespeichert
+    geaendert.titel = "Stehpult"
+    _ = try repository.speichern(geaendert, akteur: .nutzer)
+    #expect(try await werte.next()?.first?.titel == "Stehpult")
+}

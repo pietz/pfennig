@@ -53,10 +53,17 @@ final class AppModell {
         return buchungen.first { $0.id == auswahl }
     }
 
+    /// The saved row goes into the list right away so the table shows the
+    /// change in the same frame; the observation delivers the same content a
+    /// moment later.
     @discardableResult
     func speichern(_ buchung: Buchung) -> Buchung? {
         do {
-            return try repository.speichern(buchung, akteur: .nutzer)
+            let gespeichert = try repository.speichern(buchung, akteur: .nutzer)
+            if let stelle = buchungen.firstIndex(where: { $0.id == gespeichert.id }) {
+                buchungen[stelle] = gespeichert
+            }
+            return gespeichert
         } catch {
             fehler = "\(error)"
             return nil
