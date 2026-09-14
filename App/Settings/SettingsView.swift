@@ -67,7 +67,13 @@ struct SettingsView: View {
                     Picker("UStVA-Zeitraum", selection: $business.ustvaPeriod) {
                         Text("Monatlich").tag(UStVAPeriodicity.monthly)
                         Text("Quartalsweise").tag(UStVAPeriodicity.quarterly)
-                        Text("Jährlich").tag(UStVAPeriodicity.yearly)
+                        // The stored value stays `yearly`; only the wording changes,
+                        // because the setting expresses "no regular Voranmeldungen"
+                        // rather than a yearly UStVA (spec ustva-preparation).
+                        Text("Keine regelmäßigen Voranmeldungen").tag(UStVAPeriodicity.yearly)
+                    }
+                    if business.ustvaPeriod != .yearly {
+                        Toggle("Dauerfristverlängerung", isOn: $business.dauerfristverlaengerung)
                     }
                 }
                 HStack {
@@ -83,9 +89,19 @@ struct SettingsView: View {
             } header: {
                 Text("Betrieb")
             } footer: {
-                Text(
-                    "Änderungen gelten für neue und künftig bearbeitete Buchungen. Bestehende Buchungen werden nicht neu berechnet."
-                )
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(
+                        "Änderungen gelten für neue und künftig bearbeitete Buchungen. Bestehende Buchungen werden nicht neu berechnet."
+                    )
+                    Text(
+                        """
+                        Pfennig stellt nicht fest, ob und wie oft Sie abgeben müssen. Das legt das Finanzamt fest; \
+                        die Angaben hier steuern nur Aufgaben und Fristen in Pfennig. Auch als Kleinunternehmer \
+                        erscheint eine UStVA-Aufgabe, wenn Steuer nach §13b UStG entsteht, etwa bei ausländischen \
+                        Onlinediensten.
+                        """
+                    )
+                }
             }
 
             Section("Über Pfennig") {
@@ -159,7 +175,8 @@ struct SettingsView: View {
 
     private func loadBusinessSettings() {
         guard let profile = model.profile else { return }
-        let draft = BusinessSettingsDraft(profile)
+        var draft = BusinessSettingsDraft(profile)
+        draft.dauerfristverlaengerung = UStVAPreferences.dauerfristverlaengerung(in: model.database)
         business = draft
         savedBusiness = draft
     }
@@ -172,8 +189,11 @@ struct SettingsView: View {
             model.errorMessage = nil
             return
         }
-        savedBusiness = BusinessSettingsDraft(model.profile ?? updated)
-        business = savedBusiness
+        UStVAPreferences.setDauerfristverlaengerung(business.dauerfristverlaengerung, in: model.database)
+        var saved = BusinessSettingsDraft(model.profile ?? updated)
+        saved.dauerfristverlaengerung = business.dauerfristverlaengerung
+        savedBusiness = saved
+        business = saved
         businessWasSaved = true
     }
 
@@ -211,6 +231,9 @@ private struct BusinessSettingsDraft: Equatable {
     var vatStatus = VATStatus.taxable
     var ustvaPeriod = UStVAPeriodicity.quarterly
     var businessType = BusinessType.freelancer
+    /// Not a profile column: stored in the `settings` table under
+    /// `UStVAPreferences.dauerfristverlaengerungKey` (spec 10.5).
+    var dauerfristverlaengerung = false
 
     init() {}
 
