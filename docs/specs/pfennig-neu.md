@@ -1,6 +1,6 @@
 # Pfennig neu: Spezifikation für den Neuaufbau
 
-**Status:** in Arbeit, wird Thema für Thema gemeinsam geschrieben (2026-09-14). Nur bestätigte Abschnitte gelten.
+**Status:** bestätigt (2026-09-14). Alle sieben Abschnitte sind gemeinsam entschieden und gelten als Grundlage für den Neuaufbau.
 
 Gliederung:
 
@@ -127,3 +127,18 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 **Größe.** Es gibt kein Zeilenbudget. Die Vorgabe an jeden implementierenden Agenten lautet: einfach und solide bauen, keine Prüfungen und Abstraktionen für Fälle, die nicht in dieser Spec stehen, keine Vorsorge für spätere Erweiterungen. Die App wird durch die Entscheidungen in dieser Spec von selbst deutlich kleiner als die alte.
 
 **Vorgehen.** Der alte Stand wird als Tag `legacy-2026-09-14` archiviert, der Rewrite ersetzt ihn im selben Repository. Reihenfolge: Schema und Repository; Tabelle mit Inspector und manueller Eingabe; Agent mit sql-Werkzeug; Export. Nach jedem Abschnitt läuft die App und der Nutzer testet. Nach jedem Abschnitt prüft ein Review-Agent auf Überbau. Vor dem Release gibt es genau eine Schemadefinition und keine Migrationen.
+
+## 7. Was bewusst nicht gebaut wird
+
+- Bankanbindung, Rechnungsstellung, Bilanz, Lohn
+- Chat mit dem Agenten
+- Direkte ELSTER-Übermittlung, Herstellerregistrierung, ERiC
+- Bankspezifische Parser, Vorverarbeitung von Dateien in Swift, regelbasierte Zuordnung
+- Automatisierungsstufen, Schutzregeln für bearbeitete Buchungen, Versionsprüfung
+- Stammdaten für Gegenparteien, Kategorien in der Datenbank
+- Tabellen für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft, Audit, Importläufe
+- Kursumrechnung, Kursdienste
+- Startseite, Prüfen-Seite, Sidebar, Jahresauswahl
+- Modellauswahl in den Einstellungen
+- Migrationen und Abwärtskompatibilität vor dem Release
+- Mehrere Mandanten, mehrere Nutzer, Cloud-Sync
