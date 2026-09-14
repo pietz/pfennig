@@ -91,7 +91,9 @@ A transaction can have:
 - one tax assessment (treatment, self-assessed VAT)
 - field-level provenance
 - validation issues
-- relations to other transactions (credit notes, refunds, corrections)
+- a credit note as a transaction of its own: negative amounts in the direction
+  of the document it corrects, settled by a payment in the opposite direction
+- refunds as opposite-direction payments on the transaction they refund
 - review state
 
 Worked example used throughout this spec:
@@ -475,8 +477,12 @@ Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile +
 - Impossible dates; service period end < start
 - `sum(taxComponents.net) ≠ invoice.net` or `sum(taxComponents.tax) ≠ invoice.tax` beyond tolerance (default 0.02 EUR)
 - `net + tax ≠ gross` beyond tolerance
+- A negative amount on anything but a `creditNote`, or net, tax and gross with
+  differing signs (`AMOUNT_SIGN_INVALID`)
 - `sum(bookkeeping_allocations.amount) ≠ booked net amount` (or gross for non-deductible cases) beyond tolerance
 - Payment allocation total exceeds payment amount
+- Payments settling more than the booked gross amount, or a refund giving back
+  more than was paid (enforced at the write boundary)
 - Linked IDs do not exist; unsupported state transition
 - Duplicate immutable document identity (sha256)
 - Duplicate statement line fingerprint on the same account
@@ -654,6 +660,7 @@ CREATE TABLE transactions (
 
     direction TEXT NOT NULL,               -- income | expense | unknown
     transaction_type TEXT NOT NULL,        -- invoice | receipt | creditNote | paymentOnly | taxPayment | other
+                                           -- creditNote: negative amounts in the direction it corrects
 
     title TEXT,
     invoice_number TEXT,
@@ -829,7 +836,7 @@ CREATE TABLE payments (
     payment_date TEXT NOT NULL,
 
     original_currency TEXT NOT NULL,
-    original_amount_minor INTEGER NOT NULL,       -- positive
+    original_amount_minor INTEGER NOT NULL,       -- positive; direction says which way the money moved
     booked_currency TEXT NOT NULL DEFAULT 'EUR',
     booked_amount_minor INTEGER,
     exchange_rate TEXT,
@@ -861,6 +868,12 @@ CREATE INDEX idx_payalloc_payment ON payment_allocations(payment_id);
 ```
 
 Invariant: `SUM(allocated_minor) per payment ≤ payment.booked_amount_minor`. Supports partial, combined, statement-first, and invoice-first flows.
+
+Allocation amounts stay positive. A **refund** is a payment in the direction
+opposite to the transaction's own (an inflow on an expense, an outflow on an
+income); its allocation counts negatively against what the transaction has
+settled. The net settled amount may never exceed the booked gross amount nor
+fall below zero, so nothing can be given back that was never paid.
 
 ## 17.15 `field_provenance`
 
@@ -1032,8 +1045,9 @@ CREATE VIEW v_transaction_status AS
 SELECT t.id,
   CASE
     WHEN t.booked_gross_minor IS NULL THEN 'unknown'
-    WHEN COALESCE(pa.allocated, 0) = 0 THEN 'unpaid'
-    WHEN pa.allocated < t.booked_gross_minor THEN 'partiallyPaid'
+    WHEN net_allocated(t) = 0 AND payment_count(t) > 0 THEN 'refunded'
+    WHEN net_allocated(t) = 0 THEN 'unpaid'
+    WHEN ABS(net_allocated(t)) < ABS(t.booked_gross_minor) THEN 'partiallyPaid'
     ELSE 'paid' END AS payment_status,
   CASE
     WHEN td.doc_count IS NULL AND t.transaction_type IN ('paymentOnly') THEN 'missing'
@@ -1041,11 +1055,22 @@ SELECT t.id,
     ELSE 'complete' END AS document_status,
   COALESCE(ta.status, 'unknown') AS tax_status
 FROM transactions t
-LEFT JOIN (SELECT transaction_id, SUM(allocated_minor) AS allocated FROM payment_allocations GROUP BY transaction_id) pa ON pa.transaction_id = t.id
 LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
 LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
 WHERE t.deleted_at IS NULL;
 ```
+
+`net_allocated(t)` stands for the correlated subquery that sums the payment
+allocations of the transaction **signed by direction**: positive when the
+payment moves the way the transaction expects (money out on an expense, money
+in on an income), negative when it moves back. A refund is exactly that
+opposite-direction payment, and a credit note - a transaction with negative
+amounts - is settled by one. `payment_count(t)` counts the allocations, so a
+transaction that was paid and fully refunded reads `refunded` rather than
+`unpaid`. Both expressions live in `TransactionQueryRules` and are shared with
+the UStVA calculation and the write boundary. The net amount may never leave
+the range between zero and the booked gross amount; the repository enforces
+that when payments are written.
 
 Categories with `document_expected = 0` map to `document_status = 'notRequired'` (handled in Swift or by extending the view in a later migration).
 
@@ -1096,7 +1121,7 @@ A transaction has no single overloaded state. Dimensions:
 ```text
 reviewStatus   (stored):  unreviewed | needsReview | confirmed | conflict
 workflowStatus (stored):  active | archived
-paymentStatus  (derived): unknown | unpaid | partiallyPaid | paid
+paymentStatus  (derived): unknown | unpaid | partiallyPaid | paid | refunded
 documentStatus (derived): missing | notRequired | complete
 taxStatus      (derived): unknown | proposed | confirmed | manualOverride
 ```

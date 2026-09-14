@@ -89,9 +89,15 @@ v_transaction_status
 `v_transaction_status` derives the three status dimensions that are not stored
 (spec 17.25 and 19):
 
-- `payment_status`: `unknown` when no booked gross amount is known, `unpaid`
-  when nothing is allocated, `partiallyPaid` while the allocated sum is below
-  the booked gross amount, otherwise `paid`.
+- `payment_status`: derived from the **net** allocated amount - everything
+  allocated in the transaction's own direction (money out on an expense, money
+  in on an income) minus everything that moved back, because a refund is an
+  opposite-direction payment on the same transaction. It is `unknown` when no
+  booked gross amount is known, `refunded` when the net amount is zero but
+  payments exist, `unpaid` when the net amount is zero and there are none,
+  `partiallyPaid` while the net amount is below the booked gross amount, and
+  `paid` otherwise. A credit note books a negative gross amount and is settled
+  by a payment in the opposite direction, so the same rule covers it.
 - `document_status`: `missing` while no document is attached, else `complete`.
   Categories with `document_expected = 0` map to `notRequired` in Swift.
 - `tax_status`: the status of the current tax assessment, or `unknown`.

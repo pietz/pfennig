@@ -59,7 +59,7 @@ The core local bookkeeping loop works:
 - AI extraction produces durable proposals that are reviewed before commit
 - the ledger shows the short trade name and a short German title; extraction asks for both, and normalization trims, collapses and caps the title
 - accepted imports commit atomically, exact document duplicates are detected, failed items can be retried, and stale proposals cannot overwrite newer work
-- payments and partial payments are supported
+- payments, partial payments, refunds (opposite-direction payments) and credit notes (negative transactions) are supported
 - internal field provenance protects manual edits but is intentionally not displayed
 - business-profile settings are editable prospectively; profile changes do not recalculate historical bookings
 - ordinary 7%/19% VAT, mixed rates, common Kleinunternehmer cases, and typical foreign-service reverse-charge amounts have deterministic proposal derivation; this is not yet a verified tax-reporting path
@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 318 tests across 45 suites plus a successful Debug app build.
+The latest verification baseline is 343 tests across 46 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -196,7 +196,8 @@ something Swift already knows, and the schema went with them.
   uses the standard behaviour again; `WindowReader` stays for the main-window
   hand-off and Start keeps its `ViewThatFits` layout.
 - **`TransactionType.refund` removed.** Nothing ever constructed it, and a
-  refund is an opposite-direction payment (see "Decided, not yet built").
+  refund is an opposite-direction payment (built on 2026-09-14, see
+  "Refunds and credit notes").
   `paymentOnly` stays in the enum - `v_transaction_status` names it and the
   statement import will write it - but `TransactionType.userSelectable` keeps
   it out of the picker. "Beleg / Quittung" is now just "Beleg".
@@ -248,7 +249,7 @@ row count (8 transactions, 8 assessments, 170 provenance rows, 4 payments),
 name byte-identical to a database freshly created by the app's own migrator.
 The temporary tool was removed. No archive was reset or deleted.
 
-New baseline: 318 tests across 45 suites plus a successful Debug app build.
+New baseline at the time: 318 tests across 45 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
@@ -261,6 +262,59 @@ The user interface of the [UStVA specification](specs/ustva-preparation.md) is i
 - The former UStVA rhythm "Jährlich" now reads "Keine regelmäßigen Voranmeldungen" and is confirmed once, through a small prompt in the Start section or by saving the business settings (`settings` key `ustva.periodConfirmed`).
 
 **What remains:** the XML upload has still never been tried against Mein ELSTER. The user runs the first real test upload (filling the form, without sending) for Q3 2026 on **10 October 2026**. Only after that does the "experimentell" label come off the export; if it fails, the copyable values stay the delivery path.
+
+### Refunds and credit notes (2026-09-14)
+
+The approved model is implemented, without any correction machinery of its own:
+no relations table, no reversal bookings, no new transaction type.
+
+- **A refund is an opposite-direction payment on the existing transaction.**
+  Amounts stay positive on the payment and on its allocation; the direction
+  decides the sign of its contribution (an inflow on an expense is money back,
+  an outflow on an income is money returned to a customer).
+  `Direction.settlingPaymentDirection` and
+  `TransactionQueryRules.signedAllocationExpression` are the single definition,
+  shared by `v_transaction_status`, `UStVACalculator` and the write boundary.
+- **A credit note is a transaction with negative amounts in the direction of
+  the document it corrects** - a supplier's Gutschrift is a negative expense.
+  Negative net/tax/gross are allowed for `transactionType == .creditNote` and
+  for nothing else: `AMOUNT_SIGN_INVALID` is a new hard validation (it also
+  catches net, tax and gross with differing signs), and
+  `BookkeepingRepository` refuses a negative amount on anything else
+  regardless of which validations the caller ran. The payment that settles a
+  credit note moves the other way, so `openAmountMinor` is signed and
+  "Vollständig bezahlt" becomes "Vollständig erstattet".
+- **Payment status** is derived from the *net* allocated amount. `paid` when it
+  equals the booked gross, `partiallyPaid` between zero and it, `unpaid` at
+  zero without payments, and the new **`refunded`** at zero with payments. The
+  view uses correlated subqueries now instead of the grouped join. The net
+  amount may never leave the range between zero and gross; `savePayments`
+  reads it back after writing and throws `paymentBoundsExceeded` otherwise -
+  which also means an overpayment is now rejected instead of being recorded
+  with a soft `PAYMENT_AMOUNT_DIFFERS` warning.
+- **UStVA:** the calculator reads the signed allocation, so an expense refunded
+  a quarter later contributes +Vorsteuer in the first and -Vorsteuer in the
+  second (net zero), a refunded income does the same for its Bemessungs-
+  grundlage, and a supplier credit note settled by an inflow reduces Kz 66 in
+  the quarter of that inflow. `AllocationSplitter` needed no change: it already
+  mirrored negative transactions, and its cumulative apportionment telescopes
+  the refund back out exactly. Start totals are gross-recorded, so a credit
+  note lowers the expense total and a refund does not move it at all; both are
+  covered by tests.
+- **Interface:** the payment sheet gains a segmented "Zahlung / Erstattung"
+  ("Zahlungseingang / Rückzahlung" on an income), shown only once something has
+  been settled, with the ordinary direction preselected and the refund capped
+  at what was paid. The payment list prints a refund with a leading minus and
+  an "Erstattung" caption; the ledger colours the amount by direction instead
+  of by sign, so a credit note keeps the colour of the side it corrects, and
+  the payment column shows `refunded` as "Erstattet".
+- **Import:** `ExtractionNormalizer` mirrors a `creditNote` document to
+  negative amounts - totals, components and line items - so the common
+  Gutschrift that prints positive numbers under its heading books correctly.
+  A model that already returns negative numbers is unaffected.
+
+No schema migration was needed beyond the view definition, and no archive was
+rewritten: the change is in the derivation, not in the stored columns.
 
 ## Product boundary
 
@@ -324,10 +378,8 @@ See [`releasing.md`](releasing.md) for commands. Never inspect or commit `.env`,
 
 ## Decided, not yet built
 
-- **Refunds and credit notes.** Approved: a refund is an opposite-direction
-  payment on the existing transaction, and a credit note is a transaction
-  with a negative amount. Scheduled as the first part of the
-  statement-import milestone, not as separate correction machinery.
+Nothing at present. The refunds and credit notes that stood here were built on
+2026-09-14; see the section above.
 
 ## Backlog
 
