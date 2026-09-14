@@ -26,7 +26,7 @@ Nicht enthalten: Bankanbindung, Rechnungsstellung, Bilanz, Lohn, Chat, direkte E
 
 Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit der App. Ein Freiberufler hat wenige hundert Buchungen im Jahr; alles passt in den Speicher. SQLite ist eine Datei mit sicherem Schreiben und Änderungsbeobachtung, kein Abfragesystem. Swift lädt und rechnet.
 
-**Fünf Tabellen.** Eine trägt die Buchhaltung, vier sind klein und dienen ihr.
+**Vier Tabellen.** Eine trägt die Buchhaltung, drei sind klein und dienen ihr.
 
 `entries`, eine Zeile pro Buchung:
 - Identität und Einordnung: `id`, `direction` (income/expense), `kind` (invoice, receipt, credit_note, tax_payment, payment_only, ignored, other), `date` (Belegdatum), `title`, `category` (feste EÜR-Kategorienliste im Code, IDs unwiderruflich), `private_share_percent`, `notes`
@@ -41,9 +41,9 @@ Eine Kontobewegung, die zu keinem Beleg passt, ist ein Eintrag mit `kind = payme
 
 `files`: `sha256` (PK), `filename`, `ext`, `byte_size`, `kind` (receipt/statement), `page_count`, `imported_at`. Dedupe ist „Hash existiert“. Kontoauszüge hängen an keinem Eintrag.
 
-`changes`: `id`, `entry_id`, `at`, `actor` (user/agent), `patch_json`. Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat.
+`history`: ein Log, `id`, `entry_id`, `at`, `actor` (user/agent), `patch_json`. Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
 
-`filed_periods`: `year`, `kind` (ustva/euer), `idx`, `filed_at`, `values_hash`. Änderungen an Einträgen in abgegebenen Zeiträumen werden gewarnt und im Journal vermerkt, nicht gesperrt.
+Eine Tabelle `periods` für abgegebene und anstehende Zeiträume ist Thema 5 und nicht Teil der ersten Version.
 
 `settings`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung, Automatisierungsstufe. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
@@ -51,7 +51,7 @@ Eine Kontobewegung, die zu keinem Beleg passt, ist ein Eintrag mit `kind = payme
 
 **Bewusst nicht:** Tabellen für Zahlungen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Eine Zahlung gehört zu genau einer Buchung; eine Überweisung für zwei Rechnungen sind zwei Zahlungseinträge. Ein Beleg mit zwei Kategorien wird in zwei Buchungen geteilt. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
-*Herkunft: Zwei-Tabellen-Entwurf vom Nutzer bestätigt; `files`, `changes`, `filed_periods`, `gross_original_minor`, Zahlungs-`id`/`reviewed`, generiertes `gross_minor` und die „nie still“-Regel stammen aus einer unabhängigen Kritik und wurden übernommen.*
+*Herkunft: Zwei-Tabellen-Entwurf vom Nutzer bestätigt; `files` und `history` aus einer unabhängigen Kritik übernommen und bestätigt. Noch nicht einzeln bestätigt und daher vorläufig: generiertes `gross_minor` ohne Summenspalten, `gross_original_minor`, Zahlungs-`id`/`reviewed`, die „nie still“-Regel mit Version, die Reverse-Charge-Bucket-Regel, `kind = ignored`.*
 
 ## 3. Oberfläche
 
@@ -59,7 +59,7 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 
 **Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Datum, Gegenpartei, Titel, Betrag, Zahlungsstand und Beleg als Symbol. Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
 
-**Inspector.** Rechts, standardmäßig sichtbar. Er zeigt alle Informationen eines Eintrags, die nicht in eine Tabelle gehören: Beleg mit Vorschau, Grunddaten, Beträge, Steuer, Zahlungen, Notizen, bei ungeprüften Einträgen eine Bestätigen-Aktion. Die konkrete Darstellungsform folgt der macOS-Empfehlung für Inspector-Panels; Ergebnis der Recherche wird hier nachgetragen.
+**Inspector.** Rechts, standardmäßig sichtbar. Er zeigt alle Informationen eines Eintrags, die nicht in eine Tabelle gehören: Beleg mit Vorschau, Grunddaten, Beträge, Steuer, Zahlungen, Notizen, bei ungeprüften Einträgen eine Bestätigen-Aktion. Umsetzung als `.inspector` mit einem Formular im Stil `.grouped`. Alle Abschnitte sind flach und immer sichtbar, keine Akkordeons; ein leerer Abschnitt wird weggelassen, nicht eingeklappt.
 
 **Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge. Keine Jahresauswahl im ersten Schritt.
 
