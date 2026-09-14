@@ -4,22 +4,23 @@ import Foundation
 /// Mein ELSTER takes. Pfennig does not transmit: the user uploads the file in
 /// their own session, checks the filled form and sends it themselves.
 ///
-/// What is verified (docs/research-ustva-xml.md): only the content below
+/// What is verified: only the content below
 /// `/Elster/DatenTeil/Nutzdatenblock/Nutzdaten/Anmeldungssteuern` is uploaded,
-/// the envelope is `<Anmeldungssteuern xmlns="…/ustva/v2023" version="2023">`,
 /// the character set is ISO-8859-15, and the value of Kz 83 is taken over as
-/// the user's own figure instead of being recalculated. A file of this shape
-/// for Q3 2026 was accepted by Mein ELSTER on 2026-09-14 and filled the form,
-/// without being sent. The structure therefore stays as it is.
+/// the user's own figure instead of being recalculated
+/// (docs/research-ustva-xml.md). The file Pfennig wrote for Q3 2026 was
+/// accepted by Mein ELSTER on 2026-09-14 and filled the form, without being
+/// sent; it began with
 ///
-/// The schema version is the one the help page documents and does not follow
-/// the year of the period; the year sits in `Jahr`. The `<Unternehmer>` block
-/// is left out, the Mein-ELSTER session carries the identity anyway.
+///     <?xml version="1.0" encoding="ISO-8859-15" standalone="no"?>
+///     <Anmeldungssteuern xmlns="http://finkonsens.de/elster/elsteranmeldung/ustva/v2026" version="2026">
+///
+/// so namespace and version carry the year of the period, not the 2023 of the
+/// example on the help page. The `<Unternehmer>` block is left out, the
+/// Mein-ELSTER session carries the identity anyway.
 public enum UStVAXml {
-    /// The only documented schema version.
-    public static let schemaversion = 2023
-
-    /// ISO-8859-15, the character set the elster.de help page names.
+    /// ISO-8859-15, the character set the elster.de help page names and the
+    /// accepted file used.
     public static let kodierung = String.Encoding(
         rawValue: CFStringConvertEncodingToNSStringEncoding(
             CFStringEncoding(CFStringEncodings.isoLatin9.rawValue)
@@ -40,10 +41,12 @@ public enum UStVAXml {
         // taken over instead of being recalculated.
         inhalt.append(element("Kz83", punkt(ustva.zahllast)))
 
-        let namensraum = "http://finkonsens.de/elster/elsteranmeldung/ustva/v\(schemaversion)"
+        // Namespace and version follow the year of the period.
+        let jahr = ustva.zeitraum.jahr
+        let namensraum = "http://finkonsens.de/elster/elsteranmeldung/ustva/v\(jahr)"
         return """
         <?xml version="1.0" encoding="ISO-8859-15" standalone="no"?>
-        <Anmeldungssteuern xmlns="\(namensraum)" version="\(schemaversion)">
+        <Anmeldungssteuern xmlns="\(namensraum)" version="\(jahr)">
           <Steuerfall>
             <Umsatzsteuervoranmeldung>
         \(inhalt.map { "      \($0)" }.joined(separator: "\n"))

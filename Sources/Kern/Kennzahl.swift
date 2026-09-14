@@ -1,9 +1,9 @@
 import Foundation
 
 /// One Kennzahl of the Umsatzsteuer-Voranmeldung 2026: its number, the title
-/// the form prints, whether it carries a Bemessungsgrundlage in whole euros or
-/// a tax amount in euros and cents, and the Zeile of the form, which is also
-/// the order of the lines.
+/// the form prints, and whether it carries a Bemessungsgrundlage in whole
+/// euros or a tax amount in euros and cents. `alle` stands in the order of the
+/// form, which is the order the values are shown and written in.
 ///
 /// ## Prüfung
 ///
@@ -29,35 +29,30 @@ public struct Kennzahl: Hashable, Sendable {
     public let nummer: Int
     public let titel: String
     public let istBemessung: Bool
-    public let formularzeile: Int
 
     public static let alle: [Kennzahl] = [
         // A. Steuerpflichtige Lieferungen und sonstige Leistungen
         Kennzahl(
             nummer: 81,
             titel: "Steuerpflichtige Umsätze zum Steuersatz von 19 %",
-            istBemessung: true,
-            formularzeile: 13
+            istBemessung: true
         ),
         Kennzahl(
             nummer: 86,
             titel: "Steuerpflichtige Umsätze zum Steuersatz von 7 %",
-            istBemessung: true,
-            formularzeile: 14
+            istBemessung: true
         ),
         Kennzahl(
             nummer: 87,
             titel: "Steuerpflichtige Umsätze zum Steuersatz von 0 %",
-            istBemessung: true,
-            formularzeile: 15
+            istBemessung: true
         ),
 
         // B. Steuerfreie Lieferungen und sonstige Leistungen
         Kennzahl(
             nummer: 48,
             titel: "Steuerfreie Umsätze ohne Vorsteuerabzug (z. B. § 4 Nummer 8 bis 29 oder § 19 Absatz 1 UStG)",
-            istBemessung: true,
-            formularzeile: 23
+            istBemessung: true
         ),
 
         // D. Leistungsempfänger als Steuerschuldner (§ 13b UStG)
@@ -65,70 +60,55 @@ public struct Kennzahl: Hashable, Sendable {
             nummer: 46,
             titel: "Sonstige Leistungen eines im übrigen Gemeinschaftsgebiet ansässigen Unternehmers "
                 + "(§ 13b Absatz 1 UStG)",
-            istBemessung: true,
-            formularzeile: 30
+            istBemessung: true
         ),
         Kennzahl(
             nummer: 47,
             titel: "Steuer auf sonstige Leistungen eines im übrigen Gemeinschaftsgebiet ansässigen Unternehmers",
-            istBemessung: false,
-            formularzeile: 30
+            istBemessung: false
         ),
         Kennzahl(
             nummer: 84,
             titel: "Andere Leistungen (§ 13b Absatz 2 Nummer 1, 2, 4 bis 12 UStG)",
-            istBemessung: true,
-            formularzeile: 32
+            istBemessung: true
         ),
         Kennzahl(
             nummer: 85,
             titel: "Steuer auf andere Leistungen (§ 13b Absatz 2 Nummer 1, 2, 4 bis 12 UStG)",
-            istBemessung: false,
-            formularzeile: 32
+            istBemessung: false
         ),
 
         // E. Ergänzende Angaben zu Umsätzen
         Kennzahl(
             nummer: 21,
             titel: "Nicht steuerbare sonstige Leistungen gemäß § 18b Satz 1 Nummer 2 UStG",
-            istBemessung: true,
-            formularzeile: 35
+            istBemessung: true
         ),
         Kennzahl(
             nummer: 45,
             titel: "Übrige nicht steuerbare Umsätze (Leistungsort nicht im Inland)",
-            istBemessung: true,
-            formularzeile: 36
+            istBemessung: true
         ),
 
         // F. Abziehbare Vorsteuerbeträge
         Kennzahl(
             nummer: 66,
             titel: "Vorsteuerbeträge aus Rechnungen von anderen Unternehmern (§ 15 Absatz 1 Satz 1 Nummer 1 UStG)",
-            istBemessung: false,
-            formularzeile: 38
+            istBemessung: false
         ),
         Kennzahl(
             nummer: 67,
             titel: "Vorsteuerbeträge aus Leistungen im Sinne des § 13b UStG (§ 15 Absatz 1 Satz 1 Nummer 4 UStG)",
-            istBemessung: false,
-            formularzeile: 41
+            istBemessung: false
         ),
 
         // H. Vorauszahlung oder Überschuss
         Kennzahl(
             nummer: 83,
             titel: "Verbleibende Umsatzsteuer-Vorauszahlung / Verbleibender Überschuss",
-            istBemessung: false,
-            formularzeile: 50
+            istBemessung: false
         )
     ]
-
-    public static func mit(_ nummer: Int) -> Kennzahl {
-        alle.first { $0.nummer == nummer } ?? Kennzahl(
-            nummer: nummer, titel: "Kennzahl \(nummer)", istBemessung: false, formularzeile: .max
-        )
-    }
 
     // MARK: - Zuordnung
 
@@ -163,7 +143,7 @@ public struct Kennzahl: Hashable, Sendable {
     }
 
     /// The member states of the European Union without Germany.
-    public static let euStaaten: Set<String> = [
+    private static let euStaaten: Set<String> = [
         "AT", "BE", "BG", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE",
         "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"
     ]

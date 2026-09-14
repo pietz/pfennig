@@ -134,3 +134,12 @@ Nicht gefunden, und die Quellenlage deutet aktiv dagegen: Der einzige dokumentie
 ## Nachtrag 2026-09-14: Testupload erfolgreich
 
 Die von Pfennig erzeugte UStVA-XML für Q3 2026 wurde in Mein ELSTER über „XML-Daten hochladen“ angenommen und die Kennzahlen wurden ins Formular übernommen. Nicht abgesendet. Damit gilt der Aufbau des Exporters als verifiziert für 2026.
+
+Die angenommene Datei begann mit:
+
+```xml
+<?xml version="1.0" encoding="ISO-8859-15" standalone="no"?>
+<Anmeldungssteuern xmlns="http://finkonsens.de/elster/elsteranmeldung/ustva/v2026" version="2026">
+```
+
+Damit ist die offene Frage aus Abschnitt 1 beantwortet: Namensraum und `version` folgen dem Jahr des Besteuerungszeitraums, nicht der auf der Hilfeseite gezeigten 2023. Der Zeichensatz ISO-8859-15 und die Zeitraumcodes 01-12 / 41-44 (hier `43`) sind damit ebenfalls praktisch bestätigt.

@@ -41,8 +41,11 @@ import Testing
     #expect(januar.frist().formatiert == "10.01.2027")
 }
 
-@Test func dieEuerZeigtBisZurJahresmitteAufDasVorjahr() {
+@Test func dieEuerZeigtBisZurFristAufDasVorjahr() {
     #expect(Zeitraum.naechsteEUeR(heute: datum(2026, 3, 1)) == Zeitraum(jahr: 2025, einteilung: .jahr))
+    // Die Frist für 2025 läuft bis zum 31. Juli 2026, §149 Abs. 2 AO.
+    #expect(Zeitraum.naechsteEUeR(heute: datum(2026, 7, 31)) == Zeitraum(jahr: 2025, einteilung: .jahr))
+    #expect(Zeitraum.naechsteEUeR(heute: datum(2026, 8, 1)) == Zeitraum(jahr: 2026, einteilung: .jahr))
     #expect(Zeitraum.naechsteEUeR(heute: datum(2026, 9, 14)) == Zeitraum(jahr: 2026, einteilung: .jahr))
 }
 

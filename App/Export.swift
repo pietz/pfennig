@@ -1,6 +1,7 @@
 import AppKit
 import Kern
 import SwiftUI
+import UniformTypeIdentifiers
 
 /// The export sheet: the values of one period, and the file the user takes to
 /// Mein ELSTER or types into the Anlage EÜR. It computes on demand and keeps
@@ -214,6 +215,7 @@ struct Exportblatt: View {
             }
             Spacer()
             Button("Schließen") { schliessen() }
+                .keyboardShortcut(.cancelAction)
             Button(art == .ustva ? "XML speichern…" : "CSV speichern…", action: sichern)
                 .keyboardShortcut(.defaultAction)
         }
@@ -225,6 +227,7 @@ struct Exportblatt: View {
     private func sichern() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = zeitraum.dateiname
+        panel.allowedContentTypes = [art == .ustva ? .xml : .commaSeparatedText]
         panel.canCreateDirectories = true
         guard panel.runModal() == .OK, let ziel = panel.url else { return }
         do {

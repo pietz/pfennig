@@ -265,10 +265,13 @@ final class AppModell {
         }
     }
 
-    /// True when a date of the booking lies in a period that was exported, so
-    /// the inspector can say that an edit comes after the fact.
-    func exportiert(_ buchung: Buchung) -> Bool {
-        exportierteZeitraeume.keys.contains { $0.beruehrt(buchung) }
+    /// True when the booking was changed after the values of one of its
+    /// periods left the app. Only then does the inspector have something to
+    /// say; a booking that has not moved since the export is fine.
+    func nachExportGeaendert(_ buchung: Buchung) -> Bool {
+        exportierteZeitraeume.contains { zeitraum, exportiertAm in
+            zeitraum.beruehrt(buchung) && buchung.geaendertAm > exportiertAm
+        }
     }
 
     func profil() -> Profil {

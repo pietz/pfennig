@@ -41,8 +41,8 @@ struct Inspektor: View {
     var body: some View {
         Form {
             // An edit after the values of the period went to the tax office.
-            if modell.exportiert(buchung) {
-                Label("Zeitraum bereits exportiert", systemImage: "exclamationmark.triangle")
+            if modell.nachExportGeaendert(buchung) {
+                Label("Nach dem Export des Zeitraums geändert", systemImage: "exclamationmark.triangle")
                     .font(.callout)
                     .foregroundStyle(.orange)
             }

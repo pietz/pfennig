@@ -91,11 +91,7 @@ public struct Zeitraum: Hashable, Sendable {
     }
 
     public var bis: Datum {
-        var letzter = Datum(jahr: jahr, monat: letzterMonat, tag: 31)
-        while letzter.istGueltig == false {
-            letzter.tag -= 1
-        }
-        return letzter
+        Datum(jahr: jahr, monat: letzterMonat, tag: Datum.tageImMonat(jahr: jahr, monat: letzterMonat))
     }
 
     public func enthaelt(_ datum: Datum) -> Bool {
@@ -151,10 +147,12 @@ public struct Zeitraum: Hashable, Sendable {
         return kandidat
     }
 
-    /// The year the EÜR sheet opens on: the year before, until the middle of
-    /// the year has passed.
+    /// The year the EÜR sheet opens on, by the same rule: the year before
+    /// while its deadline of the 31st of July has not passed, the running year
+    /// afterwards.
     public static func naechsteEUeR(heute: Datum = .heute()) -> Zeitraum {
-        Zeitraum(jahr: heute.monat < 6 ? heute.jahr - 1 : heute.jahr, einteilung: .jahr)
+        let laufend = Zeitraum(jahr: heute.jahr, einteilung: .jahr)
+        return laufend.vorheriger.frist() >= heute ? laufend.vorheriger : laufend
     }
 
     // MARK: - Namen

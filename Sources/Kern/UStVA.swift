@@ -48,11 +48,11 @@ public struct UStVA: Hashable, Sendable {
             }
         }
 
-        let zeilen = werte
-            .filter { $0.value != .null }
-            .map { Zeile(kennzahl: Kennzahl.mit($0.key), betrag: $0.value) }
-            .sorted { ($0.kennzahl.formularzeile, $0.kennzahl.nummer) < ($1.kennzahl.formularzeile, $1.kennzahl.nummer)
-            }
+        // Only filled lines, in the order of the form.
+        let zeilen = Kennzahl.alle.compactMap { kennzahl -> Zeile? in
+            guard let betrag = werte[kennzahl.nummer], betrag != .null else { return nil }
+            return Zeile(kennzahl: kennzahl, betrag: betrag)
+        }
         return UStVA(
             zeitraum: zeitraum,
             steuernummer: profil.steuernummer,

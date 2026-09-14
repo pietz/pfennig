@@ -40,7 +40,7 @@ public struct Datum: Hashable, Sendable, Comparable, CustomStringConvertible {
         return tag <= Datum.tageImMonat(jahr: jahr, monat: monat)
     }
 
-    private static func tageImMonat(jahr: Int, monat: Int) -> Int {
+    static func tageImMonat(jahr: Int, monat: Int) -> Int {
         switch monat {
         case 1, 3, 5, 7, 8, 10, 12: 31
         case 4, 6, 9, 11: 30

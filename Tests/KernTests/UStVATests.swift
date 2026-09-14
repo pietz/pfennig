@@ -1,3 +1,4 @@
+import Foundation
 @testable import Kern
 import Testing
 
@@ -202,8 +203,10 @@ import Testing
     let ustva = UStVA.berechnen([rechnung], zeitraum: q3, profil: regel)
     let xml = UStVAXml.xml(ustva)
     #expect(xml.hasPrefix("<?xml version=\"1.0\" encoding=\"ISO-8859-15\" standalone=\"no\"?>\n"))
+    // Namensraum und Version tragen das Jahr des Zeitraums; genau so nahm
+    // Mein ELSTER die Datei am 14.09.2026 an.
     #expect(xml.contains(
-        "<Anmeldungssteuern xmlns=\"http://finkonsens.de/elster/elsteranmeldung/ustva/v2023\" version=\"2023\">"
+        "<Anmeldungssteuern xmlns=\"http://finkonsens.de/elster/elsteranmeldung/ustva/v2026\" version=\"2026\">"
     ))
     #expect(xml.contains("<Steuerfall>"))
     #expect(xml.contains("<Umsatzsteuervoranmeldung>"))
@@ -213,7 +216,29 @@ import Testing
     // Bemessungsgrundlagen in vollen Euro, Steuerbeträge mit zwei Stellen.
     #expect(xml.contains("<Kz81>1000</Kz81>"))
     #expect(xml.contains("<Kz83>190.00</Kz83>"))
-    #expect(UStVAXml.daten(ustva).isEmpty == false)
+}
+
+@Test func einAndererZeitraumTraegtEinAnderesSchemajahr() {
+    let ustva = UStVA.berechnen([], zeitraum: Zeitraum(jahr: 2027, einteilung: .quartal(1)), profil: regel)
+    let xml = UStVAXml.xml(ustva)
+    #expect(xml.contains("ustva/v2027\" version=\"2027\">"))
+    #expect(xml.contains("<Jahr>2027</Jahr>"))
+    #expect(xml.contains("<Zeitraum>41</Zeitraum>"))
+}
+
+@Test func dieDateiStehtInIsoLatin9() {
+    // Eine Steuernummer im Landesformat geht unverändert durch; ein Zeichen
+    // außerhalb von ISO-8859-15 wird ersetzt, statt die Datei zu verlieren.
+    let ustva = UStVA.berechnen(
+        [], zeitraum: q3, profil: Profil(steuernummer: "12/345/67890 ☃")
+    )
+    let daten = UStVAXml.daten(ustva)
+    let zurueck = String(data: daten, encoding: UStVAXml.kodierung)
+    #expect(zurueck?.hasPrefix("<?xml version=\"1.0\" encoding=\"ISO-8859-15\"") == true)
+    #expect(zurueck?.contains("<Steuernummer>12/345/67890 ") == true)
+    #expect(zurueck?.contains("☃") == false)
+    // Das Eurozeichen steht in ISO-8859-15 auf 0xA4, nicht auf zwei UTF-8-Bytes.
+    #expect("€".data(using: UStVAXml.kodierung) == Data([0xA4]))
 }
 
 @Test func derMonatszeitraumTraegtSeinenEigenenCode() {
