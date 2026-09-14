@@ -1,6 +1,6 @@
 # Kontoauszug-Import und Abgleich
 
-**Status:** Draft — awaiting approval (2026-09-14)
+**Status:** Approved 2026-09-14. Decisions: Privat-Einordnung je Gegenpartei wird gemerkt, aber nur solange die Gegenpartei nie geschäftlich gebucht wurde; Reihenfolge Automatisierungsstufe, CSV, Matcher, PDF; Testmaterial liefert der Nutzer außerhalb des Repos, Fixtures werden anonymisiert.
 
 Ausbau der [Workflow-Spezifikation](document-to-tax-workflow.md) für Kontoauszüge. Bankunabhängig: PDF-Auszüge liest das multimodale Modell, CSV-Auszüge ein deterministischer Importer mit modellgestützter Spaltenzuordnung. Keine Bankanbindung, keine bankspezifischen Adapter.
 
@@ -36,7 +36,7 @@ Jede Bewegung wird eingeordnet als **geschäftlich**, **privat**, **intern** (Ü
 
 - Intern: Gegen-IBAN ist ein bereits importiertes eigenes Konto.
 - Steuerzahlung: Gegenpartei ist ein Finanzamt oder der Verwendungszweck enthält Steuernummer und UStVA-Kennung.
-- Privat: nur durch den Nutzer. Eine Entscheidung wird je Gegenpartei gemerkt und für spätere Bewegungen derselben Gegenpartei vorgeschlagen.
+- Privat: nur durch den Nutzer. Eine Entscheidung wird je Gegenpartei gemerkt und für spätere Bewegungen derselben Gegenpartei vorgeschlagen, solange keine Bewegung dieser Gegenpartei geschäftlich gebucht wurde; danach wird wieder gefragt.
 - Alles andere: geschäftlich, mit Zuordnungsversuch.
 
 Private und interne Bewegungen bleiben Kontobewegungen ohne Vorgang und sind in Prüfen nicht sichtbar, sobald eingeordnet.
@@ -78,9 +78,3 @@ Bankanbindung, bankspezifische Adapter, Fremdwährungsgebühren, Sammelzahlungen
 3. Matcher, Erstattungsvorschlag, „Nur Zahlung“-Vorgang, Prüfen-Abschnitt.
 4. PDF-Auszug-Extraktion mit Saldenkontrolle.
 5. Belegimport ergänzt bestehende „Nur Zahlung“-Vorgänge.
-
-## Offene Entscheidungen des Nutzers
-
-1. Privat-Einordnung je Gegenpartei merken: ja oder nein?
-2. Für Tests und Fixtures brauchen wir einen echten Auszug. Kann der Nutzer einen anonymisierten Revolut-CSV-Export und eine PDF-Auszugsseite bereitstellen?
-3. Reihenfolge CSV vor PDF: einverstanden?
