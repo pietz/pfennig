@@ -213,7 +213,10 @@ struct TransactionsView: View {
                     VStack(alignment: .trailing, spacing: 1) {
                         Text(row.amount?.formatted(locale: Format.german) ?? "–")
                             .monospacedDigit()
-                            .foregroundStyle((row.amount?.minorUnits ?? 0) < 0 ? Color.primary : Color.green)
+                            // Coloured by direction, not by sign: a credit note
+                            // points the other way and still belongs to the
+                            // side it corrects.
+                            .foregroundStyle(row.direction == .income ? Color.green : Color.primary)
                         if let secondary = row.secondaryAmount {
                             Text(secondary.formatted(locale: Format.german))
                                 .font(.caption)
@@ -546,7 +549,7 @@ extension TransactionListItem {
         case .unreviewed:
             DisplayStatus(label: "Ungeprüft", symbol: "circle.dashed", tint: .secondary)
         case .confirmed:
-            paymentStatus == .paid
+            paymentStatus == .paid || paymentStatus == .refunded
                 ? DisplayStatus(label: "Abgeschlossen", symbol: "checkmark.seal.fill", tint: .green)
                 : DisplayStatus(label: "Bestätigt", symbol: "checkmark.seal", tint: .green)
         }
@@ -565,6 +568,7 @@ extension PaymentStatus {
         case .paid: "Bezahlt"
         case .partiallyPaid: "Teilweise bezahlt"
         case .unpaid: "Offen"
+        case .refunded: "Erstattet"
         case .unknown: "Unbekannt"
         }
     }
@@ -574,6 +578,7 @@ extension PaymentStatus {
         case .paid: "checkmark.circle.fill"
         case .partiallyPaid: "circle.lefthalf.filled"
         case .unpaid: "circle"
+        case .refunded: "arrow.uturn.backward.circle"
         case .unknown: "questionmark.circle"
         }
     }
@@ -582,6 +587,7 @@ extension PaymentStatus {
         switch self {
         case .paid: .green
         case .partiallyPaid: .orange
+        case .refunded: .blue
         case .unpaid, .unknown: .secondary
         }
     }

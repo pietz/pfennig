@@ -459,11 +459,16 @@ struct TransactionInspector: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(detail.payments) { entry in
+                let isRefund = entry.payment.direction != draft.direction.settlingPaymentDirection
                 LabeledContent(Format.date(entry.payment.paymentDate)) {
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(entry.allocated.formatted(locale: Format.german)).monospacedDigit()
-                        if let origin = paymentOrigin(entry.payment) {
-                            Text(origin)
+                        Text(Format.money(
+                            isRefund ? -entry.allocation.allocatedMinor : entry.allocation.allocatedMinor,
+                            currency: CurrencyCode(entry.allocation.currency)
+                        ))
+                        .monospacedDigit()
+                        if let caption = paymentCaption(entry.payment, isRefund: isRefund) {
+                            Text(caption)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
@@ -471,9 +476,9 @@ struct TransactionInspector: View {
                     }
                 }
             }
-            if draft.openAmountMinor > 0 {
+            if draft.openAmountMinor != 0 {
                 Button(action: recordFullPayment) {
-                    Label("Vollständig bezahlt", systemImage: "checkmark.circle")
+                    Label(fullPaymentLabel, systemImage: "checkmark.circle")
                 }
                 .disabled(!moneyFieldsAreValid)
                 .help("Bucht den offenen Restbetrag mit dem heutigen Datum")
@@ -503,23 +508,31 @@ struct TransactionInspector: View {
         }
     }
 
-    /// Where a payment came from. Manual payments carry neither method nor
-    /// reference; the statement import fills both.
-    private func paymentOrigin(_ payment: Payment) -> String? {
-        let parts = [payment.paymentMethod?.text, payment.reference].compactMap(\.self)
+    /// A credit note is not "paid" but settled the other way round.
+    private var fullPaymentLabel: LocalizedStringKey {
+        (draft.grossMinor ?? 0) < 0 ? "Vollständig erstattet" : "Vollständig bezahlt"
+    }
+
+    /// Where a payment came from, and whether it went back. Manual payments
+    /// carry neither method nor reference; the statement import fills both.
+    private func paymentCaption(_ payment: Payment, isRefund: Bool) -> String? {
+        let refundLabel = draft.direction == .income ? "Rückzahlung" : "Erstattung"
+        let parts = [isRefund ? refundLabel : nil, payment.paymentMethod?.text, payment.reference]
+            .compactMap(\.self)
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
-    /// One click for the ordinary case: the open remainder, paid today.
+    /// One click for the ordinary case: the open remainder, paid today. On a
+    /// credit note the money moves the other way, so the payment does too.
     private func recordFullPayment() {
         let open = draft.openAmountMinor
-        guard moneyFieldsAreValid, open > 0 else { return }
+        guard moneyFieldsAreValid, open != 0, let direction = draft.settlingPaymentDirection else { return }
         var updatedDraft = draft
         updatedDraft.payments.append(
             PaymentDraft(
-                direction: draft.direction == .income ? .inflow : .outflow,
+                direction: direction,
                 paymentDate: .today(),
-                amountMinor: open,
+                amountMinor: abs(open),
                 currency: draft.currency
             )
         )

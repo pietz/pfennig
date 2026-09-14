@@ -5,6 +5,11 @@ import SwiftUI
 /// Records a payment by hand and allocates it to this transaction
 /// (spec 17.13, 17.14). Partial payments are allowed: the allocated amount
 /// may be smaller than the invoice.
+///
+/// A refund is the same payment in the opposite direction: money back from a
+/// supplier, money returned to a customer. The choice appears only once there
+/// is something to give back, because the settled amount may never fall below
+/// zero.
 struct PaymentEditor: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
@@ -26,12 +31,27 @@ struct PaymentEditor: View {
         // open remainder and today are almost always the right answer.
         _payment = State(
             initialValue: PaymentDraft(
-                direction: transaction.direction == .income ? .inflow : .outflow,
+                direction: transaction.settlingPaymentDirection
+                    ?? transaction.direction.settlingPaymentDirection,
                 paymentDate: .today(),
-                amountMinor: transaction.openAmountMinor,
+                amountMinor: abs(transaction.openAmountMinor),
                 currency: transaction.currency
             )
         )
+    }
+
+    /// The direction that settles what is open, and its opposite - the refund.
+    private var settlingDirection: PaymentDirection {
+        draft.settlingPaymentDirection ?? draft.direction.settlingPaymentDirection
+    }
+
+    private var isRefund: Bool {
+        payment.direction != settlingDirection
+    }
+
+    /// Only what was settled can be given back.
+    private var refundLimitMinor: Int64 {
+        abs(draft.netAllocatedMinor)
     }
 
     var body: some View {
@@ -45,6 +65,16 @@ struct PaymentEditor: View {
             Divider()
             Form {
                 Section {
+                    if draft.canRefund {
+                        LabeledContent("Art") {
+                            Picker("Art", selection: $payment.direction) {
+                                Text(paymentLabel).tag(settlingDirection)
+                                Text(refundLabel).tag(settlingDirection.opposite)
+                            }
+                            .pickerStyle(.segmented)
+                            .labelsHidden()
+                        }
+                    }
                     LabeledContent("Datum") {
                         DateField(
                             label: "Datum",
@@ -95,14 +125,32 @@ struct PaymentEditor: View {
         .frame(width: 420, height: 280)
     }
 
+    private var paymentLabel: LocalizedStringKey {
+        draft.direction == .income ? "Zahlungseingang" : "Zahlung"
+    }
+
+    private var refundLabel: LocalizedStringKey {
+        draft.direction == .income ? "Rückzahlung" : "Erstattung"
+    }
+
     private var paymentAmountMessage: String? {
         guard amountIsValid else { return "Betrag ist ungültig. Bitte geben Sie eine Zahl ein." }
         guard payment.amountMinor > 0 else { return "Betrag muss größer als 0 sein." }
+        if isRefund, payment.amountMinor > refundLimitMinor {
+            return "Es kann höchstens \(Format.money(refundLimitMinor, currency: draft.currency)) erstattet werden."
+        }
+        if !isRefund, payment.amountMinor > abs(draft.openAmountMinor) {
+            return "Es sind nur noch \(Format.money(abs(draft.openAmountMinor), currency: draft.currency)) offen."
+        }
         return nil
     }
 
     private var openAmountHint: String {
-        "Offen: \(Format.money(draft.openAmountMinor, currency: draft.currency))."
+        if isRefund {
+            return "Bisher gezahlt: \(Format.money(refundLimitMinor, currency: draft.currency))."
+                + " Die Erstattung wird gegengerechnet."
+        }
+        return "Offen: \(Format.money(abs(draft.openAmountMinor), currency: draft.currency))."
             + " Ein kleinerer Betrag wird als Teilzahlung gebucht."
     }
 
