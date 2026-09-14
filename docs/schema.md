@@ -61,10 +61,10 @@ validation_issues
 | `business_profiles` | The business itself: VAT status, accounting method, UStVA period. Exactly one row in V1. |
 | `counterparties` | Normalized suppliers and customers: name, country and VAT ID. No postal address. |
 | `categories` | Canonical bookkeeping categories with stable slug IDs, seeded by `v001_initial`. No SKR account numbers. |
-| `transactions` | The central economic event. No category column: categories live in allocations. |
+| `transactions` | The central economic event. No category column: categories live in allocations. The service period carries a single service date in both of its ends. |
 | `bookkeeping_allocations` | Category splits of a transaction, including the asset flag and private share. |
 | `tax_components` | What the document shows per VAT rate (7 % and 19 % on one receipt, for example). |
-| `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base, VAT shown, self-assessed and deductible VAT. Exactly one row per transaction; replacing it deletes the old row. |
+| `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base and self-assessed VAT. VAT shown, deductible input VAT and output VAT are not stored - every report and the inspector recompute them. Exactly one row per transaction, enforced by a unique index; replacing it deletes the old row. |
 | `documents` | Imported originals, identified by SHA-256, stored as files under `Documents/`. |
 | `transaction_documents` | Which document plays which role for which transaction. |
 | `statement_lines` | Raw account statement lines with classification. The account is its IBAN; unique per `(account_iban, line_fingerprint)`. |
@@ -99,7 +99,8 @@ v_transaction_status
 ## Indexes
 
 `idx_counterparties_normalized` (unique), `idx_alloc_transaction`,
-`idx_alloc_category`, `idx_taxcomp_transaction`, `idx_taxassess_transaction`,
+`idx_alloc_category`, `idx_taxcomp_transaction`,
+`idx_taxassess_transaction` (unique),
 `idx_stmt_account_date`, `idx_stmt_classification`, `idx_payments_date`,
 `idx_payalloc_transaction`, `idx_payalloc_payment`,
 `idx_import_items_batch`, `idx_prov_current` (unique, partial),

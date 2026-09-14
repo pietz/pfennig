@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 303 tests across 44 suites plus a successful Debug app build.
+The latest verification baseline is 314 tests across 45 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -173,13 +173,9 @@ The three cleanups above were reviewed once more end to end. What changed:
 Left deliberately, as decisions rather than defects:
 
 - `tax_assessments.output_vat_minor`, `vat_shown_minor` and
-  `deductible_input_vat_minor` are written and never read again - the
-  calculator recomputes from components and payments, the inspector shows the
-  freshly derived values. Removing them is one more schema edit plus the
-  one-time archive rewrite, so it waits for an explicit go.
-- Nothing enforces "exactly one assessment per transaction";
-  `idx_taxassess_transaction` is not unique, and a second row would duplicate
-  every transaction through `v_transaction_status`. Same cost as above.
+  `deductible_input_vat_minor` were written and never read again, and
+  `idx_taxassess_transaction` was not unique. Both were resolved in the
+  inspector cleanup below.
 - `statement_lines.account_iban` stays `NOT NULL`. For a statement without an
   IBAN (PDF, PayPal, Stripe) the importer should store a non-null account key
   rather than the column becoming nullable: SQLite treats NULLs as distinct,
@@ -190,6 +186,64 @@ Left deliberately, as decisions rather than defects:
 - The three recorded `Fixtures/documents/*/response.json` predate the slimmed
   extraction schema. The replay passes (unknown keys are ignored), but it
   proves the parser against the older payload; re-record on the next live run.
+
+### Inspector cleanup and third archive rewrite (2026-09-14)
+
+A live walkthrough of the inspector removed the fields that ask a person for
+something Swift already knows, and the schema went with them.
+
+- **Window:** `WindowWidthCompensation`/`widensWindow` are gone. The inspector
+  uses the standard behaviour again; `WindowReader` stays for the main-window
+  hand-off and Start keeps its `ViewThatFits` layout.
+- **`TransactionType.refund` removed.** Nothing ever constructed it, and a
+  refund is an opposite-direction payment (see "Decided, not yet built").
+  `paymentOnly` stays in the enum - `v_transaction_status` names it and the
+  statement import will write it - but `TransactionType.userSelectable` keeps
+  it out of the picker. "Beleg / Quittung" is now just "Beleg".
+- **`SupplyType.digitalService` removed.** The only place it was read,
+  `TaxTreatmentDecider`, treated it exactly like `.service` (`isServiceLike`);
+  the one rule that would separate them, B2C digital services to EU consumers,
+  is out of scope. The picker is Automatisch / Dienstleistung / Ware.
+- **`transactions.service_date` removed.** "Leistung von"/"bis"
+  (`service_period_start`/`_end`) are the only service dates; a single service
+  date is stored in both ends. `UStVACalculator` and `BookkeepingEngine` fall
+  back to `service_period_start` where they used `service_date`, `UStVATasks`
+  reads it for the earliest recorded date, and the extraction schema, prompt
+  rule 4, fixtures and generator lost `invoice.serviceDate`.
+  `AIConfiguration.promptVersion` moved to `2026-09-14.4`.
+- **`tax_assessments` lost its three write-only columns** `vat_shown_minor`,
+  `deductible_input_vat_minor` and `output_vat_minor`. Grep confirmed the only
+  readers were the record round-trip and the repository's own
+  "has this changed" comparison; `UStVACalculator` reads `treatment`,
+  `taxable_base_minor` and `self_assessed_vat_minor` only. The deductible
+  amount is now a field of `DerivedTransaction`, recomputed on every keystroke.
+  `idx_taxassess_transaction` is **unique**, so a second assessment per
+  transaction is impossible rather than merely unwritten.
+- **Inspector:** "Beträge" shows the effective rate next to "Steuer"
+  (`TransactionDraft.effectiveTaxRateText`); "Aufteilung" is a vertical list of
+  four full-width fields; "Steuer" edits only the Behandlung and shows a
+  compact read-only summary below it. The per-component tax editor is gone -
+  components come from the document and are corrected through the amounts.
+- **Zahlungen:** the editor asks for Datum and Betrag only, defaulting to today
+  and `TransactionDraft.openAmountMinor`. "Vollständig bezahlt" books that
+  remainder in one click. `PaymentDraft.paymentMethod` no longer defaults to
+  `.bankTransfer`: a manual payment invents no method.
+
+**Development archive rewritten once on 2026-09-14**, the third and last time
+before release. The pre-rewrite copy is kept at
+`~/Library/Application Support/Pfennig/Backups/bookkeeping-pre-inspector-cleanup-2026-09-14.sqlite`.
+A temporary `sqlite3` script moved the five `service_date` values into the
+empty `service_period_start`/`_end`, rewrote the removed enum raw values (two
+`digitalService` assessments became `service`; no `refund` row existed),
+dropped the four columns with `ALTER TABLE ... DROP COLUMN` and recreated the
+index as `UNIQUE`. Verified afterwards: `PRAGMA integrity_check` and
+`PRAGMA foreign_key_check` clean, every one of the 22 tables at its previous
+row count (8 transactions, 8 assessments, 170 provenance rows, 4 payments),
+`grdb_migrations` still only `v001_initial`, and `sqlite_master` sorted by
+name byte-identical to a database freshly created by the app's own migrator.
+The temporary tool was removed. No archive was reset or deleted.
+
+New baseline: 314 tests across 45 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
@@ -230,8 +284,11 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved
 - the UStVA task is the content of Start's "Anstehend" column, including the one-time rhythm confirmation; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
 - the window may shrink to 560 pt; Start lets `ViewThatFits` stack its three metric cards, so no view measures the window itself
-- showing the inspector grows the window by its width and hiding it restores the window, so the ledger keeps its width; a window that would not fit on screen keeps the standard behaviour
+- the inspector uses the standard `inspector` behaviour: showing it does not resize the window, the ledger column gives up the width. The earlier `WindowWidthCompensation` was tried live and removed again
 - editable dates are typed as `TT.MM.JJJJ` text with two-digit day and month, in the inspector and in the payment editor, because the macOS date field omits leading zeros
+- the inspector asks only for what a person actually decides. "Art" offers Rechnung, Beleg, Gutschrift, Steuerzahlung, Sonstiges; "Leistung von"/"bis" replace the former three service-date fields; "Leistungsart" is Automatisch/Dienstleistung/Ware; each Aufteilung is a plain vertical list of Kategorie, Betrag, Beschreibung, Privatanteil
+- the Steuer section edits the Behandlung and nothing else. Steuersatz, Umsatzsteuer, the §13b amount and "Vorsteuer abziehbar" are read-only and recomputed live; "Beträge" shows the effective rate next to "Steuer"
+- the payment editor asks for Datum (today) and Betrag (the open remainder). Methode, Referenz, IBAN and Gegenpartei stay in the schema for the statement import to fill; "Vollständig bezahlt" books the open remainder in one click, partial payments still go through the editor
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. The development archive was rewritten onto the current schema on 2026-09-14; never reset or delete an archive merely to make its schema look fresh.

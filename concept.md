@@ -129,7 +129,7 @@ Do not collapse dates. Each transaction can carry:
 | Concept | Field | Meaning |
 |---|---|---|
 | Invoice date | `invoice_date` | Date on the document |
-| Service date | `service_date` / `service_period_start/end` | When the service was performed |
+| Service period | `service_period_start` / `service_period_end` | When the service was performed; a single service date is stored in both |
 | Payment date(s) | `payments.payment_date` | Actual cash movement per payment |
 
 Tax points are **not** materialized per transaction. `UStVACalculator` applies the rules below to the stored dates when it prepares a period, so a corrected invoice or payment date changes the report without a stored derivation having to be refreshed.
@@ -142,7 +142,7 @@ Rules for a profile with `vat_accounting_method = cash`:
 - **§13b reverse charge (expense):** distinguish the applicable rule. Qualifying EU-established supplier services under [§13b Abs. 1 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13b.html) use the end of the period of performance. Cases under Abs. 2 use invoice issuance, no later than the end of the month following performance. Advance payments need the separate Abs. 4 rule. A single invoice-date fallback for every foreign service is not sufficient. Matching input VAT follows its own eligibility requirements; Kleinunternehmer have no corresponding deduction.
 - **Intra-community acquisition of goods:** has its own rule under [§13 Abs. 1 Nr. 6 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13.html); do not treat it as identical to all reverse-charge services. Detailed acquisition eligibility remains review-required outside the initial automatic scope.
 
-`tax_assessments` no longer stores a materialized date; reporting derives payment-sensitive contributions per allocation, because a single transaction date cannot represent multiple tax periods. The §13b and intra-Community rules above are still simplified to the invoice date, falling back to the service date, and must be completed before the reports are called finished.
+`tax_assessments` no longer stores a materialized date; reporting derives payment-sensitive contributions per allocation, because a single transaction date cannot represent multiple tax periods. The §13b and intra-Community rules above are still simplified to the invoice date, falling back to the start of the service period, and must be completed before the reports are called finished.
 
 ## 5.2 The "Date" column
 
@@ -159,8 +159,8 @@ For treatments `reverseCharge` and `intraCommunityAcquisition` on expenses, the 
 ```text
 taxable_base_minor      = 7139   (71.39 EUR)
 self_assessed_vat_minor = 1356   (19 % of base, rounded half-up to cent)
-deductible_input_vat_minor = 1356
 invoice tax shown        = 0
+deductible input VAT     = 1356  (derived, not stored)
 ```
 
 The document's own `tax_amount` is 0; `self_assessed_vat` is computed by Swift, never by the model. Rate defaults to the German standard rate applicable at the invoice date.
@@ -441,7 +441,6 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
   "invoice": {
     "invoiceNumber": "IEIN123456",
     "invoiceDate": "2026-08-31",
-    "serviceDate": null,
     "servicePeriodStart": "2026-08-01",
     "servicePeriodEnd": "2026-08-31",
     "currency": "EUR",
@@ -457,7 +456,7 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
     { "description": "Creative Cloud All Apps", "netAmount": "71.39", "categoryHint": "software_subscriptions" }
   ],
   "paymentInfo": { "paymentMethodHint": "creditCard", "paidIndicator": "paid", "paymentDate": null, "iban": null, "reference": null },
-  "missingFields": ["serviceDate"],
+  "missingFields": [],
   "warnings": []
 }
 ```
@@ -654,12 +653,11 @@ CREATE TABLE transactions (
     counterparty_id TEXT REFERENCES counterparties(id),
 
     direction TEXT NOT NULL,               -- income | expense | unknown
-    transaction_type TEXT NOT NULL,        -- invoice | receipt | creditNote | refund | paymentOnly | taxPayment | other
+    transaction_type TEXT NOT NULL,        -- invoice | receipt | creditNote | paymentOnly | taxPayment | other
 
     title TEXT,
     invoice_number TEXT,
     invoice_date TEXT,
-    service_date TEXT,
     service_period_start TEXT,
     service_period_end TEXT,
     is_advance_payment INTEGER NOT NULL DEFAULT 0,
@@ -739,24 +737,23 @@ CREATE TABLE tax_assessments (
 
     treatment TEXT NOT NULL,               -- see 16.1
     customer_type TEXT NOT NULL DEFAULT 'unknown',   -- b2b | b2c | unknown
-    supply_type TEXT NOT NULL DEFAULT 'unknown',     -- service | digitalService | goods | unknown
+    supply_type TEXT NOT NULL DEFAULT 'unknown',     -- service | goods | unknown
     customer_vat_id TEXT,
 
     taxable_base_minor INTEGER,            -- booked currency
-    vat_shown_minor INTEGER,               -- VAT on the document (booked currency)
     self_assessed_vat_minor INTEGER,       -- §13b / i.g. Erwerb, computed by Swift
-    deductible_input_vat_minor INTEGER,    -- expense side
-    output_vat_minor INTEGER,              -- income side
     currency TEXT NOT NULL DEFAULT 'EUR',
 
     status TEXT NOT NULL,                  -- proposed | confirmed | manualOverride
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
-CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id);
+CREATE UNIQUE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id);
 ```
 
-Tax points are not stored here. Income counts per payment date, input VAT at `max(Rechnungsdatum, Zahlungsdatum)` per payment, and §13b/intra-Community acquisitions at the invoice date, falling back to the service date; `UStVACalculator` reads those dates directly from `transactions` and `payments`.
+Tax points are not stored here. Income counts per payment date, input VAT at `max(Rechnungsdatum, Zahlungsdatum)` per payment, and §13b/intra-Community acquisitions at the invoice date, falling back to the start of the service period; `UStVACalculator` reads those dates directly from `transactions` and `payments`.
+
+VAT shown, deductible input VAT and output VAT are not stored either. Every report recomputes them from `tax_components` and `payments`, and the inspector shows the freshly derived values, so a stored copy could only ever be a second, staler truth. Exactly one assessment per transaction: replacing it deletes the old row, and the unique index enforces it.
 
 ## 17.10 `documents`
 
@@ -1060,14 +1057,14 @@ All string enums are `enum … : String, Codable, CaseIterable, Sendable` in `Do
 
 ```text
 Direction:              income | expense | unknown
-TransactionType:        invoice | receipt | creditNote | refund | paymentOnly | taxPayment | other
+TransactionType:        invoice | receipt | creditNote | paymentOnly | taxPayment | other
 WorkflowStatus:         active | archived
 ReviewStatus:           unreviewed | needsReview | confirmed | conflict
 TaxTreatment:           see 16.1
 TaxComponentKind:       standard | reduced | zero | reverseChargeNote | exempt | fee | deposit | other
 TaxAssessmentStatus:    proposed | confirmed | manualOverride
 CustomerType:           b2b | b2c | unknown
-SupplyType:             service | digitalService | goods | unknown
+SupplyType:             service | goods | unknown
 DocumentType:           invoice | receipt | creditNote | statement | contract | other | unknown
 DocumentRole:           invoice | receipt | creditNote | statement | other
 DocumentSource:         dragDrop | fileImport | other
