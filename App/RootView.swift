@@ -78,7 +78,9 @@ struct RootView: View {
                 .task { await model.observePendingProposals() }
             }
         }
-        .background(WindowReader { model.mainWindow = $0 })
+        .background(WindowReader { window in
+            if let window { model.mainWindow = window }
+        })
         .onChange(of: model.requestedTransactionID) { _, id in
             // Another window asked for a booking; the ledger has to be on
             // screen before `TransactionsView` can select it.
@@ -175,40 +177,99 @@ struct RootView: View {
     }
 }
 
-/// Hands the enclosing `NSWindow` to the model, so a task window can bring
-/// the main window forward when it navigates the user back into the ledger.
-/// SwiftUI has no scene-level equivalent for raising an existing
-/// `WindowGroup` window.
-private struct WindowReader: NSViewRepresentable {
-    let onWindow: (NSWindow) -> Void
+// MARK: - Window
 
-    func makeNSView(context: Context) -> ReaderView {
-        ReaderView(onWindow: onWindow)
+extension View {
+    /// Grows the window by `width` while `isPresented` is true and shrinks it
+    /// back afterwards, so the content next to an inspector keeps its width the
+    /// way Preview and Keynote do.
+    func widensWindow(whenPresented isPresented: Bool, by width: CGFloat) -> some View {
+        modifier(WindowWidthCompensation(isPresented: isPresented, width: width))
+    }
+}
+
+/// Resizes the hosting window when a trailing column appears or disappears.
+/// Falls back to the standard behaviour - the content column gives up the
+/// space - whenever the wider window would not fit on the current screen.
+struct WindowWidthCompensation: ViewModifier {
+    let isPresented: Bool
+    let width: CGFloat
+
+    @State private var window: NSWindow?
+    /// What we actually added, so the window is restored by the same amount
+    /// even when the screen only allowed part of it.
+    @State private var addedWidth: CGFloat = 0
+    @State private var movedLeft: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .background(WindowReader { window = $0 })
+            .onChange(of: isPresented) { _, presented in
+                if presented {
+                    grow()
+                } else {
+                    shrink()
+                }
+            }
     }
 
-    func updateNSView(_ nsView: ReaderView, context: Context) {}
+    private func grow() {
+        guard addedWidth == 0, let window, let screen = window.screen else { return }
+        let visible = screen.visibleFrame
+        var frame = window.frame
+        guard frame.width + width <= visible.width else { return }
 
-    /// Reports the window whenever the view joins one. A one-shot read after
-    /// `makeNSView` would miss it: the view is not in a window yet, and gets
-    /// no second chance.
-    final class ReaderView: NSView {
-        private let onWindow: (NSWindow) -> Void
+        frame.size.width += width
+        let shift = max(0, frame.maxX - visible.maxX)
+        frame.origin.x -= shift
+        addedWidth = width
+        movedLeft = shift
+        setFrame(frame, on: window)
+    }
 
-        init(onWindow: @escaping (NSWindow) -> Void) {
-            self.onWindow = onWindow
-            super.init(frame: .zero)
+    private func shrink() {
+        guard addedWidth > 0, let window else { return }
+        var frame = window.frame
+        frame.size.width -= addedWidth
+        frame.origin.x += movedLeft
+        addedWidth = 0
+        movedLeft = 0
+        setFrame(frame, on: window)
+    }
+
+    /// `setFrame(_:display:animate:)` blocks the main thread for the whole
+    /// animation, which would stall the column animation running next to it.
+    /// The animator proxy resizes over the same period without blocking.
+    private func setFrame(_ frame: NSRect, on window: NSWindow) {
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.25
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(frame, display: true)
         }
+    }
+}
 
-        @available(*, unavailable)
-        required init?(coder: NSCoder) {
-            fatalError("init(coder:) is not used")
-        }
+/// Hands the hosting `NSWindow` to SwiftUI. The view itself stays empty and is
+/// meant to sit in a `background`, where it takes part in no layout.
+struct WindowReader: NSViewRepresentable {
+    let onChange: (NSWindow?) -> Void
+
+    func makeNSView(context _: Context) -> ReadingView {
+        let view = ReadingView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ view: ReadingView, context _: Context) {
+        view.onChange = onChange
+    }
+
+    final class ReadingView: NSView {
+        var onChange: ((NSWindow?) -> Void)?
 
         override func viewDidMoveToWindow() {
             super.viewDidMoveToWindow()
-            if let window {
-                onWindow(window)
-            }
+            onChange?(window)
         }
     }
 }

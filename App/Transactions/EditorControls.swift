@@ -81,8 +81,8 @@ extension Binding where Value == String? {
     }
 }
 
-/// A calendar date that may be absent (spec 23). The value is edited with
-/// the native macOS date field; an unset value never masquerades as today.
+/// A calendar date that may be absent (spec 23). The value is typed as
+/// `TT.MM.JJJJ`; an unset value never masquerades as today.
 struct OptionalDateField: View {
     let label: LocalizedStringKey
     @Binding var date: LocalDate?
@@ -99,17 +99,7 @@ struct OptionalDateField: View {
     private var controls: some View {
         HStack(spacing: 6) {
             if date != nil {
-                DatePicker(
-                    label,
-                    selection: Binding(
-                        get: { date?.date() ?? Date() },
-                        set: { date = LocalDate($0) }
-                    ),
-                    displayedComponents: .date
-                )
-                .datePickerStyle(.field)
-                .labelsHidden()
-                .environment(\.locale, Format.german)
+                DateField(label: label, date: $date)
                 Button {
                     date = nil
                 } label: {
@@ -129,6 +119,55 @@ struct OptionalDateField: View {
                 .accessibilityLabel(Text(label))
             }
         }
+    }
+}
+
+/// A date shown as `TT.MM.JJJJ`. The macOS date field drops leading zeros and
+/// leaves the gap visible, so the date is typed as text instead. Input is read
+/// leniently - "1.9.2026" and "01.09.2026" both work - and anything that is not
+/// a real calendar date leaves the stored value untouched, which keeps the
+/// guarantee of the date picker it replaces.
+private struct DateField: View {
+    let label: LocalizedStringKey
+    @Binding var date: LocalDate?
+
+    @State private var text = ""
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        TextField(label, text: $text, prompt: Text("TT.MM.JJJJ"))
+            .labelsHidden()
+            .monospacedDigit()
+            .frame(maxWidth: 110)
+            .focused($isFocused)
+            .onAppear { text = Self.format(date) }
+            .onChange(of: text) { _, new in
+                guard isFocused, let parsed = Self.parse(new) else { return }
+                date = parsed
+            }
+            .onChange(of: date) { _, new in
+                guard !isFocused else { return }
+                text = Self.format(new)
+            }
+            .onChange(of: isFocused) { _, focused in
+                // Restore the canonical spelling of whatever is actually stored.
+                if !focused {
+                    text = Self.format(date)
+                }
+            }
+    }
+
+    private static func format(_ date: LocalDate?) -> String {
+        date?.formattedShort ?? ""
+    }
+
+    private static func parse(_ text: String) -> LocalDate? {
+        let parts = text.trimmingCharacters(in: .whitespaces).split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 3, parts[2].count == 4,
+              let day = Int(parts[0]), let month = Int(parts[1]), let year = Int(parts[2])
+        else { return nil }
+        let candidate = LocalDate(year: year, month: month, day: day)
+        return candidate.isValid ? candidate : nil
     }
 }
 

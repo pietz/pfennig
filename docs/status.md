@@ -227,6 +227,9 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - Start drilldown filters have one shared state; returning through the Buchungen sidebar entry opens the unfiltered ledger
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved
 - Start carries a "Steuern" section with the UStVA task; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
+- the window may shrink to 560 pt; Start lets `ViewThatFits` stack its three metric cards, so no view measures the window itself
+- showing the inspector grows the window by its width and hiding it restores the window, so the ledger keeps its width; a window that would not fit on screen keeps the standard behaviour
+- editable dates are typed as `TT.MM.JJJJ` text with two-digit day and month, because the macOS date field omits leading zeros
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. The development archive was rewritten onto the current schema on 2026-09-14; never reset or delete an archive merely to make its schema look fresh.

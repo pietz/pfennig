@@ -43,7 +43,7 @@ struct PfennigApp: App {
             RootView()
                 .environment(model)
                 .preferredColorScheme(appearancePreference.colorScheme)
-                .frame(minWidth: 700, minHeight: 420)
+                .frame(minWidth: 560, minHeight: 420)
         }
         .windowToolbarStyle(.unified)
         .commands {

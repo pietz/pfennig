@@ -18,28 +18,26 @@ struct StartView: View {
     }
 
     var body: some View {
-        GeometryReader { proxy in
-            ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
-                    header
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                header
 
-                    if let overview {
-                        metrics(overview, isCompact: proxy.size.width < 760)
-                        UStVATaskSection { period in
-                            onNavigate(.ustva(period))
-                        }
-                        openSection(overview)
-                    } else if observationError {
-                        loadError
-                    } else {
-                        ProgressView()
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                if let overview {
+                    metrics(overview)
+                    UStVATaskSection { period in
+                        onNavigate(.ustva(period))
                     }
+                    openSection(overview)
+                } else if observationError {
+                    loadError
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .padding(28)
-                .frame(maxWidth: 980, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .padding(28)
+            .frame(maxWidth: 980, alignment: .leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("Start")
         .navigationSubtitle(Text("Erfasste Buchungen"))
@@ -97,41 +95,14 @@ struct StartView: View {
         }
     }
 
-    @ViewBuilder
-    private func metrics(_ overview: StartOverview, isCompact: Bool) -> some View {
-        let content = Group {
-            StartMetricCard(
-                label: "Einnahmen",
-                value: money(overview.incomeMinor),
-                tint: .green
-            ) {
-                onNavigate(.transactions(TransactionListFilter(year: selectedYear, direction: .income)))
-            }
-            StartMetricCard(
-                label: "Ausgaben",
-                value: money(overview.expenseMinor),
-                tint: .orange
-            ) {
-                onNavigate(.transactions(TransactionListFilter(year: selectedYear, direction: .expense)))
-            }
-            StartMetricCard(
-                label: "Ergebnis",
-                value: money(overview.resultMinor),
-                tint: .accentColor
-            ) {
-                onNavigate(.transactions(TransactionListFilter(year: selectedYear)))
-            }
-        }
-
+    /// The three cards sit in one row while they still fit, and stack as soon
+    /// as the detail column gets too narrow. `ViewThatFits` decides this during
+    /// layout, so the choice stays correct while the sidebar animates.
+    private func metrics(_ overview: StartOverview) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if isCompact {
-                VStack(spacing: 12) {
-                    content
-                }
-            } else {
-                HStack(spacing: 12) {
-                    content
-                }
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) { metricCards(overview) }
+                VStack(spacing: 12) { metricCards(overview) }
             }
 
             if overview.incompleteEurAmountCount > 0 {
@@ -142,6 +113,31 @@ struct StartView: View {
                 .font(.caption)
                 .foregroundStyle(.orange)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func metricCards(_ overview: StartOverview) -> some View {
+        StartMetricCard(
+            label: "Einnahmen",
+            value: money(overview.incomeMinor),
+            tint: .green
+        ) {
+            onNavigate(.transactions(TransactionListFilter(year: selectedYear, direction: .income)))
+        }
+        StartMetricCard(
+            label: "Ausgaben",
+            value: money(overview.expenseMinor),
+            tint: .orange
+        ) {
+            onNavigate(.transactions(TransactionListFilter(year: selectedYear, direction: .expense)))
+        }
+        StartMetricCard(
+            label: "Ergebnis",
+            value: money(overview.resultMinor),
+            tint: .accentColor
+        ) {
+            onNavigate(.transactions(TransactionListFilter(year: selectedYear)))
         }
     }
 
@@ -268,7 +264,8 @@ private struct StartMetricCard: View {
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // The minimum is what tells `ViewThatFits` when a row no longer works.
+            .frame(minWidth: 150, maxWidth: .infinity, alignment: .leading)
             .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)

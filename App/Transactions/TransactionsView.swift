@@ -10,6 +10,10 @@ import UniformTypeIdentifiers
 /// transactions and pending AI proposals share the table; dropping a document
 /// anywhere in the window starts an import (spec 7.1).
 struct TransactionsView: View {
+    /// The inspector's ideal width, and the amount the window grows by while
+    /// the inspector is shown.
+    static let inspectorWidth: CGFloat = 340
+
     let database: AppDatabase
 
     @Environment(AppModel.self) private var model
@@ -74,8 +78,9 @@ struct TransactionsView: View {
                     newDraft: $newDraft,
                     hasUnsavedChanges: $inspectorHasChanges
                 )
-                .inspectorColumnWidth(min: 280, ideal: 340, max: 520)
+                .inspectorColumnWidth(min: 280, ideal: Self.inspectorWidth, max: 520)
             }
+            .widensWindow(whenPresented: showsInspector, by: Self.inspectorWidth)
             .dropDestination(for: URL.self) { urls, _ in
                 model.importFiles(urls)
                 return true
@@ -183,7 +188,7 @@ struct TransactionsView: View {
                         }
                     }
                 }
-                .width(min: 150, ideal: 220)
+                .width(min: 120, ideal: 220)
 
                 TableColumn("Datum") { row in
                     Text(row.date.map(Format.date) ?? "–")
@@ -205,7 +210,7 @@ struct TransactionsView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .trailing)
                 }
-                .width(100)
+                .width(min: 80, ideal: 100)
 
                 TableColumn("Zahlung") { row in
                     Group {
@@ -220,7 +225,7 @@ struct TransactionsView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                 }
-                .width(52)
+                .width(44)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .contextMenu(forSelectionType: LedgerRow.ID.self) { ids in
