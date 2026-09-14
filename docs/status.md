@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 301 tests across 43 suites plus a successful Debug app build.
+The latest verification baseline is 303 tests across 44 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -216,20 +216,22 @@ Use transparent rules for common cases. Unsupported cases should remain visibly 
 Pfennig is a compact native macOS utility with a restrained Start overview:
 
 - the sidebar starts visible on Start and retains Buchungen, Prüfen, and Settings
-- the toolbar uses the compact direction menu and icon-only payment status
+- the toolbar direction menu shows the selected word ("Alle", "Einnahmen", "Ausgaben") instead of an icon; payment status stays icon-only
 - company/product rows keep their two-line presentation
 - `partiallyPaid` remains a distinct status
 - the inspector uses native sections
-- the start page reads persisted transactions and pending proposals through live local observations; its year totals and open-item rows link into the existing filtered views
+- the start page reads persisted transactions and pending proposals through live local observations; its year totals link into the filtered ledger and its open-item rows into "Prüfen"
 - Start totals use recorded EUR gross amounts and the ledger's relevant date, not tax-profit or cash-flow calculations; open items span all years
 - the ledger and Start share one date, the "Datum" column: the document date, then the earliest payment date, then the import date; tax periods stay dated by payment, and payment dates remain in the inspector
 - upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
-- Start drilldown filters have one shared state; returning through the Buchungen sidebar entry opens the unfiltered ledger
+- below the cards Start has two columns: "Offen" is what the user still has to decide or add (review items, missing documents, import proposals, later unmatched statement movements), "Anstehend" are the outward-facing deadlines (UStVA periods with due dates, later other tax tasks); they share `StartRow`, sit side by side while both fit and stack when narrow
+- "Prüfen" is the single page for everything that needs a decision: Importvorschläge, Fehlgeschlagen, Buchungen prüfen, Belege fehlen; a booking row opens the booking in "Buchungen" with the inspector, and each booking section still leads into the matching ledger filter
+- the ledger filters have one shared state, reachable from "Prüfen"; returning through the Buchungen sidebar entry opens the unfiltered ledger
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved
-- Start carries a "Steuern" section with the UStVA task; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
+- the UStVA task is the content of Start's "Anstehend" column, including the one-time rhythm confirmation; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
 - the window may shrink to 560 pt; Start lets `ViewThatFits` stack its three metric cards, so no view measures the window itself
 - showing the inspector grows the window by its width and hiding it restores the window, so the ledger keeps its width; a window that would not fit on screen keeps the standard behaviour
-- editable dates are typed as `TT.MM.JJJJ` text with two-digit day and month, because the macOS date field omits leading zeros
+- editable dates are typed as `TT.MM.JJJJ` text with two-digit day and month, in the inspector and in the payment editor, because the macOS date field omits leading zeros
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. The development archive was rewritten onto the current schema on 2026-09-14; never reset or delete an archive merely to make its schema look fresh.

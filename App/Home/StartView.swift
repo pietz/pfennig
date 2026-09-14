@@ -24,10 +24,7 @@ struct StartView: View {
 
                 if let overview {
                     metrics(overview)
-                    UStVATaskSection { period in
-                        onNavigate(.ustva(period))
-                    }
-                    openSection(overview)
+                    columns(overview)
                 } else if observationError {
                     loadError
                 } else {
@@ -141,6 +138,30 @@ struct StartView: View {
         }
     }
 
+    /// The two decision columns: "Offen" is what the user still has to decide
+    /// or add, "Anstehend" are the outward-facing deadlines. They sit side by
+    /// side while both fit and stack in a narrow window, decided by
+    /// `ViewThatFits` during layout like the metric cards above.
+    private func columns(_ overview: StartOverview) -> some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 24) {
+                openSection(overview)
+                upcomingSection
+            }
+            VStack(alignment: .leading, spacing: 24) {
+                openSection(overview)
+                upcomingSection
+            }
+        }
+    }
+
+    private var upcomingSection: some View {
+        UStVATaskSection { period in
+            onNavigate(.ustva(period))
+        }
+        .frame(minWidth: 260, maxWidth: .infinity, alignment: .leading)
+    }
+
     private func openSection(_ overview: StartOverview) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             StartSectionTitle("Offen", detail: "alle Jahre")
@@ -153,7 +174,7 @@ struct StartView: View {
                     symbol: "checkmark.seal",
                     tint: .accentColor
                 ) {
-                    onNavigate(.transactions(TransactionListFilter(needsAttention: true)))
+                    onNavigate(.review)
                 }
             }
 
@@ -165,7 +186,7 @@ struct StartView: View {
                     symbol: "doc.badge.plus",
                     tint: .orange
                 ) {
-                    onNavigate(.transactions(TransactionListFilter(missingDocumentsOnly: true)))
+                    onNavigate(.review)
                 }
             }
 
@@ -193,7 +214,7 @@ struct StartView: View {
                     .padding(.vertical, 8)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(minWidth: 260, maxWidth: .infinity, alignment: .leading)
     }
 
     private func money(_ minor: Int64?) -> String {
@@ -295,7 +316,7 @@ struct StartSectionTitle: View {
 
 /// One actionable line of a Start section: symbol, title, a caption, an
 /// optional second caption for a state worth colouring, and either a count or
-/// nothing on the right. Shared by "Offen" and "Steuern" so both read alike.
+/// nothing on the right. Shared by "Offen" and "Anstehend" so both read alike.
 struct StartRow: View {
     let title: String
     let detail: String

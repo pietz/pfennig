@@ -5,10 +5,10 @@ import Export
 import SwiftUI
 import Tax
 
-/// The "Steuern" section of Start (spec `ustva-preparation.md`, "Aufgabe auf
-/// Start"): the Voranmeldung that is due next, every earlier period with
-/// something to report that is not marked submitted, and every submitted
-/// period whose values moved since.
+/// The "Anstehend" column of Start (spec `ustva-preparation.md`, "Aufgabe auf
+/// Start"): the outward-facing deadlines. Today these are the Voranmeldung
+/// that is due next, every earlier period with something to report that is not
+/// marked submitted, and every submitted period whose values moved since.
 ///
 /// The rows follow the ledger live, so a booking entered now changes the
 /// Zahllast preview here without a reload.
@@ -22,30 +22,32 @@ struct UStVATaskSection: View {
     private let today = LocalDate.today()
 
     var body: some View {
-        Group {
-            if !rows.isEmpty || needsPeriodConfirmation {
-                VStack(alignment: .leading, spacing: 8) {
-                    StartSectionTitle("Steuern", detail: "Umsatzsteuer-Voranmeldung")
+        VStack(alignment: .leading, spacing: 8) {
+            StartSectionTitle("Anstehend", detail: "Fristen")
 
-                    if needsPeriodConfirmation {
-                        periodConfirmation
-                    }
+            if needsPeriodConfirmation {
+                periodConfirmation
+            }
 
-                    ForEach(rows) { row in
-                        StartRow(
-                            title: "UStVA \(UStVAPeriodText.title(row.period))",
-                            detail: detail(row),
-                            note: note(row),
-                            symbol: "building.columns",
-                            tint: isOverdue(row) ? .orange : .accentColor
-                        ) {
-                            onOpen(row.period)
-                        }
-                    }
+            ForEach(rows) { row in
+                StartRow(
+                    title: "UStVA \(UStVAPeriodText.title(row.period))",
+                    detail: detail(row),
+                    note: note(row),
+                    symbol: "building.columns",
+                    tint: isOverdue(row) ? .orange : .accentColor
+                ) {
+                    onOpen(row.period)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if rows.isEmpty, !needsPeriodConfirmation {
+                Label("Keine Fristen", systemImage: "calendar")
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .task(id: model.profile) { await observe() }
         .onAppear { needsPeriodConfirmation = Self.needsConfirmation(model) }
     }
@@ -56,20 +58,22 @@ struct UStVATaskSection: View {
             Image(systemName: "questionmark.circle")
                 .foregroundStyle(.orange)
                 .frame(width: 20)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text("Bitte UStVA-Rhythmus in den Einstellungen bestätigen")
                 Text("„Jährlich“ heißt jetzt „Keine regelmäßigen Voranmeldungen“.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
+                HStack(spacing: 8) {
+                    Button("Bestätigen") {
+                        UStVAPreferences.setPeriodConfirmed(true, in: model.database)
+                        needsPeriodConfirmation = false
+                    }
+                    SettingsLink {
+                        Text("Einstellungen")
+                    }
+                }
             }
             Spacer(minLength: 8)
-            SettingsLink {
-                Text("Einstellungen")
-            }
-            Button("Bestätigen") {
-                UStVAPreferences.setPeriodConfirmed(true, in: model.database)
-                needsPeriodConfirmation = false
-            }
         }
         .padding(.vertical, 7)
     }

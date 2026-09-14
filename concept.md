@@ -238,7 +238,12 @@ UI language: **German first**. Add localization infrastructure when a second loc
 
 Start is the default entry point, with the sidebar visible. Three compact cards show recorded income, expenses, and their difference for a selectable year. These are signed booked EUR gross amounts using the ledger's relevant date (document date first, see 5.2), not an EÜR profit or cash-flow calculation. Pending import proposals are excluded. Missing amounts or unknown directions remain visible as incomplete totals.
 
-Below, open review items, missing expected documents, and pending proposals link directly into the existing filtered workspaces. Open items span all years and are not added into a combined count because categories may overlap. Document-exempt categories do not create missing-document work. Upcoming items are reserved for real dates and remain hidden until supported. Keep this overview compact: no separate analysis page, recent-bookings list, or decorative chart is needed.
+Below the cards, Start has two columns with the same row presentation:
+
+- **Offen** is what the user still has to decide or add: bookings whose review is open, missing expected documents, open import proposals, and later unmatched statement movements. Its rows lead to "Prüfen", where the decision is actually made. Empty state: "Alles erledigt".
+- **Anstehend** are the outward-facing deadlines: the Umsatzsteuer-Voranmeldung periods with their due dates today, other tax tasks later. Its rows open the task itself. Empty state: a quiet "Keine Fristen".
+
+The columns sit side by side while both fit and stack in a narrow window. Open items span all years and are not added into a combined count because categories may overlap. Document-exempt categories do not create missing-document work. Deadlines are reserved for real dates and remain hidden until supported. Keep this overview compact: no separate analysis page, recent-bookings list, or decorative chart is needed.
 
 ## 6.2 Main transaction table
 
@@ -276,6 +281,8 @@ Dropping one or more files creates an import batch. For multiple documents, neve
 ```
 
 The queue is persisted (see 17.19) and survives restarts.
+
+**Prüfen** is the single page for everything that needs a decision, not only for imports: import proposals, failed imports, bookings whose review is open, and bookings without the document they expect, in that order and each only when it has entries. A booking row shows date, counterparty, title, amount and its short reason, and opens the booking in "Buchungen" with the inspector. Each booking section also leads into the matching ledger filter for sorting, search and bulk work. When nothing is open the page says so and names the time of the last import.
 
 ---
 
