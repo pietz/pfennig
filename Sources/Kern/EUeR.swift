@@ -7,10 +7,19 @@ import Foundation
 /// paid in the year counts, a partial payment with its proportional share of
 /// the positions, a refund against it. The Belegdatum decides nothing here.
 ///
-/// The Umsatzsteuer is a transit item and stays out of the lines as long as it
-/// is deductible: a regular business books the net amounts, a Kleinunternehmer,
-/// who deducts no Vorsteuer, books the gross ones. The Privatanteil of a
-/// booking is taken off its own amount before it reaches the line.
+/// The Umsatzsteuer follows the method of the official form, not the net
+/// shortcut. A regularly taxed business books the net amounts on the category
+/// lines and adds the two computed lines the form asks for: the vereinnahmte
+/// Umsatzsteuer of the year as an income line and the gezahlte Vorsteuer of
+/// the year as an expense line. Together with the two category lines for the
+/// payments to and refunds from the Finanzamt they make the four VAT lines of
+/// the form, and the Gewinn comes out right. A Kleinunternehmer deducts no
+/// Vorsteuer, books gross on the category lines and has no VAT lines; the
+/// payments he makes under §13b stay on their own category line.
+///
+/// The Privatanteil of a booking is taken off its own amount before it reaches
+/// the line, and off its Vorsteuer the same way. The vereinnahmte Umsatzsteuer
+/// is owed in full, so no Privatanteil is taken off it.
 public struct EUeR: Hashable, Sendable {
     public struct Zeile: Hashable, Sendable, Identifiable {
         public let zeile: Int
@@ -22,6 +31,16 @@ public struct EUeR: Hashable, Sendable {
             zeile
         }
     }
+
+    /// The two lines that no category feeds.
+    ///
+    /// **Ungeprüft** like the numbers on `Kategorie.euerZeile`: they take the
+    /// place the official form gives them, the vereinnahmte Umsatzsteuer after
+    /// the Betriebseinnahmen and the gezahlte Vorsteuer right before the
+    /// Umsatzsteuerzahlung, with the numbers that are still free in the
+    /// 2023/2024 placeholder table.
+    public static let zeileVereinnahmteUmsatzsteuer = 18
+    public static let zeileGezahlteVorsteuer = 59
 
     public let jahr: Int
     public let zeilen: [Zeile]
@@ -42,17 +61,32 @@ public struct EUeR: Hashable, Sendable {
 
     public static func berechnen(_ buchungen: [Buchung], jahr: Int, profil: Profil) -> EUeR {
         let zeitraum = Zeitraum(jahr: jahr, einteilung: .jahr)
+        let brutto = profil.kleinunternehmer
         var werte: [Int: Cent] = [:]
+        var vereinnahmt = Cent.null
+        var vorsteuer = Cent.null
+
         for buchung in buchungen where buchung.art != .ignoriert {
             guard let schluessel = buchung.kategorie,
                   let kategorie = Kategorie.alle.first(where: { $0.schluessel == schluessel })
             else { continue }
-            let betrag = betrag(buchung, zeitraum: zeitraum, brutto: profil.kleinunternehmer)
-            guard betrag != .null else { continue }
-            werte[kategorie.euerZeile, default: .null] = werte[kategorie.euerZeile, default: .null] + betrag
+            let summe = summe(buchung, zeitraum: zeitraum)
+            let betrag = ohnePrivatanteil(
+                summe.netto + (brutto ? summe.steuer : .null), prozent: buchung.privatanteilProzent
+            )
+            if betrag != .null {
+                werte[kategorie.euerZeile, default: .null] = werte[kategorie.euerZeile, default: .null] + betrag
+            }
+            guard brutto == false else { continue }
+            switch buchung.richtung {
+            case .einnahme:
+                vereinnahmt = vereinnahmt + summe.steuer
+            case .ausgabe:
+                vorsteuer = vorsteuer + ohnePrivatanteil(summe.steuer, prozent: buchung.privatanteilProzent)
+            }
         }
 
-        let zeilen = werte.keys.sorted().map { nummer in
+        var zeilen = werte.keys.sorted().map { nummer in
             Zeile(
                 zeile: nummer,
                 bezeichnung: bezeichnung(nummer),
@@ -60,22 +94,42 @@ public struct EUeR: Hashable, Sendable {
                 betrag: werte[nummer] ?? .null
             )
         }
-        return EUeR(jahr: jahr, zeilen: zeilen)
+        if vereinnahmt != .null {
+            zeilen.append(Zeile(
+                zeile: zeileVereinnahmteUmsatzsteuer,
+                bezeichnung: "Vereinnahmte Umsatzsteuer",
+                richtung: .einnahme,
+                betrag: vereinnahmt
+            ))
+        }
+        if vorsteuer != .null {
+            zeilen.append(Zeile(
+                zeile: zeileGezahlteVorsteuer,
+                bezeichnung: "Gezahlte Vorsteuer",
+                richtung: .ausgabe,
+                betrag: vorsteuer
+            ))
+        }
+        return EUeR(jahr: jahr, zeilen: zeilen.sorted { $0.zeile < $1.zeile })
     }
 
-    /// What one booking contributes to its line: the shares of the payments of
-    /// the year, without the private part.
-    private static func betrag(_ buchung: Buchung, zeitraum: Zeitraum, brutto: Bool) -> Cent {
+    /// What one booking brings into the year: the net and the tax of the
+    /// shares of its payments of the year, both before the Privatanteil.
+    private static func summe(_ buchung: Buchung, zeitraum: Zeitraum) -> (netto: Cent, steuer: Cent) {
         let zahlungen = buchung.zahlungen
             .sorted { ($0.datum, $0.id ?? 0) < ($1.datum, $1.id ?? 0) }
             .map { (datum: $0.datum, betrag: $0.richtung == buchung.richtung ? $0.betrag : -$0.betrag) }
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
 
-        var summe = Cent.null
+        var netto = Cent.null
+        var steuer = Cent.null
         for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
-            summe = anteile[stelle].reduce(summe) { $0 + $1.netto + (brutto ? $1.steuer : .null) }
+            for anteil in anteile[stelle] {
+                netto = netto + anteil.netto
+                steuer = steuer + anteil.steuer
+            }
         }
-        return ohnePrivatanteil(summe, prozent: buchung.privatanteilProzent)
+        return (netto, steuer)
     }
 
     /// The business part of an amount, rounded to the cent.

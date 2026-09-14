@@ -11,7 +11,9 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
     /// **Ungeprüft**: the line numbers come from the 2023/2024 layout of the
     /// form; the official Anlage EÜR 2026 was not available when they were
     /// written and the numbering is likely to have moved. They are a starting
-    /// point for the user, not a checked mapping.
+    /// point for the user, not a checked mapping. The lines
+    /// `EUeR.zeileVereinnahmteUmsatzsteuer` and `EUeR.zeileGezahlteVorsteuer`
+    /// belong to the two computed VAT lines and no category takes them.
     public let euerZeile: Int
     public let beschreibung: String
 

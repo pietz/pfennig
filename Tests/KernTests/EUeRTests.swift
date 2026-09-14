@@ -31,14 +31,56 @@ private let jahresbestand = [
 
 @Test func dieZeilenFassenDieKategorienZusammen() {
     let euer = EUeR.berechnen(jahresbestand, jahr: 2026, profil: regel)
-    #expect(euer.zeilen.map(\.zeile) == [11, 43])
+    #expect(euer.zeilen.map(\.zeile) == [11, 18, 43, 59])
     #expect(euer.zeilen[0].betrag.wert == 100_000)
     // Software mit 30 Prozent Privatanteil plus Hosting, beide in Zeile 43.
-    #expect(euer.zeilen[1].betrag.wert == 7000 + 5000)
-    #expect(euer.zeilen[1].bezeichnung == "Software, Hosting, Telekommunikation")
-    #expect(euer.einnahmen.wert == 100_000)
-    #expect(euer.ausgaben.wert == 12000)
-    #expect(euer.ergebnis.wert == 88000)
+    #expect(euer.zeilen[2].betrag.wert == 7000 + 5000)
+    #expect(euer.zeilen[2].bezeichnung == "Software, Hosting, Telekommunikation")
+    #expect(euer.einnahmen.wert == 100_000 + 19000)
+    #expect(euer.ausgaben.wert == 12000 + 1330 + 950)
+    #expect(euer.ergebnis.wert == 119_000 - 14280)
+}
+
+@Test func dieUmsatzsteuerStehtInZweiEigenenZeilen() {
+    let bestand = [
+        buchung(
+            id: 1,
+            richtung: .einnahme,
+            datum: datum(2026, 2, 1),
+            kategorie: "umsatz_dienstleistung",
+            positionen: [position(200_000, 19)],
+            zahlungen: [zahlung(2026, 3, 1, 238_000, .einnahme)]
+        ),
+        buchung(
+            id: 2,
+            richtung: .ausgabe,
+            datum: datum(2026, 5, 1),
+            kategorie: "hardware",
+            privatanteil: 40,
+            positionen: [position(100_000, 19)],
+            zahlungen: [zahlung(2026, 5, 2, 119_000, .ausgabe)]
+        )
+    ]
+    let euer = EUeR.berechnen(bestand, jahr: 2026, profil: regel)
+    #expect(euer.zeilen.map(\.zeile) == [11, 18, 47, 59])
+    #expect(euer.zeilen[0].betrag.wert == 200_000)
+    #expect(euer.zeilen[1].bezeichnung == "Vereinnahmte Umsatzsteuer")
+    #expect(euer.zeilen[1].betrag.wert == 38000)
+    // 60 Prozent betrieblich, netto wie Vorsteuer.
+    #expect(euer.zeilen[2].betrag.wert == 60000)
+    #expect(euer.zeilen[3].bezeichnung == "Gezahlte Vorsteuer")
+    #expect(euer.zeilen[3].betrag.wert == 11400)
+    #expect(euer.einnahmen.wert == 238_000)
+    #expect(euer.ausgaben.wert == 71400)
+    #expect(euer.ergebnis.wert == euer.einnahmen.wert - euer.ausgaben.wert)
+    #expect(euer.ergebnis.wert == 166_600)
+
+    // Kleinunternehmer: brutto je Zeile, keine Umsatzsteuerzeilen.
+    let ohneVorsteuer = EUeR.berechnen(bestand, jahr: 2026, profil: klein)
+    #expect(ohneVorsteuer.zeilen.map(\.zeile) == [11, 47])
+    #expect(ohneVorsteuer.zeilen[0].betrag.wert == 238_000)
+    #expect(ohneVorsteuer.zeilen[1].betrag.wert == 71400)
+    #expect(ohneVorsteuer.ergebnis.wert == 166_600)
 }
 
 @Test func nurBezahltesZaehltImJahr() {
@@ -85,7 +127,9 @@ private let jahresbestand = [
     #expect(csv == """
     Zeile;Bezeichnung;Betrag
     11;Umsatz Dienstleistung;1000,00
+    18;Vereinnahmte Umsatzsteuer;190,00
     43;Software, Hosting, Telekommunikation;120,00
+    59;Gezahlte Vorsteuer;22,80
 
     """)
 }
