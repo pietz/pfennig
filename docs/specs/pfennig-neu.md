@@ -16,7 +16,7 @@ Gliederung:
 
 ## 1. Zweck und Grenzen
 
-Pfennig ist eine lokale macOS-App für deutsche Freiberufler und Einzelunternehmer mit EÜR und Ist-Versteuerung, regelbesteuert oder Kleinunternehmer. Sie sammelt Einnahmen und Ausgaben aus Dokumenten, die der Nutzer per Drag-and-drop ablegt: Rechnungen, Belege, Gutschriften, Kontoauszüge. Ein KI-Agent liest die Dateien, ordnet sie den bestehenden Einträgen zu oder legt neue an, und speichert das Ergebnis strukturiert in einer lokalen SQLite-Datenbank. Der Nutzer sieht eine Tabelle seiner Buchungen und kann jeden Eintrag im Seitenmenü ansehen und korrigieren. Am Ende hilft die App, die Steuerdaten für UStVA und EÜR vorzubereiten, ohne selbst zu übermitteln.
+Pfennig ist eine lokale macOS-App für deutsche Freiberufler und Einzelunternehmer mit EÜR und Ist-Versteuerung, regelbesteuert oder Kleinunternehmer. Sie sammelt Einnahmen und Ausgaben aus Dokumenten, die der Nutzer per Drag-and-drop ablegt: Rechnungen, Belege, Gutschriften, Kontoauszüge. Ein KI-Agent liest die Dateien, ordnet sie den bestehenden Einträgen zu oder legt neue an, und speichert das Ergebnis strukturiert in einer lokalen SQLite-Datenbank. Kontoauszüge kommen als zweiter Schritt nach Rechnungen und Belegen. Der Nutzer sieht eine Tabelle seiner Buchungen und kann jeden Eintrag im Inspector rechts ansehen und korrigieren. Am Ende hilft die App, die Steuerdaten für UStVA und EÜR vorzubereiten, ohne selbst zu übermitteln.
 
 Die App wirkt nicht wie eine KI-Anwendung. Sie ist eine ruhige Tabelle, hinter der ein Agent die Arbeit macht. Deterministischer Code gibt es nur für das Schema, Geldbeträge, Steuerregeln und die Grenzen, innerhalb derer der Agent schreiben darf.
 
@@ -35,7 +35,7 @@ Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit
 - `waehrung` und `originalbetrag`: nur bei Fremdwährungsbelegen gefüllt, leer heißt Euro. Die Positionen stehen immer in Euro, am besten zum tatsächlich gezahlten Betrag vom Konto, sonst zum Kurs am Belegdatum. Swift rechnet keine Kurse.
 - `steuerbehandlung` (inland, reverse_charge, kleinunternehmer, steuerfrei, nicht_steuerbar, unklar). Beantwortet, warum ein Beleg keine oder eine besondere Umsatzsteuer hat.
 - `zahlungen`, JSON-Liste von {id, datum, betrag, richtung, geprueft}. Die id zählt innerhalb des Eintrags hoch (1, 2, 3). Teilzahlungen sind mehrere Elemente, eine Erstattung hat die Gegenrichtung, eine unsichere Zuordnung ist `geprueft = false`. Eine Zahlung gehört zu genau einem Eintrag; eine Überweisung für zwei Rechnungen sind zwei Zahlungselemente.
-- `dateien`, JSON-Liste von SHA-256-Hashes der Belege (keine Kontoauszüge).
+- `belege`, JSON-Liste von SHA-256-Hashes der zugehörigen Dateien (keine Kontoauszüge).
 - `geprueft_am` (leer = ungeprüft), `erstellt_am`, `geaendert_am`.
 
 Kategorie und Privatanteil gelten für den ganzen Beleg. Bei zwei Kategorien auf einem Beleg zählt die dominante; ein Randfall, der bewusst nicht abgebildet wird. Einnahmen und Ausgaben stehen in derselben Tabelle, unterschieden durch die Richtung.
@@ -44,7 +44,7 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 `dateien`: `sha256` (Schlüssel), `dateiname`, `endung`, `groesse`, `art` (beleg/kontoauszug), `seiten`, `importiert_am`. Dedupe ist „Hash existiert“. Kontoauszüge hängen an keinem Eintrag.
 
-`aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `aenderung` (JSON mit Vorher und Nachher). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
+`aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `vorher` (JSON der Zeile, leer bei Neuanlage), `nachher` (JSON der Zeile). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen und zeigt, was der Agent geändert hat; angezeigt, kein Undo in der ersten Version. Der Agent darf es lesen, nicht schreiben.
 
 `anfragen`: eine Anfrage an den Agenten pro Datei, `id`, `datei_sha256`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Der Agent darf lesen, nicht schreiben.
 
@@ -52,7 +52,7 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
-**Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<endung>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
+**Das Dateisystem übernimmt den Rest.** Alles liegt unter `~/Library/Application Support/Pfennig/`: die Datenbank, `Archiv/` mit den Originalen als `<sha256>.<endung>` und `Inbox/`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
 **Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
@@ -60,7 +60,7 @@ Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
 Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar. Keine Sidebar, keine weiteren Seiten.
 
-**Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Datum, Gegenpartei, Titel, Betrag, Zahlungsstand und Beleg als Symbol. Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
+**Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Datum, Gegenpartei, Titel, Betrag, Zahlungsstand (abgeleitet aus Zahlungssumme gegen Brutto: offen, teilweise, bezahlt) und Beleg als Symbol. Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
 
 **Inspector.** Rechts, standardmäßig sichtbar. Er zeigt alle Informationen eines Eintrags, die nicht in eine Tabelle gehören: Beleg mit Vorschau, Grunddaten, Beträge, Steuer, Zahlungen, Notizen, bei ungeprüften Einträgen eine Bestätigen-Aktion. Umsetzung als `.inspector` mit einem Formular im Stil `.grouped`. Alle Abschnitte sind flach und immer sichtbar, keine Akkordeons; ein leerer Abschnitt wird weggelassen, nicht eingeklappt.
 
@@ -81,12 +81,12 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 1. Swift berechnet den Hash und kopiert sie nach `Inbox/`.
 2. Existiert der Hash schon in `dateien`, ist die Datei fertig; kurze Rückmeldung „bereits vorhanden“.
 3. Sonst startet ein Agentenlauf für diese Datei. Dateien werden nacheinander verarbeitet.
-4. Nach Erfolg wandert die Datei als `<hash>.<endung>` ins Archiv, bekommt eine Zeile in `dateien` und verlässt die Inbox.
-5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“.
+4. Nach Erfolg wandert die Datei als `<hash>.<endung>` ins Archiv, bekommt eine Zeile in `dateien` und verlässt die Inbox. Das sql-Werkzeug meldet Swift die berührten Buchungs-IDs; an diese hängt Swift den Hash.
+5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“. Buchungen, die der abgebrochene Lauf angelegt hat, entfernt Swift vor einem erneuten Versuch, damit nichts doppelt entsteht.
 
 Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind PDF, Bilder und CSV; die Datei geht so, wie sie ist, an den Agenten.
 
-**Ein Agent, ein Werkzeug.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein Werkzeug ist `sql`: er liest und schreibt die Datenbank direkt mit SELECT, INSERT und UPDATE. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus. Am Anfang bekommt er nur `buchungen`.
+**Ein Agent, ein Werkzeug.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein Werkzeug ist `sql`: er liest und schreibt die Datenbank direkt mit SELECT, INSERT und UPDATE. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus. Am Anfang schreibt er nur in `buchungen`.
 
 Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anweisungen aus `sqlite_master`), damit es immer aktuell ist. Aufzählungen wie richtung, art und steuerbehandlung sind als CHECK-Bedingungen im Schema hinterlegt und dadurch im Schematext sichtbar. Für JSON-Spalten steht die Struktur als Kommentar im Schema.
 
@@ -97,7 +97,7 @@ Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anwe
 
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API mit der Datei selbst (PDF oder Bild direkt, CSV als Text), dem Profil (eigener Name und USt-ID, Kleinunternehmer, heutiges Datum), der Kategorienliste mit je einem Satz Beschreibung, den bekannten Gegenparteien mit Land aus den vorhandenen Buchungen und der Anleitung. Nicht im Kontext: die Buchungstabelle. Ein Modell, im Code festgelegt, keine Auswahl in den Einstellungen.
 
-**Was der Agent füllt.** Alles, was aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; Gegenpartei; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt er in die Notizen. Felder, die ein Dokument nicht hergibt, bleiben leer. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift nach dem Lauf.
+**Was der Agent füllt.** Alles, was aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; Gegenpartei; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt er in die Notizen. Felder, die ein Dokument nicht hergibt, bleiben leer. Nicht vom Agenten: id, belege, geprueft_am, Zeitstempel, zahlungen.id; die setzt Swift. Pro sql-Aufruf entsteht oder ändert sich eine vollständige Buchung (mindestens eine Position), weil die Prüfregeln nach jedem Aufruf laufen. Die Anleitung enthält je ein JSON-Beispiel für positionen und zahlungen mit dem Hinweis, dass Beträge in Cent stehen.
 
 **Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
@@ -136,7 +136,7 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 - Bankspezifische Parser, Vorverarbeitung von Dateien in Swift, regelbasierte Zuordnung
 - Automatisierungsstufen, Schutzregeln für bearbeitete Buchungen, Versionsprüfung
 - Stammdaten für Gegenparteien, Kategorien in der Datenbank
-- Tabellen für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft, Audit, Importläufe
+- Weitere Tabellen neben den fünf aus Abschnitt 2, insbesondere für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft
 - Kursumrechnung, Kursdienste
 - Startseite, Prüfen-Seite, Sidebar, Jahresauswahl
 - Modellauswahl in den Einstellungen
