@@ -13,13 +13,13 @@ struct Einstellungen: View {
                 ProfilEinstellungen(modell: modell)
             }
             Tab("KI-Zugang", systemImage: "key") {
-                ZugangEinstellungen()
+                ZugangEinstellungen(modell: modell)
             }
             Tab("Erscheinungsbild", systemImage: "paintpalette") {
                 ErscheinungsbildEinstellungen()
             }
         }
-        .frame(width: 480, height: 300)
+        .frame(width: 520, height: 420)
     }
 }
 
@@ -48,6 +48,8 @@ private struct ProfilEinstellungen: View {
 /// exists; reading the secret itself is what makes macOS ask, and that belongs
 /// to the agent run and not to a window that opens.
 private struct ZugangEinstellungen: View {
+    let modell: AppModell
+    @State private var ki = KiEinstellungen()
     @State private var eingabe = ""
     @State private var hinterlegt = false
     @State private var pruefung: String?
@@ -100,9 +102,21 @@ private struct ZugangEinstellungen: View {
             Text("Der Schlüssel liegt im Schlüsselbund dieses Macs und verlässt ihn nur für Anfragen an OpenAI.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+
+            Picker("Modell", selection: $ki.modell) {
+                ForEach(Modell.allCases) { Text($0.name).tag($0) }
+            }
+            Picker("Denkaufwand", selection: $ki.aufwand) {
+                ForEach(Denkaufwand.allCases) { Text($0.name).tag($0) }
+            }
+            Toggle("Schnellere Verarbeitung (ca. doppelter Preis)", isOn: $ki.schnell)
         }
         .formStyle(.grouped)
-        .onAppear { hinterlegt = Schluesselbund.vorhanden }
+        .onAppear {
+            hinterlegt = Schluesselbund.vorhanden
+            ki = modell.kiEinstellungen()
+        }
+        .onChange(of: ki) { modell.kiEinstellungenSpeichern(ki) }
     }
 
     /// One tiny request, so a wrong key shows up here and not on the first

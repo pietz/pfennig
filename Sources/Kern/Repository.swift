@@ -267,6 +267,31 @@ public final class Repository: Sendable {
         )
     }
 
+    /// What the user chose under KI-Zugang, with the defaults of a fresh
+    /// installation for keys that were never set.
+    public func kiEinstellungen() throws -> KiEinstellungen {
+        try datenbank.read { db in
+            let standard = KiEinstellungen()
+            return try KiEinstellungen(
+                modell: Repository.wert("ki.modell", in: db).flatMap(Modell.init) ?? standard.modell,
+                aufwand: Repository.wert("ki.aufwand", in: db).flatMap(Denkaufwand.init) ?? standard.aufwand,
+                schnell: Repository.wert("ki.schnell", in: db) == "true"
+            )
+        }
+    }
+
+    public func kiEinstellungenSpeichern(_ einstellungen: KiEinstellungen) throws {
+        try datenbank.write { db in
+            try Repository.einstellungSetzen("ki.modell", wert: einstellungen.modell.rawValue, in: db)
+            try Repository.einstellungSetzen("ki.aufwand", wert: einstellungen.aufwand.rawValue, in: db)
+            try Repository.einstellungSetzen("ki.schnell", wert: String(einstellungen.schnell), in: db)
+        }
+    }
+
+    private static func wert(_ schluessel: String, in db: Database) throws -> String? {
+        try String.fetchOne(db, sql: "SELECT wert FROM einstellungen WHERE schluessel = ?", arguments: [schluessel])
+    }
+
     public func profilSpeichern(_ profil: Profil) throws {
         let werte = [
             "steuernummer": profil.steuernummer,

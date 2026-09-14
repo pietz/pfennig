@@ -13,10 +13,26 @@ public enum Eingangsergebnis: Sendable {
 /// The way of a file from the drop to the archive, one file at a time. The
 /// queue that keeps them in order lives in the app; this is the work for one.
 public struct Eingang: Sendable {
+    /// Two copies of the same file in one drop must not both start a run.
+    /// Files are processed side by side, so the claim cannot live in the
+    /// database check alone.
+    actor Laufende {
+        private var hashes: Set<String> = []
+
+        func belegen(_ hash: String) -> Bool {
+            hashes.insert(hash).inserted
+        }
+
+        func freigeben(_ hash: String) {
+            hashes.remove(hash)
+        }
+    }
+
     let repository: Repository
     let werkzeug: Werkzeug
     let pfad: Archivpfad
     let transport: Transport
+    private let laufende = Laufende()
 
     public init(
         repository: Repository,
@@ -51,12 +67,24 @@ public struct Eingang: Sendable {
     /// Hashes the file, copies it into the inbox, runs the agent and archives
     /// it. On failure the file stays in the inbox with the error text.
     public func verarbeiten(_ url: URL) async -> Eingangsergebnis {
+        let daten: Data
+        do {
+            daten = try Data(contentsOf: url)
+        } catch {
+            return .fehler(datei: url, text: error.localizedDescription)
+        }
+        let hash = Eingang.hash(daten)
+        guard await laufende.belegen(hash) else { return .bereitsVorhanden }
+        let ergebnis = await verarbeiten(url, daten: daten, hash: hash)
+        await laufende.freigeben(hash)
+        return ergebnis
+    }
+
+    private func verarbeiten(_ url: URL, daten: Data, hash: String) async -> Eingangsergebnis {
         // Where the file lies when something goes wrong: in the inbox from the
         // moment it got there, at its origin before that.
         var liegt = url
         do {
-            let daten = try Data(contentsOf: url)
-            let hash = Eingang.hash(daten)
             if try repository.belegVerwendet(hash) {
                 if liegtInInbox(url) {
                     try? FileManager.default.removeItem(at: url)

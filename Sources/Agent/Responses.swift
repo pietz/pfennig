@@ -1,4 +1,5 @@
 import Foundation
+import Kern
 
 /// Everything that can go wrong between the app and OpenAI, in German,
 /// because the text ends up in the inbox next to the file.
@@ -53,8 +54,9 @@ public struct Responses: Sendable {
             throw Agentenfehler.keinSchluessel
         }
         _ = try await Responses(schluessel: schluessel, transport: transport).senden([
-            "model": Agentenlauf.modell,
-            "reasoning": ["effort": "none"],
+            // The cheapest model at the lowest effort; this asks the key, not the choice.
+            "model": Modell.luna.rawValue,
+            "reasoning": ["effort": Denkaufwand.keiner.rawValue],
             "max_output_tokens": 16,
             "input": "Antworte nur mit OK."
         ])

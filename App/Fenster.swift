@@ -42,8 +42,8 @@ struct Fenster: View {
             inspektor
                 .inspectorColumnWidth(min: 320, ideal: 380, max: 560)
         }
-        // Room for a table of about 700 points next to the inspector.
-        .frame(minWidth: 1000, minHeight: 520)
+        // Room for a table of about 580 points next to the inspector.
+        .frame(minWidth: 900, minHeight: 520)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand { zuLoeschen = modell.ausgewaehlt }
         .confirmationDialog("Buchung löschen?", isPresented: loeschenLaeuft, presenting: zuLoeschen) { buchung in
@@ -81,7 +81,7 @@ struct Fenster: View {
                     Text(buchung.zweiteZeile).font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .width(min: 160, ideal: 260)
+            .width(min: 150, ideal: 220)
             .customizationID("firma")
             .disabledCustomizationBehavior(.visibility)
 
@@ -98,15 +98,22 @@ struct Fenster: View {
                     .foregroundStyle(buchung.richtung == .einnahme ? Color.green : Color.primary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .width(min: 100, ideal: 120)
+            .width(min: 90, ideal: 100)
             .alignment(.trailing)
             .customizationID("betrag")
 
-            TableColumn("Zahlung") { buchung in
-                Image(systemName: buchung.zahlungsstand.symbol)
-                    .foregroundStyle(buchung.zahlungsstand == .bezahlt ? Color.green : .secondary)
-                    .help(buchung.zahlungsstand.name)
-                    .frame(maxWidth: .infinity, alignment: .center)
+            // The symbol is a button, the rest of the cell is not, so a click
+            // next to it still selects the row.
+            TableColumn("Bezahlt") { buchung in
+                Button {
+                    modell.zahlungUmschalten(buchung)
+                } label: {
+                    Image(systemName: buchung.zahlungsstand.symbol)
+                        .foregroundStyle(buchung.zahlungsstand == .bezahlt ? Color.green : .secondary)
+                }
+                .buttonStyle(.borderless)
+                .help(buchung.zahlungsstand.name)
+                .frame(maxWidth: .infinity, alignment: .center)
             }
             .width(70)
             .customizationID("zahlung")

@@ -21,7 +21,7 @@ final class AppModell {
     /// The files still to be processed, what the toolbar shows about them and
     /// the notes the strip over the table carries.
     private var warteschlange: [URL] = []
-    private var inArbeit: URL?
+    private var inArbeit: Set<URL> = []
     private(set) var fortschritt = Fortschritt()
     private(set) var meldungen: [Eingangsmeldung] = []
     /// The inbox is read on the first look at the window, not on every one.
@@ -35,6 +35,9 @@ final class AppModell {
             }
         }
     }
+
+    /// How many files the agent works on at the same time.
+    static let gleichzeitig = 10
 
     init() {
         do {
@@ -75,26 +78,37 @@ final class AppModell {
 
     /// A file already queued or in the machine does not go in a second time.
     private func einreihen(_ urls: [URL]) {
-        let neue = urls.filter { $0 != inArbeit && warteschlange.contains($0) == false }
+        let neue = urls.filter { inArbeit.contains($0) == false && warteschlange.contains($0) == false }
         guard neue.isEmpty == false else { return }
         warteschlange.append(contentsOf: neue)
         fortschritt.gesamt += neue.count
         abarbeiten()
     }
 
-    /// One file after another in a single task. A drop that arrives while it
-    /// runs joins the queue the task is already working through.
+    /// Files run side by side, at most `gleichzeitig` of them. A drop that
+    /// arrives while they run joins the queue the task is already emptying.
+    /// Every statement of every run still goes through the one database queue,
+    /// so the rows stay consistent.
     private func abarbeiten() {
         guard fortschritt.laeuft == false else { return }
         fortschritt.laeuft = true
+        let eingang = eingang
         Task {
-            while warteschlange.isEmpty == false {
-                let url = warteschlange.removeFirst()
-                inArbeit = url
-                let ergebnis = await eingang.verarbeiten(url)
-                inArbeit = nil
-                vermerken(ergebnis, fuer: url)
-                fortschritt.erledigt += 1
+            await withTaskGroup(of: (URL, Eingangsergebnis).self) { gruppe in
+                var offen = 0
+                while true {
+                    while offen < AppModell.gleichzeitig, warteschlange.isEmpty == false {
+                        let url = warteschlange.removeFirst()
+                        inArbeit.insert(url)
+                        gruppe.addTask { await (url, eingang.verarbeiten(url)) }
+                        offen += 1
+                    }
+                    guard let (url, ergebnis) = await gruppe.next() else { break }
+                    offen -= 1
+                    inArbeit.remove(url)
+                    vermerken(ergebnis, fuer: url)
+                    fortschritt.erledigt += 1
+                }
             }
             fortschritt = Fortschritt()
         }
@@ -174,6 +188,23 @@ final class AppModell {
         inspektorSichtbar = true
     }
 
+    /// The click on the symbol in the Bezahlt column. An open booking is
+    /// settled with one payment of the rest, a settled one loses its payments.
+    /// Part payments and refunds stay a matter for the inspector.
+    func zahlungUmschalten(_ buchung: Buchung) {
+        var neu = buchung
+        if buchung.zahlungsstand == .bezahlt {
+            neu.zahlungen = []
+        } else {
+            let offen = buchung.brutto - buchung.gezahlt
+            guard offen > .null else { return }
+            neu.zahlungen.append(
+                Zahlung(datum: .heute(), betrag: offen, richtung: buchung.richtung, geprueft: true)
+            )
+        }
+        speichern(neu)
+    }
+
     func bestaetigen(_ buchung: Buchung) {
         guard let id = buchung.id else { return }
         do {
@@ -216,6 +247,23 @@ final class AppModell {
         }
     }
 
+    func kiEinstellungen() -> KiEinstellungen {
+        do {
+            return try repository.kiEinstellungen()
+        } catch {
+            fehler = "\(error)"
+            return KiEinstellungen()
+        }
+    }
+
+    func kiEinstellungenSpeichern(_ einstellungen: KiEinstellungen) {
+        do {
+            try repository.kiEinstellungenSpeichern(einstellungen)
+        } catch {
+            fehler = "\(error)"
+        }
+    }
+
     func profilSpeichern(_ profil: Profil) {
         do {
             try repository.profilSpeichern(profil)
@@ -235,9 +283,8 @@ struct Fortschritt: Equatable {
         gesamt > 0
     }
 
-    /// The file being worked on right now, not the ones already done.
     var text: String {
-        "\(min(erledigt + 1, gesamt)) von \(gesamt)"
+        "\(erledigt) von \(gesamt) fertig"
     }
 }
 

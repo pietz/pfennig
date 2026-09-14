@@ -209,6 +209,19 @@ private func beispiel(
     #expect(try repository.dateien(zu: ["abc"]).isEmpty)
 }
 
+@Test func kiEinstellungenUeberstehenDenRundlauf() throws {
+    let repository = try Repository.imSpeicher()
+    // A fresh installation asks the cheap model with the documented default.
+    #expect(try repository.kiEinstellungen() == KiEinstellungen(modell: .luna, aufwand: .mittel, schnell: false))
+
+    let gewaehlt = KiEinstellungen(modell: .terra, aufwand: .sehrHoch, schnell: true)
+    try repository.kiEinstellungenSpeichern(gewaehlt)
+    #expect(try repository.kiEinstellungen() == gewaehlt)
+    #expect(try repository.einstellung("ki.modell") == "gpt-5.6-terra")
+    #expect(try repository.einstellung("ki.aufwand") == "xhigh")
+    #expect(try repository.einstellung("ki.schnell") == "true")
+}
+
 @Test func anfragenWerdenGestartetUndBeendet() throws {
     let repository = try Repository.imSpeicher()
     let id = try repository.anfrageStarten(dateiSha256: "abc", modell: "gpt-5")

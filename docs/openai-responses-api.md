@@ -435,6 +435,29 @@ has to be repeated on every turn:
 `output` is a plain string; a tool that fails answers with its error text there, and the model
 corrects from it. The loop ends with the response whose `output` holds no `function_call` any more.
 
+**Priority processing (`service_tier`).** Verified 2026-09-14 against
+https://developers.openai.com/api/docs/guides/priority-processing (the guide is titled "Fast mode"
+since the feature was renamed on 2026-07-30) and the flex-processing guide. It is a top-level
+request parameter, the same on Responses and Chat Completions:
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "service_tier": "priority",
+  "input": "..."
+}
+```
+
+Documented values: `"auto"` (use the project setting, which itself defaults to `default`),
+`"default"` (standard price and speed), `"flex"` (cheaper, slower, may be unavailable),
+`"priority"` and its newer alias `"fast"` (same behaviour on the gpt-5.6 family), plus an
+access-controlled `"ultrafast"` on gpt-5.6-sol. Fast mode costs about **twice** the standard rate
+(the guide's example: Sol at $8/$40 per 1M instead of $4/$20) in exchange for up to 2.5x faster and
+steadier latency. The **response echoes** `service_tier` with the tier that actually served the
+request, which can differ from the one asked for: a request downgraded because traffic ramped too
+fast comes back as `"default"` and is billed at standard rates. Pfennig sends `"priority"` only when
+the user ticks "Schnellere Verarbeitung" and omits the field otherwise.
+
 **Other knobs** (documented, not used by Pfennig): `tool_choice` accepts `"auto"` (default),
 `"required"`, `"none"` or `{"type": "function", "name": "..."}`; `parallel_tool_calls: false` limits
 a turn to at most one call. Pfennig leaves both at their defaults and simply answers every
@@ -461,3 +484,5 @@ a turn to at most one call. Pfennig leaves both at their defaults and simply ans
 - https://developers.openai.com/api/docs/guides/rate-limits
 - https://developers.openai.com/api/docs/guides/your-data
 - https://developers.openai.com/api/docs/guides/function-calling
+- https://developers.openai.com/api/docs/guides/priority-processing
+- https://developers.openai.com/api/docs/guides/flex-processing

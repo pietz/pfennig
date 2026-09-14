@@ -63,8 +63,6 @@ public struct Laufabbruch: Error, LocalizedError {
 /// One file, one run: the tool loop over the Responses API. The model is fixed
 /// in the code, there is no choice in the settings.
 public struct Agentenlauf: Sendable {
-    public static let modell = "gpt-5.6-luna"
-    public static let denkaufwand = "medium"
     public static let hoechstzahlWerkzeugaufrufe = 25
 
     let repository: Repository
@@ -108,11 +106,12 @@ public struct Agentenlauf: Sendable {
     /// Runs the loop and records it in `anfragen`, whatever the outcome.
     public func starten(_ datei: Dateieingabe) async throws -> Laufergebnis {
         let anleitung = try Anleitung.bauen(repository)
-        let anfrage = try repository.anfrageStarten(dateiSha256: datei.sha256, modell: Agentenlauf.modell)
+        let ki = try repository.kiEinstellungen()
+        let anfrage = try repository.anfrageStarten(dateiSha256: datei.sha256, modell: ki.modell.rawValue)
         var protokoll = Protokoll()
         var ergebnis = Laufergebnis()
         do {
-            try await schleife(datei, anleitung: anleitung, ergebnis: &ergebnis, protokoll: &protokoll)
+            try await schleife(datei, ki: ki, anleitung: anleitung, ergebnis: &ergebnis, protokoll: &protokoll)
             try repository.anfrageBeenden(
                 id: anfrage, status: .erfolg, eingabeTokens: protokoll.eingabeTokens,
                 ausgabeTokens: protokoll.ausgabeTokens, konversation: protokoll.alsJSON()
@@ -130,6 +129,7 @@ public struct Agentenlauf: Sendable {
 
     private func schleife(
         _ datei: Dateieingabe,
+        ki: KiEinstellungen,
         anleitung: String,
         ergebnis: inout Laufergebnis,
         protokoll: inout Protokoll
@@ -147,11 +147,15 @@ public struct Agentenlauf: Sendable {
 
         while true {
             var koerper: [String: Any] = [
-                "model": Agentenlauf.modell,
-                "reasoning": ["effort": Agentenlauf.denkaufwand],
+                "model": ki.modell.rawValue,
+                "reasoning": ["effort": ki.aufwand.rawValue],
                 "tools": [Agentenlauf.werkzeugbeschreibung],
                 "input": eingabe
             ]
+            if ki.schnell {
+                // OpenAI's priority processing, about twice the price.
+                koerper["service_tier"] = "priority"
+            }
             if let vorherigeAntwort {
                 koerper["previous_response_id"] = vorherigeAntwort
             }

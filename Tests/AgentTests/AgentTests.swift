@@ -103,7 +103,7 @@ private func eingabe() -> Dateieingabe {
     #expect(buchung.geprueftAm == nil)
 
     let anfrage = try #require(try repository.alleAnfragen().first)
-    #expect(anfrage.modell == Agentenlauf.modell)
+    #expect(anfrage.modell == Modell.luna.rawValue)
     #expect(anfrage.status == .erfolg)
     #expect(anfrage.eingabeTokens == 250)
     #expect(anfrage.ausgabeTokens == 50)
@@ -131,6 +131,8 @@ private func eingabe() -> Dateieingabe {
     #expect(erste["model"] as? String == "gpt-5.6-luna")
     #expect((erste["reasoning"] as? [String: Any])?["effort"] as? String == "medium")
     #expect(erste["previous_response_id"] as? String == nil)
+    // Priority processing is off unless the user asks for it.
+    #expect(erste["service_tier"] as? String == nil)
     let werkzeuge = try #require(erste["tools"] as? [[String: Any]])
     #expect(werkzeuge.count == 1)
     #expect(werkzeuge[0]["type"] as? String == "function")
@@ -146,6 +148,28 @@ private func eingabe() -> Dateieingabe {
     #expect(antwortteile[0]["type"] as? String == "function_call_output")
     #expect(antwortteile[0]["call_id"] as? String == "call_1")
     #expect((antwortteile[0]["output"] as? String)?.hasPrefix("ok") == true)
+}
+
+@Test func laufNimmtModellAufwandUndSchnellAusDenEinstellungen() async throws {
+    let repository = try Repository.imSpeicher()
+    try repository.kiEinstellungenSpeichern(KiEinstellungen(modell: .sol, aufwand: .hoch, schnell: true))
+    let skript = Skript([schlussantwort])
+    let lauf = try await Agentenlauf(
+        repository: repository,
+        werkzeug: Werkzeug(repository),
+        schluessel: "test",
+        transport: skript.transport
+    )
+    _ = try await lauf.starten(eingabe())
+
+    let koerper = try #require(
+        await skript.gesehen.first.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+    )
+    #expect(koerper["model"] as? String == "gpt-5.6-sol")
+    #expect((koerper["reasoning"] as? [String: Any])?["effort"] as? String == "high")
+    // OpenAI's priority processing, verified in docs/openai-responses-api.md.
+    #expect(koerper["service_tier"] as? String == "priority")
+    #expect(try repository.alleAnfragen().first?.modell == "gpt-5.6-sol")
 }
 
 @Test func laufMeldetEinenFehlerUndSchreibtIhnInDieAnfrage() async throws {
