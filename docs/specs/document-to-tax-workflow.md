@@ -4,7 +4,7 @@
 
 ## Ziel und Umfang
 
-Ziffer nimmt deutschen Freiberuflern und Einzelunternehmern mit EÜR und Ist-Versteuerung möglichst viel laufende Buchhaltungsarbeit ab. Belege und Zahlungen werden gemeinsam organisiert; daraus entstehen nachvollziehbare Steuervorbereitungen. Der Nutzer bearbeitet Ausnahmen statt jeden normalen Vorgang erneut zu bestätigen. Die angestrebten „90%“ alltäglicher Anwendungsfälle sind eine Produktrichtung, keine behauptete Messgröße.
+Pfennig nimmt deutschen Freiberuflern und Einzelunternehmern mit EÜR und Ist-Versteuerung möglichst viel laufende Buchhaltungsarbeit ab. Belege und Zahlungen werden gemeinsam organisiert; daraus entstehen nachvollziehbare Steuervorbereitungen. Der Nutzer bearbeitet Ausnahmen statt jeden normalen Vorgang erneut zu bestätigen. Die angestrebten „90%“ alltäglicher Anwendungsfälle sind eine Produktrichtung, keine behauptete Messgröße.
 
 Dieser Ausbau umfasst automatische Übernahme sicherer Fälle, Beleg-/Zahlungsabgleich, CSV- und PDF-Kontoauszüge, XRechnung/ZUGFeRD sowie UStVA-/EÜR-Vorbereitung mit Aufgaben auf Start. Regelbesteuerung und die bisherigen Kleinunternehmer-Fälle bleiben im Umfang.
 
@@ -14,7 +14,7 @@ Nicht enthalten sind Chat, Rechnungsstellung, direkte Bankanbindung, direkte Ste
 
 ### Ein Eingang, ein Vorgang
 
-PDFs, Bilder, CSV-Kontoauszüge und E-Rechnungen gelangen über denselben Drag-and-drop-Eingang in die Anwendung, auch als gemischte Dateiauswahl. Ziffer erkennt die Rolle des Dokuments, erhält das Original und zeigt Verarbeitung oder eine konkrete offene Frage. Nicht unterstützte und nicht lesbare Dateien werden nicht stillschweigend übersprungen.
+PDFs, Bilder, CSV-Kontoauszüge und E-Rechnungen gelangen über denselben Drag-and-drop-Eingang in die Anwendung, auch als gemischte Dateiauswahl. Pfennig erkennt die Rolle des Dokuments, erhält das Original und zeigt Verarbeitung oder eine konkrete offene Frage. Nicht unterstützte und nicht lesbare Dateien werden nicht stillschweigend übersprungen.
 
 Eine Rechnung kann vor der Zahlung eintreffen oder umgekehrt. Später eintreffende Informationen ergänzen den bestehenden Geschäftsvorgang. Bereits manuell erfasste Zahlungen werden beim Abgleich berücksichtigt. Wiederholte Dateien und überlappende Kontoauszüge dürfen keine zusätzlichen Einnahmen, Ausgaben oder Zahlungen erzeugen; tatsächlich verschiedene gleich hohe Zahlungen bleiben unterscheidbar.
 
@@ -38,15 +38,15 @@ Strukturierte Rechnungsdaten aus XRechnung in UBL/CII und aus eingebettetem ZUGF
 
 ### Steueraufgaben und Ausgabe
 
-Onboarding und Einstellungen erfassen den geltenden UStVA-Rhythmus: monatlich, quartalsweise oder keine regelmäßigen Voranmeldungen. Ziffer bestimmt die rechtliche Verpflichtung nicht eigenmächtig aus Umsätzen. Eine jährliche Umsatzsteuererklärung ist keine jährliche UStVA. Kleinunternehmer-Sonderfälle wie Reverse Charge bleiben auch ohne regelmäßige Voranmeldungen erkennbar.
+Onboarding und Einstellungen erfassen den geltenden UStVA-Rhythmus: monatlich, quartalsweise oder keine regelmäßigen Voranmeldungen. Pfennig bestimmt die rechtliche Verpflichtung nicht eigenmächtig aus Umsätzen. Eine jährliche Umsatzsteuererklärung ist keine jährliche UStVA. Kleinunternehmer-Sonderfälle wie Reverse Charge bleiben auch ohne regelmäßige Voranmeldungen erkennbar.
 
 Start verlinkt die zutreffenden periodischen Steueraufgaben und Jahresvorbereitung. Termine beruhen auf bekannten Verpflichtungen und zutreffenden Fristdaten; fehlende Angaben werden gezielt erfragt, nicht durch scheinbar sichere Termine ersetzt. Eine Aufgabe öffnet die konkrete Vorbereitung mit Zeitraum, berechneten Formularwerten und relevanten Ausnahmen, keine zweite dauerhafte Analyse-Seite.
 
-Alle relevanten gespeicherten Vorgänge werden automatisch berücksichtigt. Der Nutzer wählt nicht erneut die einzubeziehenden Buchungen aus. Ziffer bestimmt steuerlichen Zeitraum und Anteil nach den anwendbaren Regeln; Buchhaltungsbestand und steuerlicher Beitrag sind nicht identisch. Beispielsweise zählt eine unbezahlte Ausgangsrechnung unter Ist-Versteuerung noch nicht als vereinnahmter steuerpflichtiger Umsatz. Teilzahlungen tragen in ihren jeweiligen Zeiträumen bei. Jede Formularsumme ist auf Vorgänge und Zahlungen zurückführbar.
+Alle relevanten gespeicherten Vorgänge werden automatisch berücksichtigt. Der Nutzer wählt nicht erneut die einzubeziehenden Buchungen aus. Pfennig bestimmt steuerlichen Zeitraum und Anteil nach den anwendbaren Regeln; Buchhaltungsbestand und steuerlicher Beitrag sind nicht identisch. Beispielsweise zählt eine unbezahlte Ausgangsrechnung unter Ist-Versteuerung noch nicht als vereinnahmter steuerpflichtiger Umsatz. Teilzahlungen tragen in ihren jeweiligen Zeiträumen bei. Jede Formularsumme ist auf Vorgänge und Zahlungen zurückführbar.
 
 UStVA und EÜR verwenden eigene, geprüfte Berechnungen und jahresbezogene Formularzuordnungen, nicht die Start-Bruttosummen. Fehlende materielle Angaben, ungeklärte Steuerbehandlung und nicht unterstützte Jahreskorrekturen bleiben sichtbar; eine solche Ausgabe ist als unvollständiger Entwurf erkennbar. Auch ein leerer Zeitraum wird nachvollziehbar dargestellt, nicht mit fehlenden Daten oder aufgehobener Meldepflicht gleichgesetzt.
 
-Die erste Lieferung darf aus kopierbaren Formularwerten und nachvollziehbarer Ausgabe bestehen. Ein verifizierter UStVA-XML-Export zum manuellen ELSTER-Upload wird früh verfolgt, ist aber keine Voraussetzung für diese erste Lieferung. Ein EÜR-Dateiimport wird ohne Nachweis nicht versprochen. Ziffer übermittelt nicht selbst. Export bedeutet nur Vorbereitung; eine externe Abgabe darf nur nach Nutzerbestätigung als erledigt gelten und sperrt keine Buchungen.
+Die erste Lieferung darf aus kopierbaren Formularwerten und nachvollziehbarer Ausgabe bestehen. Ein verifizierter UStVA-XML-Export zum manuellen ELSTER-Upload wird früh verfolgt, ist aber keine Voraussetzung für diese erste Lieferung. Ein EÜR-Dateiimport wird ohne Nachweis nicht versprochen. Pfennig übermittelt nicht selbst. Export bedeutet nur Vorbereitung; eine externe Abgabe darf nur nach Nutzerbestätigung als erledigt gelten und sperrt keine Buchungen.
 
 ## Systemgrenzen und Bestand
 
@@ -68,4 +68,4 @@ Heute benötigen Importvorschläge Einzelbestätigung; Kontoauszugabgleich, E-Re
 
 Der Nutzer hat automatische Übernahme sicherer Fälle (Q1 A), CSV einschließlich PDF-Kontoauszügen (Q2 B) und eine erste Ausgabe ohne zwingenden XML-Export (Q3 A) ausdrücklich gewählt. Der gemeinsame Dokumenteneingang, Ausnahmen statt Routinebestätigungen, die Aufgaben auf Start und der Verzicht auf Chat sind festgelegte Produktrichtung.
 
-Fachliche Ausgangspunkte: [§18 UStG](https://www.gesetze-im-internet.de/ustg_1980/__18.html), die [Recherche zu Steuerberechnung und ELSTER](../research-user-workflow.md) und die [OpenAI-Dokumentation zu Dateieingaben](https://developers.openai.com/api/docs/guides/file-inputs). Die öffentliche ELSTER-Uploadmöglichkeit ist belegt, ein aktueller Ziffer-XML-Import hingegen noch nicht validiert.
+Fachliche Ausgangspunkte: [§18 UStG](https://www.gesetze-im-internet.de/ustg_1980/__18.html), die [Recherche zu Steuerberechnung und ELSTER](../research-user-workflow.md) und die [OpenAI-Dokumentation zu Dateieingaben](https://developers.openai.com/api/docs/guides/file-inputs). Die öffentliche ELSTER-Uploadmöglichkeit ist belegt, ein aktueller Pfennig-XML-Import hingegen noch nicht validiert.

@@ -1,6 +1,6 @@
-# Contributing to Ziffer
+# Contributing to Pfennig
 
-Ziffer welcomes focused bug fixes, tests, documentation, and features that fit its German, local-first bookkeeping scope.
+Pfennig welcomes focused bug fixes, tests, documentation, and features that fit its German, local-first bookkeeping scope.
 
 Before starting substantial work, open or comment on a GitHub issue so the product behavior can be agreed before implementation. The principles in [`AGENTS.md`](AGENTS.md) and the detailed rules in [`concept.md`](concept.md) guide scope decisions.
 

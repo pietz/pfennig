@@ -68,9 +68,9 @@ UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-S
 
 | Weg | Einschätzung |
 |---|---|
-| Formularnahe UStVA-/EÜR-Übertragungshilfe | **Empfohlener Einstieg.** Ziffer berechnet und erklärt; Nutzer prüft und überträgt in Mein ELSTER |
+| Formularnahe UStVA-/EÜR-Übertragungshilfe | **Empfohlener Einstieg.** Pfennig berechnet und erklärt; Nutzer prüft und überträgt in Mein ELSTER |
 | Kopierbare Werte, druckbarer Bericht/PDF, CSV | Sinnvoll für Übertragung, eigene Unterlagen oder Steuerberatung; nicht automatisch ein akzeptiertes ELSTER-Importformat |
-| UStVA-XML zum manuellen Hochladen | **Früher, begrenzter Machbarkeitstest.** Öffentliche Anleitung enthält Nutzdatenstruktur, Beispiel und Zeichensatz; vollständige Jahresschemata werden in die ERiC-Dokumentation verwiesen. Kein aktueller Ziffer-Import validiert; ohne Registrierung prüfen, sonst Übertragungshilfe beibehalten |
+| UStVA-XML zum manuellen Hochladen | **Früher, begrenzter Machbarkeitstest.** Öffentliche Anleitung enthält Nutzdatenstruktur, Beispiel und Zeichensatz; vollständige Jahresschemata werden in die ERiC-Dokumentation verwiesen. Kein aktueller Pfennig-Import validiert; ohne Registrierung prüfen, sonst Übertragungshilfe beibehalten |
 | EÜR-Dateiimport | Auf der geprüften Formularseite kein entsprechender externer Import dokumentiert; nicht versprechen |
 | Direkte Übermittlung mit ERiC | Lokale C-Bibliothek möglich, aber Entwicklerregistrierung/Hersteller-ID erforderlich; das ist unabhängig vom persönlichen ELSTER-Zugang |
 

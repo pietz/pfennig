@@ -10,7 +10,7 @@ The maintainer will acknowledge the report, investigate it, and coordinate discl
 
 ## Supported versions
 
-Ziffer is pre-1.0. Security fixes are made on the latest release and `main`; older builds are not maintained separately.
+Pfennig is pre-1.0. Security fixes are made on the latest release and `main`; older builds are not maintained separately.
 
 ## Scope
 

@@ -1,6 +1,6 @@
-# Releasing Ziffer for macOS
+# Releasing Pfennig for macOS
 
-Ziffer will initially be distributed outside the Mac App Store as a Developer ID signed and Apple-notarized ZIP. Release credentials remain in the local macOS Keychain and are never passed through environment files or committed to the repository.
+Pfennig will initially be distributed outside the Mac App Store as a Developer ID signed and Apple-notarized ZIP. Release credentials remain in the local macOS Keychain and are never passed through environment files or committed to the repository.
 
 ## One-time setup
 
@@ -12,7 +12,7 @@ xcrun notarytool store-credentials "ziffer-notary" \
   --team-id "34MWWCL4H2"
 ```
 
-Use an app-specific Apple Account password when prompted. The resulting Keychain item is referenced only by the local profile name `ziffer-notary`.
+Use an app-specific Apple Account password when prompted. The resulting Keychain item is referenced only by the local profile name `ziffer-notary`. That name predates the rename and is kept so the existing local credentials keep working; set `NOTARY_PROFILE` to use a differently named profile.
 
 ## Build and notarize
 
@@ -33,7 +33,7 @@ The script:
 - submits a temporary ZIP to Apple and waits for `Accepted`
 - staples and validates the notarization ticket
 - runs a Gatekeeper assessment
-- creates `dist/Ziffer-<version>-macOS.zip` with the app, GPLv3 license, privacy notice, and its SHA-256 file
+- creates `dist/Pfennig-<version>-macOS.zip` with the app, GPLv3 license, privacy notice, and its SHA-256 file
 
 Use `scripts/release.sh --build-only` to test release signing without contacting Apple's notarization service. Override `TEAM_ID`, `SIGNING_IDENTITY`, or `NOTARY_PROFILE` in the environment when another authorized maintainer performs a release.
 

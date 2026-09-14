@@ -116,24 +116,24 @@ Cross-cutting: DATEV/SKR03-04 export and direct ELSTER submission are **category
 
 ---
 
-## 5. Backlog Candidates for Ziffer
+## 5. Backlog Candidates for Pfennig
 
-Given Ziffer is local-first, macOS-native, single-user, document-driven (not invoice-first), and explicitly out to avoid ERP scope (concept.md §2, §3), the following ideas are worth stealing, each with rationale and rough size:
+Given Pfennig is local-first, macOS-native, single-user, document-driven (not invoice-first), and explicitly out to avoid ERP scope (concept.md §2, §3), the following ideas are worth stealing, each with rationale and rough size:
 
-- **AI receipt field extraction (date/vendor/amount/VAT rate)** — Accountable's pattern of pre-filling the *VAT rate* by expense type, not just amount/vendor, is a useful reference. Ziffer keeps provenance internal rather than adding field-level provenance badges. **S**
-- **GoBD claim language and mechanics (hash-on-save, read-only once linked, audit log)** — Ziffer already has a GoBD posture (§5.9); Accountable's public wording (hash detection, storno-only corrections) is a good template for our own documentation and for what "immutable once posted" should mean in the UI. **S**
+- **AI receipt field extraction (date/vendor/amount/VAT rate)** — Accountable's pattern of pre-filling the *VAT rate* by expense type, not just amount/vendor, is a useful reference. Pfennig keeps provenance internal rather than adding field-level provenance badges. **S**
+- **GoBD claim language and mechanics (hash-on-save, read-only once linked, audit log)** — Pfennig already has a GoBD posture (§5.9); Accountable's public wording (hash detection, storno-only corrections) is a good template for our own documentation and for what "immutable once posted" should mean in the UI. **S**
 - **Deadline/reminder surfacing for UStVA and ESt** — a lightweight local notification of upcoming filing deadlines fits an AI-first, low-friction app without expanding scope into filing itself. **S**
 - **"Ask the AI why" tax-context chat scoped to the user's own data** — not a general chat interface (explicit non-goal, §3, §8.1), but a narrow, read-only "explain this categorization/this VAT treatment" affordance on a transaction could deliver similar user trust without becoming a chatbot-first product. **M**
 - **Recurring-expense / subscription detection** — Accountable auto-recognizes repeat vendors; useful for reducing review load on SaaS/telecom expenses, aligns with "review exceptions, be done" north star (§50). **M**
-- **Duplicate-receipt detection** — already implicitly needed for Ziffer's document/transaction linking (§25 Duplicate Detection exists); Accountable's approach (flagging near-identical receipts) validates this is worth prioritizing early. **S**
-- **DATEV/SKR mapping as a future adapter, kept out of the core category model** — Ziffer's concept.md already anticipates this (§2.2, §3: "future adapter maps canonical categories to accounts"); Accountable's own DATEV export being widely reported as buggy is a cautionary tale to get the mapping right rather than ship it half-baked. **L**
-- **Split one document across multiple categories/allocations** — Accountable supports splitting a single receipt line across categories; Ziffer's `bookkeeping_allocations` table (§17.6) suggests this is already modeled, worth confirming the UI supports it as cleanly as this. **S**
+- **Duplicate-receipt detection** — already implicitly needed for Pfennig's document/transaction linking (§25 Duplicate Detection exists); Accountable's approach (flagging near-identical receipts) validates this is worth prioritizing early. **S**
+- **DATEV/SKR mapping as a future adapter, kept out of the core category model** — Pfennig's concept.md already anticipates this (§2.2, §3: "future adapter maps canonical categories to accounts"); Accountable's own DATEV export being widely reported as buggy is a cautionary tale to get the mapping right rather than ship it half-baked. **L**
+- **Split one document across multiple categories/allocations** — Accountable supports splitting a single receipt line across categories; Pfennig's `bookkeeping_allocations` table (§17.6) suggests this is already modeled, worth confirming the UI supports it as cleanly as this. **S**
 
-**Do not copy** (conflicts with Ziffer's explicit non-goals, §3):
-- Invoice creation, quotes, and recurring/installment invoicing as a product pillar — explicit non-goal; Ziffer is transaction/document-first, not an invoicing tool.
-- Bundled business bank account (Swan-powered) — direct bank connections and payment features are out of scope (§3: "Direct bank account connection (PSD2/FinTS)"); Ziffer only imports statement files.
+**Do not copy** (conflicts with Pfennig's explicit non-goals, §3):
+- Invoice creation, quotes, and recurring/installment invoicing as a product pillar — explicit non-goal; Pfennig is transaction/document-first, not an invoicing tool.
+- Bundled business bank account (Swan-powered) — direct bank connections and payment features are out of scope (§3: "Direct bank account connection (PSD2/FinTS)"); Pfennig only imports statement files.
 - Primary AI chat / "KI Steuerberater" as a standalone product surface — explicit non-goal (§3: "Primary chat interface", §8.1); any AI-explains-data affordance must stay secondary to the transaction table.
-- Direct ELSTER submission — explicit non-goal for V1 (§2.2, §3); Ziffer should not attempt to become a filing channel.
+- Direct ELSTER submission — explicit non-goal for V1 (§2.2, §3); Pfennig should not attempt to become a filing channel.
 - Multi-tier subscription upsell structure gating core bookkeeping features (e.g. expense limits on a "free" tier) — inconsistent with a locally-owned, single-purchase or simple-license product; also a recurring source of the "hidden paywall" complaints seen in reviews.
 - Steuerberater referral marketplace / a-la-carte advisor billing — business-model territory unrelated to the product's scope, and a distraction from the core "drop documents, review, done" loop.
 - GmbH/UG double-entry and Soll-Versteuerung support — explicitly out of scope for V1 (concept.md §2.1, §2.2); resist scope creep even though competitors treat it as a growth path.

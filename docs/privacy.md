@@ -1,10 +1,10 @@
 # Privacy and data flow
 
-Ziffer is local-first. It has no Ziffer account, hosted backend, analytics, advertising SDK, or telemetry.
+Pfennig is local-first. It has no Pfennig account, hosted backend, analytics, advertising SDK, or telemetry.
 
 ## Stored on the Mac
 
-The selected Ziffer archive contains:
+The selected Pfennig archive contains:
 
 - the SQLite bookkeeping database
 - imported original documents
@@ -15,7 +15,7 @@ The OpenAI API key is stored in the macOS Keychain. It is not written to the arc
 
 ## Sent to OpenAI
 
-Ziffer contacts OpenAI only when the user explicitly imports a PDF or image for AI extraction. That request contains:
+Pfennig contacts OpenAI only when the user explicitly imports a PDF or image for AI extraction. That request contains:
 
 - the imported document contents
 - business-profile context: name, optional legal name, country, optional VAT ID, VAT status, and accounting method
@@ -31,8 +31,8 @@ Browsing, editing, and saving existing bookkeeping data does not require an inte
 
 ## File access
 
-Ziffer reads documents selected or dropped by the user and copies them into the local archive. The current version does not connect directly to bank accounts or synchronize the archive to a Ziffer cloud service.
+Pfennig reads documents selected or dropped by the user and copies them into the local archive. The current version does not connect directly to bank accounts or synchronize the archive to a Pfennig cloud service.
 
 ## Removing data
 
-Bookkeeping and documents remain under the user's control in the local archive folder. Removing the API key from Ziffer's settings deletes it from the macOS Keychain. Data already sent to OpenAI is governed by the API account's applicable retention controls.
+Bookkeeping and documents remain under the user's control in the local archive folder. Removing the API key from Pfennig's settings deletes it from the macOS Keychain. Data already sent to OpenAI is governed by the API account's applicable retention controls.

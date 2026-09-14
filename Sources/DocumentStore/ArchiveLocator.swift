@@ -88,7 +88,9 @@ public struct ArchiveLocator {
         let current = defaultArchiveURL()
         guard isDirectory(legacy) else { return .notNeeded }
         if isDirectory(current) {
-            Self.logger.warning("Both a Pfennig and a Ziffer archive exist; using the Pfennig archive and keeping the old folder.")
+            Self.logger.warning(
+                "Both a Pfennig and a Ziffer archive exist; using the Pfennig archive and keeping the old folder."
+            )
             return .bothPresent(legacy: legacy, current: current)
         }
         do {

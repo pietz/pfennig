@@ -1,15 +1,15 @@
 # Pfennig
 
-Previously **Ziffer**. The repository has moved to `pietz/pfennig`; the application, build targets and local archive still use the old name until a coordinated rename. See the [project handoff](docs/status.md).
+Previously **Ziffer**. The application, build targets, bundle identifier and local archive now use the new name; an existing `Ziffer` archive folder is moved automatically on first launch.
 
-Ziffer is a native, local-first macOS bookkeeping app for German freelancers and sole proprietors using EÜR.
+Pfennig is a native, local-first macOS bookkeeping app for German freelancers and sole proprietors using EÜR.
 
 > Belege ablegen. Ausnahmen prüfen. Fertig.
 
-Ziffer keeps the bookkeeping database and original documents in an archive on your Mac. There is no Ziffer account, hosted backend, telemetry, or bank connection. Optional document extraction uses your own OpenAI API key and always creates a proposal for review.
+Pfennig keeps the bookkeeping database and original documents in an archive on your Mac. There is no Pfennig account, hosted backend, telemetry, or bank connection. Optional document extraction uses your own OpenAI API key and always creates a proposal for review.
 
 > [!WARNING]
-> Ziffer is pre-1.0 software. It supports bookkeeping workflows, not tax advice, certified tax filing, or a replacement for a Steuerberater.
+> Pfennig is pre-1.0 software. It supports bookkeeping workflows, not tax advice, certified tax filing, or a replacement for a Steuerberater.
 
 ## Current capabilities
 
@@ -29,13 +29,13 @@ The intentionally narrow initial audience and product principles are documented 
 
 ## Privacy
 
-Existing bookkeeping remains fully usable offline. Ziffer sends data to OpenAI only when you explicitly import a document for AI extraction. See [`docs/privacy.md`](docs/privacy.md) for the exact data flow.
+Existing bookkeeping remains fully usable offline. Pfennig sends data to OpenAI only when you explicitly import a document for AI extraction. See [`docs/privacy.md`](docs/privacy.md) for the exact data flow.
 
 ## Install
 
 Signed and notarized builds will be published through [GitHub Releases](https://github.com/pietz/pfennig/releases). The first public binary has not been released yet.
 
-Until then, build Ziffer from source.
+Until then, build Pfennig from source.
 
 ## Build from source
 
@@ -60,14 +60,14 @@ scripts/test.sh    # Run the Swift package test suites
 scripts/lint.sh    # Format Swift sources, if SwiftFormat is installed
 ```
 
-`Ziffer.xcodeproj` is generated from [`project.yml`](project.yml) and is intentionally not committed.
+`Pfennig.xcodeproj` is generated from [`project.yml`](project.yml) and is intentionally not committed.
 
 ## Archive layout
 
-On first launch, Ziffer creates its archive at `~/Library/Application Support/Ziffer`:
+On first launch, Pfennig creates its archive at `~/Library/Application Support/Pfennig`. An archive left behind by the earlier Ziffer version is moved to that location once, without copying or deleting anything:
 
 ```text
-Ziffer/
+Pfennig/
 ├── bookkeeping.sqlite
 ├── Documents/
 ├── Exports/
@@ -90,4 +90,4 @@ Security vulnerabilities should be reported privately as described in [`SECURITY
 
 Copyright © 2026 Paul-Louis Pröve.
 
-Ziffer is free software licensed under the [GNU General Public License, version 3](LICENSE).
+Pfennig is free software licensed under the [GNU General Public License, version 3](LICENSE).

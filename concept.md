@@ -168,15 +168,15 @@ The document's own `tax_amount` is 0; `self_assessed_vat` is computed by Swift, 
 
 For **income** with `reverseCharge` (EU B2B service to a customer with a valid VAT ID): no VAT charged, `customer_vat_id` required (soft warning if missing). ZM reporting is a future feature; V1 only tags these transactions so they can be reported later.
 
-For a **Kleinunternehmer purchasing a typical foreign B2B service**, Ziffer computes the self-assessed VAT but sets deductible input VAT to zero. Detailed acquisition-threshold rules for EU goods remain outside the automatic rule set and require review.
+For a **Kleinunternehmer purchasing a typical foreign B2B service**, Pfennig computes the self-assessed VAT but sets deductible input VAT to zero. Detailed acquisition-threshold rules for EU goods remain outside the automatic rule set and require review.
 
 ## 5.4.1 Kleinunternehmer (§19 UStG)
 
-Ziffer supports the common bookkeeping cases, not automated eligibility or regime administration:
+Pfennig supports the common bookkeeping cases, not automated eligibility or regime administration:
 
 - Domestic income is treated as `smallBusiness` rather than ordinary taxable income.
 - VAT shown by a domestic supplier remains part of the document facts, but deductible input VAT is zero and the gross amount is allocated as cost.
-- An explicit §19 indication on a domestic supplier invoice may produce `smallBusiness`; Ziffer never invents input VAT from its gross amount.
+- An explicit §19 indication on a domestic supplier invoice may produce `smallBusiness`; Pfennig never invents input VAT from its gross amount.
 - Contradictory VAT on Kleinunternehmer income remains visible and produces a review warning.
 
 Turnover thresholds, waivers, status changes, mixed activities, invoice issuance, and filing automation are deferred.
@@ -1198,10 +1198,10 @@ The UI derives one compact display status. Filters use `v_transaction_status`.
 
 # 20. Local File Layout
 
-The app creates its archive at `~/Library/Application Support/Ziffer`. A future explicit move/export workflow may make the archive portable; onboarding does not begin with a folder picker.
+The app creates its archive at `~/Library/Application Support/Pfennig`. An archive created by the earlier Ziffer version is moved there once on launch; nothing is copied or deleted, and if both folders exist the Pfennig one is used. A future explicit move/export workflow may make the archive portable; onboarding does not begin with a folder picker.
 
 ```text
-Ziffer/
+Pfennig/
 ├── bookkeeping.sqlite
 ├── Documents/
 │   ├── 6e2….pdf
@@ -1358,7 +1358,7 @@ Proposed task-specific window or sheet, not another permanent dashboard. Current
 
 # 30. Tax Submission Strategy
 
-Correct period-specific contributions → verified form-year mappings → user-driven handoff. Provide copyable values and a traceable report first. Investigate a local UStVA XML file for manual Mein ELSTER upload early, as a bounded separate feasibility test without manufacturer registration. Public upload instructions exist, but current Ziffer-generated XML has not been validated; analogous EÜR file import is unverified. No direct ERiC transmission, hosted gateway or taxpayer-certificate handling. UStVA preparation is not the annual VAT return; EÜR is not the complete income-tax return.
+Correct period-specific contributions → verified form-year mappings → user-driven handoff. Provide copyable values and a traceable report first. Investigate a local UStVA XML file for manual Mein ELSTER upload early, as a bounded separate feasibility test without manufacturer registration. Public upload instructions exist, but current Pfennig-generated XML has not been validated; analogous EÜR file import is unverified. No direct ERiC transmission, hosted gateway or taxpayer-certificate handling. UStVA preparation is not the annual VAT return; EÜR is not the complete income-tax return.
 
 ---
 
@@ -1400,14 +1400,14 @@ The app is fully usable offline for existing data. If analysis fails: keep the d
 Repo/
 ├── project.yml                 ← XcodeGen source of truth for the app target
 ├── Package.swift               ← all non-UI modules as SwiftPM targets
-├── Ziffer.xcodeproj/           ← generated, git-ignored
+├── Pfennig.xcodeproj/          ← generated, git-ignored
 ├── App/                        ← app target sources (SwiftUI), Info.plist, entitlements, assets
 ├── Sources/                    ← SwiftPM module sources (see 37)
 ├── Tests/                      ← Swift Testing
 ├── Fixtures/                   ← synthetic documents + expected extractions + recorded model responses
 ├── scripts/
 │   ├── bootstrap.sh            ← brew install xcodegen, swiftformat; xcodegen generate
-│   ├── build.sh                ← xcodebuild -project … -scheme Ziffer -configuration Debug build
+│   ├── build.sh                ← xcodebuild -project … -scheme Pfennig -configuration Debug build
 │   ├── run.sh                  ← builds and opens the .app
 │   ├── test.sh                 ← swift test (packages) + xcodebuild test (app target if UI tests)
 │   └── lint.sh
@@ -1643,7 +1643,7 @@ Do not revisit unless implementation evidence proves them wrong:
 
 # 52. Implementation Status
 
-The original repository-bootstrap task is complete. The app target and scheme are named `Ziffer`; current implementation state and next priorities are maintained in [`docs/status.md`](docs/status.md) and GitHub Issues.
+The original repository-bootstrap task is complete. The app target and scheme are named `Pfennig`; current implementation state and next priorities are maintained in [`docs/status.md`](docs/status.md) and GitHub Issues.
 
 ---
 

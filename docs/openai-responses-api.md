@@ -1,4 +1,4 @@
-# OpenAI Responses API — Reference Notes for Ziffer
+# OpenAI Responses API — Reference Notes for Pfennig
 
 Researched from the official docs at https://developers.openai.com/api/docs on 2026-09-12.
 Scope matches concept.md sections 10, 13, 41, 42: direct HTTPS calls (no SDK) from Swift, PDF/image
@@ -32,7 +32,7 @@ Content-Type: application/json
 ### PDF as inline file input
 
 Three ways to submit a PDF: base64 inline (`file_data`), a previously uploaded file (`file_id` from
-`/v1/files`), or `file_url`. For Ziffer (no server-side file storage), use inline base64:
+`/v1/files`), or `file_url`. For Pfennig (no server-side file storage), use inline base64:
 
 ```json
 {
@@ -63,9 +63,9 @@ included regardless of `detail`.
 
 **Size/page limits (as documented by OpenAI):** each file must be < 50 MB; the combined size of all
 files in one request must also be < 50 MB. No explicit maximum page count for PDFs is documented by
-OpenAI — Ziffer's own ≤20-page default (concept.md 10.4) is an app-level choice, not an API limit.
+OpenAI — Pfennig's own ≤20-page default (concept.md 10.4) is an app-level choice, not an API limit.
 Spreadsheet-type files (.xlsx/.csv when sent as a file rather than parsed locally) are capped at the
-first 1,000 rows per sheet — not relevant to Ziffer's PDF/image path but worth knowing since it also
+first 1,000 rows per sheet — not relevant to Pfennig's PDF/image path but worth knowing since it also
 uses `input_file`.
 
 ### Image as inline data URL
@@ -83,7 +83,7 @@ note that HEIC must be converted locally to JPEG before upload (HEIC is not acce
 `detail` accepts `low`, `high`, `original` (best for OCR/spatially sensitive tasks), or `auto`
 (default). Limits: request payload up to 512 MB total, up to 1,500 images per request, up to 30,000
 "patches" per image (model-dependent internal resizing), and a model-specific max dimension between
-2,048 and 65,535 px. None of these are binding for Ziffer's single-document-per-request use case.
+2,048 and 65,535 px. None of these are binding for Pfennig's single-document-per-request use case.
 
 ---
 
@@ -149,7 +149,7 @@ Request shape:
   do not hardcode assumed limits — validate empirically with the production `ExtractionSchema.swift`
   and fall back to flattening/splitting the schema if the API rejects it as too large/deep.
 
-This confirms Ziffer's plan in concept.md 10.6 (all-required + `anyOf`-with-null for optionals) is the
+This confirms Pfennig's plan in concept.md 10.6 (all-required + `anyOf`-with-null for optionals) is the
 correct and only supported pattern for strict Structured Outputs.
 
 ---
@@ -222,7 +222,7 @@ generation).
 
 Caveat: third-party trackers (OpenRouter, CometAPI, etc.) report these same figures as *promotional*
 pricing in effect since mid/late 2026 (list price before the promotion was materially higher, e.g. Sol
-at $5/$30). Since Ziffer takes the user's own API key and pricing can change, do not hardcode these
+at $5/$30). Since Pfennig takes the user's own API key and pricing can change, do not hardcode these
 numbers into UI cost estimates without a "prices as of" disclaimer and an easy way to update them; the
 official pricing page above is the authoritative live source to re-check periodically, not this doc.
 
@@ -256,12 +256,12 @@ a message item), and the docs explicitly warn against that assumption. Extract t
 ```
 
 **Refusals:** a content item can instead be `{"type": "refusal", "refusal": "<reason text>"}` in place
-of `output_text`. Ziffer's extraction call must check for this content-item type explicitly and
+of `output_text`. Pfennig's extraction call must check for this content-item type explicitly and
 surface it as a failed extraction rather than trying to JSON-parse it as the schema.
 
 **Status / incomplete detection:** `status` is one of `in_progress`, `completed`, `incomplete`,
 `failed`. When `status == "incomplete"`, `incomplete_details.reason` explains why (e.g.
-`"max_output_tokens"`, or content-filter related reasons). Ziffer should treat any non-`completed`
+`"max_output_tokens"`, or content-filter related reasons). Pfennig should treat any non-`completed`
 status as "extraction did not succeed," not attempt to salvage partial JSON.
 
 **Usage object fields:**
@@ -291,7 +291,7 @@ https://developers.openai.com/api/docs/guides/rate-limits
 - `503` — "Model temporarily overloaded" (insufficient capacity)
 
 **Non-retryable errors** — surface to the user, do not blindly retry:
-- `401` — invalid/revoked API key, wrong org, or IP not on allowlist (all directly relevant: Ziffer
+- `401` — invalid/revoked API key, wrong org, or IP not on allowlist (all directly relevant: Pfennig
   stores a user-supplied key in Keychain per concept.md 10.5, so a bad/revoked key must produce a
   clear "check your API key" UI state, not a silent retry loop)
 - `403` — country/region not supported
@@ -317,7 +317,7 @@ worsen throttling.
 | `x-ratelimit-reset-tokens` | time until token window resets |
 | `x-ratelimit-limit-project-tokens` / `-remaining-project-tokens` / `-reset-project-tokens` | same, scoped to the project rather than the key |
 
-For Ziffer (single-user desktop app, one document at a time in the common case, but batch-import of
+For Pfennig (single-user desktop app, one document at a time in the common case, but batch-import of
 many invoices is a real scenario per concept.md 12), a simple sequential import queue that reads
 `x-ratelimit-remaining-requests`/`-tokens` and throttles proactively, plus honors `Retry-After` on
 429/503 with exponential backoff and jitter, is sufficient — no need for a token-bucket scheduler in
@@ -331,31 +331,31 @@ Source: https://developers.openai.com/api/docs/guides/your-data
 
 - **Training:** "data sent to the OpenAI API is not used to train or improve OpenAI models" by
   default, and has been since March 1, 2023; opting in to share data for training requires explicit,
-  affirmative action by the account owner — not something Ziffer would ever trigger on the user's
+  affirmative action by the account owner — not something Pfennig would ever trigger on the user's
   behalf.
 - **Retention (abuse monitoring):** prompts/responses/derived metadata are retained up to **30 days**
   for abuse-monitoring purposes by default, unless a legal obligation requires longer.
 - **Retention (application state):** the Responses/Chat Completions endpoints themselves are
   effectively stateless — no persistent storage of the conversation beyond the abuse-monitoring
   window — with narrow exceptions: audio outputs retained ~1 hour, prompt-cache artifacts up to ~24
-  hours. (Ziffer does not use Assistants/threads/vector stores, whose retention rules differ and are
+  hours. (Pfennig does not use Assistants/threads/vector stores, whose retention rules differ and are
   not relevant here.)
 - **Zero Data Retention (ZDR):** eligible/approved organizations can have customer content excluded
   even from the 30-day abuse-monitoring logs; this requires an approval process with OpenAI and is an
   org-level setting, not something the app can toggle per-request. Not attainable for individual
-  users bringing their own consumer API key, so Ziffer's privacy doc should describe the *default*
+  users bringing their own consumer API key, so Pfennig's privacy doc should describe the *default*
   (30-day abuse-log retention, no training use) rather than assume ZDR.
 - **CSAM-detection exception:** image/file inputs may be retained for CSAM detection regardless of
   the retention settings above — worth a one-line disclosure in docs/privacy.md since invoices are
   images/PDFs.
 - Third-party tool integrations (MCP servers, code interpreter, etc.) have separate data-handling
-  terms — not applicable, since Ziffer's V1 makes no tool calls (concept.md 10.2, 11).
+  terms — not applicable, since Pfennig's V1 makes no tool calls (concept.md 10.2, 11).
 
-**Suggested one-paragraph summary for docs/privacy.md:** "Ziffer sends document images/PDFs and
+**Suggested one-paragraph summary for docs/privacy.md:** "Pfennig sends document images/PDFs and
 extracted-context text to OpenAI's API using your own API key. Per OpenAI's data policy, this data is
 not used to train OpenAI's models and is retained by OpenAI for up to 30 days for abuse monitoring
 before deletion (longer only if legally required); OpenAI may also retain image/file inputs
-specifically for CSAM detection. Ziffer does not store your API key anywhere except the macOS
+specifically for CSAM detection. Pfennig does not store your API key anywhere except the macOS
 Keychain, and does not run any of its own servers."
 
 ---

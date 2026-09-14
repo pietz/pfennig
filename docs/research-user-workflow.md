@@ -10,7 +10,7 @@ Private Belegqualitätstests übernimmt der Nutzer separat. Sie bleiben wichtig 
 
 ## 1. Welcher Nutzeraufwand verschwindet?
 
-| Heute noch beim Nutzer | Nächster sinnvoller Schritt in Ziffer |
+| Heute noch beim Nutzer | Nächster sinnvoller Schritt in Pfennig |
 |---|---|
 | Buchungen für die UStVA zeitlich und steuerlich gruppieren, summieren und in Felder übertragen | Zeitraum wählen, Ausnahmen bearbeiten, Formularwerte mit nachvollziehbaren Einzelbeträgen erhalten |
 | Jede Zahlung einzeln erfassen und mit Belegen vergleichen | Einen Kontoauszug importieren, eindeutige Zuordnungen bestätigen, nur die übrigen Bewegungen klären |
@@ -18,7 +18,7 @@ Private Belegqualitätstests übernimmt der Nutzer separat. Sie bleiben wichtig 
 | Jahresausgaben und Einnahmen für die EÜR nachrechnen | Zahlungsbezogene Jahresauswertung mit Formularpositionen und klar benannten Ergänzungen |
 | Strukturierte Rechnungsdaten erneut abtippen oder per KI auslesen lassen | XML lokal lesen und durch denselben prüfbaren Buchungsvorschlag führen |
 
-Wettbewerber zeigen den Wert der gesamten Kette: Vorbereitung, Prüfung einzelner Summen, Übergabe/Abgabe und anschließende Zahlung. Nicht jedes Glied muss in Ziffer automatisiert sein. [Lexware UStVA](https://help.lexware.de/de-form/articles/548028-wie-mache-ich-meine-umsatzsteuer-voranmeldung) und [sevdesk UStVA](https://hilfe.sevdesk.de/de/articles/9310598-umsatzsteuervoranmeldung-ustva) beschreiben diese Abläufe. Lexware trennt seine [EÜR-Auswertung](https://help.lexware.de/de-form/articles/548064-die-neue-einnahmenuberschussrechnung-in-lexware-office) von der [Übergabe an smartsteuer](https://help.lexware.de/de-form/articles/548760-wie-ubertrage-ich-meine-daten-aus-lexware-office-an-smartsteuer). Das sind Workflow-Beispiele, keine steuerlichen Rechtsquellen.
+Wettbewerber zeigen den Wert der gesamten Kette: Vorbereitung, Prüfung einzelner Summen, Übergabe/Abgabe und anschließende Zahlung. Nicht jedes Glied muss in Pfennig automatisiert sein. [Lexware UStVA](https://help.lexware.de/de-form/articles/548028-wie-mache-ich-meine-umsatzsteuer-voranmeldung) und [sevdesk UStVA](https://hilfe.sevdesk.de/de/articles/9310598-umsatzsteuervoranmeldung-ustva) beschreiben diese Abläufe. Lexware trennt seine [EÜR-Auswertung](https://help.lexware.de/de-form/articles/548064-die-neue-einnahmenuberschussrechnung-in-lexware-office) von der [Übergabe an smartsteuer](https://help.lexware.de/de-form/articles/548760-wie-ubertrage-ich-meine-daten-aus-lexware-office-an-smartsteuer). Das sind Workflow-Beispiele, keine steuerlichen Rechtsquellen.
 
 ## 2. ELSTER: was nachgewiesen ist und was nicht
 
@@ -29,10 +29,10 @@ Die [öffentliche ELSTER-Uploadanleitung](https://www.elster.de/eportal/helpGlob
 - XML-Upload für alle angebotenen UStVA-Jahresversionen; die [Formularseite](https://www.elster.de/eportal/formulare-leistungen/alleformulare/ustvaeru) bietet auch 2026 an.
 - Nur der Inhalt der `Nutzdaten` wird hochgeladen, nicht der komplette ELSTER-Übermittlungsumschlag.
 - Öffentliches Strukturbeispiel mit `Anmeldungssteuern`, Namespace und Version für 2023 sowie Zeichensatz ISO-8859-15.
-- `kz83` wird als manuell eingegebener Wert übernommen. Einige andere Felder werden ausdrücklich nicht importiert. Dateiupload ersetzt daher weder Ziffers Berechnung noch die Kontrolle im Portal.
+- `kz83` wird als manuell eingegebener Wert übernommen. Einige andere Felder werden ausdrücklich nicht importiert. Dateiupload ersetzt daher weder Pfennigs Berechnung noch die Kontrolle im Portal.
 - Vollständige Schemata, Schemadokumentation und jährliche Plausibilitätsregeln verweist ELSTER in das ERiC-Dokumentationspaket.
 
-**Folgerung:** Ein rein lokaler Dateiexport ohne eingebundene ERiC-Bibliothek ist ein plausibler Weg. Die öffentliche Uploadanleitung nennt keine erforderliche Hersteller-ID für diesen Weg. Das ist aber noch kein Beweis, dass ein von Ziffer erzeugter aktueller Datensatz akzeptiert wird. Das 2023-Beispiel ist unvollständig und kein geprüfter 2026-Formatvertrag.
+**Folgerung:** Ein rein lokaler Dateiexport ohne eingebundene ERiC-Bibliothek ist ein plausibler Weg. Die öffentliche Uploadanleitung nennt keine erforderliche Hersteller-ID für diesen Weg. Das ist aber noch kein Beweis, dass ein von Pfennig erzeugter aktueller Datensatz akzeptiert wird. Das 2023-Beispiel ist unvollständig und kein geprüfter 2026-Formatvertrag.
 
 **Kleiner nächster Machbarkeitstest, noch nicht ausgeführt:** Ein öffentlich nachvollziehbares aktuelles Minimalformat für die unterstützten Felder bestimmen, eine rein synthetische Datei erzeugen und später mit ausdrücklicher Nutzerfreigabe in Mein ELSTER importieren, ohne abzusenden. Erfolg heißt: Zeitraum, Identifikation und alle unterstützten Werte werden korrekt übernommen; ausgelassene Felder sind bekannt. Kein Erfolgskriterium ist bloß syntaktisch gültiges XML.
 
@@ -46,7 +46,7 @@ Deshalb: zunächst formularnahe Übertragungshilfe, kopierbare Werte und nachvol
 
 ### Direkte Übermittlung bleibt draußen
 
-[ELSTER-Entwicklerzugang](https://www.elster.de/elsterweb/infoseite/entwickler) und [ERiC](https://www.elster.de/elsterweb/entwickler/infoseite/eric) sind ein anderer Integrationsweg mit Registrierung, Bibliotheken und Authentifizierung. Der persönliche ELSTER-Zugang des Nutzers ist nicht dasselbe wie ein Herstellerzugang. Ziffer soll weder Zertifikate verwalten noch selbst Steuererklärungen absenden.
+[ELSTER-Entwicklerzugang](https://www.elster.de/elsterweb/infoseite/entwickler) und [ERiC](https://www.elster.de/elsterweb/entwickler/infoseite/eric) sind ein anderer Integrationsweg mit Registrierung, Bibliotheken und Authentifizierung. Der persönliche ELSTER-Zugang des Nutzers ist nicht dasselbe wie ein Herstellerzugang. Pfennig soll weder Zertifikate verwalten noch selbst Steuererklärungen absenden.
 
 ## 3. Erstes lieferbares Steuerergebnis: UStVA
 
@@ -113,4 +113,4 @@ Foundation XMLParser ist ein naheliegender lokaler Parser. Das Auslesen eingebet
 
 UStVA ist nicht die jährliche Umsatzsteuererklärung. EÜR ist nicht die vollständige Einkommensteuererklärung. Relevante EU-Umsätze können zusätzlich eine [Zusammenfassende Meldung](https://www.elster.de/eportal/formulare-leistungen/alleformulare/zmdo) erfordern. Diese Grenzen erklären, nicht nebenbei weitere Steuerprodukte bauen.
 
-Bericht und Abgleich sollen die manuelle Zuordnung, Nachrechnung und Übertragung für die unterstützten Fälle deutlich reduzieren. Ob Ziffer damit die bisherige laufende Buchhaltung des Nutzers ersetzen kann, muss sich am vollständigen realen Ablauf zeigen. Ein vollständiger Ersatz des Accountable-Steuerpakets ist damit noch nicht erreicht. Kalender, Regeln, Periodensperren und DATEV kommen nach einem funktionierenden Ausgang. Ein einfacher CSV-Nachweis mit Beleg-/Zahlungsreferenzen gehört schon zum Berichtsausbau; Sicherung und Wiederherstellung bleiben separate Sicherheitsaufgaben.
+Bericht und Abgleich sollen die manuelle Zuordnung, Nachrechnung und Übertragung für die unterstützten Fälle deutlich reduzieren. Ob Pfennig damit die bisherige laufende Buchhaltung des Nutzers ersetzen kann, muss sich am vollständigen realen Ablauf zeigen. Ein vollständiger Ersatz des Accountable-Steuerpakets ist damit noch nicht erreicht. Kalender, Regeln, Periodensperren und DATEV kommen nach einem funktionierenden Ausgang. Ein einfacher CSV-Nachweis mit Beleg-/Zahlungsreferenzen gehört schon zum Berichtsausbau; Sicherung und Wiederherstellung bleiben separate Sicherheitsaufgaben.

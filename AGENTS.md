@@ -2,13 +2,13 @@
 
 ## Repository handoff
 
-The project is now **Pfennig** (`pfennig.app`), with its active workspace at `/Users/pietz/Private/pfennig` and private repository `pietz/pfennig`. The old `ziffer` directory and repository are retained unchanged. Application targets, archive location, signing setup, and much existing documentation still use Ziffer; this is not a second product. Do not blindly rename technical identifiers or move user data as part of branding.
+The project is **Pfennig** (`pfennig.app`), with its workspace at `/Users/pietz/Private/pfennig` and private repository `pietz/pfennig`. The rename from Ziffer is complete: application target, scheme, bundle identifier, Swift identifiers, interface text, scripts and documentation all use Pfennig, and the archive now lives in `~/Library/Application Support/Pfennig`. The old `/Users/pietz/Private/ziffer` directory and `pietz/ziffer` repository are retained unchanged. Identifiers that address existing local credentials or data deliberately keep their old names; see `docs/status.md`. Do not blindly rename remaining technical identifiers or move user data as part of branding.
 
 Read `docs/status.md` for the handoff, then `docs/specs/document-to-tax-workflow.md` for the latest workflow decisions. That specification was **approved on 2026-09-14** and is the implementation basis; older manual-first/CSV-only plans do not reopen its decisions. Historical GitHub issues are preserved in `docs/legacy-github-issues.md`.
 
 ## Product
 
-Ziffer is a native, local-first macOS bookkeeping application for Germany. It helps users turn documents and payments into reviewed bookkeeping records without requiring an account, hosted backend, or opaque automation.
+Pfennig is a native, local-first macOS bookkeeping application for Germany. It helps users turn documents and payments into reviewed bookkeeping records without requiring an account, hosted backend, or opaque automation.
 
 The product north star is:
 
@@ -21,7 +21,7 @@ The product north star is:
 The product exists to remove as much routine bookkeeping work as possible for the initial audience, not merely to digitize manual entry. Aim to cover the great majority of their everyday workflows; “90%” expresses this product ambition, not a measured accuracy or coverage guarantee.
 
 - One drag-and-drop entrance accepts the ordinary bookkeeping documents the user has, including receipts, invoice PDFs/images, CSV and PDF statements, and structured e-invoices. Do not make users select a workflow before importing or artificially restrict statement support to CSV.
-- A business transaction can start with either its document or its payment. Ziffer identifies, organizes, and joins the corresponding evidence, enriching the same transaction rather than creating duplicate income or expense.
+- A business transaction can start with either its document or its payment. Pfennig identifies, organizes, and joins the corresponding evidence, enriching the same transaction rather than creating duplicate income or expense.
 - Automation is a user setting with three levels: manual (default, every new or changed imported item is confirmed), balanced (fully validated supported standard cases with unambiguous links are applied without confirmation), automatic (no confirmation step; unclear facts stay empty or become open exceptions). In balanced and automatic mode do not require routine confirmation of safe standard cases. Missing facts, conflicting evidence, ambiguous matches, and material tax uncertainty become durable, actionable exceptions; model confidence alone is not sufficient authorization.
 - Statement import is bank-independent: PDF statements are read visually by the multimodal model like receipts; CSV statements go through a deterministic importer onto a normalized movement format, with the model at most helping to map columns. Do not build bank-specific adapters ahead of demonstrated need. Statement movements must be classified as business, private, or internal transfer; only business movements become income or expense.
 - Use capable multimodal models for understanding PDFs/images and unstructured documents. Use local parsers for structured facts where appropriate; both paths feed the same validated workflow. Choose preprocessing and bounded tools to remove user work, not to create separate product modes. Neither an agent framework nor a chat interface is required.
@@ -77,13 +77,13 @@ For Kleinunternehmer, cover the common bookkeeping behavior:
 
 Defer automated eligibility thresholds, regime changes, mixed-activity exceptions, detailed EU goods-acquisition thresholds, invoice issuance, and filing automation until they become an explicit product priority.
 
-Use current official primary sources for consequential tax rules. Describe Ziffer as supporting bookkeeping and GoBD practices, not as providing tax advice or blanket compliance certification.
+Use current official primary sources for consequential tax rules. Describe Pfennig as supporting bookkeeping and GoBD practices, not as providing tax advice or blanket compliance certification.
 
 Tax preparation and user-driven handoff are in scope; direct filing is not. Do not introduce ELSTER manufacturer registration, manufacturer credentials, or a hosted transmission gateway. Treat manual XML upload as a separate capability that must be verified per form and year; an export is not a submission. Copyable form values are an accepted first delivery, not the long-term endpoint: pursue a verified UStVA XML handoff early, without making the first useful report depend on it.
 
 ## Experience
 
-Ziffer should feel like a compact, restrained macOS utility.
+Pfennig should feel like a compact, restrained macOS utility.
 
 - Prefer standard SwiftUI and AppKit behavior over custom interface inventions.
 - Keep the main workspace calm and information-dense.
