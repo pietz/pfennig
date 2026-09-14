@@ -28,7 +28,7 @@ CSV-Dateien werden angenommen und sind immer Auszüge. PDFs werden nach der Arch
 
 **CSV:** Der Importer liest die Datei lokal. Die Spaltenzuordnung (Datum, Betrag oder Soll/Haben, Gegenpartei, Verwendungszweck, IBAN) wird einmal pro Kopfzeile bestimmt: deterministisch über bekannte Kopfbezeichnungen aus `docs/statement-formats.md`, bei Unbekanntem fragt Pfennig das Modell nach der Zuordnung und speichert sie je Kopfzeilen-Fingerabdruck. Zahlen und Datumsformate werden lokal geparst.
 
-Beide Wege erzeugen dieselben `statement_lines` mit dem bestehenden Zeilen-Fingerabdruck. Eine bereits vorhandene Zeile desselben Kontos wird übersprungen.
+Beide Wege erzeugen dieselben `statement_lines` mit dem Zeilen-Fingerabdruck (externe ID der Bank, sonst Datum, Betrag, Währung, Zweck, Gegenpartei mit Zähler für identische Zeilen). Eine bereits vorhandene Zeile desselben Kontos wird übersprungen. Ein Bruch im laufenden Saldo einer CSV blockiert den Import nicht: die Bewegungen werden übernommen, der Auszug erhält eine Ausnahme „Saldo nicht stimmig“ in Prüfen. Eine heuristisch oder vom Modell bestimmte Spaltenzuordnung wird dem Nutzer vor dem ersten Import einmal zur Bestätigung gezeigt und danach je Kopfzeilen-Fingerabdruck gemerkt; Katalogformate brauchen keine Bestätigung. Konten ohne IBAN im Export erhalten beim ersten Import vom Nutzer einen Namen, etwa „Revolut“, der als Kontoschlüssel dient.
 
 ### 4. Einordnung
 

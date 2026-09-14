@@ -73,7 +73,11 @@ The latest verification baseline is 440 tests across 57 suites plus a successful
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
-### Automation level (2026-09-14)
+### Statement import smoke test (2026-09-14)
+
+The user's private Revolut export for August 2026 (kept outside the repository) ran through `CSVStatementImporter` via the `PFENNIG_PRIVATE_STATEMENT_CSV` hook: format `revolut` recognized from the catalog, 182 lines parsed with 0 errors, 12 non-completed rows skipped, balance continuity consistent, all lines still `unknown` pending the matcher. The development archive's empty `statement_lines` table was dropped and recreated once with `fee_minor` (backup `bookkeeping-pre-statement-table-2026-09-14.sqlite`).
+
+## Automation level (2026-09-14)
 
 Step 1 of the [statement-import specification](specs/statement-import.md): the
 setting that decides what may be booked without confirmation. It governs
