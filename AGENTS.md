@@ -106,8 +106,8 @@ Pfennig should feel like a compact, restrained macOS utility.
 - Make the simplest coherent change that serves the current product.
 - Reuse the existing domain model and native components before adding abstractions.
 - Test common accounting paths and material boundaries first.
-- Preserve user-owned local databases and test data. Never solve a migration problem by asking users to delete an archive.
-- Before the first public release, update the initial schema directly rather than adding compatibility shims; after a schema ships publicly, use forward migrations.
+- Before the first public release there is exactly one schema definition, the initial migration, and no forward migrations, compatibility shims, or dual-format readers. When a pre-release decision changes the schema or the extraction schema, edit the initial definition and rewrite the existing development archive and fixtures once. Backward compatibility with earlier pre-release states is explicitly not a goal.
+- After a schema ships publicly, preserve user-owned archives with forward migrations. Never solve a migration problem by asking users to delete an archive.
 - Keep ordinary confirmed transactions directly editable. Require correction semantics only when a future locked period makes them necessary.
 - Never access or act on `.env` files, API keys, signing private keys, or notarization passwords.
 - Keep changes consistent with the local-first architecture: existing data must remain browsable without network or model access.
