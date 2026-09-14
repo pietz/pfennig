@@ -15,19 +15,23 @@ fi
 
 TEAM_ID="${TEAM_ID:-34MWWCL4H2}"
 SIGNING_IDENTITY="${SIGNING_IDENTITY:-Developer ID Application: Paul-Louis Pröve ($TEAM_ID)}"
+# The default profile name still says "ziffer": it references an existing local
+# Keychain item created before the rename to Pfennig. Renaming it here would
+# break notarization until the credentials are stored again. Override
+# NOTARY_PROFILE in the environment to use a differently named profile.
 NOTARY_PROFILE="${NOTARY_PROFILE:-ziffer-notary}"
-ARCHIVE_PATH="$DERIVED_DATA/Ziffer.xcarchive"
-ARCHIVED_APP="$ARCHIVE_PATH/Products/Applications/Ziffer.app"
+ARCHIVE_PATH="$DERIVED_DATA/Pfennig.xcarchive"
+ARCHIVED_APP="$ARCHIVE_PATH/Products/Applications/Pfennig.app"
 DIST_DIR="$REPO_ROOT/dist"
-SUBMISSION_ZIP="$DIST_DIR/Ziffer-notarization.zip"
+SUBMISSION_ZIP="$DIST_DIR/Pfennig-notarization.zip"
 NOTARY_RESULT="$DIST_DIR/notary-result.json"
 
 package_release() {
   local output_zip="$1"
-  local package_dir="$DIST_DIR/Ziffer-$VERSION"
+  local package_dir="$DIST_DIR/Pfennig-$VERSION"
   rm -rf "$package_dir"
   mkdir -p "$package_dir"
-  ditto "$ARCHIVED_APP" "$package_dir/Ziffer.app"
+  ditto "$ARCHIVED_APP" "$package_dir/Pfennig.app"
   cp "$REPO_ROOT/LICENSE" "$package_dir/LICENSE.txt"
   cp "$REPO_ROOT/docs/privacy.md" "$package_dir/PRIVACY.md"
   ditto -c -k --keepParent "$package_dir" "$output_zip"
@@ -74,9 +78,9 @@ fi
 codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ARCHIVED_APP/Contents/Info.plist")"
 if [[ "$MODE" == "--build-only" ]]; then
-  FINAL_ZIP="$DIST_DIR/Ziffer-$VERSION-macOS-signed-unnotarized.zip"
+  FINAL_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS-signed-unnotarized.zip"
 else
-  FINAL_ZIP="$DIST_DIR/Ziffer-$VERSION-macOS.zip"
+  FINAL_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS.zip"
 fi
 CHECKSUM="$FINAL_ZIP.sha256"
 rm -f "$FINAL_ZIP" "$CHECKSUM"

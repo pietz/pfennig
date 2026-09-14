@@ -29,8 +29,8 @@ jobs:
       - name: Build app without signing
         run: |
           xcodebuild \
-            -project Ziffer.xcodeproj \
-            -scheme Ziffer \
+            -project Pfennig.xcodeproj \
+            -scheme Pfennig \
             -configuration Debug \
             -destination "generic/platform=macOS" \
             build \

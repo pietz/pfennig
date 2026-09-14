@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "Ziffer",
+    name: "Pfennig",
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "Domain", targets: ["Domain"]),

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the app bundle into build/Build/Products/<Configuration>/Ziffer.app
+# Builds the app bundle into build/Build/Products/<Configuration>/Pfennig.app
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$REPO_ROOT"
 

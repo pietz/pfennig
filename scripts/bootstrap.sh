@@ -16,7 +16,7 @@ fi
 echo "==> Resolving Swift packages"
 swift package resolve
 
-echo "==> Generating Ziffer.xcodeproj"
+echo "==> Generating Pfennig.xcodeproj"
 xcodegen generate --quiet
 
 echo "Done. Next: scripts/build.sh, scripts/run.sh, scripts/test.sh"

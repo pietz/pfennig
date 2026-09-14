@@ -5,5 +5,5 @@ cd "$REPO_ROOT"
 
 "$REPO_ROOT/scripts/build.sh"
 
-echo "==> Launching Ziffer"
+echo "==> Launching Pfennig"
 open "$APP_PATH"

@@ -29,7 +29,7 @@ enum AppearancePreference: String, CaseIterable, Identifiable {
 }
 
 @main
-struct ZifferApp: App {
+struct PfennigApp: App {
     @State private var model = AppModel()
     @AppStorage(AppearancePreference.storageKey) private var appearancePreferenceRawValue = AppearancePreference.system
         .rawValue
