@@ -63,12 +63,13 @@ The core local bookkeeping loop works:
 - internal field provenance protects manual edits but is intentionally not displayed
 - business-profile settings are editable prospectively; profile changes do not recalculate historical bookings
 - the automation level decides whether an import is committed at once or waits in "Prüfen"; the default is Manuell, so nothing changes until the user says so
+- CSV statements are read deterministically into `statement_lines` (twelve known formats plus a header heuristic); matching them to transactions is the next step and does not exist yet
 - ordinary 7%/19% VAT, mixed rates, common Kleinunternehmer cases, and typical foreign-service reverse-charge amounts have deterministic proposal derivation; this is not yet a verified tax-reporting path
 - ambiguous Kleinunternehmer EU-goods cases remain unresolved for manual tax review
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 363 tests across 49 suites plus a successful Debug app build.
+The latest verification baseline is 440 tests across 57 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -102,6 +103,91 @@ document imports today and statement movements once they exist.
   "Buchungen prüfen" through the existing `needsAttentionPredicate`, which was
   left untouched: widening it to every open validation issue would also have
   pulled in bookings a person saved by hand over a warning.
+- An auto-commit that fails - a fresh archive without a business, for example -
+  leaves the item in "Prüfen" with its proposal instead of marking the import
+  failed. The extraction worked; only the write did not.
+
+### CSV statement import (2026-09-14)
+
+Step 2 of the [statement-import specification](specs/statement-import.md): a
+deterministic, offline CSV importer in `Sources/StatementImport`, from file
+bytes to `statement_lines`. No bank connection and no bank-specific parser.
+
+- `CSVReader` is a small RFC-4180-tolerant reader: the delimiter is the one
+  that makes the file most rectangular (counted in cells, so a prose preamble
+  cannot outvote the table), a byte-order mark is stripped, UTF-8 falls back to
+  Windows-1252 and then Latin-1, quoted fields carry doubled quotes and
+  embedded newlines, and `CRLF`/`LF`/`CR` are all accepted. Reported line
+  numbers count records, not newlines.
+- `HeaderMappingCatalog` recognizes the twelve exports researched in
+  [statement-formats.md](statement-formats.md) by their header signature, and
+  falls back to a generic German/English header heuristic that only counts as a
+  header when the row below it parses as a date. A header neither recognizes
+  comes back as `UnmappedHeader` for the model, and the answer is cached per
+  header fingerprint. Every entry in the catalog is data - a
+  `StatementColumnMapping` plus the identifying cells - not a parser.
+- `StatementValueParser` reads amounts (German, English and plain notation,
+  leading or trailing sign, currency marks, accountants' parentheses) and
+  dates. The German dotted layout accepts both year lengths: `31.08.2026` and
+  `31.08.26` cannot be confused, so an export that gains or loses the century
+  keeps importing. `dd/MM` versus `MM/dd` is genuinely ambiguous and stays a
+  declared property of the format (Amex DE is `dd/MM`).
+- The separator ambiguity of a lone `,` or `.` is resolved by value shape in
+  `Money.parseDecimal`, not per format: three trailing digits after a single
+  separator are a thousands group. All twelve formats write two decimals, so
+  the ambiguous shape only occurs on grouped integers, where the reading is
+  right.
+- Per-line failures never abort an import: the line is reported with its
+  number, column and value, and the rest is imported. A broken value date
+  costs the value date, not the line. Rows the format itself excludes (a
+  Revolut `REVERTED` or `PENDING` state) are reported as skipped, not dropped
+  silently.
+- `BalanceContinuity` is the CSV counterpart of the closing-balance control:
+  each reported balance must equal the previous one plus everything that moved
+  in between. Each currency is a series of its own, rows without a balance are
+  carried forward instead of breaking the chain, and an export sorted
+  newest-first satisfies the same rule read backwards.
+- `StatementLineClassifier` decides only the two classes that follow from the
+  data - internal transfer (the counterparty IBAN is an account the archive
+  already holds lines for, compared without spaces or casing) and tax payment
+  (a Finanzamt counterparty, or a Steuernummer together with a whole-word VAT
+  keyword). Business versus private stays the user's decision.
+- **Line identity.** `LineFingerprint` uses the export's own transaction id
+  when there is one (PayPal `Transaktionscode`, Stripe
+  `balance_transaction_id`); that survives a reworded purpose between two
+  exports of the same period. Otherwise the identity is booking date, amount,
+  currency, purpose and counterparty. Two identical rows in one file are two
+  real movements - the same amount at the same shop on one day - so the second
+  and any further one carry an occurrence index instead of being dropped; an
+  overlapping later export reproduces the same indices and is still recognized
+  as already known. `StatementLineRepository.insert` writes one transaction
+  and skips what the account already has.
+- **`fee_minor`.** The fee a processor reports separately is stored on the line
+  (`statement_lines.fee_minor`, non-negative, already contained in
+  `amount_minor`). Nothing books it yet; the matcher will. PayPal and Stripe
+  report the amount net of the fee, Revolut does not, so there the booked
+  movement is `Amount - Fee`. Per the pre-release rule the column was added to
+  `v001_initial` rather than as a migration.
+- **Development archive.** Verified read-only on 2026-09-14:
+  `~/Library/Application Support/Pfennig/bookkeeping.sqlite` holds **zero**
+  `statement_lines` rows, so no data had to be rewritten for the new column or
+  the new fingerprint definition. The archive's `statement_lines` table itself
+  still predates `fee_minor` - `v001_initial` is already recorded as applied,
+  so nothing adds it automatically. The empty table has to be recreated once in
+  the archive (`DROP TABLE` plus the current `CREATE TABLE` and its two
+  indexes) before a statement is imported into it. **Not done here: it changes
+  the user's archive and was not authorized.**
+- **Private smoke test.** `Tests/StatementImportTests/PrivateStatementSmokeTests.swift`
+  runs the importer against a real export the user keeps outside the
+  repository. It is skipped unless `PFENNIG_PRIVATE_STATEMENT_CSV` points at an
+  existing file, and prints an aggregate summary only - format, line, error and
+  classification counts, skipped rows, balance result, first and last booking
+  date - so no content of the file reaches the terminal or the repository:
+
+  ```
+  PFENNIG_PRIVATE_STATEMENT_CSV=/pfad/zum/auszug.csv \
+      swift test --filter PrivateStatementSmokeTests
+  ```
 
 ### UStVA calculation (2026-09-14)
 
