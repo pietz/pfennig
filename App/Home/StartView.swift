@@ -25,6 +25,9 @@ struct StartView: View {
 
                     if let overview {
                         metrics(overview, isCompact: proxy.size.width < 760)
+                        UStVATaskSection { period in
+                            onNavigate(.ustva(period))
+                        }
                         openSection(overview)
                     } else if observationError {
                         loadError
@@ -272,7 +275,7 @@ private struct StartMetricCard: View {
     }
 }
 
-private struct StartSectionTitle: View {
+struct StartSectionTitle: View {
     let title: String
     let detail: String
 

@@ -190,6 +190,9 @@ struct SettingsView: View {
             return
         }
         UStVAPreferences.setDauerfristverlaengerung(business.dauerfristverlaengerung, in: model.database)
+        // Saving here is the explicit confirmation of the UStVA rhythm that
+        // the specification asks for; Start stops prompting for it.
+        UStVAPreferences.setPeriodConfirmed(true, in: model.database)
         var saved = BusinessSettingsDraft(model.profile ?? updated)
         saved.dauerfristverlaengerung = business.dauerfristverlaengerung
         savedBusiness = saved

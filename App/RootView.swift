@@ -1,5 +1,7 @@
+import AppKit
 import Database
 import SwiftUI
+import Tax
 
 enum SidebarItem: String, CaseIterable, Identifiable {
     case start, transactions, review
@@ -28,10 +30,13 @@ enum SidebarItem: String, CaseIterable, Identifiable {
 enum StartDestination: Equatable {
     case transactions(TransactionListFilter)
     case review
+    /// Opens the UStVA task window for one Voranmeldungszeitraum.
+    case ustva(UStVAPeriod)
 }
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.openWindow) private var openWindow
     @State private var selection: SidebarItem? = .start
     @State private var transactionFilter = TransactionListFilter()
     @State private var transactionsInspectorHasChanges = false
@@ -72,6 +77,14 @@ struct RootView: View {
                 }
                 .task { await model.observePendingProposals() }
             }
+        }
+        .background(WindowReader { model.mainWindow = $0 })
+        .onChange(of: model.requestedTransactionID) { _, id in
+            // Another window asked for a booking; the ledger has to be on
+            // screen before `TransactionsView` can select it.
+            guard id != nil, selection != .transactions else { return }
+            transactionFilter = TransactionListFilter()
+            selection = .transactions
         }
         .confirmationDialog(
             "Ungespeicherte Änderungen verwerfen?",
@@ -118,6 +131,9 @@ struct RootView: View {
                     selection = .transactions
                 case .review:
                     selection = .review
+                case let .ustva(period):
+                    model.requestUStVATask(period)
+                    openWindow(id: UStVATaskWindow.windowID)
                 }
             }
         case .transactions:
@@ -158,4 +174,24 @@ struct RootView: View {
         }
         selection = item
     }
+}
+
+/// Hands the enclosing `NSWindow` to the model once, so a task window can
+/// bring the main window forward when it navigates the user back into the
+/// ledger. SwiftUI has no scene-level equivalent for raising an existing
+/// `WindowGroup` window.
+private struct WindowReader: NSViewRepresentable {
+    let onWindow: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView(frame: .zero)
+        DispatchQueue.main.async {
+            if let window = view.window {
+                onWindow(window)
+            }
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }

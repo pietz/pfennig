@@ -50,6 +50,16 @@ struct PfennigApp: App {
             CommandGroup(replacing: .newItem) {}
         }
 
+        // The UStVA task runs next to the ledger, not on top of it: a single
+        // window the user can leave open while correcting bookings
+        // (spec ustva-preparation.md, "Aufgabe auf Start und Aufgabenfenster").
+        Window("UStVA", id: UStVATaskWindow.windowID) {
+            UStVATaskWindow()
+                .environment(model)
+                .preferredColorScheme(appearancePreference.colorScheme)
+        }
+        .defaultSize(width: 760, height: 620)
+
         Settings {
             SettingsView()
                 .environment(model)

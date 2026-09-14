@@ -1,10 +1,12 @@
 import AI
+import AppKit
 import Database
 import DocumentStore
 import Domain
 import Foundation
 import ImportPipeline
 import Observation
+import Tax
 
 /// Owns the open archive and its database, and drives onboarding.
 /// The one piece of app-wide state; views read it from the environment.
@@ -27,6 +29,26 @@ final class AppModel {
     /// Badge count of the "Prüfen" sidebar item (spec 7.2).
     private(set) var pendingProposalCount = 0
     var hasAPIKey = APIKeyStore.hasKey
+
+    /// A request to show one Voranmeldungszeitraum in the UStVA task window.
+    /// The token makes a second click on the same period a new request, so an
+    /// already open window follows it instead of ignoring it.
+    struct UStVATaskRequest: Equatable {
+        let period: UStVAPeriod
+        let token: Int
+    }
+
+    private(set) var ustvaTaskRequest: UStVATaskRequest?
+    private var ustvaTaskToken = 0
+
+    /// A transaction another window asked to open in Buchungen. `RootView`
+    /// switches to the ledger, `TransactionsView` selects the row and clears
+    /// the request.
+    var requestedTransactionID: String?
+
+    /// The main window, so a task window can bring the ledger back to the
+    /// front when it sends the user there.
+    @ObservationIgnored weak var mainWindow: NSWindow?
 
     private let locator = ArchiveLocator()
 
@@ -156,6 +178,20 @@ final class AppModel {
 
     func delete(_ transactionID: String) {
         run { try repository?.delete(transactionID) }
+    }
+
+    /// Points the UStVA task window at a period. The caller opens the window.
+    func requestUStVATask(_ period: UStVAPeriod) {
+        ustvaTaskToken += 1
+        ustvaTaskRequest = UStVATaskRequest(period: period, token: ustvaTaskToken)
+    }
+
+    /// Opens a transaction in Buchungen with the inspector showing, from
+    /// wherever the user was - including the UStVA task window, which is a
+    /// window of its own and must raise the ledger itself.
+    func showTransaction(_ id: String) {
+        requestedTransactionID = id
+        mainWindow?.makeKeyAndOrderFront(nil)
     }
 
     // MARK: - Import (spec 39 M4)

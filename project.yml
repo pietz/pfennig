@@ -49,6 +49,10 @@ targets:
         product: ImportPipeline
       - package: PfennigPackages
         product: Analysis
+      - package: PfennigPackages
+        product: Tax
+      - package: PfennigPackages
+        product: Export
     settings:
       base:
         PRODUCT_NAME: Pfennig

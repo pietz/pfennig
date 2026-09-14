@@ -138,6 +138,25 @@ struct TransactionsView: View {
             .task { await observeProposals() }
             .task { await observeImports() }
             .task(id: selection) { await observeDetail() }
+            .onChange(of: model.requestedTransactionID, initial: true) { _, id in
+                guard let id else { return }
+                openRequestedTransaction(id)
+            }
+    }
+
+    /// Selects a booking another window asked for - today the UStVA task
+    /// window, from its exception list - and shows the inspector for it.
+    /// Unsaved edits still get their confirmation first.
+    private func openRequestedTransaction(_ id: String) {
+        model.requestedTransactionID = nil
+        guard !inspectorHasChanges else {
+            pendingSelection = id
+            isConfirmingDiscard = true
+            return
+        }
+        search = ""
+        showsInspector = true
+        selection = id
     }
 
     // MARK: - Table
