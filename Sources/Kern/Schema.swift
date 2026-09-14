@@ -54,7 +54,7 @@ public enum Schema {
     );
 
     CREATE TABLE anfragen (
-        id INTEGER PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         datei_sha256 TEXT NOT NULL,
         modell TEXT NOT NULL,
         gestartet_am TEXT NOT NULL,
