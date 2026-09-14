@@ -13,6 +13,15 @@ public struct Position: Codable, Hashable, Sendable {
         self.steuersatz = steuersatz
         self.steuer = steuer
     }
+
+    /// The tax that belongs to a net amount at a rate, rounded to the cent.
+    /// The inspector fills the tax field with it; the user may overwrite it.
+    public static func steuer(netto: Cent, steuersatz: Decimal) -> Cent {
+        var roh = Decimal(netto.wert) * steuersatz / 100
+        var gerundet = Decimal()
+        NSDecimalRound(&gerundet, &roh, 0, .plain)
+        return Cent(NSDecimalNumber(decimal: gerundet).int64Value)
+    }
 }
 
 /// One payment of a booking. `id` counts up inside the booking and is assigned
@@ -36,7 +45,7 @@ public struct Zahlung: Codable, Hashable, Sendable {
 
 /// One document, one row. Positions, payments and receipt hashes are JSON
 /// lists inside the row; sums are computed here and never stored.
-public struct Buchung: Codable, Hashable, Sendable, FetchableRecord, MutablePersistableRecord {
+public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecord, MutablePersistableRecord {
     public static let databaseTableName = "buchungen"
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
     public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase

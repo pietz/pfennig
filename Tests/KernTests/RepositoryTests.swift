@@ -184,3 +184,34 @@ private func beispiel(
     #expect(anfrage.beendetAm != nil)
     #expect(anfrage.konversation == "[{\"rolle\":\"agent\"}]")
 }
+
+@Test func buchungLaesstSichLoeschen() throws {
+    let repository = try Repository.imSpeicher()
+    let gespeichert = try repository.speichern(beispiel(), akteur: .nutzer)
+    let id = try #require(gespeichert.id)
+
+    try repository.loeschen(id: id)
+    #expect(try repository.alleBuchungen().isEmpty)
+    // The log keeps what happened, it is not a copy of the table.
+    let eintraege = try repository.datenbank.read { try Aktivitaet.fetchCount($0) }
+    #expect(eintraege == 1)
+}
+
+@Test func profilUeberstehtDenRundlauf() throws {
+    let repository = try Repository.imSpeicher()
+    #expect(try repository.profil() == Profil())
+
+    let profil = Profil(
+        steuernummer: "21/815/08150",
+        ustid: "DE123456789",
+        kleinunternehmer: true,
+        rhythmus: .monatlich,
+        dauerfristverlaengerung: true
+    )
+    try repository.profilSpeichern(profil)
+    #expect(try repository.profil() == profil)
+
+    try repository.profilSpeichern(Profil(steuernummer: "neu"))
+    #expect(try repository.profil().steuernummer == "neu")
+    #expect(try repository.profil().kleinunternehmer == false)
+}

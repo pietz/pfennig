@@ -87,6 +87,6 @@ extension Datum: DatabaseValueConvertible {
     }
 
     public static func fromDatabaseValue(_ databaseValue: DatabaseValue) -> Datum? {
-        String.fromDatabaseValue(databaseValue).flatMap(Datum.init)
+        String.fromDatabaseValue(databaseValue).flatMap { Datum($0) }
     }
 }

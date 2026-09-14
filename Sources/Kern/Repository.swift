@@ -44,6 +44,15 @@ public final class Repository: Sendable {
         }
     }
 
+    /// Removes a booking the user no longer wants. The activity log keeps the
+    /// rows it already has; it records what happened and is not a copy of the
+    /// table.
+    public func loeschen(id: Int64) throws {
+        try datenbank.write { db in
+            try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
+        }
+    }
+
     private static func speichern(_ buchung: Buchung, akteur: Akteur, in db: Database) throws -> Buchung {
         let jetzt = Date()
         var neu = buchung
@@ -136,13 +145,52 @@ public final class Repository: Sendable {
 
     public func einstellungSetzen(_ schluessel: String, wert: String) throws {
         try datenbank.write { db in
-            try db.execute(
-                sql: """
-                INSERT INTO einstellungen (schluessel, wert) VALUES (?, ?)
-                ON CONFLICT (schluessel) DO UPDATE SET wert = excluded.wert
-                """,
-                arguments: [schluessel, wert]
+            try Repository.einstellungSetzen(schluessel, wert: wert, in: db)
+        }
+    }
+
+    private static func einstellungSetzen(_ schluessel: String, wert: String, in db: Database) throws {
+        try db.execute(
+            sql: """
+            INSERT INTO einstellungen (schluessel, wert) VALUES (?, ?)
+            ON CONFLICT (schluessel) DO UPDATE SET wert = excluded.wert
+            """,
+            arguments: [schluessel, wert]
+        )
+    }
+
+    /// The profile, with the defaults of a fresh installation for keys that
+    /// were never set.
+    public func profil() throws -> Profil {
+        try datenbank.read { db in
+            var werte: [String: String] = [:]
+            for zeile in try Row.fetchAll(db, sql: "SELECT schluessel, wert FROM einstellungen") {
+                let schluessel: String = zeile["schluessel"]
+                let wert: String = zeile["wert"]
+                werte[schluessel] = wert
+            }
+            return Profil(
+                steuernummer: werte["steuernummer"] ?? "",
+                ustid: werte["ustid"] ?? "",
+                kleinunternehmer: werte["kleinunternehmer"] == "true",
+                rhythmus: werte["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
+                dauerfristverlaengerung: werte["dauerfristverlaengerung"] == "true"
             )
+        }
+    }
+
+    public func profilSpeichern(_ profil: Profil) throws {
+        let werte = [
+            "steuernummer": profil.steuernummer,
+            "ustid": profil.ustid,
+            "kleinunternehmer": String(profil.kleinunternehmer),
+            "ustva_rhythmus": profil.rhythmus.rawValue,
+            "dauerfristverlaengerung": String(profil.dauerfristverlaengerung)
+        ]
+        try datenbank.write { db in
+            for (schluessel, wert) in werte {
+                try Repository.einstellungSetzen(schluessel, wert: wert, in: db)
+            }
         }
     }
 }

@@ -8,7 +8,7 @@ public enum Richtung: String, Codable, Hashable, Sendable, DatabaseValueConverti
     case ausgabe
 }
 
-public enum Art: String, Codable, Hashable, Sendable, DatabaseValueConvertible {
+public enum Art: String, CaseIterable, Codable, Hashable, Sendable, DatabaseValueConvertible {
     case rechnung
     case beleg
     case gutschrift
@@ -18,7 +18,7 @@ public enum Art: String, Codable, Hashable, Sendable, DatabaseValueConvertible {
     case sonstiges
 }
 
-public enum Steuerbehandlung: String, Codable, Hashable, Sendable, DatabaseValueConvertible {
+public enum Steuerbehandlung: String, CaseIterable, Codable, Hashable, Sendable, DatabaseValueConvertible {
     case inland
     case reverseCharge = "reverse_charge"
     case kleinunternehmer
