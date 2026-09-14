@@ -187,6 +187,29 @@ public enum ProposalStatus: String, Codable, CaseIterable, Sendable {
     case pending, accepted, acceptedEdited, rejected, skipped, superseded, committed
 }
 
+/// How much of an import Pfennig applies without asking, chosen once in
+/// Settings (`document-to-tax-workflow.md` "Automatik und Ausnahmen",
+/// `statement-import.md` 1). It is a user setting, not a per-document
+/// judgement: the same level governs document imports and statement
+/// movements, and `AutomationPolicy` is the one function that reads it.
+public enum AutomationLevel: String, Codable, CaseIterable, Sendable {
+    /// Every proposal is confirmed by the user, even an unambiguous one.
+    case manual
+    /// Fully validated standard cases with an unambiguous derivation are
+    /// applied; anything with a warning, a conflict or a missing fact stays a
+    /// proposal.
+    case balanced
+    /// There is no confirmation step. What cannot be derived unambiguously
+    /// stays an exception in "Prüfen" instead of being invented.
+    case automatic
+
+    /// The default of a fresh archive (spec 9: "Default is Manual").
+    public static let `default` = AutomationLevel.manual
+
+    /// Key in the `settings` table (spec 10.5).
+    public static let settingKey = "automation.level"
+}
+
 public enum PolicyDecision: String, Codable, CaseIterable, Sendable {
     case autoCommit, needsReview, blocked
 }

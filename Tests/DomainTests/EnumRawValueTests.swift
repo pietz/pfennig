@@ -36,6 +36,7 @@ struct EnumRawValueTests {
                          "classifyStatementLines", "mergeDuplicate"],
         "ProposalStatus": ["pending", "accepted", "acceptedEdited", "rejected", "skipped", "superseded", "committed"],
         "PolicyDecision": ["autoCommit", "needsReview", "blocked"],
+        "AutomationLevel": ["manual", "balanced", "automatic"],
         "IssueSeverity": ["info", "warning", "error"],
         "IssueStatus": ["open", "resolved", "ignored"],
         "AuditActor": ["user", "agent", "system", "import"],
@@ -63,7 +64,7 @@ struct EnumRawValueTests {
         add(PaymentMethod.self); add(PaymentSource.self); add(MatchMethod.self); add(Provenance.self)
         add(ImportBatchStatus.self); add(ImportItemStatus.self)
         add(ModelRunOperation.self); add(ModelRunStatus.self); add(ProposalKind.self); add(ProposalStatus.self)
-        add(PolicyDecision.self); add(IssueSeverity.self); add(IssueStatus.self)
+        add(PolicyDecision.self); add(AutomationLevel.self); add(IssueSeverity.self); add(IssueStatus.self)
         add(AuditActor.self); add(AuditAction.self)
         add(PaymentStatus.self); add(DocumentStatus.self)
         add(VATStatus.self); add(VATAccountingMethod.self); add(UStVAPeriodicity.self); add(BusinessType.self)
