@@ -59,6 +59,8 @@ Defer automated eligibility thresholds, regime changes, mixed-activity exception
 
 Use current official primary sources for consequential tax rules. Describe Ziffer as supporting bookkeeping and GoBD practices, not as providing tax advice or blanket compliance certification.
 
+Tax preparation and user-driven handoff are in scope; direct filing is not. Do not introduce ELSTER manufacturer registration, manufacturer credentials, or a hosted transmission gateway. Treat manual XML upload as a separate capability that must be verified per form and year; an export is not a submission.
+
 ## Experience
 
 Ziffer should feel like a compact, restrained macOS utility.

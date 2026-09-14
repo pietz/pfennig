@@ -13,12 +13,14 @@ The core local bookkeeping loop works:
 - payments and partial payments are supported
 - internal field provenance protects manual edits but is intentionally not displayed
 - business-profile settings are editable prospectively; profile changes do not recalculate historical bookings
-- ordinary 7%/19% VAT, mixed rates, Ist-Versteuerung tax points, common Kleinunternehmer cases, and typical foreign-service reverse charge are covered deterministically
+- ordinary 7%/19% VAT, mixed rates, common Kleinunternehmer cases, and typical foreign-service reverse-charge amounts have deterministic proposal derivation; this is not yet a verified tax-reporting path
 - ambiguous Kleinunternehmer EU-goods cases remain unresolved for manual tax review
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
 The latest verification baseline is 222 tests across 38 suites plus a successful Debug app build.
+
+Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
 ## Product boundary
 
@@ -72,10 +74,12 @@ See [`releasing.md`](releasing.md) for commands. Never inspect or commit `.env`,
 
 ## Backlog
 
-[Product backlog](backlog.md) groups implemented features and proposed priorities across the full input-to-tax-output workflow. GitHub Issues remain the technical work items:
+[Product backlog](backlog.md) groups implemented features and proposed priorities across the full input-to-tax-output workflow. Current recommendation: UStVA preparation first with an early, bounded XML feasibility check, then statement reconciliation and EÜR; e-invoices are a separate import increment. Private-document quality testing is parked with the user, not a blocker to this planning. No manufacturer registration or direct ELSTER transmission is planned. Public UStVA XML upload is documented, but no current Ziffer-generated file has been validated; an analogous EÜR upload remains unverified.
+
+GitHub Issues remain the technical work items:
 
 - [#2 Core German EÜR tax cases](https://github.com/pietz/ziffer/issues/2): Kleinunternehmer core is implemented; audit and finish remaining common-case acceptance criteria before closing.
-- [#3 XRechnung/ZUGFeRD](https://github.com/pietz/ziffer/issues/3): structured input support; prioritize alongside real-document validation, exports, and the tax-output workflow in the product backlog.
+- [#3 XRechnung/ZUGFeRD](https://github.com/pietz/ziffer/issues/3): structured input support as a bounded increment alongside the report/reconciliation work, not a separate accounting workflow.
 - [#4 Local statement reconciliation](https://github.com/pietz/ziffer/issues/4)
 - [#5 Deterministic vendor rules](https://github.com/pietz/ziffer/issues/5)
 - [#6 Period closing and corrections](https://github.com/pietz/ziffer/issues/6)

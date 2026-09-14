@@ -49,7 +49,7 @@ The app should feel like a polished native Mac application, not like a chatbot w
 - Zusammenfassende Meldung (ZM, §18a UStG)
 - DATEV export
 - iCloud sync / multi-device
-- Direct or semi-direct ELSTER workflows
+- User-driven ELSTER handoff through verified local exports; no manufacturer registration, manufacturer credentials, or hosted transmission gateway
 - App Sandbox (security-scoped bookmarks for the archive folder)
 
 ---
@@ -118,9 +118,9 @@ Any rule that can be expressed as an invariant in Swift is expressed in Swift, n
 
 ---
 
-# 5. German Bookkeeping Rules Implemented in V1
+# 5. Target German Bookkeeping Rules
 
-This section is authoritative for the `Tax` and `Validation` modules. It is deliberately limited to the common freelancer cases.
+This section specifies the intended `Tax` and `Validation` behavior, deliberately limited to common freelancer cases. It is not a statement that tax reporting is implemented or verified. The [workflow/output research](docs/research-user-workflow.md) records current gaps; in particular, existing materialized dates and form mappings are not yet a reliable UStVA/EÜR reporting path.
 
 ## 5.1 Separate tax points
 
@@ -139,16 +139,15 @@ Derivation rules for a profile with `vat_accounting_method = cash`:
 
 - **EÜR date** = payment date (Zufluss/Abfluss, §11 EStG). Partially paid transactions contribute per allocation on each payment date.
 - **Output VAT** (income): due in the period of payment receipt (§13 Abs. 1 Nr. 1 b UStG, Ist-Versteuerung). Per payment allocation.
-- **Input VAT** (expense, normal case): deductible when the service has been performed **and** a proper invoice is on hand (§15 Abs. 1 Nr. 1 UStG). V1 derives `input_vat_date = max(service_date ?? invoice_date, invoice_date)`; user override allowed. Payment date is irrelevant, except:
-  - **Advance payment before service/invoice:** deductible when paid and invoice on hand → `input_vat_date = max(payment_date, invoice_date)` if `is_advance_payment`.
-- **§13b reverse charge (expense):** tax arises at the end of the month in which the invoice is issued, at the latest the month following service (§13b Abs. 1/2 UStG). V1 uses `invoice_date` for both the self-assessed VAT and the matching input VAT deduction. User override allowed.
-- **Intra-community acquisition of goods:** same rule as reverse charge (§13 Abs. 1 Nr. 6 UStG) in V1.
+- **Input VAT** (expense, normal case): deductible when the service has been performed **and** a proper invoice is on hand ([§15 Abs. 1 Nr. 1 UStG](https://www.gesetze-im-internet.de/ustg_1980/__15.html)). Invoice date alone does not establish possession; importing a historical document does not establish its receipt date. Relevant facts or an explicit reviewed tax date are needed. Payment is generally irrelevant, except for advance payments before performance, where invoice possession and payment are required.
+- **§13b reverse charge (expense):** distinguish the applicable rule. Qualifying EU-established supplier services under [§13b Abs. 1 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13b.html) use the end of the period of performance. Cases under Abs. 2 use invoice issuance, no later than the end of the month following performance. Advance payments need the separate Abs. 4 rule. A single invoice-date fallback for every foreign service is not sufficient. Matching input VAT follows its own eligibility requirements; Kleinunternehmer have no corresponding deduction.
+- **Intra-community acquisition of goods:** has its own rule under [§13 Abs. 1 Nr. 6 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13.html); do not treat it as identical to all reverse-charge services. Detailed acquisition eligibility remains review-required outside the initial automatic scope.
 
-Both derived dates are stored on `tax_assessments` as materialized values with provenance `calculated` so they are queryable and overridable.
+Current `tax_assessments` store materialized dates with provenance. Reporting must nevertheless derive payment-sensitive contributions per allocation; a single transaction date cannot represent multiple tax periods. The current implementation still uses simplified invoice-date and first-payment approximations that must be corrected before report completion.
 
 ## 5.2 The "Date" column
 
-The main table shows a **relevant date** derived as: EÜR date if any payment exists, otherwise invoice date, otherwise import date. It is labelled and its origin is visible in the inspector.
+The main table shows a **relevant date** derived as: latest payment date if any payment exists, otherwise invoice date, otherwise creation date. This is a ledger-navigation convention, not the date to use for every EÜR or UStVA contribution.
 
 ## 5.3 10-day rule (§11 Abs. 2 S. 2 EStG)
 
@@ -564,7 +563,7 @@ unknown
 
 ## 16.3 Form mappings live outside the core schema
 
-UStVA Kennzahlen (e.g., 46/47/67 for §13b, 66 for input VAT, 81/86 for domestic sales) and EÜR line numbers change by form year. They are implemented as **versioned mapping tables in the Tax module**:
+UStVA Kennzahlen and EÜR line numbers depend on the form year and applicable treatment. The target is **verified, versioned mapping tables in the Tax module**. The current files below are unverified placeholders, not completed reporting support; a year in the filename does not prove publication or verification of that year's form:
 
 ```text
 Tax/FormMappings/UStVA_2026.swift   — treatment × direction × rate → Kennzahl
@@ -1339,25 +1338,27 @@ Provenance badges per field (Beleg / KI / Berechnet / Manuell / Regel). Keyboard
 
 ---
 
-# 28. Analysis Screen (after MVP)
+# 28. Overview
 
-Revenue and expenses by month (EÜR basis), profit estimate, output VAT, deductible input VAT, estimated VAT payable per UStVA period, unpaid outgoing invoices, transactions missing documents, unresolved issues, flagged asset candidates. Swift Charts. No BI system.
+Use the compact Start overview described in section 6. Do not add a second analysis screen or decorative charts. Recorded gross overview figures remain distinct from tax-report contributions.
 
 ---
 
-# 29. Taxes Screen (after MVP)
+# 29. Tax Preparation
 
-- **Deadlines:** UStVA due dates (10th of following month/quarter, Dauerfristverlängerung flag), EÜR/ESt.
-- **VAT per period:** output VAT − deductible input VAT (+ self-assessed §13b both sides) = estimated payable, each number expandable to its transactions.
-- **UStVA preparation:** `UStVA_<year>` mapping renders Kennzahl, value, explanation, copy button, CSV export. Manual transfer to ELSTER.
-- **EÜR preparation:** `EUeR_<year>` mapping from category IDs to lines; asset candidates listed separately.
-- **Period lock** after the user marks a UStVA as submitted.
+Proposed task-specific window or sheet, not another permanent dashboard. Current scope and acceptance criteria are in the [product backlog](docs/backlog.md) and [workflow research](docs/research-user-workflow.md).
+
+- **UStVA preparation first:** choose period, resolve concrete exceptions, inspect verified year-specific Kennzahlen and their source transactions/payments, copy values and export a traceable report.
+- **VAT per period:** own output VAT plus self-assessed liability minus eligible input VAT deductions. Kleinunternehmer reverse charge has no matching input VAT deduction.
+- **EÜR preparation:** payment-based contributions mapped to verified year-specific positions, with private/non-deductible shares, VAT payments/refunds and asset exceptions handled explicitly.
+- **Completeness:** unresolved material cases remain visible; partial preparation is an explicit draft, not a completed declaration.
+- **Later:** applicable deadlines and period locking after useful reporting exists. Export must never automatically mark a period as submitted or locked.
 
 ---
 
 # 30. Tax Submission Strategy
 
-Stage 1 correct data → Stage 2 exact form mappings (versioned) → Stage 3 export/handoff files → Stage 4 investigate ERiC/ELSTER only if justified. V1 ends at Stage 2.
+Correct period-specific contributions → verified form-year mappings → user-driven handoff. Provide copyable values and a traceable report first. Investigate a local UStVA XML file for manual Mein ELSTER upload early, as a bounded separate feasibility test without manufacturer registration. Public upload instructions exist, but current Ziffer-generated XML has not been validated; analogous EÜR file import is unverified. No direct ERiC transmission, hosted gateway or taxpayer-certificate handling. UStVA preparation is not the annual VAT return; EÜR is not the complete income-tax return.
 
 ---
 
@@ -1494,6 +1495,8 @@ No analytics or tax exports before this works reliably.
 ---
 
 # 39. Implementation Order
+
+Historical milestone outline, not a current implementation checklist. The [status](docs/status.md) records what actually exists, and the [backlog](docs/backlog.md) supersedes this ordering and any broader deferred feature suggestions below.
 
 **M0 — Repository foundation:** `Package.swift` with all modules, `project.yml`, scripts, Swift 6/strict concurrency, Swift Testing skeleton, `Money`/`LocalDate`, all enums, CI optional.
 

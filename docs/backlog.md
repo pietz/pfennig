@@ -1,6 +1,6 @@
 # Produkt-Backlog: vom Beleg zur Steuerabgabe
 
-Planungsübersicht nach `c5e1832`. Prioritäten sind Empfehlungen, keine Zusage für den nächsten Release. GitHub Issues bleiben die technischen Arbeitspakete; diese Übersicht ordnet den Nutzerablauf. Produktscope: deutsche Selbstständige, EÜR, Ist-Versteuerung, Regelbesteuerung und Kleinunternehmer.
+Stand 14.09.2026, Recherche nach `e84acc2`. Prioritäten sind Empfehlungen, keine Zusage für den nächsten Release. GitHub Issues bleiben die technischen Arbeitspakete; diese Übersicht ordnet den Nutzerablauf. Produktscope: deutsche Selbstständige, EÜR, Ist-Versteuerung, Regelbesteuerung und Kleinunternehmer. Begründung, Code-Lücken und Abnahmekriterien stehen in [Recherche zum Nutzerworkflow](research-user-workflow.md).
 
 > Belege ablegen → prüfen und zuordnen → Zahlen nachvollziehen → Steuerdaten vorbereiten → selbst abgeben.
 
@@ -20,14 +20,14 @@ Planungsübersicht nach `c5e1832`. Prioritäten sind Empfehlungen, keine Zusage 
 
 ## B. Fehlende Bausteine nach Priorität
 
-### P0: Vertrauen in den heutigen Kern
+### Separater Sicherheits-/Qualitätsstrang: bisheriges P0
 
-Vor einer Empfehlung für ernsthafte Nutzung mit echten Buchhaltungsdaten. Nicht Voraussetzung, um den Quellcode als ausdrücklich experimentelle Preview zu veröffentlichen.
+Der Nutzer übernimmt die privaten Belegqualitätstests separat. Dieser Strang blockiert nicht die Planung oder den nächsten Ausbau von Steuerausgabe und Importen. Die Aufgaben bleiben vor einer Empfehlung für ernsthafte Nutzung relevant; eine ausdrücklich experimentelle Quellcode-Preview ist davon zu unterscheiden.
 
 | Aufgabe | Kleiner, überprüfbarer Abschluss |
 |---|---|
 | **Echte Belege testen** | Kuratierten privaten Testbestand durch den vollständigen Import-/Prüfablauf laufen lassen; materielle Fehler dokumentieren und beheben |
-| **Daten herausbekommen** | Verständlicher CSV-Buchungsexport mit Belegreferenzen; Originaldateien bleiben zugänglich |
+| **Daten herausbekommen** | CSV-Nachweis mit Beleg- und Zahlungsreferenzen im Berichtsausbau mitliefern; kein vorgelagerter eigener Featureblock |
 | **Sichern und wiederherstellen** | Konsistente lokale Archivkopie und verifizierter Wiederherstellungsweg, zunächst ohne Cloud-/Backup-Automatik |
 | **Erstinstallation und Updates absichern** | Frisches macOS-Benutzerkonto testen, unterstützte KI-Einstellungen prüfen, klare Grenzen dokumentieren; veröffentlichte Archive bei Updates erhalten |
 
@@ -35,19 +35,19 @@ Vor einer Empfehlung für ernsthafte Nutzung mit echten Buchhaltungsdaten. Nicht
 
 | Funktion | Erster sinnvoller Umfang |
 |---|---|
-| **UStVA-Vorbereitung** | Geprüfte, formjahrbezogene Kennzahlen; jede Summe führt zu ihren Buchungen; offene/unsupported Fälle sichtbar; kopierbare Übertragungshilfe |
-| **EÜR-Vorbereitung** | Zahlungsgerechte Jahresauswertung nach Kategorien/Formularpositionen; nachvollziehbare Einzelbeträge; Anlagen und nicht unterstützte Korrekturen separat ausweisen |
-| **Kontoauszugimport + Matching** | Ein tatsächlich verwendetes CSV-Format; privat/intern/geschäftlich unterscheiden; eindeutige Zuordnungen, mehrdeutige Fälle manuell prüfen |
-| **Beleg zuerst oder Zahlung zuerst** | Gegenstück am selben Vorgang ergänzen statt doppelt buchen; fehlende Belege aus geschäftlichen Kontobewegungen entdecken |
-| **E-Rechnungen lesen** | XRechnung und ZUGFeRD, UBL/CII gezielt abdecken; strukturierte Rechnungsdaten lokal auslesen, Original erhalten; KI nur für verbleibende Vorschläge |
+| **UStVA-Vorbereitung zuerst** | Zeitraum → konkrete Ausnahmen → geprüfte Formularwerte mit Einzelbelegen → kopierbare Übertragungshilfe; Teilzahlungen, Vorsteuerzeitpunkt und typische Reverse-Charge-Fälle fachlich schließen |
+| **UStVA-XML früh prüfen** | Begrenzter Machbarkeitstest für lokalen Export und manuelles Hochladen; öffentliche Uploadanleitung ist belegt, aktueller vollständiger Formatvertrag und ein erfolgreicher Import noch nicht; keine Herstellerregistrierung |
+| **Kontoauszugimport + Matching** | Ein tatsächlich verwendetes CSV-Format; privat/intern/geschäftlich unterscheiden; vorhandene manuelle Zahlungen abgleichen, mehrdeutige Fälle manuell prüfen |
+| **Beleg zuerst oder Zahlung zuerst** | Gegenstück am selben Vorgang ergänzen statt doppelt buchen; Teilzahlungen sowie lösbare Zuordnungen; fehlende Belege aus geschäftlichen Kontobewegungen entdecken |
+| **EÜR-Vorbereitung anschließend** | Zahlungsgerechte Jahresauswertung nach geprüften Formularpositionen; Umsatzsteuerzahlungen, Privatanteile und Jahreswechsel berücksichtigen; Anlagen und nicht unterstützte Korrekturen separat ausweisen |
+| **E-Rechnungen als Importinkrement** | XRechnung UBL/CII, danach eingebettetes ZUGFeRD-XML; strukturierte Fakten lokal lesen und vorhandenen Prüfpfad verwenden; kein eigener Buchhaltungsworkflow |
 
-UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-Summen. Manuell erfasste Zahlungen erlauben einen ersten Report bereits vor dem Bankimport; für komfortable Vollständigkeit ist der Abgleich aber wesentlich. Die vorhandenen Formular-Mappings sind ausdrücklich ungeprüft und keine freigegebene Abgabegrundlage.
+UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-Summen oder das erste Zahlungsdatum. Manuell erfasste Zahlungen erlauben einen ersten Report bereits vor dem Bankimport; für komfortable Vollständigkeit ist der Abgleich aber wesentlich. Die vorhandenen Formular-Mappings sind ausdrücklich ungeprüft und keine freigegebene Abgabegrundlage. Ein aufgabenbezogenes Fenster/Sheet reicht; Start und Buchungen bleiben ruhig. Export ist keine Abgabe, ungelöste relevante Fälle bleiben als Entwurf erkennbar.
 
 ### P2: Bedienaufwand reduzieren
 
 | Funktion | Anlass / Grenze |
 |---|---|
-| **UStVA-XML-Export untersuchen** | Mein ELSTER bietet ausdrücklich XML-Upload an; erst Format, Zugänglichkeit und Importfähigkeit eines Exports verifizieren |
 | Wiederkehrende Anbieterregeln | Wiederholt bestätigte Kategorien/Zuordnungen vorschlagen; kein freies Regelwerk vorsorglich bauen |
 | Weitere Kontoformate | Erst aus realem Nutzerbedarf, nicht alle Banken auf einmal |
 | Anstehende Termine auf Start | Nur bekannte Verpflichtungen und zutreffende Termine, keine leeren Kalenderfunktionen |
@@ -68,7 +68,7 @@ UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-S
 |---|---|
 | Formularnahe UStVA-/EÜR-Übertragungshilfe | **Empfohlener Einstieg.** Ziffer berechnet und erklärt; Nutzer prüft und überträgt in Mein ELSTER |
 | Kopierbare Werte, druckbarer Bericht/PDF, CSV | Sinnvoll für Übertragung, eigene Unterlagen oder Steuerberatung; nicht automatisch ein akzeptiertes ELSTER-Importformat |
-| UStVA-XML zum manuellen Hochladen | **Konkreter Untersuchungskandidat.** Offiziell dokumentierter Upload, aber der benötigte Formatvertrag und Ziffers Zugang dazu sind noch zu klären |
+| UStVA-XML zum manuellen Hochladen | **Früher, begrenzter Machbarkeitstest.** Öffentliche Anleitung enthält Nutzdatenstruktur, Beispiel und Zeichensatz; vollständige Jahresschemata werden in die ERiC-Dokumentation verwiesen. Kein aktueller Ziffer-Import validiert; ohne Registrierung prüfen, sonst Übertragungshilfe beibehalten |
 | EÜR-Dateiimport | Auf der geprüften Formularseite kein entsprechender externer Import dokumentiert; nicht versprechen |
 | Direkte Übermittlung mit ERiC | Lokale C-Bibliothek möglich, aber Entwicklerregistrierung/Hersteller-ID erforderlich; das ist unabhängig vom persönlichen ELSTER-Zugang |
 
@@ -76,17 +76,20 @@ Ein ausgefülltes PDF ersetzt nicht die reguläre elektronische Abgabe. Eine ein
 
 Offizielle Quellen:
 - [UStVA-Formular mit Hinweis auf externen XML-Upload](https://www.elster.de/eportal/formulare-leistungen/alleformulare/ustvaeru)
+- [UStVA: öffentliche XML-Uploadanleitung](https://www.elster.de/eportal/helpGlobal?themaGlobal=ustva_upload)
 - [Anlage EÜR: authentifizierte elektronische Übermittlung](https://www.elster.de/eportal/formulare-leistungen/alleformulare/euer)
 - [Mein ELSTER: unterstützte CSV-Importformulare](https://www.elster.de/eportal/helpGlobal?themaGlobal=anleitung_zur_importfunktion_eop)
 - [Entwicklerregistrierung und ERiC](https://www.elster.de/elsterweb/infoseite/entwickler)
 
 ## D. Vorschlag für die nächsten Schritte
 
-1. **Realitätsprüfung:** 30–50 bewusst verschiedene echte Belege, darunter Scans/Fotos, lange Rechnungen, Mischsteuersätze, Fremdwährung, Gutschriften und §19-Fälle. Erwartete Kernwerte manuell festhalten; nicht nur messen, ob JSON zurückkommt, sondern ob ein brauchbarer Buchungsvorschlag entsteht.
-2. **Sicherer Ausgang:** CSV-Export sowie Sicherung/Wiederherstellung. Damit ist die frühe Version kein Datensackgassen-Projekt.
-3. **Erstes Steuerergebnis:** Einen UStVA-Zeitraum bis zur kopierbaren Übertragungshilfe vollständig durchgehen; XML-Machbarkeit parallel kurz klären, aber nicht zum Blocker machen.
-4. **Weniger Handarbeit:** Ein Kontoformat und beidseitigen Beleg-/Zahlungsabgleich schließen; E-Rechnungen als begrenzten weiteren Eingang hinzufügen.
-5. **Jahresabschluss vorbereiten:** EÜR-Ausgabe vervollständigen, anschließend Periodenfreigabe und Komfortfunktionen.
+1. **Erstes Steuerergebnis:** Einen UStVA-Zeitraum fachlich korrekt und nachvollziehbar bis zur Übertragungshilfe schließen. Einfachen CSV-Nachweis mitliefern. XML-Machbarkeit früh separat prüfen, aber nicht zum Blocker machen.
+2. **Weniger Handarbeit:** Ein Kontoformat und beidseitigen Beleg-/Zahlungsabgleich schließen, einschließlich vorhandener manueller Zahlungen und Teilzahlungen.
+3. **Jahresabschluss vorbereiten:** EÜR-Ausgabe auf der gemeinsamen Berichtsbasis ergänzen. Nicht unterstützte Jahresabschlussarbeiten sichtbar halten, keine scheinbar vollständige Erklärung erzeugen.
+4. **Strukturierten Eingang ergänzen:** E-Rechnungen als begrenztes Importinkrement, bei passender Arbeitsteilung parallel zu den anderen Schritten.
+5. **Danach Komfort:** Regeln, echte Termine und Periodenfreigabe erst auf einem nutzbaren Eingangs-/Ausgangsworkflow aufbauen.
+
+Private Belegqualitätstests laufen beim Nutzer separat. Sicherung/Wiederherstellung und Release-Prüfungen bleiben wichtige eigene Aufgaben, nicht die Antwort auf die aktuelle Frage nach den nächsten Kernfunktionen.
 
 Private Testbelege bleiben außerhalb des Repositories. Eine Übertragung an OpenAI erfolgt nur nach ausdrücklicher Freigabe; auch Antworten und Logs können private Daten enthalten. Öffentliches Regressionstestmaterial muss freigegeben oder sinnvoll anonymisiert sein.
 
@@ -94,4 +97,4 @@ Private Testbelege bleiben außerhalb des Repositories. Eine Übertragung an Ope
 
 Die Trennung von Geschäftsvorgang, Beleg, Zahlung und Zuordnung passt zu beiden Eingangswegen; es gibt derzeit keinen konkreten Grund für einen Schema-Neuentwurf. Die Breite des vorbereiteten Modells ist aber kein Beleg, dass alle Workflows bereits funktionieren. Stabilität wird mit realen Fällen, Abgleich und wiederherstellbaren Archiven nachgewiesen, nicht mit weiteren Tabellen.
 
-**Open-Source-Preview: ja**, mit ehrlicher Beschreibung als lokale Belegerfassung/Buchhaltung im frühen Stadium. **Vollständiger Accountable-Ersatz: noch nicht**, besonders wegen Abgleich und Steuerausgabe. Release-Technik und Freigaben bleiben separat in [status.md](status.md) und [releasing.md](releasing.md) geführt; diese Planung autorisiert keine Veröffentlichung, Übermittlung oder privaten Belegtests.
+**Open-Source-Preview: ja**, mit ehrlicher Beschreibung als lokale Belegerfassung/Buchhaltung im frühen Stadium. **Vollständiger Accountable-Ersatz: noch nicht**, besonders wegen Abgleich und Steuerausgabe. Auch nach UStVA/EÜR-Vorbereitung bleiben jährliche Umsatzsteuererklärung, vollständige Einkommensteuererklärung und gegebenenfalls ZM eigenständige Aufgaben. Release-Technik und Freigaben bleiben separat in [status.md](status.md) und [releasing.md](releasing.md) geführt; diese Planung autorisiert keine Veröffentlichung, Übermittlung oder privaten Belegtests.
