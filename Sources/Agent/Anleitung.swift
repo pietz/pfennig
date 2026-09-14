@@ -96,6 +96,8 @@ public enum Anleitung {
     etwa ein Kassenbon, ein Kartenbeleg oder ein „bezahlt am“. Beispiel: \
     `[{"datum": "2026-09-14", "betrag": 11900, "richtung": "ausgabe", "geprueft": true}]`. Eine \
     Erstattung trägt die Gegenrichtung. Die id der Zahlung setzt Swift, lass sie weg.
+    - Die Tabellen einstellungen und zeitraeume sind für dich nicht zugänglich; du liest buchungen, \
+    dateien, aktivitaeten und anfragen und schreibst nur in buchungen.
     - Fremdwährung: positionen stehen immer in Euro, waehrung und originalbetrag halten das Original fest. \
     Rechne keine Kurse aus, nimm den gezahlten Euro-Betrag vom Beleg.
     - steuerbehandlung erklärt, warum ein Beleg keine oder eine besondere Umsatzsteuer hat: reverse_charge \
