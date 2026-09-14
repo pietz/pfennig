@@ -19,3 +19,7 @@ Nach dem Test des Nutzers nachgezogen: Das Erscheinungsbild sitzt jetzt auf `NSA
 Nach der zweiten Runde Tests entschieden: Dateien laufen nebeneinander, höchstens zehn gleichzeitig, und der Anzeiger zählt die fertigen; jede Anweisung geht weiterhin durch die eine Datenbankschlange, und zwei gleiche Dateien in einem Wurf teilen sich einen Lauf. Der KI-Zugang trägt jetzt Modell (Sol, Terra, Luna; Luna ist die Vorgabe), Denkaufwand und den Schalter „Schnellere Verarbeitung“, gespeichert unter `ki.modell`, `ki.aufwand` und `ki.schnell`; der Schalter setzt `service_tier: "priority"`, OpenAIs Fast mode zum etwa doppelten Preis (Abschnitt 8 der API-Notizen). Die Spalte Zahlung heißt Bezahlt, und ein Klick auf das Symbol bezahlt den offenen Rest mit heutigem Datum oder nimmt alle Zahlungen wieder weg.
 
 Nächster Schritt: der Export nach Abschnitt 5, UStVA als XML und EÜR als CSV.
+
+**Abend 2026-09-14.** Abschnitte 1 bis 3 sind auf main: Kern (Schema, Repository, Prüfregeln, sql-Werkzeug mit Autorisierer), Agent (Responses-Schleife, Anleitung, Eingang, Keychain) und App (Tabelle, Inspector, Einstellungen, Drag-and-drop). Vier echte Rechnungen wurden erfolgreich verarbeitet. Produktion rund 3.700 Zeilen, 50 Tests.
+
+Nächste Schritte: Abschnitt 4 Export (UStVA-XML, EÜR-CSV, Tabelle zeitraeume; Berechnung und Exporter aus dem Tag legacy-2026-09-14 übernehmen). Anleitung des Agenten schärfen: Privatanteil nur bei eindeutigem Hinweis, einheitliche Gegenparteinamen, kürzere Titel und Firmennamen.
