@@ -1,6 +1,11 @@
 # Bank / Payment Processor Statement CSV Formats
 
-Research notes for the planned `StatementColumnMapping` parsers referenced in concept.md section 10.3 and future `statement_lines` ingestion. Fixed-format statement parsers are not implemented yet; the current `StatementImport` module contains only foundational fingerprinting logic.
+Research notes behind the `StatementColumnMapping` entries in
+`Sources/StatementImport/StatementFormats.swift`, which the CSV importer
+(spec `docs/specs/statement-import.md`, step 2) recognizes by header
+signature. Each format below is one catalog entry; none of them is a separate
+parser. A header the catalog does not know falls back to the generic header
+heuristic and, failing that, to the model.
 
 Methodology: WebSearch/WebFetch against official bank help pages plus cross-checking
 against open-source finance-tool parsers (hledger, beancount, Firefly III import
@@ -453,12 +458,53 @@ Fixture: `Fixtures/statements/amex-de.csv`
     multi-cardholder business accounts.
 - **Recommendation:** given the weak evidentiary base, the Amex DE parser should
   sniff the header row against a small set of known candidate layouts at import time
-  rather than being hard-coded to one exact schema — of all ten formats in this
+  rather than being hard-coded to one exact schema — of all the formats in this
   document, this is the one where "no guessing at runtime" is hardest to guarantee.
 - **Sources:** Lexware FinanzManager 2025 official support PDF (real screenshot with
   header and sample rows); handbuch.fibuscan.de (confirms download flow only, no
   column names); kontocsv.de / smartkontoauszug.de (confirm "unusual, non-DATEV
   format" but do not quote native headers).
+
+
+## 11. Revolut — personal / business account CSV
+
+**Confidence: high** on the header and formatting conventions (taken from a
+real current export the user supplied; the fixture rows are hand-written
+replacements, no real values). **Not verified** across Revolut's other export
+templates (statement PDF/CSV per account, "Excel" export), which differ.
+
+Fixture: `Fixtures/statements/revolut.csv`
+
+- **Preamble:** none. Header is line 1.
+- **Encoding:** UTF-8, no BOM. **Delimiter:** `,`. **Quoting:** minimal.
+- **Header row (verbatim):**
+  ```
+  Type,Product,Started Date,Completed Date,Description,Amount,Fee,Currency,State,Balance
+  ```
+- **Date format:** ISO `YYYY-MM-DD HH:MM:SS` in both date columns; only the
+  date part is booked. `Completed Date` is the booking date, `Started Date`
+  the value date. A row that is not `COMPLETED` can have an empty
+  `Completed Date`.
+- **Amount:** `Amount`, one signed column, decimal **point**, no thousands
+  separator. **Quirk:** `Fee` is a **separate, positive** column that lowers
+  the balance *in addition to* `Amount`, so the booked movement is
+  `Amount - Fee`. The importer stores the fee separately (`feeMinor`) so a
+  later step can book it; this differs from PayPal and Stripe, whose `Netto`
+  and `net` columns are already net of the fee.
+- **State — quirk:** only `COMPLETED` rows are real movements. `REVERTED`,
+  `PENDING` and `DECLINED` rows appear in the same file, leave the balance
+  untouched, and are skipped and reported rather than imported.
+- **Counterparty:** `Description` only — free text, no IBAN, no BIC and no
+  email, so the importer cannot derive an account identity from the file and
+  the caller has to supply an account key (for example `revolut:<label>`).
+- **Type:** `Card Payment`, `Card Refund`, `Transfer`, `Deposit`, `Exchange`,
+  `Fee`, `Topup`. Kept as the booking text (and in the raw row), so the
+  matcher can treat a `Card Refund` as a refund candidate.
+- **Balance:** `Balance` is the running balance after the booking. The
+  importer cross-checks it (`balance[i] == balance[i-1] + amount[i]`) and
+  reports the first break — the CSV counterpart of the closing-balance control
+  the spec requires for PDF statements.
+- **Sources:** a real export supplied by the user (values not reproduced).
 
 ---
 
@@ -476,3 +522,11 @@ Fixture: `Fixtures/statements/amex-de.csv`
 | PayPal (DE) | Medium-high | UTF-8+BOM (inferred) | `,` | none | DD.MM.YYYY | `,` |
 | Stripe | High | UTF-8 (assumed) | `,` | none | ISO-ish (unconfirmed exact) | `.` |
 | American Express DE | Low | Unverified | `,` | none (unconfirmed) | DD/MM/YYYY | `,` |
+| Revolut | High | UTF-8 | `,` | none | YYYY-MM-DD HH:MM:SS | `.` |
+
+## Fixture corrections
+
+- **PayPal (2026-09-14):** the fixture put the account owner in `Name` on
+  outgoing rows, contradicting this document, which states that `Name` is the
+  counterparty's display name. The fixture was corrected (the Adobe and Google
+  subscription rows now name the merchant); the document was right.
