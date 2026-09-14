@@ -10,6 +10,19 @@ The product north star is:
 
 `concept.md` is the detailed product specification. Keep it and this file aligned when product decisions change.
 
+### Settled workflow and decision lens
+
+The product exists to remove as much routine bookkeeping work as possible for the initial audience, not merely to digitize manual entry. Aim to cover the great majority of their everyday workflows; “90%” expresses this product ambition, not a measured accuracy or coverage guarantee.
+
+- One drag-and-drop entrance accepts the ordinary bookkeeping documents the user has, including receipts, invoice PDFs/images, CSV and PDF statements, and structured e-invoices. Do not make users select a workflow before importing or artificially restrict statement support to CSV.
+- A business transaction can start with either its document or its payment. Ziffer identifies, organizes, and joins the corresponding evidence, enriching the same transaction rather than creating duplicate income or expense.
+- Automatically apply unambiguous links and fully validated, supported standard cases. Do not require routine confirmation of every imported transaction. Missing facts, conflicting evidence, ambiguous matches, and material tax uncertainty become durable, actionable exceptions; model confidence alone is not sufficient authorization.
+- Use capable multimodal models for understanding PDFs/images and unstructured documents. Use local parsers for structured facts where appropriate; both paths feed the same validated workflow. Choose preprocessing and bounded tools to remove user work, not to create separate product modes. Neither an agent framework nor a chat interface is required.
+- Complete the outgoing workflow too: derive the applicable tax tasks and deadlines, surface them on Start, and prepare UStVA/EÜR values and practical handoff with minimal manual work. Users should not have to select all relevant bookings again for each report.
+- Keep the workspace clean. Show what needs a decision rather than exposing the machinery of extraction, matching, or agent execution. Chat is outside the current scope.
+
+These principles and the receipt-first/payment-first workflow are settled. Infer ordinary implementation choices from them instead of repeatedly reopening foundational product questions. Ask only about genuinely unresolved consequential behavior.
+
 ## Initial Audience
 
 Build first for:
@@ -35,7 +48,7 @@ Common cases worth supporting include domestic 7%/19% VAT, mixed-rate receipts, 
 
 ## AI and Deterministic Logic
 
-AI extracts document facts and creates proposals. It does not make the final bookkeeping or tax decision.
+AI extracts document facts and creates proposals. Deterministic application rules validate and authorize supported automatic actions; AI does not independently authorize bookkeeping or tax decisions. The user remains the final authority, without having to approve every safe standard case.
 
 - Use strict structured extraction and validate the response schema.
 - Keep German tax calculations, treatment rules, totals, dates, and persistence deterministic in Swift.
@@ -59,7 +72,7 @@ Defer automated eligibility thresholds, regime changes, mixed-activity exception
 
 Use current official primary sources for consequential tax rules. Describe Ziffer as supporting bookkeeping and GoBD practices, not as providing tax advice or blanket compliance certification.
 
-Tax preparation and user-driven handoff are in scope; direct filing is not. Do not introduce ELSTER manufacturer registration, manufacturer credentials, or a hosted transmission gateway. Treat manual XML upload as a separate capability that must be verified per form and year; an export is not a submission.
+Tax preparation and user-driven handoff are in scope; direct filing is not. Do not introduce ELSTER manufacturer registration, manufacturer credentials, or a hosted transmission gateway. Treat manual XML upload as a separate capability that must be verified per form and year; an export is not a submission. Copyable form values are an accepted first delivery, not the long-term endpoint: pursue a verified UStVA XML handoff early, without making the first useful report depend on it.
 
 ## Experience
 
