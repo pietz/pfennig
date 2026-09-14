@@ -58,7 +58,7 @@ public struct Eingang: Sendable {
                 return .bereitsVorhanden
             }
 
-            let inbox = try inInbox(url, daten: daten)
+            let inbox = try inInbox(url, daten: daten, hash: hash)
             liegt = inbox
             guard let schluessel = Schluesselbund.lesen(), schluessel.isEmpty == false else {
                 throw Agentenfehler.keinSchluessel
@@ -92,10 +92,15 @@ public struct Eingang: Sendable {
 
     /// The file lands in the inbox before the run, so a crash leaves it there
     /// and the next start picks it up again.
-    private func inInbox(_ url: URL, daten: Data) throws -> URL {
+    private func inInbox(_ url: URL, daten: Data, hash: String) throws -> URL {
         guard Eingang.liegtInInbox(url) == false else { return url }
         try Archivpfad.anlegen()
-        let ziel = Archivpfad.inbox.appending(path: url.lastPathComponent)
+        var ziel = Archivpfad.inbox.appending(path: url.lastPathComponent)
+        if FileManager.default.fileExists(atPath: ziel.path) {
+            // Another file of that name is still waiting; it keeps its place.
+            let name = url.deletingPathExtension().lastPathComponent
+            ziel = Archivpfad.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
+        }
         try daten.write(to: ziel)
         return ziel
     }

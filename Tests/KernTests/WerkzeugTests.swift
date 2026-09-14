@@ -44,6 +44,87 @@ func autorisiererWeistAllesAndereAb(sql: String) throws {
     #expect(werkzeug.ausfuehren(sql).text.hasPrefix("Nicht erlaubt"))
 }
 
+/// The cases that reach past a table of action codes: `VACUUM` never asks the
+/// authorizer at all, everything else asks and is refused.
+@Test(arguments: [
+    "VACUUM",
+    "VACUUM INTO '/tmp/pfennig-leck.db'",
+    "ATTACH DATABASE '/tmp/pfennig-fremd.db' AS fremd",
+    "SELECT * FROM sqlite_schema",
+    "SELECT count(*) FROM einstellungen",
+    "SELECT (SELECT wert FROM einstellungen LIMIT 1) AS geheim",
+    "SELECT json_group_array(wert) FROM einstellungen",
+    "WITH e AS (SELECT wert FROM einstellungen) SELECT * FROM e",
+    "SELECT id FROM buchungen WHERE titel IN (SELECT wert FROM einstellungen)",
+    """
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    SELECT 'ausgabe', 'beleg', '2026-09-01', wert, 'software',
+        '[{"netto": 100, "steuersatz": 19, "steuer": 19}]', 'inland' FROM einstellungen LIMIT 1
+    """,
+    "UPDATE buchungen SET notizen = (SELECT wert FROM einstellungen LIMIT 1) WHERE id = 1",
+    "INSERT INTO aktivitaeten (buchung_id, zeitpunkt, akteur, nachher) VALUES (1, 'x', 'agent', '{}')",
+    "UPDATE anfragen SET status = 'erfolg'",
+    "CREATE TRIGGER t AFTER INSERT ON buchungen BEGIN UPDATE anfragen SET status = 'erfolg'; END",
+    "CREATE TEMP TABLE zwischen (a)"
+])
+func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
+    let (_, werkzeug) = try werkzeug()
+    #expect(werkzeug.ausfuehren(sql).text.hasPrefix("Nicht erlaubt"))
+    #expect(FileManager.default.fileExists(atPath: "/tmp/pfennig-leck.db") == false)
+}
+
+/// REPLACE looks like a DELETE and an INSERT, but SQLite only reports the
+/// insert. The row keeps its id, so the comparison sees it and Swift puts back
+/// what belongs to it.
+@Test func werkzeugHaeltBelegeAuchGegenReplace() throws {
+    let (repository, werkzeug) = try werkzeug()
+    _ = werkzeug.ausfuehren(gueltigeBuchung)
+    try repository.belegAnhaengen("abc", an: [1])
+    try repository.bestaetigen(id: 1)
+
+    let ergebnis = werkzeug.ausfuehren("""
+    INSERT OR REPLACE INTO buchungen (id, richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    VALUES (1, 'ausgabe', 'beleg', '2026-09-02', 'Ersetzt', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(ergebnis.beruehrt == [1])
+    let buchung = try #require(try repository.alleBuchungen().first)
+    #expect(buchung.titel == "Ersetzt")
+    #expect(buchung.belege == ["abc"])
+    #expect(buchung.geprueftAm != nil)
+}
+
+/// A new id is a removal with another name: the old row would be gone without a
+/// DELETE and without a line in the log.
+@Test func werkzeugLaesstKeineBuchungVerschwinden() throws {
+    let (repository, werkzeug) = try werkzeug()
+    _ = werkzeug.ausfuehren(gueltigeBuchung)
+    let ergebnis = werkzeug.ausfuehren("UPDATE buchungen SET id = 99 WHERE id = 1")
+    #expect(ergebnis.text.contains("entfernt"))
+    #expect(ergebnis.beruehrt.isEmpty)
+    #expect(try repository.alleBuchungen().map(\.id) == [1])
+}
+
+/// The schema says TEXT, not JSON. A list Swift cannot read stops the write.
+@Test func werkzeugRolltUnlesbaresJsonZurueck() throws {
+    let (repository, werkzeug) = try werkzeug()
+    let ergebnis = werkzeug.ausfuehren("""
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2026-09-01', 'Krumm', 'software', 'kein json', 'inland')
+    """)
+    #expect(ergebnis.text.contains("JSON"))
+    #expect(try repository.alleBuchungen().isEmpty)
+}
+
+@Test func werkzeugSagtWennNichtsGeschahUndSchreibtKeineAktivitaet() throws {
+    let (repository, werkzeug) = try werkzeug()
+    _ = werkzeug.ausfuehren(gueltigeBuchung)
+    let ergebnis = werkzeug.ausfuehren("UPDATE buchungen SET titel = titel WHERE id = 1")
+    #expect(ergebnis.text == "Die Anweisung hat keine Buchung verändert.")
+    #expect(ergebnis.beruehrt.isEmpty)
+    #expect(try repository.datenbank.read { try Aktivitaet.fetchAll($0) }.count == 1)
+}
+
 @Test func werkzeugNimmtNurEineAnweisung() throws {
     let (_, werkzeug) = try werkzeug()
     let ergebnis = werkzeug.ausfuehren("SELECT id FROM buchungen; DELETE FROM buchungen")

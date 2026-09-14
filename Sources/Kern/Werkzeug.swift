@@ -21,15 +21,18 @@ public final class Werkzeug: Sendable {
 
     private let repository: Repository
     /// An empty copy of the schema with the authorizer on it. It compiles the
-    /// agent's statement and nothing else.
+    /// agent's statement and nothing else. Without the schema there is no
+    /// check, so a schema that does not build leaves no tool behind.
     private let pruefstand: DatabaseQueue
+    /// Whether the authorizer was asked anything during the last compile.
+    private let mitschrift = Autorisierer.Mitschrift()
 
     public init(_ repository: Repository) throws {
         self.repository = repository
         pruefstand = try DatabaseQueue()
         try pruefstand.write(Schema.anlegen)
         // From here on the connection answers nothing but the agent's compile.
-        pruefstand.writeWithoutTransaction { Autorisierer.einrichten($0.sqliteConnection) }
+        pruefstand.writeWithoutTransaction { Autorisierer.einrichten($0.sqliteConnection, mitschrift) }
     }
 
     /// Runs one statement and always answers in German, errors included: the
@@ -52,14 +55,22 @@ public final class Werkzeug: Sendable {
     private func genehmigen(_ sql: String) throws {
         do {
             try pruefstand.writeWithoutTransaction { db in
+                mitschrift.gefragt = false
                 _ = try db.makeStatement(sql: sql)
+                // `VACUUM` compiles without asking the authorizer once; a
+                // statement nobody was asked about is not an allowed one.
+                guard mitschrift.gefragt else { throw Werkzeug.nichtErlaubt("diese Anweisung") }
             }
         } catch let fehler as DatabaseError where fehler.resultCode == .SQLITE_AUTH {
-            throw Werkzeugfehler.text("""
-            Nicht erlaubt: \(fehler.message ?? "diese Anweisung"). Erlaubt sind SELECT auf buchungen, \
-            dateien, aktivitaeten und anfragen sowie INSERT und UPDATE auf buchungen.
-            """)
+            throw Werkzeug.nichtErlaubt(fehler.message ?? "diese Anweisung")
         }
+    }
+
+    static func nichtErlaubt(_ grund: String) -> Werkzeugfehler {
+        .text("""
+        Nicht erlaubt: \(grund). Erlaubt sind SELECT auf buchungen, dateien, aktivitaeten und \
+        anfragen sowie INSERT und UPDATE auf buchungen.
+        """)
     }
 
     private func durchfuehren(_ sql: String) throws -> Werkzeugergebnis {
@@ -76,6 +87,22 @@ public final class Werkzeug: Sendable {
                 try anweisung.execute()
                 let nachher = try Werkzeug.zeilen(db)
                 let beruehrt = nachher.filter { vorher[$0.key] != $0.value }.keys.sorted()
+
+                // A booking may change, it may not go. An UPDATE on the id
+                // would take one away without a DELETE and without a trace.
+                let verschwunden = vorher.keys.filter { nachher[$0] == nil }.sorted()
+                guard verschwunden.isEmpty else {
+                    ergebnis.text = """
+                    Die Anweisung hätte die \(verschwunden.count == 1 ? "Buchung" : "Buchungen") \
+                    \(verschwunden.map(String.init).joined(separator: ", ")) entfernt. Die id einer \
+                    Buchung bleibt, wie sie ist.
+                    """
+                    return .rollback
+                }
+                guard beruehrt.isEmpty == false else {
+                    ergebnis.text = "Die Anweisung hat keine Buchung verändert."
+                    return .commit
+                }
 
                 let profil = try Repository.profil(db)
                 var meldungen: [String] = []
@@ -113,7 +140,10 @@ public final class Werkzeug: Sendable {
             let gespeichert = try Repository.speichern(buchung, akteur: .agent, vorher: alt, in: db)
             return Pruefregeln.pruefen(gespeichert, profil: profil).map { "Buchung \(id): \($0)" }
         } catch {
-            return ["Buchung \(id) ließ sich nicht lesen: \(error.localizedDescription)"]
+            return ["""
+            Buchung \(id) ließ sich nicht lesen: \(error.localizedDescription) positionen, zahlungen \
+            und belege brauchen JSON in der Form aus dem Schema.
+            """]
         }
     }
 

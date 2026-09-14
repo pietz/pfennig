@@ -18,6 +18,16 @@ public enum Autorisierer {
     /// INSERT and UPDATE only ever touch the bookings.
     static let schreibbar: Set<String> = ["buchungen"]
 
+    /// Whether SQLite asked at all while it compiled. `VACUUM` is the one
+    /// statement that asks nothing, so without this note it would walk past a
+    /// table that only ever answers questions. A compile without a single
+    /// question is not a statement this table has seen, and is refused.
+    ///
+    /// Only ever touched inside the serialized queue of the check connection.
+    final class Mitschrift: @unchecked Sendable {
+        var gefragt = false
+    }
+
     /// The decision for one action code and its first argument, usually the
     /// table name. Everything the table below does not name is denied: DELETE,
     /// DROP, ALTER, CREATE, PRAGMA, ATTACH, transactions of the agent's own
@@ -33,14 +43,17 @@ public enum Autorisierer {
 
     /// Installs the decision on a connection. Only ever called on the private
     /// connection the sql tool compiles on.
-    static func einrichten(_ verbindung: OpaquePointer?) {
+    static func einrichten(_ verbindung: OpaquePointer?, _ mitschrift: Mitschrift) {
         sqlite3_set_authorizer(
             verbindung,
-            { _, aktion, text1, _, _, _ in
+            { zeiger, aktion, text1, _, _, _ in
+                if let zeiger {
+                    Unmanaged<Mitschrift>.fromOpaque(zeiger).takeUnretainedValue().gefragt = true
+                }
                 let name = text1.map { String(cString: $0) }
                 return Autorisierer.erlaubt(aktion: aktion, name: name) ? SQLITE_OK : SQLITE_DENY
             },
-            nil
+            Unmanaged.passUnretained(mitschrift).toOpaque()
         )
     }
 }
