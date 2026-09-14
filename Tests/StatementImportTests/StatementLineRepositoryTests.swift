@@ -194,4 +194,20 @@ struct StatementLineRepositoryTests {
         let dkbWithSibling = try Support.run("dkb", knownAccountKeys: sparkasseKeys)
         #expect(dkbWithSibling.drafts.count { $0.classification == .internalTransfer } == 1)
     }
+
+    @Test("A separately reported fee is stored with the line")
+    func feeIsStored() throws {
+        let database = try Self.database()
+        let repository = StatementLineRepository(database)
+        let result = try Support.run("paypal", accountKey: "paypal:julia.beispiel@beispiel-design.test")
+        try repository.insert(result.drafts, accountKey: result.accountKey)
+
+        let lines = try repository.lines(accountKey: result.accountKey)
+        let charged = try #require(lines.first { $0.externalId == "2TB34567BC890123D" })
+        #expect(charged.feeMinor == 5855)
+        #expect(charged.amountMinor == 351_145)
+        // A line without a reported fee keeps NULL rather than a zero.
+        #expect(lines.contains { $0.feeMinor == nil })
+        #expect(lines.allSatisfy { ($0.feeMinor ?? 0) >= 0 })
+    }
 }

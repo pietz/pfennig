@@ -211,6 +211,10 @@ enum V001Initial {
             booking_date TEXT NOT NULL,
             value_date TEXT,
             amount_minor INTEGER NOT NULL,
+            -- The processor fee contained in amount_minor, non-negative, when
+            -- the export reports it separately (PayPal, Stripe, Revolut). The
+            -- matcher books it; it is not a second movement.
+            fee_minor INTEGER,
             currency TEXT NOT NULL,
             counterparty_raw TEXT,
             counterparty_iban TEXT,

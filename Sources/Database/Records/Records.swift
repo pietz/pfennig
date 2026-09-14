@@ -429,6 +429,8 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
     public var bookingDate: LocalDate
     public var valueDate: LocalDate?
     public var amountMinor: Int64
+    /// The processor fee contained in `amountMinor`, non-negative.
+    public var feeMinor: Int64?
     public var currency: String
     public var counterpartyRaw: String?
     public var counterpartyIban: String?
@@ -450,6 +452,7 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
         bookingDate: LocalDate,
         valueDate: LocalDate? = nil,
         amountMinor: Int64,
+        feeMinor: Int64? = nil,
         currency: String = "EUR",
         counterpartyRaw: String? = nil,
         counterpartyIban: String? = nil,
@@ -470,6 +473,7 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
         self.bookingDate = bookingDate
         self.valueDate = valueDate
         self.amountMinor = amountMinor
+        self.feeMinor = feeMinor
         self.currency = currency
         self.counterpartyRaw = counterpartyRaw
         self.counterpartyIban = counterpartyIban

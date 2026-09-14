@@ -67,6 +67,7 @@ public struct StatementLineRepository: Sendable {
                     bookingDate: draft.bookingDate,
                     valueDate: draft.valueDate,
                     amountMinor: draft.amountMinor,
+                    feeMinor: draft.feeMinor,
                     currency: draft.currency.rawValue,
                     counterpartyRaw: draft.counterpartyRaw,
                     counterpartyIban: draft.counterpartyIban,
