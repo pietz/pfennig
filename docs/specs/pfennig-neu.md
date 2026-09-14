@@ -89,3 +89,11 @@ Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API mit der Datei selbst (PDF oder Bild direkt, CSV als Text), dem Profil (eigener Name und USt-ID, Kleinunternehmer, heutiges Datum), der Kategorienliste mit je einem Satz Beschreibung, den bekannten Gegenparteien mit Land aus den vorhandenen Buchungen und der Anleitung. Nicht im Kontext: die Buchungstabelle. Ein Modell, im Code festgelegt, keine Auswahl in den Einstellungen.
 
 **Ausgabeschema Stufe 1.** Der Agent liefert, was in eine Zeile von `buchungen` gehört und aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; gegenpartei_name, gegenpartei_land, gegenpartei_ustid; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“); dazu `sicherheit` (sicher/unsicher) mit Grund in den Notizen. Das Schema ist strikt: keine fremden Felder, aber Felder, die ein Dokument nicht hergibt (USt-ID, Land, Originalbetrag, Zahlungen), dürfen leer bleiben. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift.
+
+**Prüfregeln in Swift.** Das strikte Schema garantiert Form und Typen; Swift prüft danach nur noch Inhalt, den das Schema nicht ausdrücken kann:
+- Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
+- kategorie ist ein bekannter Schlüssel, datum ist gültig und nicht weit in der Zukunft.
+- steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei, kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland mit Steuersatz 0 nur bei steuerfrei oder nicht_steuerbar.
+- Zahlungen: Betrag größer null, Datum gültig.
+
+Schlägt eine Regel fehl, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
