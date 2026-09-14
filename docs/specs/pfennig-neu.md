@@ -46,13 +46,13 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 `aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `aenderung` (JSON mit Vorher und Nachher). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
 
-`einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung, Automatisierungsstufe. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
+`einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
 Eine Tabelle für abgegebene und anstehende Zeiträume ist Thema 5 und nicht Teil der ersten Version.
 
 **Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<endung>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
-**Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; der Agent arbeitet nach der Automatisierungsstufe, die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
+**Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
 ## 3. Oberfläche
 
@@ -66,7 +66,7 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 
 **Drag-and-drop** gilt für das ganze Fenster.
 
-**Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, optional Zahnrad in der Toolbar): Profil, Automatisierungsstufe, KI-Zugang, Erscheinungsbild.
+**Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, optional Zahnrad in der Toolbar): Profil, KI-Zugang, Erscheinungsbild.
 
 **Wegfall:** Startseite, Prüfen-Seite, Sidebar, UStVA-Aufgabenfenster. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
 
@@ -88,7 +88,7 @@ Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht
 
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API mit der Datei selbst (PDF oder Bild direkt, CSV als Text), dem Profil (eigener Name und USt-ID, Kleinunternehmer, heutiges Datum), der Kategorienliste mit je einem Satz Beschreibung, den bekannten Gegenparteien mit Land aus den vorhandenen Buchungen und der Anleitung. Nicht im Kontext: die Buchungstabelle. Ein Modell, im Code festgelegt, keine Auswahl in den Einstellungen.
 
-**Ausgabeschema Stufe 1.** Der Agent liefert, was in eine Zeile von `buchungen` gehört und aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; gegenpartei_name, gegenpartei_land, gegenpartei_ustid; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“); dazu `sicherheit` (sicher/unsicher) mit Grund in den Notizen. Das Schema ist strikt: keine fremden Felder, aber Felder, die ein Dokument nicht hergibt (USt-ID, Land, Originalbetrag, Zahlungen), dürfen leer bleiben. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift.
+**Ausgabeschema Stufe 1.** Der Agent liefert, was in eine Zeile von `buchungen` gehört und aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; gegenpartei_name, gegenpartei_land, gegenpartei_ustid; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt der Agent in die Notizen. Das Schema ist strikt: keine fremden Felder, aber Felder, die ein Dokument nicht hergibt (USt-ID, Land, Originalbetrag, Zahlungen), dürfen leer bleiben. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift.
 
 **Prüfregeln in Swift.** Das strikte Schema garantiert Form und Typen; Swift prüft danach nur noch Inhalt, den das Schema nicht ausdrücken kann:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
@@ -97,3 +97,5 @@ Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht
 - Zahlungen: Betrag größer null, Datum gültig.
 
 Schlägt eine Regel fehl, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
+
+**Prüfen statt Automatisierungsstufe.** Es gibt keine Automatisierungsstufe. Jede Buchung des Agenten wird sofort geschrieben, mit leerem `geprueft_am`, in der Tabelle als farbiges Symbol sichtbar. Der Nutzer bestätigt sie im Inspector; danach ist sie eine normale Buchung. Mehr Logik gibt es nicht.
