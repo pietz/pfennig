@@ -142,11 +142,11 @@ Rules for a profile with `vat_accounting_method = cash`:
 - **§13b reverse charge (expense):** distinguish the applicable rule. Qualifying EU-established supplier services under [§13b Abs. 1 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13b.html) use the end of the period of performance. Cases under Abs. 2 use invoice issuance, no later than the end of the month following performance. Advance payments need the separate Abs. 4 rule. A single invoice-date fallback for every foreign service is not sufficient. Matching input VAT follows its own eligibility requirements; Kleinunternehmer have no corresponding deduction.
 - **Intra-community acquisition of goods:** has its own rule under [§13 Abs. 1 Nr. 6 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13.html); do not treat it as identical to all reverse-charge services. Detailed acquisition eligibility remains review-required outside the initial automatic scope.
 
-Current `tax_assessments` store materialized dates with provenance. Reporting must nevertheless derive payment-sensitive contributions per allocation; a single transaction date cannot represent multiple tax periods. The current implementation still uses simplified invoice-date and first-payment approximations that must be corrected before report completion.
+`tax_assessments` no longer stores a materialized date; reporting derives payment-sensitive contributions per allocation, because a single transaction date cannot represent multiple tax periods. The §13b and intra-Community rules above are still simplified to the invoice date, falling back to the service date, and must be completed before the reports are called finished.
 
 ## 5.2 The "Date" column
 
-The main table and Start show one **relevant date**, derived as: the document date (`invoice_date`), otherwise the earliest payment date, otherwise the creation date. Ledger and Start are therefore dated by document; tax periods stay dated by payment. This is a ledger-navigation convention, not the date to use for any EÜR or UStVA contribution.
+The main table and Start show one **relevant date**, derived as: the document date (`invoice_date`), otherwise the earliest payment date, otherwise the local calendar day of the creation timestamp. Ledger and Start are therefore dated by document; tax periods stay dated by payment. This is a ledger-navigation convention, not the date to use for any EÜR or UStVA contribution.
 
 ## 5.3 10-day rule (§11 Abs. 2 S. 2 EStG)
 
@@ -876,6 +876,8 @@ CREATE UNIQUE INDEX idx_prov_current ON field_provenance(entity_type, entity_id,
 ```
 
 Rule: an operation that would change a field whose current provenance `is_manual_override = 1` is rejected unless the actor is `user`.
+
+The rows belong to the entity they address: deleting a replaced `tax_assessments` row deletes its provenance rows with it, since `entity_id` is not a foreign key and they would otherwise stay behind as unreachable current rows.
 
 ## 17.16 `import_batches`
 

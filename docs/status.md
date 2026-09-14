@@ -56,7 +56,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 296 tests across 43 suites plus a successful Debug app build.
+The latest verification baseline is 295 tests across 43 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -135,7 +135,50 @@ no code ever wrote.
   `~/Library/Application Support/Ziffer/Backups/bookkeeping-pre-schema-cleanup-2026-09-14.sqlite`.
   No archive was reset or deleted.
 
-New baseline: 296 tests across 43 suites plus a successful Debug app build.
+New baseline: 295 tests across 43 suites plus a successful Debug app build.
+
+### Review of the pre-release cleanups (2026-09-14)
+
+The three cleanups above were reviewed once more end to end. What changed:
+
+- **Replacing a tax assessment deletes its provenance rows.** The delete of
+  the old `tax_assessments` row left its five `field_provenance` rows behind
+  with `superseded_at` NULL, addressing an id that no longer exists; every
+  re-derivation added five more. `entity_id` is deliberately not a foreign
+  key, so the repository deletes them itself.
+- **The import fallback of the ledger date is the local day.** `created_at` is
+  a UTC timestamp; the ledger printed its local day while the SQL behind
+  sorting, the year filter and the Start totals cut the UTC day, so an evening
+  import sorted and counted one day - across New Year one year - before the
+  date in its own row.
+- **A §13b or intra-Community self-assessment falls back to the service date**
+  the way `UStVACalculator` reports it, instead of to today. With one rate in
+  force since 2007 this changes no amount today; it removes a divergence.
+- **Removed:** the decider's unread English reasoning sentences,
+  `MatchMethod.rule` and `Provenance.rule` (the rules table is gone and
+  neither was ever written), and the three schema tests that only asserted the
+  absence of the removed tables and columns.
+
+Left deliberately, as decisions rather than defects:
+
+- `tax_assessments.output_vat_minor`, `vat_shown_minor` and
+  `deductible_input_vat_minor` are written and never read again - the
+  calculator recomputes from components and payments, the inspector shows the
+  freshly derived values. Removing them is one more schema edit plus the
+  one-time archive rewrite, so it waits for an explicit go.
+- Nothing enforces "exactly one assessment per transaction";
+  `idx_taxassess_transaction` is not unique, and a second row would duplicate
+  every transaction through `v_transaction_status`. Same cost as above.
+- `statement_lines.account_iban` stays `NOT NULL`. For a statement without an
+  IBAN (PDF, PayPal, Stripe) the importer should store a non-null account key
+  rather than the column becoming nullable: SQLite treats NULLs as distinct,
+  so `UNIQUE(account_iban, line_fingerprint)` would stop catching duplicates
+  exactly where the account is unknown.
+- `DuplicateValidator`, `ReferentialValidator` and `PaymentMatchValidator` have
+  no production call site yet; they belong to the statement-import milestone.
+- The three recorded `Fixtures/documents/*/response.json` predate the slimmed
+  extraction schema. The replay passes (unknown keys are ignored), but it
+  proves the parser against the older payload; re-record on the next live run.
 
 ### UStVA interface (2026-09-14)
 
