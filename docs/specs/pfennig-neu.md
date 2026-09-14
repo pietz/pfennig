@@ -69,3 +69,17 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 **Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, optional Zahnrad in der Toolbar): Profil, Automatisierungsstufe, KI-Zugang, Erscheinungsbild.
 
 **Wegfall:** Startseite, Prüfen-Seite, Sidebar, UStVA-Aufgabenfenster. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
+
+## 4. Eingang: Dateien und Agent
+
+**Grundsatz.** Die Verarbeitung durch den KI-Agenten ist der Kern und immer die erste Lösung, die in Betracht kommt. Deterministischer Code im Eingang beschränkt sich auf das, was der Agent nicht kann oder nicht soll: Dateien hashen und verschieben, Formate zulassen, Werkzeugaufrufe prüfen.
+
+**Weg einer Datei.** Der Nutzer zieht eine oder mehrere Dateien auf das Fenster. Für jede Datei:
+
+1. Swift berechnet den Hash und kopiert sie nach `Inbox/`.
+2. Existiert der Hash schon in `dateien`, ist die Datei fertig; kurze Rückmeldung „bereits vorhanden“.
+3. Sonst startet ein Agentenlauf für diese Datei. Dateien werden nacheinander verarbeitet.
+4. Nach Erfolg wandert die Datei als `<hash>.<endung>` ins Archiv, bekommt eine Zeile in `dateien` und verlässt die Inbox.
+5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“.
+
+Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind PDF, Bilder und CSV; die Datei geht so, wie sie ist, an den Agenten.
