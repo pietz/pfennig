@@ -201,11 +201,22 @@ public actor ImportCoordinator {
                 // row keeps `policy_decision = autoCommit` next to its
                 // `committed` status: that pair is the record of a commit
                 // nobody confirmed.
-                try CommitService(database).accept(
-                    proposalID: proposalID,
-                    reviewStatus: AutomationPolicy.reviewStatus(forAutoCommitWith: derived.softIssues)
-                )
-                // `commitProposal` already moved the import item to `committed`.
+                do {
+                    try CommitService(database).accept(
+                        proposalID: proposalID,
+                        reviewStatus: AutomationPolicy.reviewStatus(forAutoCommitWith: derived.softIssues)
+                    )
+                    // `commitProposal` already moved the item to `committed`.
+                } catch {
+                    // The extraction worked and the proposal is good; only
+                    // writing it failed, for instance because no business is
+                    // set up yet. That is a case for "Prüfen", not for
+                    // "Fehlgeschlagen" - the user can confirm it by hand.
+                    logger.error(
+                        "Auto-commit failed for item \(item.id, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
+                    try repository.updateItem(item.id, status: .proposed)
+                }
             } else {
                 try repository.updateItem(item.id, status: .proposed)
             }
