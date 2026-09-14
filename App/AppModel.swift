@@ -30,16 +30,11 @@ final class AppModel {
     private(set) var pendingProposalCount = 0
     var hasAPIKey = APIKeyStore.hasKey
 
-    /// A request to show one Voranmeldungszeitraum in the UStVA task window.
-    /// The token makes a second click on the same period a new request, so an
-    /// already open window follows it instead of ignoring it.
-    struct UStVATaskRequest: Equatable {
-        let period: UStVAPeriod
-        let token: Int
-    }
-
-    private(set) var ustvaTaskRequest: UStVATaskRequest?
-    private var ustvaTaskToken = 0
+    /// The Voranmeldungszeitraum the UStVA task window shows. Start points it
+    /// at a period before opening the window, the window's picker writes back
+    /// here: one value both sides read, instead of a request the window has to
+    /// mirror into state of its own.
+    var ustvaTaskPeriod: UStVAPeriod?
 
     /// A transaction another window asked to open in Buchungen. `RootView`
     /// switches to the ledger, `TransactionsView` selects the row and clears
@@ -178,12 +173,6 @@ final class AppModel {
 
     func delete(_ transactionID: String) {
         run { try repository?.delete(transactionID) }
-    }
-
-    /// Points the UStVA task window at a period. The caller opens the window.
-    func requestUStVATask(_ period: UStVAPeriod) {
-        ustvaTaskToken += 1
-        ustvaTaskRequest = UStVATaskRequest(period: period, token: ustvaTaskToken)
     }
 
     /// Opens a transaction in Buchungen with the inspector showing, from

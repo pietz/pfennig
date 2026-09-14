@@ -132,7 +132,7 @@ struct RootView: View {
                 case .review:
                     selection = .review
                 case let .ustva(period):
-                    model.requestUStVATask(period)
+                    model.ustvaTaskPeriod = period
                     openWindow(id: UStVATaskWindow.windowID)
                 }
             }

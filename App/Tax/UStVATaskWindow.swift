@@ -22,13 +22,9 @@ struct UStVATaskWindow: View {
 
     @Environment(AppModel.self) private var model
 
-    @State private var kind: UStVAPeriod.Kind = .quarterly
-    @State private var year = Calendar.current.component(.year, from: Date())
-    @State private var index = 1
     @State private var detail: UStVATasks.TaskDetail?
     @State private var loadFailed = false
     @State private var note: FooterNote?
-    @State private var isResolved = false
 
     private struct FooterNote {
         var symbol: String
@@ -36,20 +32,13 @@ struct UStVATaskWindow: View {
         var lines: [String]
     }
 
+    /// The period lives in the model, so Start can point this window at one
+    /// while it is open and the picker can point Start's next click at the
+    /// same one. Until something chooses, the calendar decides.
     private var period: UStVAPeriod {
-        switch kind {
-        case .monthly: UStVAPeriod(year: year, month: index)
-        case .quarterly: UStVAPeriod(year: year, quarter: index)
-        }
-    }
-
-    private var periodKey: String {
-        "\(year)-\(kind == .monthly ? "m" : "q")-\(index)"
-    }
-
-    private var dueDate: LocalDate {
-        period.dueDate(
-            dauerfristverlaengerung: UStVAPreferences.dauerfristverlaengerung(in: model.database)
+        model.ustvaTaskPeriod ?? UStVATasks.period(
+            containing: .today(),
+            kind: model.profile.map(UStVATasks.periodKind) ?? .quarterly
         )
     }
 
@@ -67,20 +56,15 @@ struct UStVATaskWindow: View {
         }
         .navigationTitle("UStVA \(UStVAPeriodText.title(period))")
         .frame(minWidth: 620, minHeight: 460)
-        .onAppear(perform: resolvePeriod)
-        .onChange(of: model.ustvaTaskRequest) { _, request in
-            guard let request else { return }
-            show(request.period)
-        }
-        .task(id: periodKey) { await observe() }
-        .onChange(of: periodKey) { _, _ in note = nil }
+        .task(id: ObservationKey(period: period, profile: model.profile)) { await observe() }
+        .onChange(of: period) { _, _ in note = nil }
     }
 
     private var content: some View {
         VStack(spacing: 0) {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    periodPicker
+                    periodPicker(detail)
                     if let detail {
                         status(detail)
                         if !detail.result.exceptions.isEmpty {
@@ -105,9 +89,9 @@ struct UStVATaskWindow: View {
 
     // MARK: - Period
 
-    private var periodPicker: some View {
+    private func periodPicker(_ detail: UStVATasks.TaskDetail?) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Picker("Zeitraum", selection: $year) {
+            Picker("Zeitraum", selection: binding(\.year)) {
                 ForEach(years, id: \.self) { year in
                     Text(String(year)).tag(year)
                 }
@@ -115,7 +99,7 @@ struct UStVATaskWindow: View {
             .labelsHidden()
             .fixedSize()
 
-            Picker("Abschnitt", selection: $index) {
+            Picker("Abschnitt", selection: binding(\.index)) {
                 ForEach(indices, id: \.self) { index in
                     Text(name(of: index)).tag(index)
                 }
@@ -123,41 +107,41 @@ struct UStVATaskWindow: View {
             .labelsHidden()
             .fixedSize()
 
-            Text("fällig \(Format.date(dueDate))")
-                .foregroundStyle(.secondary)
+            if let detail {
+                Text("fällig \(Format.date(detail.dueDate))")
+                    .foregroundStyle(.secondary)
+            }
 
             Spacer(minLength: 8)
         }
     }
 
+    /// Writes a changed year or section back as a whole period. The rhythm
+    /// stays what it was, so the section values always fit it.
+    private func binding(_ part: KeyPath<UStVAPeriod, Int>) -> Binding<Int> {
+        Binding(
+            get: { period[keyPath: part] },
+            set: { value in
+                let year = part == \.year ? value : period.year
+                let index = part == \.year ? period.index : value
+                model.ustvaTaskPeriod = period.kind == .monthly
+                    ? UStVAPeriod(year: year, month: index)
+                    : UStVAPeriod(year: year, quarter: index)
+            }
+        )
+    }
+
     private var years: [Int] {
         let current = Calendar.current.component(.year, from: Date())
-        return Array(min(current - 2, year) ... max(current, year))
+        return Array(min(current - 2, period.year) ... max(current, period.year))
     }
 
     private var indices: [Int] {
-        kind == .monthly ? Array(1 ... 12) : Array(1 ... 4)
+        period.kind == .monthly ? Array(1 ... 12) : Array(1 ... 4)
     }
 
     private func name(of index: Int) -> String {
-        kind == .monthly ? UStVAPeriodText.monthName(index) : "Q\(index)"
-    }
-
-    /// Takes the period Start asked for, or the one the calendar makes
-    /// current. The rhythm always follows the business profile.
-    private func resolvePeriod() {
-        guard !isResolved, let profile = model.profile else { return }
-        show(
-            model.ustvaTaskRequest?.period
-                ?? UStVATasks.period(containing: .today(), kind: UStVATasks.periodKind(for: profile))
-        )
-        isResolved = true
-    }
-
-    private func show(_ period: UStVAPeriod) {
-        kind = period.kind
-        year = period.year
-        index = period.index
+        period.kind == .monthly ? UStVAPeriodText.monthName(index) : "Q\(index)"
     }
 
     // MARK: - Status
@@ -496,4 +480,10 @@ struct UStVATaskWindow: View {
             loadFailed = true
         }
     }
+}
+
+/// Restarts the observation when the period or the business behind it changes.
+private struct ObservationKey: Equatable {
+    let period: UStVAPeriod
+    let profile: BusinessProfile?
 }
