@@ -84,18 +84,25 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 
 Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind PDF, Bilder und CSV; die Datei geht so, wie sie ist, an den Agenten.
 
-**Zwei Stufen des Agenten.** Stufe 1 ist eine Extraktion: eine Datei, ein Aufruf mit striktem Ausgabeschema, eine Buchung, die Swift prüft und schreibt. Keine Werkzeuge, keine Kontoauszüge; das deckt Rechnungen, Belege und Gutschriften ab. Stufe 2 ist der Agent: derselbe Aufruf, ergänzt um Werkzeuge (Buchungen suchen, Zahlung hinzufügen, Seiten einer großen Datei nachlesen), damit Kontoauszüge und Zuordnungen möglich werden. Stufe 1 wird so gebaut, dass Stufe 2 nur Werkzeuge hinzufügt und nichts umbaut.
+**Ein Agent, ein Werkzeug.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein Werkzeug ist `sql`: er liest und schreibt die Datenbank direkt mit SELECT, INSERT und UPDATE. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus. Am Anfang bekommt er nur `buchungen`.
+
+Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anweisungen aus `sqlite_master`), damit es immer aktuell ist. Aufzählungen wie richtung, art und steuerbehandlung sind als CHECK-Bedingungen im Schema hinterlegt und dadurch im Schematext sichtbar. Für JSON-Spalten steht die Struktur als Kommentar im Schema.
+
+**Drei Grenzen in Swift.**
+1. Erlaubte Anweisungen über den SQLite-Autorisierer: SELECT auf `buchungen`, `dateien`, `aktivitaeten`; INSERT und UPDATE nur auf `buchungen`; kein DELETE, keine Schemaänderung, kein Zugriff auf `einstellungen`.
+2. Jeder Aufruf läuft in einer Transaktion. Danach laufen die Prüfregeln über die geänderten Zeilen; bestehen sie, wird committet, sonst Rollback, und der Fehlertext geht als Werkzeugantwort an den Agenten, der korrigiert.
+3. Vor und nach dem Aufruf werden die berührten Zeilen verglichen; die Differenz landet automatisch in `aktivitaeten`.
 
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API mit der Datei selbst (PDF oder Bild direkt, CSV als Text), dem Profil (eigener Name und USt-ID, Kleinunternehmer, heutiges Datum), der Kategorienliste mit je einem Satz Beschreibung, den bekannten Gegenparteien mit Land aus den vorhandenen Buchungen und der Anleitung. Nicht im Kontext: die Buchungstabelle. Ein Modell, im Code festgelegt, keine Auswahl in den Einstellungen.
 
-**Ausgabeschema Stufe 1.** Der Agent liefert, was in eine Zeile von `buchungen` gehört und aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; gegenpartei_name, gegenpartei_land, gegenpartei_ustid; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt der Agent in die Notizen. Das Schema ist strikt: keine fremden Felder, aber Felder, die ein Dokument nicht hergibt (USt-ID, Land, Originalbetrag, Zahlungen), dürfen leer bleiben. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift.
+**Was der Agent füllt.** Alles, was aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; Gegenpartei; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt er in die Notizen. Felder, die ein Dokument nicht hergibt, bleiben leer. Nicht vom Agenten: id, dateien, geprueft_am, Zeitstempel; die setzt Swift nach dem Lauf.
 
-**Prüfregeln in Swift.** Das strikte Schema garantiert Form und Typen; Swift prüft danach nur noch Inhalt, den das Schema nicht ausdrücken kann:
+**Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
 - kategorie ist ein bekannter Schlüssel, datum ist gültig und nicht weit in der Zukunft.
 - steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei, kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland mit Steuersatz 0 nur bei steuerfrei oder nicht_steuerbar.
 - Zahlungen: Betrag größer null, Datum gültig.
 
-Schlägt eine Regel fehl, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
+Schlägt eine Regel fehl, bekommt der Agent den Fehlertext zurück. Gibt er nach wenigen Versuchen auf, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
 
 **Prüfen statt Automatisierungsstufe.** Es gibt keine Automatisierungsstufe. Jede Buchung des Agenten wird sofort geschrieben, mit leerem `geprueft_am`, in der Tabelle als farbiges Symbol sichtbar. Der Nutzer bestätigt sie im Inspector; danach ist sie eine normale Buchung. Mehr Logik gibt es nicht.
