@@ -219,7 +219,9 @@ struct TransactionDraftTests {
         )
         #expect(value.netAllocatedMinor == -11900)
         #expect(value.openAmountMinor == 0)
-        #expect(value.settlingPaymentDirection == nil)
+        // The settling side does not change once everything is settled; a
+        // payment the other way would be giving the credit note back.
+        #expect(value.settlingPaymentDirection == .inflow)
     }
 
     @Test("An overpaid credit note reads as nothing open rather than a positive remainder")

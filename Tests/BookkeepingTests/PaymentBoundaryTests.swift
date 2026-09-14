@@ -44,6 +44,30 @@ struct PaymentBoundaryTests {
         #expect(manualFields.isSuperset(of: ["paymentDate", "amount", "reference", "paymentMethod"]))
     }
 
+    /// A transfer is often larger than the invoice - a bank fee, an exchange
+    /// difference, one payment for several invoices. The transaction may
+    /// never settle more than it shows, so the surplus stays unallocated
+    /// instead of the payment being refused.
+    @Test("A payment larger than the invoice keeps its surplus unallocated")
+    func recordsOverpaymentWithPartialAllocation() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        draft.payments = [
+            PaymentDraft(
+                paymentDate: LocalDate(year: 2026, month: 9, day: 20),
+                amountMinor: 12400,
+                allocatedMinor: 11900
+            )
+        ]
+        let transactionID = try Fixture.save(draft, in: database, profile: profile)
+        let detail = try #require(try BookkeepingRepository(database).detail(id: transactionID))
+
+        #expect(detail.payments.first?.payment.originalAmountMinor == 12400)
+        #expect(detail.payments.first?.allocation.allocatedMinor == 11900)
+        #expect(detail.draft.openAmountMinor == 0)
+        #expect(try #require(database.transactionList().first { $0.id == transactionID }).paymentStatus == .paid)
+    }
+
     @Test("A non-positive allocation is rejected at the write boundary")
     func rejectsInvalidAllocation() throws {
         let (database, profile) = try Fixture.database()

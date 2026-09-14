@@ -136,6 +136,12 @@ public enum PaymentDirection: String, Codable, CaseIterable, Sendable {
     public var opposite: PaymentDirection {
         self == .inflow ? .outflow : .inflow
     }
+
+    /// True when money moving this way moves against the transaction's own
+    /// direction: an inflow on an expense, an outflow on an income.
+    public func isRefund(of transactionDirection: Direction) -> Bool {
+        self != transactionDirection.settlingPaymentDirection
+    }
 }
 
 public enum PaymentMethod: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {

@@ -459,7 +459,7 @@ struct TransactionInspector: View {
                     .foregroundStyle(.secondary)
             }
             ForEach(detail.payments) { entry in
-                let isRefund = entry.payment.direction != draft.direction.settlingPaymentDirection
+                let isRefund = entry.payment.direction.isRefund(of: draft.direction)
                 LabeledContent(Format.date(entry.payment.paymentDate)) {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(Format.money(
@@ -510,7 +510,9 @@ struct TransactionInspector: View {
 
     /// A credit note is not "paid" but settled the other way round.
     private var fullPaymentLabel: LocalizedStringKey {
-        (draft.grossMinor ?? 0) < 0 ? "Vollständig erstattet" : "Vollständig bezahlt"
+        draft.settlingPaymentDirection.isRefund(of: draft.direction)
+            ? "Vollständig erstattet"
+            : "Vollständig bezahlt"
     }
 
     /// Where a payment came from, and whether it went back. Manual payments
@@ -526,11 +528,11 @@ struct TransactionInspector: View {
     /// credit note the money moves the other way, so the payment does too.
     private func recordFullPayment() {
         let open = draft.openAmountMinor
-        guard moneyFieldsAreValid, open != 0, let direction = draft.settlingPaymentDirection else { return }
+        guard moneyFieldsAreValid, open != 0 else { return }
         var updatedDraft = draft
         updatedDraft.payments.append(
             PaymentDraft(
-                direction: direction,
+                direction: draft.settlingPaymentDirection,
                 paymentDate: .today(),
                 amountMinor: abs(open),
                 currency: draft.currency

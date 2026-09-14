@@ -166,13 +166,14 @@ public extension TransactionDraft {
         return gross < 0 ? min(remaining, 0) : max(remaining, 0)
     }
 
-    /// The direction a payment has to move in to settle what is still open:
-    /// the ordinary one for a positive amount, its opposite for a credit
-    /// note. `nil` when nothing is open.
-    var settlingPaymentDirection: PaymentDirection? {
-        let open = openAmountMinor
-        guard open != 0 else { return nil }
-        return open < 0 ? direction.settlingPaymentDirection.opposite : direction.settlingPaymentDirection
+    /// The direction a payment has to move in to settle this transaction: the
+    /// ordinary one for an ordinary booking, its opposite for a credit note,
+    /// whose amounts are negative. It follows the booked amount, not what is
+    /// still open, so it still names the settling side once everything is
+    /// settled - and a payment in the other direction is a refund.
+    var settlingPaymentDirection: PaymentDirection {
+        let settling = direction.settlingPaymentDirection
+        return (grossMinor ?? 0) < 0 ? settling.opposite : settling
     }
 
     /// Whether money can be given back at all: only what has been settled can
@@ -372,7 +373,7 @@ public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
     /// True when this payment moves against the transaction's own direction:
     /// money back from a supplier, money returned to a customer.
     public func isRefund(of transactionDirection: Direction) -> Bool {
-        direction != transactionDirection.settlingPaymentDirection
+        direction.isRefund(of: transactionDirection)
     }
 
     /// What this payment contributes to the settled amount: positive in the

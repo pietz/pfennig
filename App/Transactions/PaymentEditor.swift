@@ -31,8 +31,7 @@ struct PaymentEditor: View {
         // open remainder and today are almost always the right answer.
         _payment = State(
             initialValue: PaymentDraft(
-                direction: transaction.settlingPaymentDirection
-                    ?? transaction.direction.settlingPaymentDirection,
+                direction: transaction.settlingPaymentDirection,
                 paymentDate: .today(),
                 amountMinor: abs(transaction.openAmountMinor),
                 currency: transaction.currency
@@ -40,18 +39,26 @@ struct PaymentEditor: View {
         )
     }
 
-    /// The direction that settles what is open, and its opposite - the refund.
-    private var settlingDirection: PaymentDirection {
-        draft.settlingPaymentDirection ?? draft.direction.settlingPaymentDirection
-    }
-
     private var isRefund: Bool {
-        payment.direction != settlingDirection
+        payment.direction != draft.settlingPaymentDirection
     }
 
-    /// Only what was settled can be given back.
-    private var refundLimitMinor: Int64 {
-        abs(draft.netAllocatedMinor)
+    /// The most this payment can settle: what is still open, or - for a
+    /// refund - what has been settled so far, because only what was paid can
+    /// be given back.
+    private var allocationLimitMinor: Int64 {
+        abs(isRefund ? draft.netAllocatedMinor : draft.openAmountMinor)
+    }
+
+    /// A payment may be larger than what it settles: a bank fee, an exchange
+    /// difference, one transfer for two invoices. The surplus is left
+    /// unallocated instead of blocking the payment.
+    private var allocatedMinor: Int64 {
+        min(payment.amountMinor, allocationLimitMinor)
+    }
+
+    private var unallocatedMinor: Int64 {
+        payment.amountMinor - allocatedMinor
     }
 
     var body: some View {
@@ -68,8 +75,10 @@ struct PaymentEditor: View {
                     if draft.canRefund {
                         LabeledContent("Art") {
                             Picker("Art", selection: $payment.direction) {
-                                Text(paymentLabel).tag(settlingDirection)
-                                Text(refundLabel).tag(settlingDirection.opposite)
+                                Text(label(for: draft.settlingPaymentDirection))
+                                    .tag(draft.settlingPaymentDirection)
+                                Text(label(for: draft.settlingPaymentDirection.opposite))
+                                    .tag(draft.settlingPaymentDirection.opposite)
                             }
                             .pickerStyle(.segmented)
                             .labelsHidden()
@@ -96,6 +105,8 @@ struct PaymentEditor: View {
                     )
                     if let paymentAmountMessage {
                         IssueRow(severity: .error, message: paymentAmountMessage)
+                    } else if let surplusMessage {
+                        IssueRow(severity: .warning, message: surplusMessage)
                     }
                 } footer: {
                     Text(openAmountHint)
@@ -125,29 +136,37 @@ struct PaymentEditor: View {
         .frame(width: 420, height: 280)
     }
 
-    private var paymentLabel: LocalizedStringKey {
-        draft.direction == .income ? "Zahlungseingang" : "Zahlung"
-    }
-
-    private var refundLabel: LocalizedStringKey {
-        draft.direction == .income ? "Rückzahlung" : "Erstattung"
+    /// Money moving this way, named from the transaction's point of view.
+    private func label(for direction: PaymentDirection) -> LocalizedStringKey {
+        let isRefund = direction.isRefund(of: draft.direction)
+        if draft.direction == .income {
+            return isRefund ? "Rückzahlung" : "Zahlungseingang"
+        }
+        return isRefund ? "Erstattung" : "Zahlung"
     }
 
     private var paymentAmountMessage: String? {
         guard amountIsValid else { return "Betrag ist ungültig. Bitte geben Sie eine Zahl ein." }
         guard payment.amountMinor > 0 else { return "Betrag muss größer als 0 sein." }
-        if isRefund, payment.amountMinor > refundLimitMinor {
-            return "Es kann höchstens \(Format.money(refundLimitMinor, currency: draft.currency)) erstattet werden."
-        }
-        if !isRefund, payment.amountMinor > abs(draft.openAmountMinor) {
-            return "Es sind nur noch \(Format.money(abs(draft.openAmountMinor), currency: draft.currency)) offen."
+        guard allocationLimitMinor > 0 else {
+            return isRefund
+                ? "Für diesen Vorgang wurde noch nichts gezahlt, das erstattet werden könnte."
+                : "Für diesen Vorgang ist nichts mehr offen."
         }
         return nil
     }
 
+    /// Everything the transaction cannot absorb stays unallocated; the
+    /// bookkeeping never settles more than the booking shows.
+    private var surplusMessage: String? {
+        guard unallocatedMinor > 0 else { return nil }
+        return "Davon werden \(Format.money(allocatedMinor, currency: draft.currency)) diesem Vorgang"
+            + " zugeordnet; \(Format.money(unallocatedMinor, currency: draft.currency)) bleiben ohne Zuordnung."
+    }
+
     private var openAmountHint: String {
         if isRefund {
-            return "Bisher gezahlt: \(Format.money(refundLimitMinor, currency: draft.currency))."
+            return "Bisher gezahlt: \(Format.money(allocationLimitMinor, currency: draft.currency))."
                 + " Die Erstattung wird gegengerechnet."
         }
         return "Offen: \(Format.money(abs(draft.openAmountMinor), currency: draft.currency))."
@@ -157,6 +176,8 @@ struct PaymentEditor: View {
     private func save() {
         guard paymentAmountMessage == nil else { return }
         var updatedDraft = draft
+        var payment = payment
+        payment.allocatedMinor = allocatedMinor
         updatedDraft.payments.append(payment)
         guard model.save(updatedDraft) != nil else {
             saveError = "Zahlung konnte nicht gespeichert werden. Ihre Eingaben bleiben erhalten."
