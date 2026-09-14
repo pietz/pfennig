@@ -1,5 +1,7 @@
 # Produkt-Backlog: vom Beleg zur Steuerabgabe
 
+**Aktualisierung beim Umzug zu Pfennig:** Die anschließend getroffenen Nutzerentscheidungen in der [Workflow-Spezifikation](specs/document-to-tax-workflow.md) ergänzen und korrigieren diese Rechercheplanung: sichere Standardfälle automatisch übernehmen, CSV **und PDF-Kontoauszüge** unterstützen, Steueraufgaben auf Start verlinken. Die Spezifikation wartet noch auf Freigabe; diese Entscheidungen selbst sind bereits getroffen. Alte GitHub-Issues sind [lokal gesichert](legacy-github-issues.md). Übergabestand: [status.md](status.md).
+
 Stand 14.09.2026, Recherche nach `e84acc2`. Prioritäten sind Empfehlungen, keine Zusage für den nächsten Release. GitHub Issues bleiben die technischen Arbeitspakete; diese Übersicht ordnet den Nutzerablauf. Produktscope: deutsche Selbstständige, EÜR, Ist-Versteuerung, Regelbesteuerung und Kleinunternehmer. Begründung, Code-Lücken und Abnahmekriterien stehen in [Recherche zum Nutzerworkflow](research-user-workflow.md).
 
 > Belege ablegen → prüfen und zuordnen → Zahlen nachvollziehen → Steuerdaten vorbereiten → selbst abgeben.

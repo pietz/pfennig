@@ -1,4 +1,6 @@
-# Ziffer
+# Pfennig
+
+Previously **Ziffer**. The repository has moved to `pietz/pfennig`; the application, build targets and local archive still use the old name until a coordinated rename. See the [project handoff](docs/status.md).
 
 Ziffer is a native, local-first macOS bookkeeping app for German freelancers and sole proprietors using EÜR.
 
@@ -31,7 +33,7 @@ Existing bookkeeping remains fully usable offline. Ziffer sends data to OpenAI o
 
 ## Install
 
-Signed and notarized builds will be published through [GitHub Releases](https://github.com/pietz/ziffer/releases). The first public binary has not been released yet.
+Signed and notarized builds will be published through [GitHub Releases](https://github.com/pietz/pfennig/releases). The first public binary has not been released yet.
 
 Until then, build Ziffer from source.
 
@@ -44,8 +46,8 @@ Requirements:
 - [Homebrew](https://brew.sh)
 
 ```sh
-git clone https://github.com/pietz/ziffer.git
-cd ziffer
+git clone https://github.com/pietz/pfennig.git
+cd pfennig
 scripts/bootstrap.sh
 scripts/run.sh
 ```
@@ -80,7 +82,7 @@ The OpenAI API key is stored separately in the macOS Keychain and never in this 
 
 The app target lives in `App/`. Reusable modules live in `Sources/`, with Swift Testing suites in `Tests/`. `Tax` and `Validation` are deterministic and have no network or database access. The current implementation boundary and maintainer handoff are recorded in [`docs/status.md`](docs/status.md).
 
-Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Planned work is tracked in [GitHub Issues](https://github.com/pietz/ziffer/issues). Maintainer release steps are documented in [`docs/releasing.md`](docs/releasing.md).
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before opening a pull request. Current planning is in the [project handoff](docs/status.md) and [workflow specification](docs/specs/document-to-tax-workflow.md). Historical GitHub issues are preserved in a [local archive](docs/legacy-github-issues.md); new issues belong in [pietz/pfennig](https://github.com/pietz/pfennig/issues). Maintainer release steps are documented in [`docs/releasing.md`](docs/releasing.md).
 
 Security vulnerabilities should be reported privately as described in [`SECURITY.md`](SECURITY.md).
 

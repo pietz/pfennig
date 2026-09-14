@@ -1,4 +1,10 @@
-# Ziffer Product and Engineering Principles
+# Pfennig Product and Engineering Principles
+
+## Repository handoff
+
+The project is now **Pfennig** (`pfennig.app`), with its active workspace at `/Users/pietz/Private/pfennig` and private repository `pietz/pfennig`. The old `ziffer` directory and repository are retained unchanged. Application targets, archive location, signing setup, and much existing documentation still use Ziffer; this is not a second product. Do not blindly rename technical identifiers or move user data as part of branding.
+
+Read `docs/status.md` for the handoff, then `docs/specs/document-to-tax-workflow.md` for the latest workflow decisions. That specification is still **Draft — awaiting approval**. Its explicitly recorded user decisions are settled; older manual-first/CSV-only plans do not reopen them. Historical GitHub issues are preserved in `docs/legacy-github-issues.md`.
 
 ## Product
 
@@ -84,6 +90,14 @@ Ziffer should feel like a compact, restrained macOS utility.
 - Use Start for a compact financial overview and actionable open items; do not add a separate analysis page for the same information.
 - Show upcoming items only when real dates are available. Avoid decorative charts, badges, and explanatory chrome that do not improve the workflow.
 - Preserve direct editing for ordinary, unlocked transactions.
+
+## GitHub Workflow
+
+- Use GitHub Issues as the central inbox for ideas, bugs, and improvements; avoid a duplicate local backlog. An open issue is not a delivery promise.
+- Keep product principles, larger-change specifications, and implementation status in the repository. Small, clear changes need no separate spec.
+- Work directly on `main` by default. Use branches and pull requests for longer experiments, independent parallel work, and external contributions.
+- Reference relevant issues in commits and close them when completed. Keep labels simple: Idee, Fehler, Verbesserung.
+- Never post private receipts or statements in public issues; report security problems privately. Push only when the user asks.
 
 ## Engineering
 
