@@ -1,6 +1,6 @@
 # Pfennig neu: Spezifikation für den Neuaufbau
 
-**Status:** in Arbeit. Schema, Spalten und Werte werden auf Deutsch benannt; die Umbenennung der bereits geschriebenen Abschnitte folgt nach Abschluss von Thema 2., wird Thema für Thema gemeinsam geschrieben (2026-09-14). Nur bestätigte Abschnitte gelten.
+**Status:** in Arbeit, wird Thema für Thema gemeinsam geschrieben (2026-09-14). Nur bestätigte Abschnitte gelten.
 
 Gliederung:
 
@@ -24,34 +24,35 @@ Nicht enthalten: Bankanbindung, Rechnungsstellung, Bilanz, Lohn, Chat, direkte E
 
 ## 2. Datenmodell
 
-Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit der App. Ein Freiberufler hat wenige hundert Buchungen im Jahr; alles passt in den Speicher. SQLite ist eine Datei mit sicherem Schreiben und Änderungsbeobachtung, kein Abfragesystem. Swift lädt und rechnet.
+Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit der App. Ein Freiberufler hat wenige hundert Buchungen im Jahr; alles passt in den Speicher. SQLite ist eine Datei mit sicherem Schreiben und Änderungsbeobachtung, kein Abfragesystem. Swift lädt, sortiert und rechnet. Tabellen, Spalten und Werte sind deutsch benannt, weil die Fachbegriffe deutsch sind und die App in Deutschland bleibt; etablierte Fremdwörter wie Reverse Charge bleiben.
 
 **Vier Tabellen.** Eine trägt die Buchhaltung, drei sind klein und dienen ihr.
 
-`entries`, eine Zeile pro Buchung:
-- Identität und Einordnung: `id`, `direction` (income/expense), `kind` (invoice, receipt, credit_note, tax_payment, payment_only, ignored, other), `date` (Belegdatum), `title`, `category` (feste EÜR-Kategorienliste im Code, IDs unwiderruflich), `private_share_percent`, `notes`
-- Gegenpartei als Text: `counterparty_name`, `counterparty_country`, `counterparty_vat_id`. Die USt-IdNr. gehört zum Beleg, nicht zu einem Stammsatz.
-- Beträge in EUR-Cent als JSON-Liste `positionen` = [{netto, steuersatz, steuer}]. Meist ein Element, bei Mischbelegen (Hotel mit Frühstück, Bewirtung) mehrere. Beliebige Sätze, auch ausländische. Keine Summenspalten; Brutto, Netto und Steuer rechnet Swift. Ein Dokument ist immer genau eine Zeile.
-- Fremdwährung: `currency` und `gross_original_minor` bewahren den Originalbetrag des Belegs.
-- Steuer: `tax_treatment` (domestic_vat, reverse_charge, small_business, exempt, non_taxable, unknown)
-- Zustand: `reviewed_at` (NULL = ungeprüft), `edited_by_user_at`, `created_at`, `updated_at`. Hat der Nutzer einen Eintrag geändert, darf der Agent ihn weiter bearbeiten, aber nie still: jede Agentenänderung an einem solchen Eintrag setzt ihn unabhängig von der Automatisierungsstufe auf ungeprüft und steht im Journal. Schreibwerkzeuge übergeben `updated_at` als Version; veraltete Schreibvorgänge werden abgelehnt.
-- Zwei JSON-Spalten: `payments` = Liste von {id, date, amount_minor, direction, reviewed}, deterministisch nach (date, id) sortiert; Teilzahlungen sind mehrere Einträge, eine Erstattung hat die Gegenrichtung, eine unklare Zuordnung ist `reviewed = false`. `files` = Liste von SHA-256-Hashes der Belege (keine Kontoauszüge).
+`eintraege`, eine Zeile pro Dokument. Ein Beleg ist immer genau ein Eintrag.
+- `id` (hochzählende Ganzzahl), `richtung` (einnahme/ausgabe), `art` (rechnung, beleg, gutschrift, steuerzahlung, nur_zahlung, ignoriert, sonstiges), `datum` (Belegdatum), `titel`, `kategorie` (feste EÜR-Kategorienliste im Code, Schlüssel unwiderruflich), `privatanteil_prozent`, `notizen`
+- Gegenpartei als Text: `gegenpartei_name`, `gegenpartei_land`, `gegenpartei_ustid`. Die USt-IdNr. gehört zum Beleg, nicht zu einem Stammsatz.
+- `positionen`, JSON-Liste von {netto, steuersatz, steuer} in EUR-Cent. Meist ein Element, bei Mischbelegen (Hotel mit Frühstück, Bewirtung) mehrere. Beliebige Sätze, auch ausländische. Keine Summenspalten; Brutto, Netto und Steuer rechnet Swift.
+- `waehrung` und `originalbetrag`: nur bei Fremdwährungsbelegen gefüllt, leer heißt Euro. Die Positionen stehen immer in Euro, am besten zum tatsächlich gezahlten Betrag vom Konto, sonst zum Kurs am Belegdatum. Swift rechnet keine Kurse.
+- `steuerbehandlung` (inland, reverse_charge, kleinunternehmer, steuerfrei, nicht_steuerbar, unklar). Beantwortet, warum ein Beleg keine oder eine besondere Umsatzsteuer hat.
+- `zahlungen`, JSON-Liste von {id, datum, betrag, richtung, geprueft}. Die id zählt innerhalb des Eintrags hoch (1, 2, 3). Teilzahlungen sind mehrere Elemente, eine Erstattung hat die Gegenrichtung, eine unsichere Zuordnung ist `geprueft = false`. Eine Zahlung gehört zu genau einem Eintrag; eine Überweisung für zwei Rechnungen sind zwei Zahlungselemente.
+- `dateien`, JSON-Liste von SHA-256-Hashes der Belege (keine Kontoauszüge).
+- `geprueft_am` (leer = ungeprüft), `erstellt_am`, `geaendert_am`.
 
-Eine Kontobewegung, die zu keinem Beleg passt, ist ein Eintrag mit `kind = payment_only` (unklar, ungeprüft, Titel aus dem Verwendungszweck) oder `kind = ignored` (privat, interner Übertrag; im Ledger ausgeblendet). So erkennt der Agent bereits verarbeitete Auszüge wieder, ohne eigene Tabelle.
+Kategorie und Privatanteil gelten für den ganzen Beleg. Bei zwei Kategorien auf einem Beleg zählt die dominante; ein Randfall, der bewusst nicht abgebildet wird. Einnahmen und Ausgaben stehen in derselben Tabelle, unterschieden durch die Richtung.
 
-`files`: `sha256` (PK), `filename`, `ext`, `byte_size`, `kind` (receipt/statement), `page_count`, `imported_at`. Dedupe ist „Hash existiert“. Kontoauszüge hängen an keinem Eintrag.
+Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` (unklar, ungeprüft, Titel aus dem Verwendungszweck) oder `art = ignoriert` (privat, interner Übertrag; in der Tabelle ausgeblendet). So erkennt der Agent bereits verarbeitete Auszüge wieder, ohne eigene Tabelle.
 
-`history`: ein Log, `id`, `entry_id`, `at`, `actor` (user/agent), `patch_json`. Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
+`dateien`: `sha256` (Schlüssel), `dateiname`, `endung`, `groesse`, `art` (beleg/kontoauszug), `seiten`, `importiert_am`. Dedupe ist „Hash existiert“. Kontoauszüge hängen an keinem Eintrag.
 
-Eine Tabelle `periods` für abgegebene und anstehende Zeiträume ist Thema 5 und nicht Teil der ersten Version.
+`history`: ein Log, `id`, `eintrag_id`, `zeitpunkt`, `akteur` (nutzer/agent), `aenderung` (JSON mit Vorher und Nachher). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
 
-`settings`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung, Automatisierungsstufe. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
+`einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung, Automatisierungsstufe. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
-**Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<ext>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
+Eine Tabelle für abgegebene und anstehende Zeiträume ist Thema 5 und nicht Teil der ersten Version.
 
-**Bewusst nicht:** Tabellen für Zahlungen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Eine Zahlung gehört zu genau einer Buchung; eine Überweisung für zwei Rechnungen sind zwei Zahlungseinträge. Kategorie und Privatanteil gelten für den ganzen Beleg; bei zwei Kategorien auf einem Beleg zählt die dominante, ein Randfall, der bewusst nicht abgebildet wird. Einnahmen und Ausgaben stehen in derselben Tabelle, unterschieden durch die Richtung. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
+**Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<endung>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
-*Herkunft: Zwei-Tabellen-Entwurf vom Nutzer bestätigt; `files` und `history` aus einer unabhängigen Kritik übernommen und bestätigt. Positionen als JSON statt fester Satzspalten vom Nutzer bestätigt. Noch nicht einzeln bestätigt und daher vorläufig: `gross_original_minor`, Zahlungs-`id`/`reviewed`, die „nie still“-Regel mit Version, die Reverse-Charge-Bucket-Regel, `kind = ignored`.*
+**Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; der Agent arbeitet nach der Automatisierungsstufe, die History zeigt jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
 ## 3. Oberfläche
 
