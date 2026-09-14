@@ -46,7 +46,7 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 `aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `aenderung` (JSON mit Vorher und Nachher). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
 
-`laeufe`: ein Agentenlauf pro Datei, `id`, `datei_sha256`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Der Agent darf lesen, nicht schreiben.
+`anfragen`: eine Anfrage an den Agenten pro Datei, `id`, `datei_sha256`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Der Agent darf lesen, nicht schreiben.
 
 `einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
@@ -91,7 +91,7 @@ Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht
 Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anweisungen aus `sqlite_master`), damit es immer aktuell ist. Aufzählungen wie richtung, art und steuerbehandlung sind als CHECK-Bedingungen im Schema hinterlegt und dadurch im Schematext sichtbar. Für JSON-Spalten steht die Struktur als Kommentar im Schema.
 
 **Drei Grenzen in Swift.**
-1. Erlaubte Anweisungen über den SQLite-Autorisierer: SELECT auf `buchungen`, `dateien`, `aktivitaeten`, `laeufe`; INSERT und UPDATE nur auf `buchungen`; kein DELETE, keine Schemaänderung, kein Zugriff auf `einstellungen`.
+1. Erlaubte Anweisungen über den SQLite-Autorisierer: SELECT auf `buchungen`, `dateien`, `aktivitaeten`, `anfragen`; INSERT und UPDATE nur auf `buchungen`; kein DELETE, keine Schemaänderung, kein Zugriff auf `einstellungen`.
 2. Jeder Aufruf läuft in einer Transaktion. Danach laufen die Prüfregeln über die geänderten Zeilen; bestehen sie, wird committet, sonst Rollback, und der Fehlertext geht als Werkzeugantwort an den Agenten, der korrigiert.
 3. Vor und nach dem Aufruf werden die berührten Zeilen verglichen; die Differenz landet automatisch in `aktivitaeten`.
 
@@ -117,3 +117,13 @@ Ein Knopf „Export“ in der Toolbar öffnet ein Sheet. Vorausgewählt ist die 
 - **EÜR** wird als CSV mit Formularzeile, Bezeichnung und Betrag gespeichert; für die Anlage EÜR gibt es keinen Upload, die Werte werden abgetippt.
 
 Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Kleinunternehmer, geprüfte Kennzahlen) und XML-Exporter werden aus dem alten Code übernommen. Mit dem Export kommt eine kleine Tabelle `zeitraeume` (jahr, art, index, exportiert_am), damit die App anstehende Zeiträume erinnern und nachträgliche Änderungen in exportierten Zeiträumen warnen kann. Keine Übermittlung aus der App.
+
+## 6. Technik und Vorgehen
+
+**Struktur.** Ein Swift-Package mit drei Zielen: `Kern` (Schema, Geld, Datum, Repository, Prüfregeln, Steuerrechnung, Export), `Agent` (Responses-Client, Werkzeugschleife, sql-Werkzeug, Aktivitätsvergleich), `App` (SwiftUI). Tests je Ziel. Werkzeuge wie bisher: XcodeGen, `scripts/build.sh`, swiftformat, GRDB für SQLite.
+
+**Übernommen aus dem alten Code**, kopiert und angepasst, nicht importiert: Money, LocalDate, UStVA-Berechnung mit den geprüften Kennzahlen 2026, EÜR-Zeilen, XML-Exporter, Kategorienliste, Responses-Client, Keychain-Zugriff, PDF-Vorschau. Alles andere wird nicht angesehen.
+
+**Größe.** Es gibt kein Zeilenbudget. Die Vorgabe an jeden implementierenden Agenten lautet: einfach und solide bauen, keine Prüfungen und Abstraktionen für Fälle, die nicht in dieser Spec stehen, keine Vorsorge für spätere Erweiterungen. Die App wird durch die Entscheidungen in dieser Spec von selbst deutlich kleiner als die alte.
+
+**Vorgehen.** Der alte Stand wird als Tag `legacy-2026-09-14` archiviert, der Rewrite ersetzt ihn im selben Repository. Reihenfolge: Schema und Repository; Tabelle mit Inspector und manueller Eingabe; Agent mit sql-Werkzeug; Export. Nach jedem Abschnitt läuft die App und der Nutzer testet. Nach jedem Abschnitt prüft ein Review-Agent auf Überbau. Vor dem Release gibt es genau eine Schemadefinition und keine Migrationen.
