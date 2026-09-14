@@ -49,10 +49,17 @@ public enum TransactionQueryRules {
         """
     }
 
-    /// How many payments are allocated to a transaction, refunds included.
-    public static func paymentCountExpression(for alias: String) -> String {
-        "(SELECT COUNT(*) FROM payment_allocations pa WHERE pa.transaction_id = \(alias).id)"
-    }
+    /// The same sum for every transaction at once, one row per transaction
+    /// that has payments at all - so a missing row means "nothing paid" and a
+    /// row with zero means "paid and given back again".
+    public static let settledAllocationsSubquery = """
+    SELECT pa.transaction_id AS transaction_id,
+           SUM(\(signedAllocationExpression(allocation: "pa", payment: "p", transaction: "tx"))) AS net_allocated
+      FROM payment_allocations pa
+      JOIN payments p ON p.id = pa.payment_id
+      JOIN transactions tx ON tx.id = pa.transaction_id
+     GROUP BY pa.transaction_id
+    """
 
     /// Recorded transactions exclude archived and soft-deleted rows.
     public static func recordedVisibilityPredicate(for alias: String) -> String {
