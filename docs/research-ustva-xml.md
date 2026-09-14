@@ -130,3 +130,7 @@ Nicht gefunden, und die Quellenlage deutet aktiv dagegen: Der einzige dokumentie
 - https://forum.elster.de/anwenderforum/forum/elster-webanwendungen/mein-elster/429585-xml-import-uva-scheitert-und-fix-des-tags-anmeldungssteuern-nutzt-nichts (sekundär, Forum)
 - https://forum.elster.de/anwenderforum/forum/elster-webanwendungen/mein-elster/470206-umsatzsteuervornmeldung-formular-2026-xml-datendatei (sekundär, Forum)
 - https://github.com/stesie/geierlein/blob/master/chrome/content/xsl/ustva.xsl (sekundär, Open Source, Zeitraum-Codes)
+
+## Nachtrag 2026-09-14: Testupload erfolgreich
+
+Die von Pfennig erzeugte UStVA-XML für Q3 2026 wurde in Mein ELSTER über „XML-Daten hochladen“ angenommen und die Kennzahlen wurden ins Formular übernommen. Nicht abgesendet. Damit gilt der Aufbau des Exporters als verifiziert für 2026.

@@ -113,7 +113,7 @@ Schlägt eine Regel fehl, bekommt der Agent den Fehlertext zurück. Gibt er nach
 
 Ein Knopf „Export“ in der Toolbar öffnet ein Sheet. Vorausgewählt ist die UStVA für den Zeitraum, der sich aus Rhythmus, Dauerfristverlängerung und heutigem Datum ergibt; wählbar sind andere Zeiträume und die EÜR eines Jahres.
 
-- **UStVA** wird als XML gespeichert, wie es Mein ELSTER im Formular „XML-Daten hochladen“ annimmt, ohne Herstellerregistrierung. Der Nutzer lädt die Datei hoch, prüft das vorausgefüllte Formular und sendet selbst ab. Das Sheet zeigt den Link dazu. Der Aufbau des XML ist aus öffentlichen Quellen rekonstruiert und wird mit einem Testupload ohne Absenden einmal verifiziert.
+- **UStVA** wird als XML gespeichert, wie es Mein ELSTER im Formular „XML-Daten hochladen“ annimmt, ohne Herstellerregistrierung. Der Nutzer lädt die Datei hoch, prüft das vorausgefüllte Formular und sendet selbst ab. Das Sheet zeigt den Link dazu. Der Aufbau des XML ist aus öffentlichen Quellen rekonstruiert und wurde am 2026-09-14 mit einem Testupload der Q3-2026-Datei in Mein ELSTER verifiziert: die Datei wurde angenommen und die Kennzahlen ins Formular übernommen, ohne Absenden.
 - **EÜR** wird als CSV mit Formularzeile, Bezeichnung und Betrag gespeichert; für die Anlage EÜR gibt es keinen Upload, die Werte werden abgetippt.
 
 Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Kleinunternehmer, geprüfte Kennzahlen) und XML-Exporter werden aus dem alten Code übernommen. Mit dem Export kommt eine kleine Tabelle `zeitraeume` (jahr, art, index, exportiert_am), damit die App anstehende Zeiträume erinnern und nachträgliche Änderungen in exportierten Zeiträumen warnen kann. Keine Übermittlung aus der App.
