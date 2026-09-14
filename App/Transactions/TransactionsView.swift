@@ -21,6 +21,9 @@ struct TransactionsView: View {
     @State private var newDraft: TransactionDraft?
     @State private var deletingID: String?
     @State private var pendingSelection: LedgerRow.ID?
+    /// Whether `pendingSelection` came from another window rather than from a
+    /// click in the table: those have to be revealed, not merely selected.
+    @State private var pendingSelectionIsRequest = false
     @State private var isConfirmingDiscard = false
     @Binding private var inspectorHasChanges: Bool
     @State private var search = ""
@@ -97,11 +100,19 @@ struct TransactionsView: View {
                     if pendingSelection == nil, newDraft != nil {
                         newDraft = nil
                     }
-                    selection = pendingSelection
+                    if pendingSelectionIsRequest, let id = pendingSelection {
+                        reveal(id)
+                    } else {
+                        selection = pendingSelection
+                    }
                     pendingSelection = nil
+                    pendingSelectionIsRequest = false
                 }
                 Button("Weiter bearbeiten", role: .cancel) {
+                    // The request is not remembered: the user stays in the
+                    // booking they were editing.
                     pendingSelection = nil
+                    pendingSelectionIsRequest = false
                 }
             } message: {
                 Text("Speichern Sie die aktuelle Buchung zuerst, wenn Sie Ihre Änderungen behalten möchten.")
@@ -144,17 +155,23 @@ struct TransactionsView: View {
             }
     }
 
-    /// Selects a booking another window asked for - today the UStVA task
-    /// window, from its exception list - and shows the inspector for it.
-    /// Unsaved edits still get their confirmation first.
+    /// Selects a booking another view asked for - the rows of "Prüfen" and
+    /// the UStVA task window's exception list - and shows the inspector for
+    /// it. Unsaved edits get the same confirmation as the sidebar first, and
+    /// keeping them drops the request instead of queueing it.
     private func openRequestedTransaction(_ id: String) {
         model.requestedTransactionID = nil
         guard !inspectorHasChanges else {
             pendingSelection = id
+            pendingSelectionIsRequest = true
             isConfirmingDiscard = true
             return
         }
-        // The booking has to be in the list, whatever was filtered before.
+        reveal(id)
+    }
+
+    /// Brings one booking on screen whatever was filtered or searched before.
+    private func reveal(_ id: String) {
         filter = TransactionListFilter()
         search = ""
         showsInspector = true

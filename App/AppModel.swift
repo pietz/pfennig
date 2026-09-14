@@ -180,7 +180,9 @@ final class AppModel {
 
     /// Opens a transaction in Buchungen with the inspector showing, from
     /// wherever the user was - including the UStVA task window, which is a
-    /// window of its own and must raise the ledger itself.
+    /// window of its own and must raise the ledger itself. The ledger asks
+    /// before it replaces unsaved inspector edits, and a request the user
+    /// turns down is dropped.
     func showTransaction(_ id: String) {
         requestedTransactionID = id
         guard let mainWindow else { return }
