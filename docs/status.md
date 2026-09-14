@@ -9,8 +9,8 @@ This file records the current implementation boundary and the next deliberate de
 - The coordinated rename from Ziffer to Pfennig was **completed on 2026-09-14** and is described in the section below. No website or DNS setup was requested.
 - Do not run private-document tests or relocate/reset data without authorization.
 - Ignored build directories, generated project files and release artifacts were not copied. Regenerate/rebuild using the existing scripts. Credentials remain in the existing local Keychain, not in either repository.
-- The [document-to-tax specification](specs/document-to-tax-workflow.md) is **Draft — awaiting approval**, not approved for implementation. The user already selected automatic processing of safe cases, CSV **and PDF** statements, and copyable form values as an acceptable first delivery with XML pursued early. Do not repeat those questions or treat the spec as already approved.
-- The latest user direction is automation-first: one document entrance, receipt-first or payment-first enrichment, durable actionable exceptions, a clean interface without chat, and tax tasks linked from Start. This supersedes older manual-first and CSV-only suggestions in research/backlog documents. Actual implementation still requires review of every import proposal.
+- The [document-to-tax specification](specs/document-to-tax-workflow.md) and the [statement-import specification](specs/statement-import.md) were **approved on 2026-09-14** and are the implementation basis. The user already selected automatic processing of safe cases, CSV **and PDF** statements, and copyable form values as an acceptable first delivery with XML pursued early. Do not repeat those questions.
+- The latest user direction is automation-first: one document entrance, receipt-first or payment-first enrichment, durable actionable exceptions, a clean interface without chat, and tax tasks linked from Start. This supersedes older manual-first and CSV-only suggestions in research/backlog documents. The automation level (below) is the first piece of it that is built; a fresh archive still confirms every import, because the default is Manuell.
 - All seven original GitHub issues and their available comment are captured in [the local issue archive](legacy-github-issues.md), including the deliberate closure of issue 1. The new GitHub repository has no copied issues yet. Do not transfer, recreate or reopen old tickets automatically; review them against the latest decisions first.
 
 **Resume here:** read this handoff and the workflow specification. Obtain explicit approval of that draft before implementation. The rename did not authorize new features, private archive access, a release, a push, or making the repository public.
@@ -62,14 +62,46 @@ The core local bookkeeping loop works:
 - payments, partial payments, refunds (opposite-direction payments) and credit notes (negative transactions) are supported
 - internal field provenance protects manual edits but is intentionally not displayed
 - business-profile settings are editable prospectively; profile changes do not recalculate historical bookings
+- the automation level decides whether an import is committed at once or waits in "Prüfen"; the default is Manuell, so nothing changes until the user says so
 - ordinary 7%/19% VAT, mixed rates, common Kleinunternehmer cases, and typical foreign-service reverse-charge amounts have deterministic proposal derivation; this is not yet a verified tax-reporting path
 - ambiguous Kleinunternehmer EU-goods cases remain unresolved for manual tax review
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 348 tests across 46 suites plus a successful Debug app build.
+The latest verification baseline is 363 tests across 49 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
+
+### Automation level (2026-09-14)
+
+Step 1 of the [statement-import specification](specs/statement-import.md): the
+setting that decides what may be booked without confirmation. It governs
+document imports today and statement movements once they exist.
+
+- `AutomationLevel` (`manual`, `balanced`, `automatic`) lives in `Domain` and is
+  stored in the `settings` table under `automation.level`. `manual` is the
+  default of every archive, including existing ones, so nothing books itself
+  until the user changes the setting. Settings has an "Automatisierung" section
+  above the KI section with one sentence per level.
+- `ImportPipeline.AutomationPolicy.decide(level:hardIssues:softIssues:isUnambiguous:touchesManualOverride:)`
+  is the one decision function, pure and deterministic. Hard validation issues
+  block at every level. Manuell always reviews. Ausgewogen commits only the
+  unambiguous, warning-free case that overwrites no manual value. Automatisch
+  commits despite warnings, but never over a manual value and never an
+  ambiguous derivation - the workflow specification makes ambiguous links a
+  visible exception independently of the level.
+- `ImportCoordinator` receives the level as a value (`AppModel` reads it once
+  per batch); the pipeline reads no interface state. On `autoCommit` it calls
+  the same `CommitService.accept` the "Bestätigen" button uses, so provenance,
+  duplicate detection and atomicity are identical. The committed proposal row
+  carries `policy_decision = autoCommit` next to `status = committed`; that
+  pair is the record of a commit nobody confirmed, so no new `ProposalStatus`
+  case was needed.
+- An automatic commit is `confirmed` when the derivation left no warning and
+  `needsReview` when it did. That keeps a warned booking in "Prüfen" -
+  "Buchungen prüfen" through the existing `needsAttentionPredicate`, which was
+  left untouched: widening it to every open validation issue would also have
+  pulled in bookings a person saved by hand over a warning.
 
 ### UStVA calculation (2026-09-14)
 
@@ -365,6 +397,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
 - below the cards Start has two columns: "Offen" is what the user still has to decide or add (review items, missing documents, import proposals, later unmatched statement movements), "Anstehend" are the outward-facing deadlines (UStVA periods with due dates, later other tax tasks); they share `StartRow`, sit side by side while both fit and stack when narrow
 - "Prüfen" is the single page for everything that needs a decision: Importvorschläge, Fehlgeschlagen, Buchungen prüfen, Belege fehlen; a booking row opens the booking in "Buchungen" with the inspector, and each booking section still leads into the matching ledger filter
+- Settings has an "Automatisierung" section directly above "KI": one picker with Manuell, Ausgewogen und Automatisch, and the sentence of the selected level below it
 - the ledger filters have one shared state, reachable from "Prüfen"; returning through the Buchungen sidebar entry opens the unfiltered ledger
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved. A booking opened from "Prüfen" or from the UStVA task window asks the same question, and "Weiter bearbeiten" drops that request instead of queueing it
 - the UStVA task is the content of Start's "Anstehend" column, including the one-time rhythm confirmation; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected

@@ -317,29 +317,32 @@ Manual overrides are never silently replaced by a later AI run.
 
 ---
 
-# 9. Autonomy Levels
+# 9. Automation Level
 
-Default is **Manual**. Levels are presets over capability flags:
-
-```text
-autoAttachDocument
-autoCreateTransaction
-autoLinkPayment
-autoNormalizeCounterparty
-autoSetCategory
-autoSetTaxTreatment
-autoMarkPaid
-autoClassifyStatementLine
-```
+One user setting with three values, stored in `settings` under
+`automation.level`, default **Manual**. It governs document imports and
+statement movements alike; the earlier per-capability flag presets were
+replaced by this single setting when the
+[workflow specification](docs/specs/document-to-tax-workflow.md) was approved.
 
 | Level | Behaviour |
 |---|---|
-| Manual | Every AI mutation is confirmed by the user. |
-| Conservative | Low-risk organizational actions auto-commit (normalize names, attach identical documents, dedupe). Tax-relevant and financial changes require confirmation. |
-| Balanced | Patterns confirmed ≥ 3 times (rule with `auto_apply = true`) may auto-commit: recurring vendor, known category, known payment match. Material tax changes and unusual cases require review. |
-| Automated | Broader auto-commit; hard validation failures always block; destructive operations always guarded; tax treatments outside supported patterns always reviewable. |
+| Manuell | Every proposal is confirmed by the user, including unambiguous ones. |
+| Ausgewogen | Fully validated standard cases with an unambiguous derivation are committed without confirmation. Anything with a warning, a competing match or a missing fact stays a proposal. |
+| Automatisch | No confirmation step. Warnings are recorded on the booking, which stays visible under "Prüfen"; what cannot be derived unambiguously stays an exception instead of being invented. |
 
-Changes within a **locked period** always require review regardless of level.
+A single deterministic function decides per proposal
+(`ImportPipeline.AutomationPolicy.decide`). Its inputs are the level, the hard
+and soft validation results, whether the derivation or match is unambiguous,
+and whether a manually entered field would be overwritten. Model confidence is
+not an input.
+
+- Hard validation failures block at every level.
+- Manual values are never silently overwritten; such a write becomes a review item.
+- An ambiguous match is never applied automatically, at any level.
+- An automatic commit runs through the same `CommitService` path as the user's
+  confirmation, so provenance, duplicate handling and atomicity are identical.
+- Changes within a **locked period** always require review regardless of level.
 
 ---
 
@@ -1573,7 +1576,7 @@ Do not revisit unless implementation evidence proves them wrong:
 - V1 AI = single-shot extraction + optional disambiguation; no function calling; matching deterministic
 - CSV statements parsed deterministically after one-time AI column mapping
 - Manual editing always possible; manual values never overwritten by AI
-- Autonomy capability-based; default Manual
+- One automation level (Manuell/Ausgewogen/Automatisch) in `settings`; default Manuell; one deterministic decision function
 - No primary chat UX; no direct ELSTER; no DATEV in V1
 - XcodeGen project + SwiftPM modules; CLI-first; Xcode GUI only for release edge cases
 
