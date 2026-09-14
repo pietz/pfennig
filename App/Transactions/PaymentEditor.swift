@@ -12,7 +12,6 @@ struct PaymentEditor: View {
     @Binding private var draft: TransactionDraft
     let onSave: (TransactionDraft) -> Void
     @State private var payment: PaymentDraft
-    @State private var accounts: [Account] = []
     @State private var amountIsValid = true
     @State private var saveError: String?
 
@@ -72,10 +71,6 @@ struct PaymentEditor: View {
                     if let paymentAmountMessage {
                         IssueRow(severity: .error, message: paymentAmountMessage)
                     }
-                    Picker("Konto", selection: $payment.accountId) {
-                        Text("Ohne Konto").tag(String?.none)
-                        ForEach(accounts) { Text($0.name).tag(String?.some($0.id)) }
-                    }
                     Picker("Methode", selection: $payment.paymentMethod) {
                         ForEach(PaymentMethod.allCases, id: \.self) { Text($0.label).tag(PaymentMethod?.some($0)) }
                     }
@@ -106,7 +101,6 @@ struct PaymentEditor: View {
             .padding(.vertical, 12)
         }
         .frame(width: 460, height: 380)
-        .task { accounts = (try? model.database?.accounts()) ?? [] }
     }
 
     private var paymentAmountMessage: String? {

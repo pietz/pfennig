@@ -31,7 +31,6 @@ public struct BusinessProfile: PfennigRecord, Identifiable, Sendable, Hashable {
     public var vatAccountingMethod: VATAccountingMethod
     public var ustvaPeriod: UStVAPeriodicity
     public var businessType: BusinessType
-    public var fiscalYearStartMonth: Int
     public var createdAt: String
     public var updatedAt: String
 
@@ -46,7 +45,6 @@ public struct BusinessProfile: PfennigRecord, Identifiable, Sendable, Hashable {
         vatAccountingMethod: VATAccountingMethod = .cash,
         ustvaPeriod: UStVAPeriodicity = .quarterly,
         businessType: BusinessType = .freelancer,
-        fiscalYearStartMonth: Int = 1,
         createdAt: String = Timestamp.string(),
         updatedAt: String = Timestamp.string()
     ) {
@@ -60,54 +58,6 @@ public struct BusinessProfile: PfennigRecord, Identifiable, Sendable, Hashable {
         self.vatAccountingMethod = vatAccountingMethod
         self.ustvaPeriod = ustvaPeriod
         self.businessType = businessType
-        self.fiscalYearStartMonth = fiscalYearStartMonth
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
-    }
-}
-
-// MARK: - 17.2 accounts
-
-public struct Account: PfennigRecord, Identifiable, Sendable, Hashable {
-    public static let databaseTableName = "accounts"
-
-    public var id: String
-    public var businessProfileId: String
-    public var name: String
-    public var kind: AccountKind
-    public var currency: String
-    public var iban: String?
-    public var last4: String?
-    public var isBusiness: Bool
-    public var statementMappingRuleId: String?
-    public var archivedAt: String?
-    public var createdAt: String
-    public var updatedAt: String
-
-    public init(
-        id: String = IDGenerator.new(),
-        businessProfileId: String,
-        name: String,
-        kind: AccountKind,
-        currency: String = "EUR",
-        iban: String? = nil,
-        last4: String? = nil,
-        isBusiness: Bool = true,
-        statementMappingRuleId: String? = nil,
-        archivedAt: String? = nil,
-        createdAt: String = Timestamp.string(),
-        updatedAt: String = Timestamp.string()
-    ) {
-        self.id = id
-        self.businessProfileId = businessProfileId
-        self.name = name
-        self.kind = kind
-        self.currency = currency
-        self.iban = iban
-        self.last4 = last4
-        self.isBusiness = isBusiness
-        self.statementMappingRuleId = statementMappingRuleId
-        self.archivedAt = archivedAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -123,12 +73,6 @@ public struct Counterparty: PfennigRecord, Identifiable, Sendable, Hashable {
     public var displayName: String
     public var countryCode: String?
     public var vatId: String?
-    public var street: String?
-    public var postalCode: String?
-    public var city: String?
-    public var defaultCategoryId: String?
-    public var defaultTaxTreatment: TaxTreatment?
-    public var aliasesJson: String?
     public var createdAt: String
     public var updatedAt: String
 
@@ -138,12 +82,6 @@ public struct Counterparty: PfennigRecord, Identifiable, Sendable, Hashable {
         normalizedName: String? = nil,
         countryCode: String? = nil,
         vatId: String? = nil,
-        street: String? = nil,
-        postalCode: String? = nil,
-        city: String? = nil,
-        defaultCategoryId: String? = nil,
-        defaultTaxTreatment: TaxTreatment? = nil,
-        aliasesJson: String? = nil,
         createdAt: String = Timestamp.string(),
         updatedAt: String = Timestamp.string()
     ) {
@@ -152,12 +90,6 @@ public struct Counterparty: PfennigRecord, Identifiable, Sendable, Hashable {
         self.normalizedName = normalizedName ?? Counterparty.normalize(displayName)
         self.countryCode = countryCode
         self.vatId = vatId
-        self.street = street
-        self.postalCode = postalCode
-        self.city = city
-        self.defaultCategoryId = defaultCategoryId
-        self.defaultTaxTreatment = defaultTaxTreatment
-        self.aliasesJson = aliasesJson
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -184,33 +116,24 @@ public struct Category: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "categories"
 
     public var id: String
-    public var parentId: String?
     public var nameDe: String
-    public var nameEn: String
     public var kind: CategoryKind
     public var documentExpected: Bool
-    public var isSystem: Bool
     public var sortOrder: Int
     public var archivedAt: String?
 
     public init(
         id: String,
-        parentId: String? = nil,
         nameDe: String,
-        nameEn: String,
         kind: CategoryKind,
         documentExpected: Bool = true,
-        isSystem: Bool = true,
         sortOrder: Int = 0,
         archivedAt: String? = nil
     ) {
         self.id = id
-        self.parentId = parentId
         self.nameDe = nameDe
-        self.nameEn = nameEn
         self.kind = kind
         self.documentExpected = documentExpected
-        self.isSystem = isSystem
         self.sortOrder = sortOrder
         self.archivedAt = archivedAt
     }
@@ -248,10 +171,8 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
     public var bookedTaxMinor: Int64?
     public var bookedGrossMinor: Int64?
     public var exchangeRate: String?
-    public var exchangeRateSource: ExchangeRateSource?
 
     public var eurYearOverride: Int?
-    public var deductibilityNote: String?
 
     public var workflowStatus: WorkflowStatus
     public var reviewStatus: ReviewStatus
@@ -283,9 +204,7 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
         bookedTaxMinor: Int64? = nil,
         bookedGrossMinor: Int64? = nil,
         exchangeRate: String? = nil,
-        exchangeRateSource: ExchangeRateSource? = nil,
         eurYearOverride: Int? = nil,
-        deductibilityNote: String? = nil,
         workflowStatus: WorkflowStatus = .active,
         reviewStatus: ReviewStatus = .unreviewed,
         notes: String? = nil,
@@ -314,9 +233,7 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
         self.bookedTaxMinor = bookedTaxMinor
         self.bookedGrossMinor = bookedGrossMinor
         self.exchangeRate = exchangeRate
-        self.exchangeRateSource = exchangeRateSource
         self.eurYearOverride = eurYearOverride
-        self.deductibilityNote = deductibilityNote
         self.workflowStatus = workflowStatus
         self.reviewStatus = reviewStatus
         self.notes = notes
@@ -432,7 +349,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "payments"
 
     public var id: String = IDGenerator.new()
-    public var accountId: String?
     public var direction: PaymentDirection
     public var paymentDate: LocalDate
     public var originalCurrency: String
@@ -440,7 +356,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
     public var bookedCurrency: String = "EUR"
     public var bookedAmountMinor: Int64?
     public var exchangeRate: String?
-    public var exchangeRateSource: ExchangeRateSource?
     public var counterpartyNameRaw: String?
     public var reference: String?
     public var paymentMethod: PaymentMethod?
@@ -450,7 +365,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
 
     public init(
         id: String = IDGenerator.new(),
-        accountId: String? = nil,
         direction: PaymentDirection,
         paymentDate: LocalDate,
         originalCurrency: String = "EUR",
@@ -458,7 +372,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
         bookedCurrency: String = "EUR",
         bookedAmountMinor: Int64? = nil,
         exchangeRate: String? = nil,
-        exchangeRateSource: ExchangeRateSource? = nil,
         counterpartyNameRaw: String? = nil,
         reference: String? = nil,
         paymentMethod: PaymentMethod? = nil,
@@ -467,7 +380,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
         updatedAt: String = Timestamp.string()
     ) {
         self.id = id
-        self.accountId = accountId
         self.direction = direction
         self.paymentDate = paymentDate
         self.originalCurrency = originalCurrency
@@ -475,7 +387,6 @@ public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
         self.bookedCurrency = bookedCurrency
         self.bookedAmountMinor = bookedAmountMinor
         self.exchangeRate = exchangeRate
-        self.exchangeRateSource = exchangeRateSource
         self.counterpartyNameRaw = counterpartyNameRaw
         self.reference = reference
         self.paymentMethod = paymentMethod
@@ -496,7 +407,6 @@ public struct PaymentAllocation: PfennigRecord, Identifiable, Sendable, Hashable
     public var allocatedMinor: Int64
     public var currency: String = "EUR"
     public var matchMethod: MatchMethod
-    public var confidence: String?
     public var createdAt: String = Timestamp.string()
 
     public init(
@@ -506,7 +416,6 @@ public struct PaymentAllocation: PfennigRecord, Identifiable, Sendable, Hashable
         allocatedMinor: Int64,
         currency: String = "EUR",
         matchMethod: MatchMethod = .manual,
-        confidence: String? = nil,
         createdAt: String = Timestamp.string()
     ) {
         self.id = id
@@ -515,7 +424,6 @@ public struct PaymentAllocation: PfennigRecord, Identifiable, Sendable, Hashable
         self.allocatedMinor = allocatedMinor
         self.currency = currency
         self.matchMethod = matchMethod
-        self.confidence = confidence
         self.createdAt = createdAt
     }
 }
@@ -526,7 +434,7 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "statement_lines"
 
     public var id: String = IDGenerator.new()
-    public var accountId: String
+    public var accountIban: String
     public var documentId: String?
     public var lineFingerprint: String
     public var externalId: String?
@@ -542,13 +450,12 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
     public var classification: StatementLineClass = .unknown
     public var classificationSubtype: String?
     public var paymentId: String?
-    public var counterAccountId: String?
     public var createdAt: String = Timestamp.string()
     public var updatedAt: String = Timestamp.string()
 
     public init(
         id: String = IDGenerator.new(),
-        accountId: String,
+        accountIban: String,
         documentId: String? = nil,
         lineFingerprint: String,
         externalId: String? = nil,
@@ -564,12 +471,11 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
         classification: StatementLineClass = .unknown,
         classificationSubtype: String? = nil,
         paymentId: String? = nil,
-        counterAccountId: String? = nil,
         createdAt: String = Timestamp.string(),
         updatedAt: String = Timestamp.string()
     ) {
         self.id = id
-        self.accountId = accountId
+        self.accountIban = accountIban
         self.documentId = documentId
         self.lineFingerprint = lineFingerprint
         self.externalId = externalId
@@ -585,7 +491,6 @@ public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
         self.classification = classification
         self.classificationSubtype = classificationSubtype
         self.paymentId = paymentId
-        self.counterAccountId = counterAccountId
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -641,7 +546,6 @@ public struct DocumentRecord: PfennigRecord, Identifiable, Sendable, Hashable {
     public var mimeType: String?
     public var sha256: String
     public var byteSize: Int64
-    public var pageCount: Int?
     public var documentType: DocumentType?
     public var source: DocumentSource
     public var importedAt: String = Timestamp.string()
@@ -655,7 +559,6 @@ public struct DocumentRecord: PfennigRecord, Identifiable, Sendable, Hashable {
         mimeType: String? = nil,
         sha256: String,
         byteSize: Int64,
-        pageCount: Int? = nil,
         documentType: DocumentType? = nil,
         source: DocumentSource = .fileImport,
         importedAt: String = Timestamp.string(),
@@ -668,7 +571,6 @@ public struct DocumentRecord: PfennigRecord, Identifiable, Sendable, Hashable {
         self.mimeType = mimeType
         self.sha256 = sha256
         self.byteSize = byteSize
-        self.pageCount = pageCount
         self.documentType = documentType
         self.source = source
         self.importedAt = importedAt
@@ -756,8 +658,6 @@ public struct FieldProvenance: PfennigRecord, Identifiable, Sendable, Hashable {
     public var isManualOverride: Bool = false
     public var sourceDocumentId: String?
     public var modelRunId: String?
-    public var ruleId: String?
-    public var confidence: String?
     public var createdAt: String = Timestamp.string()
     public var supersededAt: String?
 
@@ -770,8 +670,6 @@ public struct FieldProvenance: PfennigRecord, Identifiable, Sendable, Hashable {
         isManualOverride: Bool = false,
         sourceDocumentId: String? = nil,
         modelRunId: String? = nil,
-        ruleId: String? = nil,
-        confidence: String? = nil,
         createdAt: String = Timestamp.string(),
         supersededAt: String? = nil
     ) {
@@ -783,8 +681,6 @@ public struct FieldProvenance: PfennigRecord, Identifiable, Sendable, Hashable {
         self.isManualOverride = isManualOverride
         self.sourceDocumentId = sourceDocumentId
         self.modelRunId = modelRunId
-        self.ruleId = ruleId
-        self.confidence = confidence
         self.createdAt = createdAt
         self.supersededAt = supersededAt
     }

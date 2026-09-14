@@ -82,7 +82,7 @@ public actor ImportCoordinator {
 
         do {
             // 1 - archive the original under its SHA-256 (spec 12, 25).
-            try repository.updateItem(item.id, status: .archiving, incrementAttempt: true)
+            try repository.updateItem(item.id, status: .archiving)
             let stored: DocumentDraft
             if existingItem != nil, let documentID = item.documentId {
                 // A post-archive retry reads the canonical archive row. It

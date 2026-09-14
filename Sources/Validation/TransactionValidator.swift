@@ -51,12 +51,6 @@ public struct TransactionSnapshot: Sendable {
     public var bookedExchangeRate: Decimal?
     public var bankActualExchangeRate: Decimal?
 
-    // MARK: Locked periods (spec 17.24)
-    public var relevantDateForLocking: LocalDate?
-    public var lockedPeriods: [LockedPeriodFact]
-    public var isMutation: Bool
-    public var hasExplicitCorrectionAction: Bool
-
     // MARK: High-amount / provenance (spec 14.2)
     public var highAmountThreshold: Money?
     public var provenance: ProvenanceSummary
@@ -87,10 +81,6 @@ public struct TransactionSnapshot: Sendable {
         paymentsInTenDayWindow: [LocalDate] = [],
         bookedExchangeRate: Decimal? = nil,
         bankActualExchangeRate: Decimal? = nil,
-        relevantDateForLocking: LocalDate? = nil,
-        lockedPeriods: [LockedPeriodFact] = [],
-        isMutation: Bool = false,
-        hasExplicitCorrectionAction: Bool = false,
         highAmountThreshold: Money? = nil,
         provenance: ProvenanceSummary = ProvenanceSummary(hasAnyNonAgentProvenance: true)
     ) {
@@ -119,10 +109,6 @@ public struct TransactionSnapshot: Sendable {
         self.paymentsInTenDayWindow = paymentsInTenDayWindow
         self.bookedExchangeRate = bookedExchangeRate
         self.bankActualExchangeRate = bankActualExchangeRate
-        self.relevantDateForLocking = relevantDateForLocking
-        self.lockedPeriods = lockedPeriods
-        self.isMutation = isMutation
-        self.hasExplicitCorrectionAction = hasExplicitCorrectionAction
         self.highAmountThreshold = highAmountThreshold
         self.provenance = provenance
     }
@@ -182,14 +168,6 @@ public enum TransactionValidator {
             ) {
                 hard.append(issue)
             }
-        }
-        if let issue = TaxValidator.validateLockedPeriod(
-            relevantDate: snapshot.relevantDateForLocking,
-            lockedPeriods: snapshot.lockedPeriods,
-            isMutation: snapshot.isMutation,
-            hasExplicitCorrectionAction: snapshot.hasExplicitCorrectionAction
-        ) {
-            hard.append(issue)
         }
 
         // MARK: Soft (14.2)

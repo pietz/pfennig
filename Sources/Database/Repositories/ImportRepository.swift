@@ -92,8 +92,7 @@ public struct ImportRepository: Sendable {
         status: ImportItemStatus,
         documentID: String? = nil,
         errorCode: String? = nil,
-        errorMessage: String? = nil,
-        incrementAttempt: Bool = false
+        errorMessage: String? = nil
     ) throws {
         try database.writer.write { db in
             try db.execute(
@@ -103,7 +102,6 @@ public struct ImportRepository: Sendable {
                        document_id = COALESCE(:documentId, document_id),
                        error_code = :errorCode,
                        error_message = :errorMessage,
-                       attempt_count = attempt_count + :increment,
                        updated_at = :now
                  WHERE id = :id
                 """,
@@ -112,7 +110,6 @@ public struct ImportRepository: Sendable {
                     "documentId": documentID,
                     "errorCode": errorCode,
                     "errorMessage": errorMessage,
-                    "increment": incrementAttempt ? 1 : 0,
                     "now": Timestamp.string(),
                     "id": id
                 ]

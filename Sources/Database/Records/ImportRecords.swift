@@ -40,7 +40,6 @@ public struct ImportItem: PfennigRecord, Identifiable, Sendable, Hashable {
     public var status: ImportItemStatus = .queued
     public var errorCode: String?
     public var errorMessage: String?
-    public var attemptCount: Int = 0
     public var createdAt: String = Timestamp.string()
     public var updatedAt: String = Timestamp.string()
 
@@ -52,7 +51,6 @@ public struct ImportItem: PfennigRecord, Identifiable, Sendable, Hashable {
         status: ImportItemStatus = .queued,
         errorCode: String? = nil,
         errorMessage: String? = nil,
-        attemptCount: Int = 0,
         createdAt: String = Timestamp.string(),
         updatedAt: String = Timestamp.string()
     ) {
@@ -63,7 +61,6 @@ public struct ImportItem: PfennigRecord, Identifiable, Sendable, Hashable {
         self.status = status
         self.errorCode = errorCode
         self.errorMessage = errorMessage
-        self.attemptCount = attemptCount
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

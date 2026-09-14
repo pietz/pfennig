@@ -70,17 +70,4 @@ public enum TaxValidator {
         return ValidationIssue(code: .highAmountAgentOnly, fieldName: "amount", params: ["amount": amount.decimalString])
     }
 
-    /// Spec 14.1 / 17.24: "Mutation inside a locked period without an
-    /// explicit correction action." `relevantDate` is the tax-relevant date
-    /// (e.g. `input_vat_date`/`output_vat_date`) the mutation would touch.
-    public static func validateLockedPeriod(
-        relevantDate: LocalDate?,
-        lockedPeriods: [LockedPeriodFact],
-        isMutation: Bool,
-        hasExplicitCorrectionAction: Bool
-    ) -> ValidationIssue? {
-        guard isMutation, !hasExplicitCorrectionAction, let relevantDate else { return nil }
-        guard lockedPeriods.contains(where: { $0.contains(relevantDate) }) else { return nil }
-        return ValidationIssue(code: .lockedPeriod, fieldName: "relevantDate", params: ["date": relevantDate.description])
-    }
 }

@@ -15,24 +15,6 @@ public struct TaxComponentSnapshot: Sendable, Equatable {
     }
 }
 
-/// One locked period a transaction's tax-relevant fields might fall into
-/// (spec 17.24).
-public struct LockedPeriodFact: Sendable, Equatable {
-    public let scope: LockScope
-    public let start: LocalDate
-    public let end: LocalDate
-
-    public init(scope: LockScope, start: LocalDate, end: LocalDate) {
-        self.scope = scope
-        self.start = start
-        self.end = end
-    }
-
-    public func contains(_ date: LocalDate) -> Bool {
-        start <= date && date <= end
-    }
-}
-
 /// One `payment_allocations` row relevant to this transaction, plus the
 /// running total already allocated against that same payment across *all*
 /// transactions (the caller/Database layer supplies this since a single
@@ -78,11 +60,11 @@ public struct WorkflowTransition: Hashable, Sendable {
 /// Key for a statement-line duplicate fingerprint check (spec 14.1: "on the
 /// same account").
 public struct StatementLineFingerprintKey: Hashable, Sendable {
-    public let accountID: String
+    public let accountIBAN: String
     public let fingerprint: String
 
-    public init(accountID: String, fingerprint: String) {
-        self.accountID = accountID
+    public init(accountIBAN: String, fingerprint: String) {
+        self.accountIBAN = accountIBAN
         self.fingerprint = fingerprint
     }
 }

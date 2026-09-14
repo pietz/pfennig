@@ -3,13 +3,19 @@ import GRDB
 
 /// Initial schema. Mirrors spec section 17 table by table; tables are created
 /// in dependency order so that foreign keys resolve immediately.
-/// Never edit this migration once released - add `v002_...` instead (spec 47).
+/// Never edit this migration once released - add `v00x_...` instead (spec 47).
 enum V001Initial {
     static func migrate(_ db: Database) throws {
         for statement in statements {
             try db.execute(sql: statement)
         }
         try SystemCategories.seed(db)
+    }
+
+    /// The `CREATE TABLE`/`CREATE INDEX` statements that belong to one table,
+    /// so a later migration can rebuild that table in its current shape.
+    static func statements(for table: String) -> [String] {
+        statements.filter { $0.contains("CREATE TABLE \(table) (") || $0.contains(" ON \(table)(") }
     }
 
     static let statements: [String] = [
@@ -26,7 +32,6 @@ enum V001Initial {
             vat_accounting_method TEXT NOT NULL,
             ustva_period TEXT NOT NULL,
             business_type TEXT NOT NULL,
-            fiscal_year_start_month INTEGER NOT NULL DEFAULT 1,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -35,12 +40,9 @@ enum V001Initial {
         """
         CREATE TABLE categories (
             id TEXT PRIMARY KEY,
-            parent_id TEXT REFERENCES categories(id),
             name_de TEXT NOT NULL,
-            name_en TEXT NOT NULL,
             kind TEXT NOT NULL,
             document_expected INTEGER NOT NULL DEFAULT 1,
-            is_system INTEGER NOT NULL DEFAULT 1,
             sort_order INTEGER NOT NULL DEFAULT 0,
             archived_at TEXT
         )
@@ -53,48 +55,11 @@ enum V001Initial {
             display_name TEXT NOT NULL,
             country_code TEXT,
             vat_id TEXT,
-            street TEXT, postal_code TEXT, city TEXT,
-            default_category_id TEXT REFERENCES categories(id),
-            default_tax_treatment TEXT,
-            aliases_json TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
         """,
         "CREATE UNIQUE INDEX idx_counterparties_normalized ON counterparties(normalized_name)",
-        // 17.21 rules
-        """
-        CREATE TABLE rules (
-            id TEXT PRIMARY KEY,
-            kind TEXT NOT NULL,
-            scope_json TEXT NOT NULL,
-            action_json TEXT NOT NULL,
-            confirmation_count INTEGER NOT NULL DEFAULT 0,
-            auto_apply INTEGER NOT NULL DEFAULT 0,
-            is_tax_relevant INTEGER NOT NULL DEFAULT 0,
-            created_by TEXT NOT NULL,
-            enabled INTEGER NOT NULL DEFAULT 1,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-        """,
-        // 17.2 accounts
-        """
-        CREATE TABLE accounts (
-            id TEXT PRIMARY KEY,
-            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
-            name TEXT NOT NULL,
-            kind TEXT NOT NULL,
-            currency TEXT NOT NULL DEFAULT 'EUR',
-            iban TEXT,
-            last4 TEXT,
-            is_business INTEGER NOT NULL DEFAULT 1,
-            statement_mapping_rule_id TEXT REFERENCES rules(id),
-            archived_at TEXT,
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL
-        )
-        """,
         // 17.10 documents
         """
         CREATE TABLE documents (
@@ -105,7 +70,6 @@ enum V001Initial {
             mime_type TEXT,
             sha256 TEXT NOT NULL UNIQUE,
             byte_size INTEGER NOT NULL,
-            page_count INTEGER,
             document_type TEXT,
             source TEXT NOT NULL,
             imported_at TEXT NOT NULL,
@@ -140,10 +104,8 @@ enum V001Initial {
             booked_tax_minor INTEGER,
             booked_gross_minor INTEGER,
             exchange_rate TEXT,
-            exchange_rate_source TEXT,
 
             eur_year_override INTEGER,
-            deductibility_note TEXT,
 
             workflow_status TEXT NOT NULL,
             review_status TEXT NOT NULL,
@@ -211,20 +173,6 @@ enum V001Initial {
         )
         """,
         "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id)",
-        // 17.9 transaction_relations
-        """
-        CREATE TABLE transaction_relations (
-            id TEXT PRIMARY KEY,
-            from_transaction_id TEXT NOT NULL REFERENCES transactions(id),
-            to_transaction_id TEXT NOT NULL REFERENCES transactions(id),
-            relation_type TEXT NOT NULL,
-            amount_minor INTEGER,
-            currency TEXT,
-            note TEXT,
-            created_at TEXT NOT NULL,
-            UNIQUE(from_transaction_id, to_transaction_id, relation_type)
-        )
-        """,
         // 17.11 transaction_documents
         """
         CREATE TABLE transaction_documents (
@@ -239,7 +187,6 @@ enum V001Initial {
         """
         CREATE TABLE payments (
             id TEXT PRIMARY KEY,
-            account_id TEXT REFERENCES accounts(id),
             direction TEXT NOT NULL,
             payment_date TEXT NOT NULL,
 
@@ -248,7 +195,6 @@ enum V001Initial {
             booked_currency TEXT NOT NULL DEFAULT 'EUR',
             booked_amount_minor INTEGER,
             exchange_rate TEXT,
-            exchange_rate_source TEXT,
 
             counterparty_name_raw TEXT,
             reference TEXT,
@@ -259,12 +205,11 @@ enum V001Initial {
         )
         """,
         "CREATE INDEX idx_payments_date ON payments(payment_date)",
-        "CREATE INDEX idx_payments_account ON payments(account_id)",
         // 17.12 statement_lines
         """
         CREATE TABLE statement_lines (
             id TEXT PRIMARY KEY,
-            account_id TEXT NOT NULL REFERENCES accounts(id),
+            account_iban TEXT NOT NULL,
             document_id TEXT REFERENCES documents(id),
             line_fingerprint TEXT NOT NULL,
             external_id TEXT,
@@ -282,13 +227,12 @@ enum V001Initial {
             classification TEXT NOT NULL,
             classification_subtype TEXT,
             payment_id TEXT REFERENCES payments(id),
-            counter_account_id TEXT REFERENCES accounts(id),
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL,
-            UNIQUE(account_id, line_fingerprint)
+            UNIQUE(account_iban, line_fingerprint)
         )
         """,
-        "CREATE INDEX idx_stmt_account_date ON statement_lines(account_id, booking_date)",
+        "CREATE INDEX idx_stmt_account_date ON statement_lines(account_iban, booking_date)",
         "CREATE INDEX idx_stmt_classification ON statement_lines(classification)",
         // 17.14 payment_allocations
         """
@@ -299,7 +243,6 @@ enum V001Initial {
             allocated_minor INTEGER NOT NULL,
             currency TEXT NOT NULL DEFAULT 'EUR',
             match_method TEXT NOT NULL,
-            confidence TEXT,
             created_at TEXT NOT NULL
         )
         """,
@@ -325,7 +268,6 @@ enum V001Initial {
             status TEXT NOT NULL,
             error_code TEXT,
             error_message TEXT,
-            attempt_count INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -360,8 +302,6 @@ enum V001Initial {
             is_manual_override INTEGER NOT NULL DEFAULT 0,
             source_document_id TEXT REFERENCES documents(id),
             model_run_id TEXT REFERENCES model_runs(id),
-            rule_id TEXT REFERENCES rules(id),
-            confidence TEXT,
             created_at TEXT NOT NULL,
             superseded_at TEXT
         )
@@ -424,19 +364,6 @@ enum V001Initial {
             key TEXT PRIMARY KEY,
             value_json TEXT NOT NULL,
             updated_at TEXT NOT NULL
-        )
-        """,
-        // 17.24 locked_periods
-        """
-        CREATE TABLE locked_periods (
-            id TEXT PRIMARY KEY,
-            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
-            scope TEXT NOT NULL,
-            period_start TEXT NOT NULL,
-            period_end TEXT NOT NULL,
-            locked_at TEXT NOT NULL,
-            note TEXT,
-            UNIQUE(business_profile_id, scope, period_start, period_end)
         )
         """,
         // submitted_returns: one row per UStVA period the user marked as filed.

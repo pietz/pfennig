@@ -26,18 +26,15 @@ public struct ProvenanceEntry: Codable, Sendable, Hashable {
     public var entityType: String
     public var fieldName: String
     public var provenance: Provenance
-    public var confidence: String?
 
     public init(
         entityType: String = "transaction",
         fieldName: String,
-        provenance: Provenance,
-        confidence: String? = nil
+        provenance: Provenance
     ) {
         self.entityType = entityType
         self.fieldName = fieldName
         self.provenance = provenance
-        self.confidence = confidence
     }
 }
 

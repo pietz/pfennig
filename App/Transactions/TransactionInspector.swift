@@ -491,7 +491,7 @@ struct TransactionInspector: View {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(entry.allocated.formatted(locale: Format.german)).monospacedDigit()
                         Text(
-                            [entry.accountName, entry.payment.paymentMethod?.text, entry.payment.reference]
+                            [entry.payment.paymentMethod?.text, entry.payment.reference]
                                 .compactMap(\.self)
                                 .joined(separator: " · ")
                         )

@@ -18,7 +18,6 @@ public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     case unsupportedStateTransition = "UNSUPPORTED_STATE_TRANSITION"
     case duplicateDocumentIdentity = "DUPLICATE_DOCUMENT_IDENTITY"
     case duplicateStatementLineFingerprint = "DUPLICATE_STATEMENT_LINE_FINGERPRINT"
-    case lockedPeriod = "LOCKED_PERIOD"
 
     // MARK: Soft (14.2)
 
@@ -43,7 +42,7 @@ public extension IssueCode {
         .taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch,
         .allocationSumMismatch, .paymentAllocationExceeds, .linkedEntityMissing,
         .unsupportedStateTransition, .duplicateDocumentIdentity,
-        .duplicateStatementLineFingerprint, .lockedPeriod
+        .duplicateStatementLineFingerprint
     ]
 
     /// True for a hard (blocking) code; false for a soft one.
@@ -93,8 +92,6 @@ public extension IssueCode {
             "Dokument mit identischem Hash bereits vorhanden."
         case .duplicateStatementLineFingerprint:
             "Kontoumsatz mit identischem Fingerabdruck bereits vorhanden."
-        case .lockedPeriod:
-            "Änderung in gesperrtem Zeitraum ohne Korrekturbuchung."
         case .taxRateUnusual:
             "Unüblicher Steuersatz für diese steuerliche Behandlung."
         case .treatmentCountryMismatch:

@@ -17,14 +17,6 @@
 
     enum SampleData {
         static func insert(_ db: Database, businessProfileID: String) throws {
-            let account = Account(
-                businessProfileId: businessProfileID,
-                name: "Geschäftskonto",
-                kind: .bank,
-                iban: "DE02120300000000202051"
-            )
-            try account.insert(db)
-
             // 1 - paid expense, reverse charge (the worked example of spec 4.1)
             let adobe = Counterparty(
                 displayName: "Adobe Systems Software Ireland Ltd",
@@ -66,7 +58,6 @@
             )
             try pay(
                 db,
-                account: account,
                 transaction: adobeTransaction,
                 amountMinor: 7139,
                 date: LocalDate(year: 2026, month: 9, day: 2),
@@ -109,7 +100,6 @@
             )
             try pay(
                 db,
-                account: account,
                 transaction: invoice,
                 amountMinor: 100_000,
                 date: LocalDate(year: 2026, month: 9, day: 10),
@@ -186,7 +176,6 @@
             )
             try pay(
                 db,
-                account: account,
                 transaction: hosting,
                 amountMinor: 2000,
                 date: LocalDate(year: 2026, month: 9, day: 3),
@@ -244,7 +233,6 @@
 
         private static func pay(
             _ db: Database,
-            account: Account,
             transaction: TransactionRecord,
             amountMinor: Int64,
             date: LocalDate,
@@ -252,7 +240,6 @@
             counterparty: String
         ) throws {
             let payment = Payment(
-                accountId: account.id,
                 direction: direction,
                 paymentDate: date,
                 originalAmountMinor: amountMinor,

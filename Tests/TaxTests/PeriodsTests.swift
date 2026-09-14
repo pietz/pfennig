@@ -40,22 +40,3 @@ struct UStVAPeriodTests {
         #expect(period.dueDate(dauerfristverlaengerung: true) == LocalDate(year: 2027, month: 2, day: 10))
     }
 }
-
-@Suite("FiscalYear")
-struct FiscalYearTests {
-    @Test("Default calendar-year fiscal year")
-    func calendarYear() {
-        let year = FiscalYear(year: 2026)
-        #expect(year.start == LocalDate(year: 2026, month: 1, day: 1))
-        #expect(year.end == LocalDate(year: 2026, month: 12, day: 31))
-        #expect(year.contains(LocalDate(year: 2026, month: 6, day: 1)))
-        #expect(!year.contains(LocalDate(year: 2027, month: 1, day: 1)))
-    }
-
-    @Test("Non-January fiscal year start spans two calendar years")
-    func offsetFiscalYear() {
-        let year = FiscalYear(year: 2026, startMonth: 7)
-        #expect(year.start == LocalDate(year: 2026, month: 7, day: 1))
-        #expect(year.end == LocalDate(year: 2027, month: 6, day: 30))
-    }
-}

@@ -9,8 +9,8 @@ struct MigrationTests {
     @Test("Fresh database applies every migration")
     func freshDatabase() throws {
         let database = try AppDatabase(inMemoryNamed: "migrations")
-        #expect(try database.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments"])
-        #expect(AppDatabase.migrationIdentifiers == ["v001_initial", "v002_slim_tax_assessments"])
+        #expect(try database.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments", "v003_remove_unused_scaffolding"])
+        #expect(AppDatabase.migrationIdentifiers == ["v001_initial", "v002_slim_tax_assessments", "v003_remove_unused_scaffolding"])
     }
 
     @Test("tax_assessments carries no tax points, tax country, reasoning or history")
@@ -92,12 +92,235 @@ struct MigrationTests {
         #expect(remaining == ["aktuell"])
     }
 
-    @Test("Field provenance stores provenance without evidence")
+    @Test("A fresh database has none of the removed tables or columns")
+    func freshDatabaseHasNoScaffolding() throws {
+        let database = try AppDatabase(inMemoryNamed: "no-scaffolding")
+        try database.reader.read { db in
+            for table in ["accounts", "rules", "transaction_relations", "locked_periods"] {
+                #expect(try !db.tableExists(table), "\(table) is still there")
+            }
+            for (table, removed) in [
+                ("business_profiles", "fiscal_year_start_month"),
+                ("categories", "name_en"), ("categories", "parent_id"), ("categories", "is_system"),
+                ("counterparties", "aliases_json"), ("counterparties", "default_category_id"),
+                ("counterparties", "default_tax_treatment"), ("counterparties", "street"),
+                ("counterparties", "postal_code"), ("counterparties", "city"),
+                ("documents", "page_count"),
+                ("transactions", "exchange_rate_source"), ("transactions", "deductibility_note"),
+                ("payments", "account_id"), ("payments", "exchange_rate_source"),
+                ("payment_allocations", "confidence"),
+                ("statement_lines", "counter_account_id"), ("statement_lines", "account_id"),
+                ("import_items", "attempt_count")
+            ] {
+                let columns = try db.columns(in: table).map(\.name)
+                #expect(!columns.contains(removed), "\(table).\(removed) is still there")
+            }
+            #expect(try db.columns(in: "statement_lines").map(\.name).contains("account_iban"))
+        }
+    }
+
+    /// A development database created before the cleanup still carries the
+    /// four unused tables and the columns that referenced them. `v003`
+    /// rebuilds the affected tables and keeps every bookkeeping row.
+    @Test("v003 converges a database from before the cleanup without losing rows")
+    func legacyScaffoldingIsRemoved() throws {
+        let database = try AppDatabase(inMemoryNamed: "legacy-scaffolding")
+        let profileID = IDGenerator.new()
+        let accountID = IDGenerator.new()
+        let transactionID = IDGenerator.new()
+        let paymentID = IDGenerator.new()
+        let iban = "DE02120300000000202051"
+
+        try database.writer.write { db in
+            try Self.restorePreCleanupSchema(db)
+            try db.execute(
+                sql: """
+                INSERT INTO business_profiles (id, name, country_code, vat_status, vat_accounting_method,
+                    ustva_period, business_type, fiscal_year_start_month, created_at, updated_at)
+                VALUES (?, 'Testbetrieb', 'DE', 'taxable', 'cash', 'quarterly', 'freelancer', 1,
+                    '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [profileID]
+            )
+            try db.execute(
+                sql: """
+                INSERT INTO accounts (id, business_profile_id, name, kind, currency, iban, is_business,
+                    created_at, updated_at)
+                VALUES (?, ?, 'Geschäftskonto', 'bank', 'EUR', ?, 1,
+                    '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [accountID, profileID, iban]
+            )
+            // A transaction in the removed `draft` workflow status.
+            try db.execute(
+                sql: """
+                INSERT INTO transactions (id, business_profile_id, direction, transaction_type, title,
+                    is_advance_payment, original_currency, booked_currency, booked_gross_minor,
+                    exchange_rate_source, deductibility_note, workflow_status, review_status,
+                    created_at, updated_at)
+                VALUES (?, ?, 'expense', 'invoice', 'Alt', 0, 'EUR', 'EUR', 11900,
+                    'bmfMonthly', 'alter Freitext', 'draft', 'unreviewed',
+                    '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [transactionID, profileID]
+            )
+            try db.execute(
+                sql: """
+                INSERT INTO payments (id, account_id, direction, payment_date, original_currency,
+                    original_amount_minor, booked_currency, booked_amount_minor, exchange_rate_source,
+                    source, created_at, updated_at)
+                VALUES (?, ?, 'outflow', '2026-02-01', 'EUR', 11900, 'EUR', 11900, 'bankActual',
+                    'documentStated', '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [paymentID, accountID]
+            )
+            try db.execute(
+                sql: """
+                INSERT INTO payment_allocations (id, payment_id, transaction_id, allocated_minor, currency,
+                    match_method, confidence, created_at)
+                VALUES (?, ?, ?, 11900, 'EUR', 'aiDisambiguated', '0.9', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [IDGenerator.new(), paymentID, transactionID]
+            )
+            try db.execute(
+                sql: """
+                INSERT INTO statement_lines (id, account_id, line_fingerprint, booking_date, amount_minor,
+                    currency, classification, created_at, updated_at)
+                VALUES (?, ?, 'fp1', '2026-02-01', -11900, 'EUR', 'business',
+                    '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z')
+                """,
+                arguments: [IDGenerator.new(), accountID]
+            )
+            try db.execute(sql: "DELETE FROM grdb_migrations WHERE identifier = 'v003_remove_unused_scaffolding'")
+        }
+
+        // Re-run the real migrator, with the foreign-key handling it uses in
+        // the app.
+        try AppDatabase.migrator.migrate(database.writer)
+
+        try database.reader.read { db in
+            for table in ["accounts", "rules", "transaction_relations", "locked_periods"] {
+                #expect(try !db.tableExists(table), "\(table) is still there")
+            }
+            #expect(try TransactionRecord.fetchCount(db) == 1)
+            let transaction = try #require(try TransactionRecord.fetchOne(db, key: transactionID))
+            #expect(transaction.bookedGrossMinor == 11900)
+            #expect(transaction.workflowStatus == .active)
+
+            let payment = try #require(try Payment.fetchOne(db, key: paymentID))
+            #expect(payment.originalAmountMinor == 11900)
+            #expect(payment.source == .manual)
+
+            let allocation = try #require(try PaymentAllocation.fetchAll(db).first)
+            #expect(allocation.allocatedMinor == 11900)
+            #expect(allocation.matchMethod == .heuristic)
+
+            // The account reference survives as the account's IBAN.
+            let line = try #require(try StatementLine.fetchAll(db).first)
+            #expect(line.accountIban == iban)
+
+            #expect(try db.columns(in: "v_transaction_status").isEmpty == false)
+            #expect(try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM v_transaction_status") == 1)
+            #expect(try SystemCategories.all.count == Category.fetchCount(db))
+        }
+    }
+
+    /// The schema as `v001_initial` created it before the cleanup, as far as
+    /// the removed tables and columns are concerned.
+    private static func restorePreCleanupSchema(_ db: Database) throws {
+        try db.execute(sql: """
+        CREATE TABLE rules (
+            id TEXT PRIMARY KEY, kind TEXT NOT NULL, scope_json TEXT NOT NULL, action_json TEXT NOT NULL,
+            confirmation_count INTEGER NOT NULL DEFAULT 0, auto_apply INTEGER NOT NULL DEFAULT 0,
+            is_tax_relevant INTEGER NOT NULL DEFAULT 0, created_by TEXT NOT NULL,
+            enabled INTEGER NOT NULL DEFAULT 1, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        )
+        """)
+        try db.execute(sql: """
+        CREATE TABLE accounts (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            name TEXT NOT NULL, kind TEXT NOT NULL, currency TEXT NOT NULL DEFAULT 'EUR',
+            iban TEXT, last4 TEXT, is_business INTEGER NOT NULL DEFAULT 1,
+            statement_mapping_rule_id TEXT REFERENCES rules(id),
+            archived_at TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        )
+        """)
+        try db.execute(sql: """
+        CREATE TABLE transaction_relations (
+            id TEXT PRIMARY KEY,
+            from_transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            to_transaction_id TEXT NOT NULL REFERENCES transactions(id),
+            relation_type TEXT NOT NULL, amount_minor INTEGER, currency TEXT, note TEXT,
+            created_at TEXT NOT NULL,
+            UNIQUE(from_transaction_id, to_transaction_id, relation_type)
+        )
+        """)
+        try db.execute(sql: """
+        CREATE TABLE locked_periods (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            scope TEXT NOT NULL, period_start TEXT NOT NULL, period_end TEXT NOT NULL,
+            locked_at TEXT NOT NULL, note TEXT,
+            UNIQUE(business_profile_id, scope, period_start, period_end)
+        )
+        """)
+        for (table, column, type) in [
+            ("business_profiles", "fiscal_year_start_month", "INTEGER NOT NULL DEFAULT 1"),
+            ("categories", "parent_id", "TEXT"),
+            ("categories", "name_en", "TEXT"),
+            ("categories", "is_system", "INTEGER NOT NULL DEFAULT 1"),
+            ("counterparties", "street", "TEXT"),
+            ("counterparties", "postal_code", "TEXT"),
+            ("counterparties", "city", "TEXT"),
+            ("counterparties", "default_category_id", "TEXT"),
+            ("counterparties", "default_tax_treatment", "TEXT"),
+            ("counterparties", "aliases_json", "TEXT"),
+            ("documents", "page_count", "INTEGER"),
+            ("transactions", "exchange_rate_source", "TEXT"),
+            ("transactions", "deductibility_note", "TEXT"),
+            ("payments", "account_id", "TEXT REFERENCES accounts(id)"),
+            ("payments", "exchange_rate_source", "TEXT"),
+            ("payment_allocations", "confidence", "TEXT"),
+            ("field_provenance", "rule_id", "TEXT REFERENCES rules(id)"),
+            ("field_provenance", "confidence", "TEXT"),
+            ("import_items", "attempt_count", "INTEGER NOT NULL DEFAULT 0")
+        ] {
+            try db.execute(sql: "ALTER TABLE \(table) ADD COLUMN \(column) \(type)")
+        }
+        try db.execute(sql: "CREATE INDEX idx_payments_account ON payments(account_id)")
+
+        try db.execute(sql: "DROP INDEX idx_stmt_account_date")
+        try db.execute(sql: "DROP INDEX idx_stmt_classification")
+        try db.execute(sql: "DROP TABLE statement_lines")
+        try db.execute(sql: """
+        CREATE TABLE statement_lines (
+            id TEXT PRIMARY KEY,
+            account_id TEXT NOT NULL REFERENCES accounts(id),
+            document_id TEXT REFERENCES documents(id),
+            line_fingerprint TEXT NOT NULL, external_id TEXT,
+            booking_date TEXT NOT NULL, value_date TEXT, amount_minor INTEGER NOT NULL,
+            currency TEXT NOT NULL, counterparty_raw TEXT, counterparty_iban TEXT, reference TEXT,
+            booking_text TEXT, raw_json TEXT,
+            classification TEXT NOT NULL, classification_subtype TEXT,
+            payment_id TEXT REFERENCES payments(id),
+            counter_account_id TEXT REFERENCES accounts(id),
+            created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+            UNIQUE(account_id, line_fingerprint)
+        )
+        """)
+        try db.execute(sql: "CREATE INDEX idx_stmt_account_date ON statement_lines(account_id, booking_date)")
+        try db.execute(sql: "CREATE INDEX idx_stmt_classification ON statement_lines(classification)")
+    }
+
+    @Test("Field provenance stores provenance without evidence or confidence")
     func fieldProvenanceHasNoEvidenceColumn() throws {
         let database = try AppDatabase(inMemoryNamed: "field-provenance")
         let columns = try database.reader.read { try $0.columns(in: "field_provenance").map(\.name) }
-        #expect(columns.contains("confidence"))
-        #expect(!columns.contains("evidence_json"))
+        #expect(columns.contains("provenance"))
+        for removed in ["evidence_json", "confidence", "rule_id"] {
+            #expect(!columns.contains(removed), "\(removed) is still there")
+        }
     }
 
     @Test("Foreign keys are enforced")
@@ -135,7 +358,7 @@ struct MigrationTests {
         // A restart reopens the same file: the saved profile, and therefore
         // the "onboarding done" decision, must still be there.
         let second = try AppDatabase(path: path)
-        #expect(try second.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments"])
+        #expect(try second.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments", "v003_remove_unused_scaffolding"])
         #expect(try second.businessProfile()?.name == "Testbetrieb")
         #expect(try second.needsOnboarding() == false)
         #expect(try second.categories().count == SystemCategories.all.count)
@@ -154,8 +377,6 @@ struct MigrationTests {
         let database = try AppDatabase(inMemoryNamed: "categories")
         let categories = try database.categories()
         #expect(categories.count == SystemCategories.all.count)
-        let allSystem = categories.allSatisfy(\.isSystem)
-        #expect(allSystem)
         #expect(categories.map(\.id).contains("software_subscriptions"))
         #expect(categories.first { $0.id == "bank_fees" }?.documentExpected == false)
         #expect(categories.first { $0.id == "hardware_equipment" }?.kind == .assetCandidate)
@@ -166,18 +387,12 @@ struct MigrationTests {
     @Test("Duplicate statement line fingerprints are rejected")
     func duplicateFingerprint() throws {
         let database = try AppDatabase(inMemoryNamed: "fingerprints")
-        let profile = BusinessProfile(name: "Testbetrieb")
-        let account = Account(businessProfileId: profile.id, name: "Geschäftskonto", kind: .bank)
-        let other = Account(businessProfileId: profile.id, name: "PayPal", kind: .paypal)
-        try database.writer.write { db in
-            try profile.insert(db)
-            try account.insert(db)
-            try other.insert(db)
-        }
+        let ownIBAN = "DE02120300000000202051"
+        let otherIBAN = "DE02100500000054540402"
 
-        func line(accountID: String, fingerprint: String) -> StatementLine {
+        func line(accountIBAN: String, fingerprint: String) -> StatementLine {
             StatementLine(
-                accountId: accountID,
+                accountIban: accountIBAN,
                 lineFingerprint: fingerprint,
                 bookingDate: LocalDate(year: 2026, month: 9, day: 2),
                 amountMinor: -7139,
@@ -187,15 +402,15 @@ struct MigrationTests {
             )
         }
 
-        try database.writer.write { db in try line(accountID: account.id, fingerprint: "8a1").insert(db) }
+        try database.writer.write { db in try line(accountIBAN: ownIBAN, fingerprint: "8a1").insert(db) }
 
         // Same account, same fingerprint: rejected (spec 25).
         #expect(throws: DatabaseError.self) {
-            try database.writer.write { db in try line(accountID: account.id, fingerprint: "8a1").insert(db) }
+            try database.writer.write { db in try line(accountIBAN: ownIBAN, fingerprint: "8a1").insert(db) }
         }
 
         // Same fingerprint on another account is fine.
-        try database.writer.write { db in try line(accountID: other.id, fingerprint: "8a1").insert(db) }
+        try database.writer.write { db in try line(accountIBAN: otherIBAN, fingerprint: "8a1").insert(db) }
         let lineCount = try database.reader.read { db in try StatementLine.fetchCount(db) }
         #expect(lineCount == 2)
     }

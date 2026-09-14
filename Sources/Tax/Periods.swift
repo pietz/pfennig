@@ -68,33 +68,3 @@ public struct UStVAPeriod: Sendable, Equatable {
         return LocalDate(year: year, month: month, day: 10)
     }
 }
-
-/// A business's fiscal year, spec 23. V1 defaults `fiscal_year_start_month`
-/// to 1 (the calendar year), but the type supports any start month.
-public struct FiscalYear: Sendable, Equatable {
-    /// The calendar year in which this fiscal year starts.
-    public let year: Int
-    /// 1...12; spec 17.1 `fiscal_year_start_month`, default 1.
-    public let startMonth: Int
-
-    public init(year: Int, startMonth: Int = 1) {
-        precondition((1 ... 12).contains(startMonth), "startMonth must be 1...12")
-        self.year = year
-        self.startMonth = startMonth
-    }
-
-    public var start: LocalDate {
-        LocalDate(year: year, month: startMonth, day: 1)
-    }
-
-    /// Last day of the fiscal year (the day before `start` one year later).
-    public var end: LocalDate {
-        let endMonth = startMonth == 1 ? 12 : startMonth - 1
-        let endYear = startMonth == 1 ? year : year + 1
-        return LocalDate(year: endYear, month: endMonth, day: LocalDate.daysInMonth(year: endYear, month: endMonth))
-    }
-
-    public func contains(_ date: LocalDate) -> Bool {
-        start <= date && date <= end
-    }
-}

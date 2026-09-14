@@ -23,7 +23,6 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
     public struct PaymentEntry: Sendable, Hashable, Identifiable {
         public var payment: Payment
         public var allocation: PaymentAllocation
-        public var accountName: String?
         public var id: String {
             allocation.id
         }
@@ -119,7 +118,6 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
             payments: payments.map {
                 PaymentDraft(
                     id: $0.payment.id,
-                    accountId: $0.payment.accountId,
                     direction: $0.payment.direction,
                     paymentDate: $0.payment.paymentDate,
                     amountMinor: $0.payment.originalAmountMinor,
@@ -182,8 +180,7 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
         var payments: [PaymentEntry] = []
         for row in allocationRows {
             guard let payment = try Payment.fetchOne(db, key: row.paymentId) else { continue }
-            let accountName = try payment.accountId.flatMap { try Account.fetchOne(db, key: $0) }?.name
-            payments.append(PaymentEntry(payment: payment, allocation: row, accountName: accountName))
+            payments.append(PaymentEntry(payment: payment, allocation: row))
         }
         payments.sort { $0.payment.paymentDate < $1.payment.paymentDate }
 

@@ -247,7 +247,6 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
 /// 17.14). Partial payments carry an `allocatedMinor` below `amountMinor`.
 public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
     public var id: String?
-    public var accountId: String?
     public var direction: PaymentDirection
     public var paymentDate: LocalDate
     public var amountMinor: Int64
@@ -261,7 +260,6 @@ public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
 
     public init(
         id: String? = nil,
-        accountId: String? = nil,
         direction: PaymentDirection = .outflow,
         paymentDate: LocalDate,
         amountMinor: Int64 = 0,
@@ -274,7 +272,6 @@ public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
         matchMethod: MatchMethod = .manual
     ) {
         self.id = id
-        self.accountId = accountId
         self.direction = direction
         self.paymentDate = paymentDate
         self.amountMinor = amountMinor

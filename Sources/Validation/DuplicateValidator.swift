@@ -12,11 +12,11 @@ public enum DuplicateValidator {
 
     /// Spec 14.1: "Duplicate statement line fingerprint on the same account."
     public static func validateStatementLineFingerprint(
-        accountID: String,
+        accountIBAN: String,
         fingerprint: String,
         existingFingerprints: Set<StatementLineFingerprintKey>
     ) -> ValidationIssue? {
-        let key = StatementLineFingerprintKey(accountID: accountID, fingerprint: fingerprint)
+        let key = StatementLineFingerprintKey(accountIBAN: accountIBAN, fingerprint: fingerprint)
         guard existingFingerprints.contains(key) else { return nil }
         return ValidationIssue(code: .duplicateStatementLineFingerprint, fieldName: "fingerprint", params: ["fingerprint": fingerprint])
     }

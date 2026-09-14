@@ -23,12 +23,12 @@ Conventions (spec 17):
 |---|---|
 | `v001_initial` | All tables and views listed below, plus the system categories of spec 17.4. |
 | `v002_slim_tax_assessments` | Rebuilds `tax_assessments` without `input_vat_date`, `output_vat_date`, `tax_country`, `reasoning` and `superseded_at`. A no-op on a fresh database, which `v001_initial` already creates in the slim shape. |
+| `v003_remove_unused_scaffolding` | Drops the four tables nothing wrote (`accounts`, `rules`, `transaction_relations`, `locked_periods`) and rebuilds every table that referenced them or carried a column no code read back. A statement line keeps its account as `account_iban`. A no-op on a fresh database. |
 
 ## Tables
 
 <!-- sqlite_master:tables -->
 ```text
-accounts
 audit_events
 bookkeeping_allocations
 business_profiles
@@ -38,19 +38,16 @@ documents
 field_provenance
 import_batches
 import_items
-locked_periods
 model_runs
 payment_allocations
 payments
 proposals
-rules
 settings
 statement_lines
 submitted_returns
 tax_assessments
 tax_components
 transaction_documents
-transaction_relations
 transactions
 validation_issues
 ```
@@ -58,29 +55,25 @@ validation_issues
 | Table | Purpose |
 |---|---|
 | `business_profiles` | The business itself: VAT status, accounting method, UStVA period. Exactly one row in V1. |
-| `accounts` | Payment accounts (bank, credit card, PayPal, cash). Statement lines and payments belong to an account. |
-| `counterparties` | Normalized suppliers and customers with defaults for category and tax treatment. |
+| `counterparties` | Normalized suppliers and customers: name, country and VAT ID. No postal address. |
 | `categories` | Canonical bookkeeping categories with stable slug IDs, seeded by `v001_initial`. No SKR account numbers. |
 | `transactions` | The central economic event. No category column: categories live in allocations. |
 | `bookkeeping_allocations` | Category splits of a transaction, including the asset flag and private share. |
 | `tax_components` | What the document shows per VAT rate (7 % and 19 % on one receipt, for example). |
 | `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base, VAT shown, self-assessed and deductible VAT. Exactly one row per transaction; replacing it deletes the old row. |
-| `transaction_relations` | Credit notes, refunds, corrections between transactions. |
 | `documents` | Imported originals, identified by SHA-256, stored as files under `Documents/`. |
 | `transaction_documents` | Which document plays which role for which transaction. |
-| `statement_lines` | Raw account statement lines with classification. Unique per `(account_id, line_fingerprint)`. |
+| `statement_lines` | Raw account statement lines with classification. The account is its IBAN; unique per `(account_iban, line_fingerprint)`. |
 | `payments` | Actual cash movements, from statement lines or entered manually. |
 | `payment_allocations` | How much of a payment belongs to which transaction: partial and combined payments. |
-| `field_provenance` | Origin of every material field (document, agent, calculated, manual, imported, rule) and manual-override protection. |
+| `field_provenance` | Origin of every material field (document, agent, calculated, manual, imported) and manual-override protection. |
 | `import_batches`, `import_items` | Restartable import of dropped files. |
 | `model_runs` | One row per AI call, without document content or secrets. |
 | `proposals` | The persisted review queue, idempotent per import item and prompt version. |
 | `validation_issues` | Deterministic validation results with stable codes. |
-| `rules` | Visible, editable learned patterns with confirmation counts. |
 | `audit_events` | Append-only change log for every mutation. |
 | `settings` | Non-secret app settings as JSON values. Never API keys. |
 | `submitted_returns` | UStVA periods the user marked as submitted, with the Zahllast and a fingerprint of the filed values. Locks nothing. |
-| `locked_periods` | Closed UStVA/EÜR periods; changes inside require an explicit correction. |
 
 ## Views
 
@@ -104,12 +97,11 @@ v_transaction_status
 `idx_counterparties_normalized` (unique), `idx_alloc_transaction`,
 `idx_alloc_category`, `idx_taxcomp_transaction`, `idx_taxassess_transaction`,
 `idx_stmt_account_date`, `idx_stmt_classification`, `idx_payments_date`,
-`idx_payments_account`, `idx_payalloc_transaction`, `idx_payalloc_payment`,
+`idx_payalloc_transaction`, `idx_payalloc_payment`,
 `idx_import_items_batch`, `idx_prov_current` (unique, partial),
 `idx_proposals_status`, `idx_issues_entity`, `idx_audit_entity`.
 
 Unique constraints additionally cover `documents.sha256`,
-`statement_lines(account_id, line_fingerprint)`,
-`proposals.idempotency_key`,
-`transaction_relations(from_transaction_id, to_transaction_id, relation_type)`
-and `locked_periods(business_profile_id, scope, period_start, period_end)`.
+`statement_lines(account_iban, line_fingerprint)`,
+`proposals.idempotency_key` and
+`submitted_returns(business_profile_id, year, kind, period_index)`.

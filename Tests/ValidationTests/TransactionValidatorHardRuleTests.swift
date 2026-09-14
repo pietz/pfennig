@@ -113,27 +113,4 @@ struct TransactionValidatorHardRuleTests {
         let result = TransactionValidator.validate(failing)
         #expect(result.hard.contains { $0.code == .paymentAllocationExceeds })
     }
-
-    @Test("LOCKED_PERIOD: mutating inside a locked period without a correction action is a hard issue")
-    func lockedPeriod() {
-        let lockedPeriods = [LockedPeriodFact(scope: .ustva, start: LocalDate(year: 2026, month: 3, day: 1), end: LocalDate(year: 2026, month: 3, day: 31))]
-
-        var passing = Fixture.passingSnapshot()
-        passing.relevantDateForLocking = LocalDate(year: 2026, month: 3, day: 15)
-        passing.lockedPeriods = lockedPeriods
-        passing.isMutation = false // read, not a mutation - no issue
-        #expect(TransactionValidator.validate(passing).hard.isEmpty)
-
-        var failing = Fixture.passingSnapshot()
-        failing.relevantDateForLocking = LocalDate(year: 2026, month: 3, day: 15)
-        failing.lockedPeriods = lockedPeriods
-        failing.isMutation = true
-        failing.hasExplicitCorrectionAction = false
-        let result = TransactionValidator.validate(failing)
-        #expect(result.hard.contains { $0.code == .lockedPeriod })
-
-        var withCorrection = failing
-        withCorrection.hasExplicitCorrectionAction = true
-        #expect(TransactionValidator.validate(withCorrection).hard.isEmpty)
-    }
 }

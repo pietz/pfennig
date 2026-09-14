@@ -194,7 +194,6 @@ public struct CommitService: Sendable {
         func markManual(_ entity: String, _ field: String) {
             if let index = entries.lastIndex(where: { $0.entityType == entity && $0.fieldName == field }) {
                 entries[index].provenance = .manual
-                entries[index].confidence = nil
             } else {
                 entries.append(ProvenanceEntry(entityType: entity, fieldName: field, provenance: .manual))
             }

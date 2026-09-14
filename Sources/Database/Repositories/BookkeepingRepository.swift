@@ -231,7 +231,6 @@ public struct BookkeepingRepository: Sendable {
                     field: field,
                     provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
                     isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
-                    entry: entry,
                     context: context,
                     now: now
                 )
@@ -260,7 +259,6 @@ public struct BookkeepingRepository: Sendable {
                 field: field,
                 provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
                 isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
-                entry: entry,
                 context: context,
                 now: now
             )
@@ -399,7 +397,6 @@ public struct BookkeepingRepository: Sendable {
                     field: field,
                     provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
                     isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
-                    entry: entry,
                     context: context,
                     now: now
                 )
@@ -467,7 +464,6 @@ public struct BookkeepingRepository: Sendable {
                     field: field,
                     provenance: entry?.provenance ?? (actor == .user ? .manual : .agent),
                     isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
-                    entry: entry,
                     context: context,
                     now: now
                 )
@@ -527,7 +523,6 @@ public struct BookkeepingRepository: Sendable {
                             field: "treatment",
                             provenance: requestedManualTreatment ? .manual : .calculated,
                             isManualOverride: requestedManualTreatment,
-                            entry: treatmentEntry,
                             context: context,
                             now: now
                         )
@@ -580,7 +575,6 @@ public struct BookkeepingRepository: Sendable {
             field: "treatment",
             provenance: treatmentEntry?.provenance ?? (manualTreatment ? .manual : .calculated),
             isManualOverride: manualTreatment,
-            entry: treatmentEntry,
             context: context,
             now: now
         )
@@ -593,7 +587,6 @@ public struct BookkeepingRepository: Sendable {
             field: "supplyType",
             provenance: supplyTypeEntry?.provenance ?? (manualSupplyType ? .manual : .calculated),
             isManualOverride: manualSupplyType,
-            entry: supplyTypeEntry,
             context: context,
             now: now
         )
@@ -642,7 +635,6 @@ public struct BookkeepingRepository: Sendable {
         }
         for payment in draft.payments where payment.id == nil {
             let record = Payment(
-                accountId: payment.accountId,
                 direction: payment.direction,
                 paymentDate: payment.paymentDate,
                 originalCurrency: payment.currency.rawValue,
@@ -674,7 +666,6 @@ public struct BookkeepingRepository: Sendable {
                     field: field,
                     provenance: entry?.provenance ?? (actor == .user ? .manual : .imported),
                     isManualOverride: entry.map { $0.provenance == .manual } ?? (actor == .user),
-                    entry: entry,
                     context: context,
                     now: now
                 )
@@ -782,7 +773,6 @@ public struct BookkeepingRepository: Sendable {
         field: String,
         provenance: Provenance,
         isManualOverride: Bool,
-        entry: ProvenanceEntry? = nil,
         context: WriteContext = WriteContext(),
         now: String
     ) throws {
@@ -801,7 +791,6 @@ public struct BookkeepingRepository: Sendable {
             isManualOverride: isManualOverride,
             sourceDocumentId: provenance == .document ? context.sourceDocumentID : nil,
             modelRunId: provenance == .agent || provenance == .document ? context.modelRunID : nil,
-            confidence: entry?.confidence,
             createdAt: now
         ).insert(db)
     }
@@ -897,14 +886,5 @@ extension String {
 extension Array {
     var nilIfEmpty: Self? {
         isEmpty ? nil : self
-    }
-}
-
-public extension AppDatabase {
-    /// Business accounts for the payment sheet (spec 17.2).
-    func accounts() throws -> [Account] {
-        try reader.read { db in
-            try Account.fetchAll(db, sql: "SELECT * FROM accounts WHERE archived_at IS NULL ORDER BY name")
-        }
     }
 }

@@ -10,7 +10,7 @@ struct EnumRawValueTests {
     static let snapshot: [String: [String]] = [
         "Direction": ["income", "expense", "unknown"],
         "TransactionType": ["invoice", "receipt", "creditNote", "refund", "paymentOnly", "taxPayment", "other"],
-        "WorkflowStatus": ["draft", "active", "resolved", "archived"],
+        "WorkflowStatus": ["active", "archived"],
         "ReviewStatus": ["unreviewed", "needsReview", "confirmed", "conflict"],
         "TaxTreatment": ["domesticVAT", "reverseCharge", "intraCommunityAcquisition", "intraCommunitySupply",
                          "export", "importVAT", "nonTaxable", "exempt", "smallBusiness", "unknown"],
@@ -18,34 +18,28 @@ struct EnumRawValueTests {
         "TaxAssessmentStatus": ["proposed", "confirmed", "manualOverride"],
         "CustomerType": ["b2b", "b2c", "unknown"],
         "SupplyType": ["service", "digitalService", "goods", "unknown"],
-        "ExchangeRateSource": ["bankActual", "bmfMonthly", "manual", "documentStated", "unknown"],
         "DocumentType": ["invoice", "receipt", "creditNote", "statement", "contract", "other", "unknown"],
-        "DocumentRole": ["invoice", "receipt", "creditNote", "statement", "supportingEvidence", "other"],
-        "DocumentSource": ["dragDrop", "fileImport", "shareExtension", "other"],
-        "AccountKind": ["bank", "creditCard", "paypal", "stripe", "cash", "other"],
+        "DocumentRole": ["invoice", "receipt", "creditNote", "statement", "other"],
+        "DocumentSource": ["dragDrop", "fileImport", "other"],
         "StatementLineClass": ["business", "private", "internalTransfer", "taxPayment", "unknown"],
         "PaymentDirection": ["inflow", "outflow"],
         "PaymentMethod": ["bankTransfer", "card", "paypal", "directDebit", "cash", "other", "unknown"],
-        "PaymentSource": ["statementLine", "manual", "documentStated"],
-        "MatchMethod": ["exact", "reference", "invoiceNumber", "heuristic", "aiDisambiguated", "manual", "rule"],
+        "PaymentSource": ["statementLine", "manual"],
+        "MatchMethod": ["exact", "reference", "invoiceNumber", "heuristic", "manual", "rule"],
         "Provenance": ["document", "agent", "calculated", "manual", "imported", "rule"],
-        "RelationType": ["creditNoteFor", "refundOf", "correctionOf", "replaces", "relatedTo"],
         "ImportBatchStatus": ["running", "completed", "completedWithErrors", "cancelled"],
         "ImportItemStatus": ["queued", "archiving", "analyzing", "matching", "proposed", "committed",
                              "skipped", "duplicate", "failed"],
         "ModelRunOperation": ["extraction", "disambiguation", "statementMapping"],
-        "ModelRunStatus": ["running", "succeeded", "failed", "timedOut"],
+        "ModelRunStatus": ["running", "succeeded", "failed"],
         "ProposalKind": ["createTransaction", "updateTransaction", "linkPayment", "attachDocument",
                          "classifyStatementLines", "mergeDuplicate"],
         "ProposalStatus": ["pending", "accepted", "acceptedEdited", "rejected", "skipped", "superseded", "committed"],
         "PolicyDecision": ["autoCommit", "needsReview", "blocked"],
         "IssueSeverity": ["info", "warning", "error"],
         "IssueStatus": ["open", "resolved", "ignored"],
-        "RuleKind": ["counterpartyDefaults", "statementLineClassification", "statementColumnMapping",
-                     "paymentMatchPattern"],
         "AuditActor": ["user", "agent", "system", "import"],
         "AuditAction": ["create", "update", "delete", "link", "unlink", "confirm", "correct", "lock", "unlock"],
-        "LockScope": ["ustva", "eur"],
         "PaymentStatus": ["unknown", "unpaid", "partiallyPaid", "paid"],
         "DocumentStatus": ["missing", "notRequired", "complete"],
         "VATStatus": ["taxable", "smallBusiness"],
@@ -63,14 +57,14 @@ struct EnumRawValueTests {
         }
         add(Direction.self); add(TransactionType.self); add(WorkflowStatus.self); add(ReviewStatus.self)
         add(TaxTreatment.self); add(TaxComponentKind.self); add(TaxAssessmentStatus.self)
-        add(CustomerType.self); add(SupplyType.self); add(ExchangeRateSource.self)
+        add(CustomerType.self); add(SupplyType.self)
         add(DocumentType.self); add(DocumentRole.self); add(DocumentSource.self)
-        add(AccountKind.self); add(StatementLineClass.self); add(PaymentDirection.self)
+        add(StatementLineClass.self); add(PaymentDirection.self)
         add(PaymentMethod.self); add(PaymentSource.self); add(MatchMethod.self); add(Provenance.self)
-        add(RelationType.self); add(ImportBatchStatus.self); add(ImportItemStatus.self)
+        add(ImportBatchStatus.self); add(ImportItemStatus.self)
         add(ModelRunOperation.self); add(ModelRunStatus.self); add(ProposalKind.self); add(ProposalStatus.self)
-        add(PolicyDecision.self); add(IssueSeverity.self); add(IssueStatus.self); add(RuleKind.self)
-        add(AuditActor.self); add(AuditAction.self); add(LockScope.self)
+        add(PolicyDecision.self); add(IssueSeverity.self); add(IssueStatus.self)
+        add(AuditActor.self); add(AuditAction.self)
         add(PaymentStatus.self); add(DocumentStatus.self)
         add(VATStatus.self); add(VATAccountingMethod.self); add(UStVAPeriodicity.self); add(BusinessType.self)
         add(CategoryKind.self)

@@ -32,7 +32,7 @@ public enum TransactionType: String, Codable, CaseIterable, Sendable, UnknownFal
 }
 
 public enum WorkflowStatus: String, Codable, CaseIterable, Sendable {
-    case draft, active, resolved, archived
+    case active, archived
 }
 
 public enum ReviewStatus: String, Codable, CaseIterable, Sendable {
@@ -81,13 +81,6 @@ public enum SupplyType: String, Codable, CaseIterable, Sendable, UnknownFallback
     }
 }
 
-public enum ExchangeRateSource: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case bankActual, bmfMonthly, manual, documentStated, unknown
-    public static var fallback: ExchangeRateSource {
-        .unknown
-    }
-}
-
 public enum DocumentType: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
     case invoice, receipt, creditNote, statement, contract, other, unknown
     public static var fallback: DocumentType {
@@ -96,22 +89,15 @@ public enum DocumentType: String, Codable, CaseIterable, Sendable, UnknownFallba
 }
 
 public enum DocumentRole: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case invoice, receipt, creditNote, statement, supportingEvidence, other
+    case invoice, receipt, creditNote, statement, other
     public static var fallback: DocumentRole {
         .other
     }
 }
 
 public enum DocumentSource: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case dragDrop, fileImport, shareExtension, other
+    case dragDrop, fileImport, other
     public static var fallback: DocumentSource {
-        .other
-    }
-}
-
-public enum AccountKind: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case bank, creditCard, paypal, stripe, cash, other
-    public static var fallback: AccountKind {
         .other
     }
 }
@@ -135,19 +121,15 @@ public enum PaymentMethod: String, Codable, CaseIterable, Sendable, UnknownFallb
 }
 
 public enum PaymentSource: String, Codable, CaseIterable, Sendable {
-    case statementLine, manual, documentStated
+    case statementLine, manual
 }
 
 public enum MatchMethod: String, Codable, CaseIterable, Sendable {
-    case exact, reference, invoiceNumber, heuristic, aiDisambiguated, manual, rule
+    case exact, reference, invoiceNumber, heuristic, manual, rule
 }
 
 public enum Provenance: String, Codable, CaseIterable, Sendable {
     case document, agent, calculated, manual, imported, rule
-}
-
-public enum RelationType: String, Codable, CaseIterable, Sendable {
-    case creditNoteFor, refundOf, correctionOf, replaces, relatedTo
 }
 
 public enum ImportBatchStatus: String, Codable, CaseIterable, Sendable {
@@ -163,7 +145,7 @@ public enum ModelRunOperation: String, Codable, CaseIterable, Sendable {
 }
 
 public enum ModelRunStatus: String, Codable, CaseIterable, Sendable {
-    case running, succeeded, failed, timedOut
+    case running, succeeded, failed
 }
 
 public enum ProposalKind: String, Codable, CaseIterable, Sendable {
@@ -186,20 +168,12 @@ public enum IssueStatus: String, Codable, CaseIterable, Sendable {
     case open, resolved, ignored
 }
 
-public enum RuleKind: String, Codable, CaseIterable, Sendable {
-    case counterpartyDefaults, statementLineClassification, statementColumnMapping, paymentMatchPattern
-}
-
 public enum AuditActor: String, Codable, CaseIterable, Sendable {
     case user, agent, system, `import`
 }
 
 public enum AuditAction: String, Codable, CaseIterable, Sendable {
     case create, update, delete, link, unlink, confirm, correct, lock, unlock
-}
-
-public enum LockScope: String, Codable, CaseIterable, Sendable {
-    case ustva, eur
 }
 
 // MARK: - Derived status dimensions (spec 19)

@@ -34,6 +34,7 @@ public final class AppDatabase: Sendable {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("v001_initial", migrate: V001Initial.migrate)
         migrator.registerMigration("v002_slim_tax_assessments", migrate: V002SlimTaxAssessments.migrate)
+        migrator.registerMigration("v003_remove_unused_scaffolding", migrate: V003RemoveUnusedScaffolding.migrate)
         return migrator
     }
 

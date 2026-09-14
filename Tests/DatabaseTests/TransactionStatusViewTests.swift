@@ -22,7 +22,6 @@ struct TransactionStatusViewTests {
     func makeFixture(paidMinor: Int64?, grossMinor: Int64? = 10000) throws -> (AppDatabase, String) {
         let database = try AppDatabase(inMemoryNamed: "status-\(UUID().uuidString)")
         let profile = BusinessProfile(name: "Testbetrieb")
-        let account = Account(businessProfileId: profile.id, name: "Geschäftskonto", kind: .bank)
         let transaction = TransactionRecord(
             businessProfileId: profile.id,
             direction: .income,
@@ -33,11 +32,9 @@ struct TransactionStatusViewTests {
         )
         try database.writer.write { db in
             try profile.insert(db)
-            try account.insert(db)
             try transaction.insert(db)
             if let paidMinor {
                 let payment = Payment(
-                    accountId: account.id,
                     direction: .inflow,
                     paymentDate: LocalDate(year: 2026, month: 9, day: 15),
                     originalAmountMinor: paidMinor,

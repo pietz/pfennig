@@ -65,7 +65,7 @@ Do not build initially:
 - Travel expense management, mileage logs
 - Full fixed-asset / AfA (depreciation) subsystem — only the asset *flag* and warning (see 5.6)
 - Anlage AVEÜR
-- Deductibility rules of §4 Abs. 5 EStG (Bewirtung 70 %, Geschenke, etc.) — only a free `deductibility_note`
+- Deductibility rules of §4 Abs. 5 EStG (Bewirtung 70 %, Geschenke, etc.) — only the transaction's free `notes`
 - OSS/IOSS, import customs, Zusammenfassende Meldung
 - DATEV / SKR03 / SKR04 export (future adapter maps canonical categories to accounts; do not put account numbers into the core category system)
 - Direct ELSTER submission
@@ -194,15 +194,7 @@ V1 has no depreciation. It must detect and warn:
 
 ## 5.7 Foreign currency (§16 Abs. 6 UStG)
 
-Converted amounts may use the actual bank rate (payment amount in EUR) or the BMF monthly average rate. V1 stores both original and EUR amounts and an `exchange_rate_source`:
-
-```text
-bankActual      — EUR amount taken from the statement line
-bmfMonthly      — user-entered BMF rate
-manual          — user-entered rate or amount
-documentStated  — invoice itself states an EUR equivalent
-unknown
-```
+Converted amounts may use the actual bank rate (payment amount in EUR) or the BMF monthly average rate. V1 stores both the original and the EUR amounts plus the `exchange_rate` used. Which of the two conventions a rate came from is not recorded separately: the rate and both amounts are what a report and a review need.
 
 The user chooses the authoritative EUR amount; default is `bankActual` when a payment is linked, otherwise `documentStated`, otherwise missing.
 
@@ -215,7 +207,7 @@ The user chooses the authoritative EUR amount; default is `bankActual` when a pa
 
 ## 5.9 GoBD posture
 
-The app does not claim GoBD compliance. It supports the underlying practices: originals are immutable, every change is audited, and periods can be locked (see 17.24). Edits inside a locked period require an explicit "Korrektur" action that records the reason.
+The app does not claim GoBD compliance. It supports the underlying practices: originals are immutable, every change is audited, and periods will be lockable (see 17.24). Edits inside a locked period require an explicit "Korrektur" action that records the reason.
 
 ---
 
@@ -593,34 +585,12 @@ CREATE TABLE business_profiles (
     vat_accounting_method TEXT NOT NULL,   -- cash | accrual
     ustva_period TEXT NOT NULL,            -- monthly | quarterly | yearly
     business_type TEXT NOT NULL,           -- freelancer | soleProprietor
-    fiscal_year_start_month INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 ```
 
 V1 supports exactly one profile; the column exists on other tables for later multi-activity support.
-
-## 17.2 `accounts`
-
-```sql
-CREATE TABLE accounts (
-    id TEXT PRIMARY KEY,
-    business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
-    name TEXT NOT NULL,                    -- "Geschäftskonto", "PayPal", "Kreditkarte"
-    kind TEXT NOT NULL,                    -- bank | creditCard | paypal | stripe | cash | other
-    currency TEXT NOT NULL DEFAULT 'EUR',
-    iban TEXT,
-    last4 TEXT,
-    is_business INTEGER NOT NULL DEFAULT 1,
-    statement_mapping_rule_id TEXT REFERENCES rules(id),
-    archived_at TEXT,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-```
-
-A card that settles against the bank account is its own account; the settlement line on the bank statement is classified `internalTransfer`.
 
 ## 17.3 `counterparties`
 
@@ -631,10 +601,6 @@ CREATE TABLE counterparties (
     display_name TEXT NOT NULL,
     country_code TEXT,
     vat_id TEXT,
-    street TEXT, postal_code TEXT, city TEXT,
-    default_category_id TEXT REFERENCES categories(id),
-    default_tax_treatment TEXT,
-    aliases_json TEXT,                     -- JSON array of raw names seen on statements/documents
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -643,17 +609,14 @@ CREATE UNIQUE INDEX idx_counterparties_normalized ON counterparties(normalized_n
 
 ## 17.4 `categories`
 
-Canonical bookkeeping categories with stable IDs. Seeded by migration; user may add custom categories (`is_system = 0`) but cannot delete system ones. No SKR account numbers here.
+Canonical bookkeeping categories with stable IDs, seeded by migration. A category is retired by setting `archived_at`, never deleted. No SKR account numbers here.
 
 ```sql
 CREATE TABLE categories (
     id TEXT PRIMARY KEY,                   -- stable slug, e.g. 'software_subscriptions'
-    parent_id TEXT REFERENCES categories(id),
     name_de TEXT NOT NULL,
-    name_en TEXT NOT NULL,
     kind TEXT NOT NULL,                    -- income | expense | assetCandidate | neutral
     document_expected INTEGER NOT NULL DEFAULT 1,
-    is_system INTEGER NOT NULL DEFAULT 1,
     sort_order INTEGER NOT NULL DEFAULT 0,
     archived_at TEXT
 );
@@ -703,12 +666,10 @@ CREATE TABLE transactions (
     booked_tax_minor INTEGER,
     booked_gross_minor INTEGER,
     exchange_rate TEXT,                    -- canonical decimal string
-    exchange_rate_source TEXT,             -- bankActual | bmfMonthly | manual | documentStated | unknown
 
     eur_year_override INTEGER,             -- 10-day rule (5.3)
-    deductibility_note TEXT,
 
-    workflow_status TEXT NOT NULL,         -- draft | active | resolved | archived
+    workflow_status TEXT NOT NULL,         -- active | archived
     review_status TEXT NOT NULL,           -- unreviewed | needsReview | confirmed | conflict
 
     notes TEXT,
@@ -789,22 +750,6 @@ CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id);
 
 Tax points are not stored here. Income counts per payment date, input VAT at `max(Rechnungsdatum, Zahlungsdatum)` per payment, and §13b/intra-Community acquisitions at the invoice date, falling back to the service date; `UStVACalculator` reads those dates directly from `transactions` and `payments`.
 
-## 17.9 `transaction_relations`
-
-```sql
-CREATE TABLE transaction_relations (
-    id TEXT PRIMARY KEY,
-    from_transaction_id TEXT NOT NULL REFERENCES transactions(id),
-    to_transaction_id TEXT NOT NULL REFERENCES transactions(id),
-    relation_type TEXT NOT NULL,           -- creditNoteFor | refundOf | correctionOf | replaces | relatedTo
-    amount_minor INTEGER,
-    currency TEXT,
-    note TEXT,
-    created_at TEXT NOT NULL,
-    UNIQUE(from_transaction_id, to_transaction_id, relation_type)
-);
-```
-
 ## 17.10 `documents`
 
 ```sql
@@ -816,9 +761,8 @@ CREATE TABLE documents (
     mime_type TEXT,
     sha256 TEXT NOT NULL UNIQUE,
     byte_size INTEGER NOT NULL,
-    page_count INTEGER,
     document_type TEXT,                    -- invoice | receipt | creditNote | statement | contract | other | unknown
-    source TEXT NOT NULL,                  -- dragDrop | fileImport | shareExtension | other
+    source TEXT NOT NULL,                  -- dragDrop | fileImport | other
     imported_at TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
@@ -843,9 +787,9 @@ CREATE TABLE transaction_documents (
 ```sql
 CREATE TABLE statement_lines (
     id TEXT PRIMARY KEY,
-    account_id TEXT NOT NULL REFERENCES accounts(id),
+    account_iban TEXT NOT NULL,            -- the IBAN of the own account the statement belongs to
     document_id TEXT REFERENCES documents(id),   -- the statement file
-    line_fingerprint TEXT NOT NULL,        -- sha256 of normalized (account_id|booking_date|amount_minor|currency|reference|counterparty_raw)
+    line_fingerprint TEXT NOT NULL,        -- sha256 of normalized (account_iban|booking_date|amount_minor|currency|reference|counterparty_raw)
     external_id TEXT,                      -- bank-provided transaction id if present
 
     booking_date TEXT NOT NULL,
@@ -861,12 +805,11 @@ CREATE TABLE statement_lines (
     classification TEXT NOT NULL,          -- business | private | internalTransfer | taxPayment | unknown
     classification_subtype TEXT,           -- e.g. incomeTax | vatPayment | ownTransfer | cardSettlement
     payment_id TEXT REFERENCES payments(id),
-    counter_account_id TEXT REFERENCES accounts(id),  -- for internalTransfer
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL,
-    UNIQUE(account_id, line_fingerprint)
+    UNIQUE(account_iban, line_fingerprint)
 );
-CREATE INDEX idx_stmt_account_date ON statement_lines(account_id, booking_date);
+CREATE INDEX idx_stmt_account_date ON statement_lines(account_iban, booking_date);
 CREATE INDEX idx_stmt_classification ON statement_lines(classification);
 ```
 
@@ -877,7 +820,6 @@ Only `business` lines and `taxPayment/vatPayment` lines create a `payment`. Over
 ```sql
 CREATE TABLE payments (
     id TEXT PRIMARY KEY,
-    account_id TEXT REFERENCES accounts(id),      -- NULL for manually entered payment with unknown account
     direction TEXT NOT NULL,               -- inflow | outflow
     payment_date TEXT NOT NULL,
 
@@ -886,17 +828,15 @@ CREATE TABLE payments (
     booked_currency TEXT NOT NULL DEFAULT 'EUR',
     booked_amount_minor INTEGER,
     exchange_rate TEXT,
-    exchange_rate_source TEXT,
 
     counterparty_name_raw TEXT,
     reference TEXT,
     payment_method TEXT,                   -- bankTransfer | card | paypal | directDebit | cash | other | unknown
-    source TEXT NOT NULL,                  -- statementLine | manual | documentStated
+    source TEXT NOT NULL,                  -- statementLine | manual
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
 CREATE INDEX idx_payments_date ON payments(payment_date);
-CREATE INDEX idx_payments_account ON payments(account_id);
 ```
 
 ## 17.14 `payment_allocations`
@@ -908,8 +848,7 @@ CREATE TABLE payment_allocations (
     transaction_id TEXT NOT NULL REFERENCES transactions(id),
     allocated_minor INTEGER NOT NULL,      -- in payment.booked_currency (EUR)
     currency TEXT NOT NULL DEFAULT 'EUR',
-    match_method TEXT NOT NULL,            -- exact | reference | invoiceNumber | heuristic | aiDisambiguated | manual | rule
-    confidence TEXT,                       -- decimal string 0..1
+    match_method TEXT NOT NULL,            -- exact | reference | invoiceNumber | heuristic | manual | rule
     created_at TEXT NOT NULL
 );
 CREATE INDEX idx_payalloc_transaction ON payment_allocations(transaction_id);
@@ -928,12 +867,10 @@ CREATE TABLE field_provenance (
     entity_type TEXT NOT NULL,             -- transaction | payment | taxAssessment | allocation | taxComponent | counterparty | statementLine
     entity_id TEXT NOT NULL,
     field_name TEXT NOT NULL,
-    provenance TEXT NOT NULL,              -- document | agent | calculated | manual | imported | rule
+    provenance TEXT NOT NULL,              -- document | agent | calculated | manual | imported
     is_manual_override INTEGER NOT NULL DEFAULT 0,
     source_document_id TEXT REFERENCES documents(id),
     model_run_id TEXT REFERENCES model_runs(id),
-    rule_id TEXT REFERENCES rules(id),
-    confidence TEXT,
     created_at TEXT NOT NULL,
     superseded_at TEXT
 );
@@ -965,7 +902,6 @@ CREATE TABLE import_items (
     status TEXT NOT NULL,                  -- queued | archiving | analyzing | matching | proposed | committed | skipped | duplicate | failed
     error_code TEXT,
     error_message TEXT,
-    attempt_count INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
@@ -1033,27 +969,14 @@ CREATE TABLE validation_issues (
 CREATE INDEX idx_issues_entity ON validation_issues(entity_type, entity_id, status);
 ```
 
-## 17.21 `rules`
+## 17.21 Learned rules
 
-User-visible learned patterns and configuration rules.
-
-```sql
-CREATE TABLE rules (
-    id TEXT PRIMARY KEY,
-    kind TEXT NOT NULL,                    -- counterpartyDefaults | statementLineClassification | statementColumnMapping | paymentMatchPattern
-    scope_json TEXT NOT NULL,              -- e.g. {"counterparty_id": "..."} or {"header_fingerprint": "..."}
-    action_json TEXT NOT NULL,             -- e.g. {"category_id": "software_subscriptions", "tax_treatment": "reverseCharge"}
-    confirmation_count INTEGER NOT NULL DEFAULT 0,
-    auto_apply INTEGER NOT NULL DEFAULT 0,
-    is_tax_relevant INTEGER NOT NULL DEFAULT 0,
-    created_by TEXT NOT NULL,              -- user | system
-    enabled INTEGER NOT NULL DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-```
-
-Tax-relevant rules require `confirmation_count ≥ 3` and explicit user activation before `auto_apply`.
+User-visible learned patterns (counterparty defaults, statement-line
+classification, statement column mapping, payment-match patterns) with a
+confirmation count and an explicit `auto_apply` flag. Tax-relevant rules
+require `confirmation_count >= 3` and explicit user activation before
+`auto_apply`. Their table arrives with the milestone that writes them (M8);
+until then nothing learns, and the schema stays free of an unused table.
 
 ## 17.22 `audit_events`
 
@@ -1085,22 +1008,13 @@ CREATE TABLE settings (
 
 Holds autonomy capability flags, default model, retention preferences. Never secrets.
 
-## 17.24 `locked_periods`
+## 17.24 Locked periods
 
-```sql
-CREATE TABLE locked_periods (
-    id TEXT PRIMARY KEY,
-    business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
-    scope TEXT NOT NULL,                   -- ustva | eur
-    period_start TEXT NOT NULL,
-    period_end TEXT NOT NULL,
-    locked_at TEXT NOT NULL,
-    note TEXT,
-    UNIQUE(business_profile_id, scope, period_start, period_end)
-);
-```
-
-A locked UStVA period blocks changes to the tax-point-relevant fields inside it (invoice date, service date, payment dates, amounts) except via the explicit correction action. UI for locking arrives with Milestone 10; schema and enforcement hook exist from Milestone 2.
+A locked UStVA or EÜR period blocks changes to the tax-relevant fields inside
+it (invoice date, service date, payment dates, amounts) except via the
+explicit correction action, which records a reason in `audit_events`. Locking
+arrives as one piece with Milestone 10 - table, enforcement and UI together.
+Confirmed transactions stay directly editable until then.
 
 ## 17.25 Derived status view
 
@@ -1137,38 +1051,33 @@ All string enums are `enum … : String, Codable, CaseIterable, Sendable` in `Do
 ```text
 Direction:              income | expense | unknown
 TransactionType:        invoice | receipt | creditNote | refund | paymentOnly | taxPayment | other
-WorkflowStatus:         draft | active | resolved | archived
+WorkflowStatus:         active | archived
 ReviewStatus:           unreviewed | needsReview | confirmed | conflict
 TaxTreatment:           see 16.1
 TaxComponentKind:       standard | reduced | zero | reverseChargeNote | exempt | fee | deposit | other
 TaxAssessmentStatus:    proposed | confirmed | manualOverride
 CustomerType:           b2b | b2c | unknown
 SupplyType:             service | digitalService | goods | unknown
-ExchangeRateSource:     bankActual | bmfMonthly | manual | documentStated | unknown
 DocumentType:           invoice | receipt | creditNote | statement | contract | other | unknown
-DocumentRole:           invoice | receipt | creditNote | statement | supportingEvidence | other
-DocumentSource:         dragDrop | fileImport | shareExtension | other
-AccountKind:            bank | creditCard | paypal | stripe | cash | other
+DocumentRole:           invoice | receipt | creditNote | statement | other
+DocumentSource:         dragDrop | fileImport | other
 StatementLineClass:     business | private | internalTransfer | taxPayment | unknown
 PaymentDirection:       inflow | outflow
 PaymentMethod:          bankTransfer | card | paypal | directDebit | cash | other | unknown
-PaymentSource:          statementLine | manual | documentStated
-MatchMethod:            exact | reference | invoiceNumber | heuristic | aiDisambiguated | manual | rule
+PaymentSource:          statementLine | manual
+MatchMethod:            exact | reference | invoiceNumber | heuristic | manual | rule
 Provenance:             document | agent | calculated | manual | imported | rule
-RelationType:           creditNoteFor | refundOf | correctionOf | replaces | relatedTo
 ImportBatchStatus:      running | completed | completedWithErrors | cancelled
 ImportItemStatus:       queued | archiving | analyzing | matching | proposed | committed | skipped | duplicate | failed
 ModelRunOperation:      extraction | disambiguation | statementMapping
-ModelRunStatus:         running | succeeded | failed | timedOut
+ModelRunStatus:         running | succeeded | failed
 ProposalKind:           createTransaction | updateTransaction | linkPayment | attachDocument | classifyStatementLines | mergeDuplicate
 ProposalStatus:         pending | accepted | acceptedEdited | rejected | skipped | superseded | committed
 PolicyDecision:         autoCommit | needsReview | blocked
 IssueSeverity:          info | warning | error
 IssueStatus:            open | resolved | ignored
-RuleKind:               counterpartyDefaults | statementLineClassification | statementColumnMapping | paymentMatchPattern
 AuditActor:             user | agent | system | import
 AuditAction:            create | update | delete | link | unlink | confirm | correct | lock | unlock
-LockScope:              ustva | eur
 ```
 
 ---
@@ -1239,7 +1148,7 @@ Dependencies flow downward only: UI → ImportPipeline/Analysis/Export → Datab
 
 # 23. Dates
 
-Domain type `LocalDate` (year/month/day, `Comparable`, `Codable` as `YYYY-MM-DD`) for all calendar dates. `Date` only for timestamps (`created_at` etc.). Never midnight-`Date` for calendar concepts. Period helpers in `Tax`: `UStVAPeriod(year, month|quarter)`, `FiscalYear`.
+Domain type `LocalDate` (year/month/day, `Comparable`, `Codable` as `YYYY-MM-DD`) for all calendar dates. `Date` only for timestamps (`created_at` etc.). Never midnight-`Date` for calendar concepts. Period helper in `Tax`: `UStVAPeriod(year, month|quarter)`. The fiscal year of a freelancer is the calendar year.
 
 ---
 
@@ -1267,7 +1176,7 @@ Never assume one invoice = one payment. Partial and combined payments produce mu
 # 25. Duplicate Detection
 
 - **Exact:** same SHA-256 → `import_item.status = duplicate`, existing document referenced, no new record.
-- **Statement line:** same `(account_id, line_fingerprint)` → skipped silently, counted in batch summary.
+- **Statement line:** same `(account_iban, line_fingerprint)` → skipped silently, counted in batch summary.
 - **Semantic:** different file, same counterparty + invoice number, or same counterparty + date + gross → proposal `mergeDuplicate` with a warning; never silently discarded.
 
 ---
@@ -1298,7 +1207,6 @@ enum ProposedOperation: Codable, Sendable {
     case attachDocument(transactionID: UUID, documentID: UUID, role: DocumentRole)
     case classifyStatementLine(lineID: UUID, StatementLineClass, subtype: String?)
     case upsertCounterparty(CounterpartyDraft)
-    case addRelation(from: UUID, to: UUID, RelationType)
     case setProvenance([ProvenanceEntry])
 }
 ```
@@ -1378,7 +1286,7 @@ The app is fully usable offline for existing data. If analysis fails: keep the d
 # 34. Idempotency
 
 - Document identity: sha256.
-- Statement line identity: `(account_id, line_fingerprint)`.
+- Statement line identity: `(account_iban, line_fingerprint)`.
 - Proposal identity: `idempotency_key = "<import_item_id>:<prompt_version>"`; re-running analysis supersedes the old pending proposal rather than adding a second.
 - Commit: inside one SQLite transaction; `proposals.status = committed` set in the same transaction.
 - Restart: items in `analyzing|matching` are re-queued; any `model_runs` row with `running` is marked `timedOut`.
@@ -1495,7 +1403,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 **M1 — Local shell:** onboarding (archive picker, profile), `NavigationSplitView`, table, inspector placeholder, settings, no AI.
 
-**M2 — Storage:** GRDB, `v001_initial` with the complete schema from 17 (all tables including accounts, statement_lines, proposals, provenance, rules, locked_periods), views, seed categories, sample data, repositories, migration tests.
+**M2 — Storage:** GRDB, `v001_initial` with the schema from 17 (including statement_lines, proposals and provenance), views, seed categories, sample data, repositories, migration tests. Tables arrive with the milestone that writes them.
 
 **M3 — Manual bookkeeping:** create/edit transaction, allocations, tax components, tax assessment, attach document, add/link payment manually, validation, provenance on manual edits, audit, save/reload.
 
@@ -1551,7 +1459,7 @@ Statement mapping: header row and ≤ 5 sample rows with amounts masked to struc
 
 # 43. Rules and Learned Patterns
 
-Confirmed behavior becomes a visible, editable `rules` row (e.g., counterparty Adobe → category software_subscriptions, treatment reverseCharge). Rules show their confirmation count and whether they auto-apply. Nothing hidden is learned. Tax-relevant rules have stricter activation (17.21).
+Confirmed behavior becomes a visible, editable rule (e.g., counterparty Adobe → category software_subscriptions, treatment reverseCharge). Rules show their confirmation count and whether they auto-apply. Nothing hidden is learned. Tax-relevant rules have stricter activation (17.21).
 
 ---
 
@@ -1623,7 +1531,7 @@ Do not revisit unless implementation evidence proves them wrong:
 - Bookkeeping allocations replace a single category; canonical categories with stable IDs; no SKR numbers in core
 - Separate tax points (EÜR, output VAT, input VAT); self-assessed VAT computed by Swift
 - Form mappings (UStVA/EÜR) versioned in the Tax module, not in the schema
-- Field provenance, proposals, relations, rules, locked periods in the initial schema
+- Field provenance and proposals in the initial schema
 - OpenAI Responses API with strict Structured Outputs; user-provided key in Keychain
 - V1 AI = single-shot extraction + optional disambiguation; no function calling; matching deterministic
 - CSV statements parsed deterministically after one-time AI column mapping
