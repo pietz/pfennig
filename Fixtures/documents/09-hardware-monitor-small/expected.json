@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Monitor UltraView 27 Zoll",
   "counterparty": {
-    "name": "ByteWerk Computer GmbH",
+    "name": "ByteWerk",
     "countryCode": "DE",
     "vatId": "DE445566778"
   },

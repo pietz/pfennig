@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "CloudForge Suite, 5 Plätze",
   "counterparty": {
-    "name": "CloudForge Software Ireland Limited",
+    "name": "CloudForge",
     "countryCode": "IE",
     "vatId": "IE1234567X"
   },

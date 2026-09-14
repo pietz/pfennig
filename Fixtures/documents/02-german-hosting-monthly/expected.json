@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Hosting-Paket Business M",
   "counterparty": {
-    "name": "NordServe Hosting GmbH",
+    "name": "NordServe",
     "countryCode": "DE",
     "vatId": "DE123456789"
   },

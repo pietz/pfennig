@@ -57,6 +57,9 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
 
     public var documentType: DocumentType
     public var direction: Direction
+    /// A short German phrase naming what was bought or billed; the ledger
+    /// title. `nil` on recordings made before the prompt asked for it.
+    public var title: String?
     public var counterparty: Counterparty
     public var invoice: Invoice
     public var taxComponents: [TaxComponent]
@@ -66,12 +69,14 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
     public var missingFields: [String]
     public var warnings: [String]
 
-    /// `missingFields` and `warnings` default to empty so the ground-truth
-    /// `expected.json` fixtures, which may omit them, decode unchanged.
+    /// `missingFields`, `warnings` and `title` are decoded leniently so the
+    /// ground-truth `expected.json` fixtures and recordings made before a
+    /// field existed decode unchanged.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         documentType = try container.decode(DocumentType.self, forKey: .documentType)
         direction = try container.decode(Direction.self, forKey: .direction)
+        title = try container.decodeIfPresent(String.self, forKey: .title)
         counterparty = try container.decode(Counterparty.self, forKey: .counterparty)
         invoice = try container.decode(Invoice.self, forKey: .invoice)
         taxComponents = try container.decode([TaxComponent].self, forKey: .taxComponents)

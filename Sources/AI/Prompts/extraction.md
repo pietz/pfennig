@@ -21,16 +21,34 @@ schema exactly.
 5. `direction` is relative to the business below. A document the business
    received and has to pay is `expense`; a document the business issued to its
    own customer is `income`. Use the addressee and the sender to decide.
-6. `documentType` describes the document, not the booking: `invoice`,
+6. `counterparty.name` is the short everyday trade name a person would use in
+   a ledger, not the registered legal name: `Amazon`, `Deutsche Bahn`,
+   `OpenAI`, `Hetzner`. Drop the legal form and any branch, subsidiary or
+   country suffix — `Amazon EU S.à r.l., Niederlassung Deutschland` becomes
+   `Amazon`, `Hetzner Online GmbH` becomes `Hetzner`. Keep the distinguishing
+   words: shorten `Schreibwaren Müller e.K.` to `Schreibwaren Müller`, never
+   to `Müller`. Someone trading under their own name keeps that name. The
+   legal name stays on the archived document; do not put it here.
+   `countryCode` and `vatId` still describe the legal entity exactly as
+   printed.
+7. `title` is a short German phrase naming what was bought or billed, at most
+   40 characters: `USB-C Kabel`, `Bahnfahrt Berlin–Hamburg`, `ChatGPT Plus
+   September`. It is the one field you phrase yourself instead of copying, so
+   summarize the document's own wording. Leave out serial, order, customer and
+   invoice numbers, calendar dates, amounts and the counterparty name; a
+   billing period may appear as a plain month name. A document with several
+   positions gets one summarizing phrase rather than its first position:
+   `Bürobedarf, 3 Positionen`. Write German even when the document is not.
+8. `documentType` describes the document, not the booking: `invoice`,
    `receipt` (till receipt, Kassenbon, ticket), `creditNote` (Gutschrift),
    `statement`, `contract`, `other`, `unknown`.
-7. `taxComponents` must mirror what the document shows per tax rate. Their
+9. `taxComponents` must mirror what the document shows per tax rate. Their
    `netAmount` values sum to `invoice.netAmount` and their `taxAmount` values
    sum to `invoice.taxAmount`. A document without VAT gets one component with
    `rate` `"0"` and the matching `kind` (`reverseChargeNote` when a reverse
    charge note is printed, `exempt` for a stated exemption, otherwise `zero`).
    Deposits and fees use `deposit` and `fee`.
-8. `taxTreatmentHint` is a hint, not a decision. The app decides the binding
+10. `taxTreatmentHint` is a hint, not a decision. The app decides the binding
    treatment from the business profile, the counterparty country and the VAT
    IDs. Give your best reading. Use `smallBusiness` only when this document
    explicitly indicates the small-business exemption under §19 UStG (for
@@ -39,10 +57,11 @@ schema exactly.
    `smallBusiness`; the profile is context, not support from this document.
    Without an explicit document indication, choose another supported treatment
    or `unknown`.
-9. `lineItems[].categoryHint` must be one of the canonical category ids listed
-   below, or `null`. Never invent an id. Whether a line item is a depreciable
+11. `lineItems[].description` stays close to the document's own wording for
+   the position, including a model or product name. `lineItems[].categoryHint`
+   must be one of the canonical category ids listed below, or `null`. Never invent an id. Whether a line item is a depreciable
    asset is decided by the app, not by you.
-10. Return schema-valid JSON and nothing else. No commentary, no markdown.
+12. Return schema-valid JSON and nothing else. No commentary, no markdown.
 
 # Business profile
 

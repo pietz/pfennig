@@ -169,9 +169,34 @@ public enum ExtractionNormalizer {
         }
     }
 
+    /// Hard limit for a ledger title. The prompt asks for about 40
+    /// characters; this is the safety net for the times the model ignores it.
+    static let titleLimit = 60
+
+    /// The model's own short phrase, or the first line item on a recording
+    /// made before `title` existed. Either way the ledger gets a single,
+    /// whitespace-collapsed line of at most `titleLimit` characters.
     static func title(of extraction: DocumentExtraction) -> String? {
-        extraction.lineItems.compactMap { $0.description?.trimmed.nilIfEmpty }.first
+        let raw = extraction.title?.nilIfBlank
+            ?? extraction.lineItems.compactMap { $0.description?.nilIfBlank }.first
+        return shortened(raw)
     }
+
+    /// Trims, collapses internal whitespace and cuts an over-long title at a
+    /// word boundary, replacing the remainder with an ellipsis. A single word
+    /// longer than the limit is cut mid-word rather than left in full.
+    static func shortened(_ title: String?) -> String? {
+        guard let collapsed = normalizedName(title) else { return nil }
+        guard collapsed.count > titleLimit else { return collapsed }
+        let head = collapsed.prefix(titleLimit - 1)
+        let word = head.lastIndex(where: \.isWhitespace).map { head[head.startIndex ..< $0] } ?? head[...]
+        let cut = word.count >= titleLimit / 2 ? word : head
+        return String(cut).trimmingCharacters(in: Self.titleTail) + "…"
+    }
+
+    /// Trailing characters that would dangle in front of the ellipsis.
+    static let titleTail = CharacterSet.whitespacesAndNewlines
+        .union(CharacterSet(charactersIn: ",;:.-–—/·•"))
 
     /// One allocation per hinted category, scaled so the sum matches the
     /// booked base exactly (spec 14.1 `ALLOCATION_SUM_MISMATCH`).
@@ -236,5 +261,9 @@ extension String {
 
     var nilIfEmpty: String? {
         isEmpty ? nil : self
+    }
+
+    var nilIfBlank: String? {
+        trimmed.nilIfEmpty
     }
 }

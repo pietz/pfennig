@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Übernachtung mit Frühstück, 2 Nächte",
   "counterparty": {
-    "name": "Hotel Am Stadtpark GmbH",
+    "name": "Hotel Am Stadtpark",
     "countryCode": "DE",
     "vatId": "DE334455667"
   },

@@ -1,8 +1,9 @@
 {
   "documentType": "receipt",
   "direction": "expense",
+  "title": "Bahnfahrt Berlin–München",
   "counterparty": {
-    "name": "Bahn Express AG",
+    "name": "Bahn Express",
     "countryCode": "DE",
     "vatId": "DE223456789"
   },

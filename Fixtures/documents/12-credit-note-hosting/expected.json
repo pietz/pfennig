@@ -1,8 +1,9 @@
 {
   "documentType": "creditNote",
   "direction": "expense",
+  "title": "Erstattung Serviceausfall",
   "counterparty": {
-    "name": "NordServe Hosting GmbH",
+    "name": "NordServe",
     "countryCode": "DE",
     "vatId": "DE123456789"
   },

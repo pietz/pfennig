@@ -36,7 +36,8 @@ struct NormalizationTests {
         #expect(result.draft.serviceDate == nil)
         #expect(result.draft.servicePeriodStart == LocalDate(year: 2026, month: 8, day: 1))
         #expect(result.draft.servicePeriodEnd == LocalDate(year: 2026, month: 8, day: 31))
-        #expect(result.draft.counterpartyName == "CloudForge Software Ireland Limited")
+        #expect(result.draft.counterpartyName == "CloudForge")
+        #expect(result.draft.title == "CloudForge Suite, 5 Plätze")
         #expect(result.draft.counterpartyCountryCode == "IE")
         #expect(result.draft.transactionType == .invoice)
         #expect(result.reverseChargeNote)
@@ -169,6 +170,54 @@ struct NormalizationTests {
     func counterpartyName() {
         #expect(ExtractionNormalizer.normalizedName("  Cafe   Sonnenblick \n") == "Cafe Sonnenblick")
         #expect(ExtractionNormalizer.normalizedName("   ") == nil)
+    }
+
+    @Test("Ohne Modelltitel dient die erste Position als Titel")
+    func titleFallsBackToFirstLineItem() throws {
+        var input = try extraction("01-")
+        input.title = nil
+        #expect(try normalize(input).draft.title == "CloudForge Suite - Team plan (5 seats)")
+
+        input.title = "   \n  "
+        #expect(try normalize(input).draft.title == "CloudForge Suite - Team plan (5 seats)")
+
+        input.lineItems = []
+        #expect(try normalize(input).draft.title == nil)
+    }
+
+    @Test("Titel werden von Mehrfach-Leerzeichen und Zeilenumbrüchen befreit")
+    func titleWhitespace() {
+        #expect(ExtractionNormalizer.shortened("  USB-C\n  Kabel  ") == "USB-C Kabel")
+        #expect(ExtractionNormalizer.shortened("   ") == nil)
+        #expect(ExtractionNormalizer.shortened(nil) == nil)
+    }
+
+    @Test("Ein zu langer Titel wird an der Wortgrenze gekürzt")
+    func titleIsTruncatedAtAWordBoundary() throws {
+        let long = "Notebook ProBook X15 mit 16 GB RAM und 1 TB SSD, Seriennummer ABC-12345678"
+        let short = try #require(ExtractionNormalizer.shortened(long))
+        #expect(short == "Notebook ProBook X15 mit 16 GB RAM und 1 TB SSD…")
+        #expect(short.count <= ExtractionNormalizer.titleLimit)
+
+        // Genau an der Grenze bleibt der Titel unangetastet.
+        let exact = String(repeating: "a", count: ExtractionNormalizer.titleLimit)
+        #expect(ExtractionNormalizer.shortened(exact) == exact)
+        #expect(ExtractionNormalizer.shortened(exact + "b")?.count == ExtractionNormalizer.titleLimit)
+    }
+
+    @Test("Ein einzelnes überlanges Wort wird hart abgeschnitten")
+    func titleWithoutWordBoundary() throws {
+        let word = String(repeating: "Dauerlauf", count: 10)
+        let short = try #require(ExtractionNormalizer.shortened(word))
+        #expect(short.count == ExtractionNormalizer.titleLimit)
+        #expect(short.hasSuffix("…"))
+        #expect(word.hasPrefix(short.dropLast()))
+
+        // Eine Wortgrenze ganz am Anfang darf den Titel nicht verstümmeln.
+        let lopsided = "Kabel " + String(repeating: "x", count: 80)
+        let cut = try #require(ExtractionNormalizer.shortened(lopsided))
+        #expect(cut.count == ExtractionNormalizer.titleLimit)
+        #expect(cut.hasPrefix("Kabel x"))
     }
 
     @Test("Warenkategorien erzeugen eine Warenlieferung, sonst eine Dienstleistung")

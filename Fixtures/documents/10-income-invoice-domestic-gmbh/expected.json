@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "income",
+  "title": "Softwareentwicklung Projekt Aurora",
   "counterparty": {
-    "name": "Nordlicht Systeme GmbH",
+    "name": "Nordlicht Systeme",
     "countryCode": "DE",
     "vatId": "DE556677889"
   },

@@ -75,6 +75,15 @@ struct ExtractionSchemaTests {
         #expect(treatment?["enum"] as? [String] == TaxTreatment.allCases.map(\.rawValue))
     }
 
+    @Test("Der Titel ist ein eigenes, nullbares Feld")
+    func titleField() {
+        let properties = schema()["properties"] as? [String: Any]
+        let title = properties?["title"] as? [String: Any]
+        #expect(title?["type"] as? [String] == ["string", "null"])
+        let required = schema()["required"] as? [String] ?? []
+        #expect(required.contains("title"))
+    }
+
     @Test("Der Prompt trägt Betrieb, Kategorien und Behandlungen")
     func prompt() {
         let rendered = ExtractionPrompt.render(
@@ -90,5 +99,17 @@ struct ExtractionSchemaTests {
         #expect(!rendered.contains("evidence"))
         #expect(!rendered.contains("snippet"))
         #expect(!rendered.contains("{{"))
+    }
+
+    @Test("Der Prompt verlangt kurze Handelsnamen und kurze Titel")
+    func shortNamesAndTitles() {
+        let rendered = ExtractionPrompt.render(
+            ExtractionContext(business: .init(name: "Mara Beispiel"), categories: [])
+        )
+        #expect(rendered.contains("`counterparty.name` is the short everyday trade name"))
+        #expect(rendered.contains("Niederlassung Deutschland"))
+        #expect(rendered.contains("`title` is a short German phrase"))
+        #expect(rendered.contains("40 characters"))
+        #expect(rendered.contains("Bürobedarf, 3 Positionen"))
     }
 }

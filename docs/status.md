@@ -57,6 +57,7 @@ The core local bookkeeping loop works:
 - manual income and expense transactions remain directly editable
 - original PDFs and images are archived locally
 - AI extraction produces durable proposals that are reviewed before commit
+- the ledger shows the short trade name and a short German title; extraction asks for both, and normalization trims, collapses and caps the title
 - accepted imports commit atomically, exact document duplicates are detected, failed items can be retried, and stale proposals cannot overwrite newer work
 - payments and partial payments are supported
 - internal field provenance protects manual edits but is intentionally not displayed

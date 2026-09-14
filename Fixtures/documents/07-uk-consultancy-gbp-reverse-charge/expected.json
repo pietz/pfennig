@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Strategieberatung Q2",
   "counterparty": {
-    "name": "Thornfield Consulting Ltd",
+    "name": "Thornfield Consulting",
     "countryCode": "GB",
     "vatId": "GB123456789"
   },

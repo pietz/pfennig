@@ -425,8 +425,9 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Creative Cloud September",
   "counterparty": {
-    "name": "Adobe Systems Software Ireland Limited",
+    "name": "Adobe",
     "countryCode": "IE",
     "vatId": "IE6364992H"
   },
@@ -455,6 +456,8 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
 ```
 
 Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile + counterparty country + VAT IDs + hint. The hint carries the treatment only: a model confidence would never be authorization, and free-text reasoning was never read. `categoryHint` values must be from the canonical category enum or null.
+
+`counterparty.name` is the short everyday trade name (`Amazon`, not `Amazon EU S.à r.l., Niederlassung Deutschland`); the legal name stays on the archived document. `title` is the ledger line: a short German phrase of at most ~40 characters naming what was bought or billed, without serial, order or invoice numbers, dates or amounts. Normalization collapses whitespace and cuts a title longer than 60 characters at a word boundary; it never shortens a company name beyond trimming.
 
 ---
 

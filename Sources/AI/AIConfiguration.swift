@@ -6,7 +6,7 @@ import Foundation
 public enum AIConfiguration {
     /// Bumped whenever a prompt or the extraction schema changes; part of the
     /// proposal idempotency key (spec 34).
-    public static let promptVersion = "2026-09-14.2"
+    public static let promptVersion = "2026-09-14.3"
     public static let schemaVersion = "1"
 
     /// Keys of the model and reasoning-effort choices in the `settings` table

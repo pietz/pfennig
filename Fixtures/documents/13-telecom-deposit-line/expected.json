@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "Mobilfunk-Flatrate mit Kaution",
   "counterparty": {
-    "name": "TeleWelle Kommunikation GmbH",
+    "name": "TeleWelle",
     "countryCode": "DE",
     "vatId": "DE667788990"
   },

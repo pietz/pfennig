@@ -16,6 +16,7 @@ public enum ExtractionSchema {
         object([
             "documentType": enumeration(DocumentType.allCases.map(\.rawValue)),
             "direction": enumeration(Direction.allCases.map(\.rawValue)),
+            "title": nullable("string"),
             "counterparty": object([
                 "name": nullable("string"),
                 "countryCode": nullable("string"),

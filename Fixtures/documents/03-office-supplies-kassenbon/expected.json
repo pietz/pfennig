@@ -1,8 +1,9 @@
 {
   "documentType": "receipt",
   "direction": "expense",
+  "title": "Bürobedarf, 2 Positionen",
   "counterparty": {
-    "name": "Schreibwaren Müller e.K.",
+    "name": "Schreibwaren Müller",
     "countryCode": "DE",
     "vatId": null
   },

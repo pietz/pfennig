@@ -8,9 +8,10 @@ Each fixture is a folder `<nn>-<slug>/` containing:
 
 - `document.pdf` or `document.jpg` - the synthetic source document
 - `expected.json` - ground truth matching the extraction schema in
-  `concept.md` §13 (`documentType`, `direction`, `counterparty`, `invoice`,
-  `taxComponents`, `taxTreatmentHint`, `lineItems`, `paymentInfo`,
-  `missingFields`)
+  `concept.md` §13 (`documentType`, `direction`, `title`, `counterparty`,
+  `invoice`, `taxComponents`, `taxTreatmentHint`, `lineItems`, `paymentInfo`,
+  `missingFields`). `counterparty.name` is the short trade name and `title`
+  the short German ledger phrase the prompt asks for.
 
 Regenerate everything with:
 

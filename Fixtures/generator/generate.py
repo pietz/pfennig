@@ -94,7 +94,13 @@ class Party:
     country: str = "Deutschland"
     country_code: str = "DE"
     vat_id: str | None = None
+    #: The short everyday trade name; defaults to the registered name.
+    trade_name: str | None = None
     extra: list[str] = field(default_factory=list)
+
+    @property
+    def trade(self) -> str:
+        return self.trade_name or self.name
 
     def lines(self) -> list[str]:
         out = [self.name, self.street, f"{self.postal_code} {self.city}"]
@@ -255,6 +261,7 @@ def draw_footer(c, y, lines: list[str]):
 def build_01_irish_saas(out_dir: Path):
     vendor = Party(
         name="CloudForge Software Ireland Limited",
+        trade_name="CloudForge",
         street="14 Harbour Quay",
         postal_code="D02 XY45",
         city="Dublin",
@@ -292,8 +299,9 @@ def build_01_irish_saas(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "CloudForge Suite, 5 Plätze",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "IE",
             "vatId": "IE1234567X",
         },
@@ -326,6 +334,7 @@ def build_01_irish_saas(out_dir: Path):
 def build_02_german_hosting(out_dir: Path):
     vendor = Party(
         name="NordServe Hosting GmbH",
+        trade_name="NordServe",
         street="Speicherstraße 8",
         postal_code="20457",
         city="Hamburg",
@@ -358,8 +367,9 @@ def build_02_german_hosting(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Hosting-Paket Business M",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": "DE123456789",
         },
@@ -398,6 +408,7 @@ def build_02_german_hosting(out_dir: Path):
 def build_03_office_supplies_kassenbon(out_dir: Path):
     vendor = Party(
         name="Schreibwaren Müller e.K.",
+        trade_name="Schreibwaren Müller",
         street="Kastanienallee 51",
         postal_code="10435",
         city="Berlin",
@@ -457,8 +468,9 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
     expected = {
         "documentType": "receipt",
         "direction": "expense",
+        "title": "Bürobedarf, 2 Positionen",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": None,
         },
@@ -493,6 +505,7 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
 def build_04_bahn_ticket(out_dir: Path):
     vendor = Party(
         name="Bahn Express AG",
+        trade_name="Bahn Express",
         street="Gleisallee 1",
         postal_code="60329",
         city="Frankfurt am Main",
@@ -539,8 +552,9 @@ def build_04_bahn_ticket(out_dir: Path):
     expected = {
         "documentType": "receipt",
         "direction": "expense",
+        "title": "Bahnfahrt Berlin–München",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": "DE223456789",
         },
@@ -575,6 +589,7 @@ def build_04_bahn_ticket(out_dir: Path):
 def build_05_hotel(out_dir: Path):
     vendor = Party(
         name="Hotel Am Stadtpark GmbH",
+        trade_name="Hotel Am Stadtpark",
         street="Parkring 22",
         postal_code="80331",
         city="München",
@@ -606,8 +621,9 @@ def build_05_hotel(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Übernachtung mit Frühstück, 2 Nächte",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": "DE334455667",
         },
@@ -642,6 +658,7 @@ def build_05_hotel(out_dir: Path):
 def build_06_us_software(out_dir: Path):
     vendor = Party(
         name="Bright Peak Software Inc.",
+        trade_name="Bright Peak",
         street="880 Beacon Hill Ave",
         postal_code="CA 94107",
         city="San Francisco",
@@ -675,8 +692,9 @@ def build_06_us_software(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "DevTools Suite Jahreslizenz",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "US",
             "vatId": None,
         },
@@ -709,6 +727,7 @@ def build_06_us_software(out_dir: Path):
 def build_07_uk_consultancy(out_dir: Path):
     vendor = Party(
         name="Thornfield Consulting Ltd",
+        trade_name="Thornfield Consulting",
         street="19 Lancer Row",
         postal_code="EC2A 4NE",
         city="London",
@@ -743,8 +762,9 @@ def build_07_uk_consultancy(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Strategieberatung Q2",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "GB",
             "vatId": "GB123456789",
         },
@@ -776,6 +796,7 @@ def build_07_uk_consultancy(out_dir: Path):
 
 BYTEWERK = Party(
     name="ByteWerk Computer GmbH",
+    trade_name="ByteWerk",
     street="Ringstraße 77",
     postal_code="50667",
     city="Köln",
@@ -810,8 +831,9 @@ def build_08_laptop(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Notebook ProBook X15",
         "counterparty": {
-            "name": BYTEWERK.name,
+            "name": BYTEWERK.trade,
             "countryCode": "DE",
             "vatId": "DE445566778",
         },
@@ -867,8 +889,9 @@ def build_09_monitor(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Monitor UltraView 27 Zoll",
         "counterparty": {
-            "name": BYTEWERK.name,
+            "name": BYTEWERK.trade,
             "countryCode": "DE",
             "vatId": "DE445566778",
         },
@@ -901,6 +924,7 @@ def build_09_monitor(out_dir: Path):
 def build_10_income_domestic(out_dir: Path):
     client = Party(
         name="Nordlicht Systeme GmbH",
+        trade_name="Nordlicht Systeme",
         street="Werftallee 5",
         postal_code="28217",
         city="Bremen",
@@ -931,8 +955,9 @@ def build_10_income_domestic(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "income",
+        "title": "Softwareentwicklung Projekt Aurora",
         "counterparty": {
-            "name": client.name,
+            "name": client.trade,
             "countryCode": "DE",
             "vatId": "DE556677889",
         },
@@ -965,6 +990,7 @@ def build_10_income_domestic(out_dir: Path):
 def build_11_income_france(out_dir: Path):
     client = Party(
         name="Lumière Digitale SARL",
+        trade_name="Lumière Digitale",
         street="12 Rue des Tisserands",
         postal_code="69002",
         city="Lyon",
@@ -997,8 +1023,9 @@ def build_11_income_france(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "income",
+        "title": "Backend-Entwicklung Projekt Icarus",
         "counterparty": {
-            "name": client.name,
+            "name": client.trade,
             "countryCode": "FR",
             "vatId": "FR12345678901",
         },
@@ -1031,6 +1058,7 @@ def build_11_income_france(out_dir: Path):
 def build_12_credit_note(out_dir: Path):
     vendor = Party(
         name="NordServe Hosting GmbH",
+        trade_name="NordServe",
         street="Speicherstraße 8",
         postal_code="20457",
         city="Hamburg",
@@ -1062,8 +1090,9 @@ def build_12_credit_note(out_dir: Path):
     expected = {
         "documentType": "creditNote",
         "direction": "expense",
+        "title": "Erstattung Serviceausfall",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": "DE123456789",
         },
@@ -1096,6 +1125,7 @@ def build_12_credit_note(out_dir: Path):
 def build_13_telecom(out_dir: Path):
     vendor = Party(
         name="TeleWelle Kommunikation GmbH",
+        trade_name="TeleWelle",
         street="Sendeturmweg 3",
         postal_code="70173",
         city="Stuttgart",
@@ -1128,8 +1158,9 @@ def build_13_telecom(out_dir: Path):
     expected = {
         "documentType": "invoice",
         "direction": "expense",
+        "title": "Mobilfunk-Flatrate mit Kaution",
         "counterparty": {
-            "name": vendor.name,
+            "name": vendor.trade,
             "countryCode": "DE",
             "vatId": "DE667788990",
         },
@@ -1237,6 +1268,7 @@ def build_14_cafe_photo(out_dir: Path):
     expected = {
         "documentType": "receipt",
         "direction": "expense",
+        "title": "Bewirtung, 3 Positionen",
         "counterparty": {
             "name": "Cafe Sonnenblick",
             "countryCode": "DE",

@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "income",
+  "title": "Backend-Entwicklung Projekt Icarus",
   "counterparty": {
-    "name": "Lumière Digitale SARL",
+    "name": "Lumière Digitale",
     "countryCode": "FR",
     "vatId": "FR12345678901"
   },

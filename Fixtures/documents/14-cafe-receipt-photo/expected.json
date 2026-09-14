@@ -1,6 +1,7 @@
 {
   "documentType": "receipt",
   "direction": "expense",
+  "title": "Bewirtung, 3 Positionen",
   "counterparty": {
     "name": "Cafe Sonnenblick",
     "countryCode": "DE",

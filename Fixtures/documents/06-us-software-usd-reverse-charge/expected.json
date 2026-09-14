@@ -1,8 +1,9 @@
 {
   "documentType": "invoice",
   "direction": "expense",
+  "title": "DevTools Suite Jahreslizenz",
   "counterparty": {
-    "name": "Bright Peak Software Inc.",
+    "name": "Bright Peak",
     "countryCode": "US",
     "vatId": null
   },
