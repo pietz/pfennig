@@ -49,6 +49,7 @@ struct UStVACalculatorTests {
         counterpartyCountry: String? = nil,
         counterpartyName: String = "Testpartner",
         selfAssessedVatMinor: Int64? = nil,
+        inputVatDate: LocalDate? = nil,
         attachDocument: Bool = true
     ) throws -> TransactionRecord {
         var counterpartyID: String?
@@ -83,7 +84,7 @@ struct UStVACalculatorTests {
                     vatShownMinor: tax,
                     selfAssessedVatMinor: selfAssessedVatMinor,
                     deductibleInputVatMinor: selfAssessedVatMinor,
-                    inputVatDate: invoiceDate,
+                    inputVatDate: inputVatDate ?? invoiceDate,
                     status: .confirmed
                 ).insert(db)
             }
@@ -246,6 +247,48 @@ struct UStVACalculatorTests {
         #expect(q3.line(67) == nil)
         #expect(q3.line(66) == nil)
         #expect(q3.payableMinor == 19000)
+    }
+
+    @Test("Kleinunternehmer melden ihre §19-Einnahmen nicht in Kz 48")
+    func smallBusinessIncomeIsNotReported() throws {
+        let (small, smallProfile) = try database(smallBusiness: true)
+        let invoice = try insert(
+            small, profile: smallProfile, direction: .income, treatment: .smallBusiness,
+            invoiceDate: LocalDate(year: 2026, month: 7, day: 1), net: 100_000, tax: 0
+        )
+        try pay(small, invoice, amountMinor: 100_000, on: LocalDate(year: 2026, month: 7, day: 20))
+
+        let q3 = try prepare(small, smallProfile, quarter: 3)
+        #expect(q3.line(48) == nil)
+        #expect(q3.lines.isEmpty)
+        #expect(q3.payableMinor == 0)
+        #expect(q3.exceptions.isEmpty)
+
+        // A regular business still reports exempt income in Kz 48.
+        let (regular, regularProfile) = try database()
+        let exempt = try insert(
+            regular, profile: regularProfile, direction: .income, treatment: .exempt,
+            invoiceDate: LocalDate(year: 2026, month: 7, day: 1), net: 100_000, tax: 0
+        )
+        try pay(regular, exempt, amountMinor: 100_000, on: LocalDate(year: 2026, month: 7, day: 20))
+        #expect(try prepare(regular, regularProfile, quarter: 3).line(48)?.amountMinor == 100_000)
+    }
+
+    @Test("§13b ohne Rechnungsdatum wird über das Vorsteuerdatum gefunden")
+    func reverseChargeWithoutInvoiceDate() throws {
+        let (database, profile) = try database()
+        try insert(
+            database, profile: profile, direction: .expense, treatment: .reverseCharge,
+            title: "SaaS ohne Rechnungsdatum", invoiceDate: nil,
+            net: 100_000, tax: 0, counterpartyCountry: "IE", counterpartyName: "Cloud Ltd",
+            selfAssessedVatMinor: 19000,
+            inputVatDate: LocalDate(year: 2026, month: 8, day: 5)
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        #expect(q3.line(46)?.amountMinor == 100_000)
+        #expect(q3.line(67)?.amountMinor == 19000)
+        #expect(try prepare(database, profile, quarter: 2).lines.isEmpty)
     }
 
     @Test("Ein Anbieter aus dem Drittland gehört in Kz 84/85")

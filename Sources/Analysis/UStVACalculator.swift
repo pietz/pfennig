@@ -121,9 +121,10 @@ public enum UStVACalculator {
     }
 
     /// Transactions that can touch the period: their invoice date is inside
-    /// it, or one of their payments is. That covers every dating rule above,
-    /// because `max(Rechnung, Zahlung)` can only land in the period when one
-    /// of the two does.
+    /// it, one of their payments is, or - for §13b and intra-Community
+    /// acquisitions without an invoice date - the assessed input VAT date is.
+    /// That covers every dating rule above, because `max(Rechnung, Zahlung)`
+    /// can only land in the period when one of the two does.
     private static func transactionRows(
         _ db: Database,
         period: UStVAPeriod,
@@ -149,6 +150,7 @@ public enum UStVACalculator {
                AND \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
                AND (
                     (t.invoice_date >= :start AND t.invoice_date <= :end)
+                 OR (t.invoice_date IS NULL AND ta.input_vat_date >= :start AND ta.input_vat_date <= :end)
                  OR EXISTS (
                         SELECT 1 FROM payment_allocations pa
                           JOIN payments p ON p.id = pa.payment_id
@@ -333,6 +335,10 @@ private extension UStVACalculator {
                         }
                         continue
                     }
+                    // A Kleinunternehmer files a UStVA only because of §13b
+                    // (§18 Abs. 4a UStG) and reports only that; the §19 income
+                    // itself does not go into Kz 48.
+                    if isSmallBusiness, kennzahl == 48 { continue }
                     credit(
                         kennzahl,
                         slice.baseMinor,
