@@ -8,7 +8,6 @@ let package = Package(
         .library(name: "Domain", targets: ["Domain"]),
         .library(name: "Database", targets: ["Database"]),
         .library(name: "DocumentStore", targets: ["DocumentStore"]),
-        .library(name: "StatementImport", targets: ["StatementImport"]),
         .library(name: "ImportPipeline", targets: ["ImportPipeline"]),
         .library(name: "AI", targets: ["AI"]),
         .library(name: "Validation", targets: ["Validation"]),
@@ -36,17 +35,14 @@ let package = Package(
         // Domain only (see spec 22).
         .target(name: "AI", dependencies: ["Domain"], resources: [.process("Prompts")]),
 
-        .target(name: "StatementImport", dependencies: ["Domain"]),
-
         .target(name: "Analysis", dependencies: ["Domain", "Database", "Tax"]),
         .target(name: "Export", dependencies: ["Domain", "Database", "Tax"]),
 
         .target(name: "ImportPipeline", dependencies: [
-            "Domain", "Database", "DocumentStore", "StatementImport", "AI", "Validation", "Tax",
+            "Domain", "Database", "DocumentStore", "AI", "Validation", "Tax",
         ]),
 
         .testTarget(name: "DomainTests", dependencies: ["Domain"]),
-        .testTarget(name: "StatementImportTests", dependencies: ["StatementImport", "Database", "Domain"]),
         .testTarget(name: "ExportTests", dependencies: ["Export", "Tax", "Domain"]),
         .testTarget(name: "DatabaseTests", dependencies: ["Analysis", "Database", "Domain", "Tax"]),
         .testTarget(name: "DocumentStoreTests", dependencies: ["DocumentStore"]),
