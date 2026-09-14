@@ -56,7 +56,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 297 tests across 43 suites plus a successful Debug app build.
+The latest verification baseline is 295 tests across 43 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -77,7 +77,7 @@ The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per th
 - `Tax/TaxPoints.swift` became `Tax/Periods.swift` and keeps only `UStVAPeriod` (`FiscalYear` went with the schema cleanup below); `TaxPointDeriver` and its persistence in `BookkeepingEngine` are gone.
 - `UStVACalculator` dates a §13b or intra-Community acquisition by `invoice_date`, failing that `service_date`. With neither it emits the exception "Rechnungsdatum fehlt" and leaves the transaction out of the form lines.
 - The extraction schema's `taxTreatmentHint` now carries the treatment only. Its `confidence` was never read by `TaxTreatmentDecider`, and its free-text `reasoning` was never read at all. `AIConfiguration.promptVersion` moved to `2026-09-14.1`.
-- `v001_initial` creates the slim table directly; `v002_slim_tax_assessments` rebuilds it for development databases created before this change, keeping each transaction's current assessment. No archive is reset or deleted.
+- `v001_initial` creates the slim table directly. The forward migration that rebuilt it for older development databases has been folded away; see the archive rewrite below.
 
 ### Pre-release schema cleanup (2026-09-14)
 
@@ -117,13 +117,25 @@ no code ever wrote.
   longer requested; the asset flag is derived in Swift. `paymentInfo`,
   `missingFields`, `warnings`, and the counterparty's name, country and VAT
   ID stay. `AIConfiguration.promptVersion` moved to `2026-09-14.2`.
-- **Migration:** `v001_initial` creates the slim shape directly;
-  `v003_remove_unused_scaffolding` rebuilds the affected tables of an older
-  development database, carries every row over (a statement line's account
-  becomes that account's IBAN) and rewrites the few stored enum values whose
-  case is gone. A fresh database skips it. No archive is reset or deleted.
+- **Schema:** `v001_initial` creates the slim shape directly and is the only
+  migration. Per the pre-release rule in `AGENTS.md`, the two forward
+  migrations that converged older development databases
+  (`v002_slim_tax_assessments`, `v003_remove_unused_scaffolding`) were run
+  once and then deleted, together with the tests that simulated the legacy
+  schemas.
+- **Development archive rewritten once on 2026-09-14.** The archive was
+  converted in place with those migrations before they were removed: every
+  row was carried over (6 transactions, 2 documents, 3 payments,
+  6 tax assessments, 6 counterparties, 98 provenance rows and the rest
+  unchanged), the missing `submitted_returns` table was created, and
+  `grdb_migrations` records only `v001_initial` again. `PRAGMA
+  integrity_check` and `PRAGMA foreign_key_check` are clean and the
+  archive's `sqlite_master` now matches a freshly created database exactly,
+  column order included. The pre-conversion copy is kept at
+  `~/Library/Application Support/Ziffer/Backups/bookkeeping-pre-schema-cleanup-2026-09-14.sqlite`.
+  No archive was reset or deleted.
 
-New baseline: 297 tests across 43 suites plus a successful Debug app build.
+New baseline: 295 tests across 43 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
@@ -162,7 +174,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - Start carries a "Steuern" section with the UStVA task; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
 - provenance and extraction-evidence UI are intentionally absent
 
-Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. Existing development databases may retain an unused legacy column; never reset them merely to make their schema look fresh.
+Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. The development archive was rewritten onto the current schema on 2026-09-14; never reset or delete an archive merely to make its schema look fresh.
 
 ## Open-source and release state
 
@@ -187,6 +199,13 @@ Before a public release:
 7. Make the repository public, tag, and publish the ZIP only with explicit approval.
 
 See [`releasing.md`](releasing.md) for commands. Never inspect or commit `.env`, API keys, signing private keys, or notarization passwords.
+
+## Decided, not yet built
+
+- **Refunds and credit notes.** Approved: a refund is an opposite-direction
+  payment on the existing transaction, and a credit note is a transaction
+  with a negative amount. Scheduled as the first part of the
+  statement-import milestone, not as separate correction machinery.
 
 ## Backlog
 

@@ -1425,7 +1425,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 ## 40.1 Unit tests (mandatory)
 
-Money arithmetic and rounding; VAT and self-assessed VAT; period dating for every treatment × direction case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; matching scorer thresholds; statement fingerprint stability; column mapping for each built-in bank format; line classification heuristics; state transitions; duplicate detection; validation codes; migrations (upgrade from every prior fixture database); provenance protection of manual fields.
+Money arithmetic and rounding; VAT and self-assessed VAT; period dating for every treatment × direction case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; matching scorer thresholds; statement fingerprint stability; column mapping for each built-in bank format; line classification heuristics; state transitions; duplicate detection; validation codes; the schema shape a fresh database creates (after the first public release, also the upgrade from every released schema version); provenance protection of manual fields.
 
 ## 40.2 Fixture-based AI tests
 
@@ -1483,7 +1483,7 @@ Instant local browsing; never call the model to render a screen; never require n
 
 # 47. Data Migration Policy
 
-Before the first public release, schema changes update `v001_initial` directly without compatibility shims. Existing local archives and test data must still never be deleted or reset; harmless legacy columns may remain in those development databases.
+Before the first public release there is exactly one schema definition, `v001_initial`, and no forward migrations, compatibility shims or dual-format readers. A schema change edits that definition and rewrites the existing development archive and fixtures once, so they carry the current shape rather than legacy leftovers. Archives and test data are still never deleted or reset; the rewrite converts them in place and keeps a backup.
 
 After the first public schema ships, every schema change is a numbered GRDB migration (`v002_…`). Migration tests upgrade fixture databases from each released schema version. `archive.json` records the schema version; opening a newer archive with an older app is refused with a clear message.
 

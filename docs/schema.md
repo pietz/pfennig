@@ -2,8 +2,7 @@
 
 The canonical store is a single SQLite file, `bookkeeping.sqlite`, inside the
 archive folder (see spec section 20). GRDB owns the connection; the schema is
-created and upgraded exclusively by numbered migrations in
-`Sources/Database/Migrations/`.
+created by the single migration in `Sources/Database/Migrations/`.
 
 Conventions (spec 17):
 
@@ -22,8 +21,13 @@ Conventions (spec 17):
 | Identifier | Contents |
 |---|---|
 | `v001_initial` | All tables and views listed below, plus the system categories of spec 17.4. |
-| `v002_slim_tax_assessments` | Rebuilds `tax_assessments` without `input_vat_date`, `output_vat_date`, `tax_country`, `reasoning` and `superseded_at`. A no-op on a fresh database, which `v001_initial` already creates in the slim shape. |
-| `v003_remove_unused_scaffolding` | Drops the four tables nothing wrote (`accounts`, `rules`, `transaction_relations`, `locked_periods`) and rebuilds every table that referenced them or carried a column no code read back. A statement line keeps its account as `account_iban`. A no-op on a fresh database. |
+
+Before the first public release this is the only migration. A schema change
+edits `V001Initial.swift` in place and the development archive is rewritten
+once; there are no forward migrations, compatibility shims or dual-format
+readers (see `AGENTS.md`, Engineering). After a schema ships publicly, every
+change becomes a numbered `v00x_...` migration and user archives are carried
+forward.
 
 ## Tables
 
