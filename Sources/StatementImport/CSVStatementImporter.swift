@@ -41,7 +41,6 @@ public struct StatementLineError: Sendable, Equatable, Codable {
 public struct SkippedStatementRow: Sendable, Equatable, Codable {
     public enum Reason: String, Sendable, Codable {
         case filteredByState
-        case duplicateInFile
     }
 
     public let lineNumber: Int
@@ -87,13 +86,6 @@ public struct StatementImportResult: Sendable, Equatable {
     public let errors: [StatementLineError]
     public let skippedRows: [SkippedStatementRow]
     public let balance: BalanceContinuity
-
-    /// Lines dropped because an identical line was already in this file. The
-    /// database enforces the same identity via `UNIQUE(account_iban,
-    /// line_fingerprint)`, so keeping them would only move the loss.
-    public var duplicatesInFile: Int {
-        skippedRows.count { $0.reason == .duplicateInFile }
-    }
 }
 
 /// A header the catalog and the heuristic both failed on. The next step hands
@@ -310,7 +302,7 @@ public enum CSVStatementImporter {
         var drafts: [StatementLineDraft] = []
         var errors: [StatementLineError] = []
         var skipped: [SkippedStatementRow] = []
-        var seen: Set<String> = []
+        var occurrences: [String: Int] = [:]
         var movements: [Movement] = []
 
         for row in dataRows {
@@ -330,15 +322,21 @@ public enum CSVStatementImporter {
             case let .failure(rowErrors):
                 errors.append(contentsOf: rowErrors)
             case var .success(parsed):
-                guard seen.insert(parsed.draft.lineFingerprint).inserted else {
-                    skipped.append(SkippedStatementRow(
-                        lineNumber: row.lineNumber,
-                        reason: .duplicateInFile,
-                        value: nil
-                    ))
-                    continue
-                }
                 errors.append(contentsOf: parsed.softErrors)
+                // Two rows of one file may describe the same movement twice -
+                // the same amount to the same shop on the same day - and both
+                // are real. The repeat gets the next occurrence index instead
+                // of being dropped; a later overlapping export reproduces the
+                // same indices and is still recognized as already known.
+                let occurrence = (occurrences[parsed.draft.lineFingerprint] ?? 0) + 1
+                occurrences[parsed.draft.lineFingerprint] = occurrence
+                if occurrence > 1 {
+                    parsed.draft.lineFingerprint = LineFingerprint.make(
+                        accountID: resolvedKey,
+                        line: parsed.draft,
+                        occurrence: occurrence
+                    )
+                }
                 parsed.draft.classification = StatementLineClassifier.classify(
                     parsed.draft,
                     knownAccountKeys: knownAccountKeys

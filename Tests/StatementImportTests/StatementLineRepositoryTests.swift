@@ -161,7 +161,10 @@ struct StatementLineRepositoryTests {
         #expect(try repository.count() == 18)
     }
 
-    @Test("A duplicated line inside one file is skipped and reported")
+    /// Two identical rows in one file are two real movements - the same
+    /// amount to the same shop on the same day happens - so both are kept and
+    /// told apart by their occurrence index.
+    @Test("Two identical lines in one file are both kept")
     func duplicateInsideOneFile() throws {
         let duplicated = Self.sparkasse([
             Self.row(day: 3, purpose: "Abo A", counterparty: "Adobe", iban: "IE00TEST12345612345678", amount: "-23,79"),
@@ -171,9 +174,65 @@ struct StatementLineRepositoryTests {
             Issue.record("expected an import")
             return
         }
-        #expect(result.drafts.count == 1)
-        #expect(result.duplicatesInFile == 1)
-        #expect(result.skippedRows.first?.reason == .duplicateInFile)
+        #expect(result.drafts.count == 2)
+        #expect(result.skippedRows.isEmpty)
+        #expect(Set(result.drafts.map(\.lineFingerprint)).count == 2)
+
+        let database = try Self.database()
+        let repository = StatementLineRepository(database)
+        #expect(try repository.insert(result.drafts, accountKey: result.accountKey).inserted == 2)
+        // And the same file dropped a second time still adds nothing.
+        #expect(try repository.insert(result.drafts, accountKey: result.accountKey).inserted == 0)
+        #expect(try repository.count() == 2)
+    }
+
+    /// The overlap case behind the occurrence index: the follow-up export
+    /// repeats one of the two identical lines and adds a third. Only the new
+    /// one is stored.
+    @Test("An overlapping export of a file with identical lines adds only the new line")
+    func duplicateAcrossOverlappingFiles() throws {
+        let adobe = Self.row(
+            day: 3,
+            purpose: "Abo A",
+            counterparty: "Adobe",
+            iban: "IE00TEST12345612345678",
+            amount: "-23,79"
+        )
+        let google = Self.row(
+            day: 8,
+            purpose: "Abo B",
+            counterparty: "Google",
+            iban: "IE00TEST98765432109876",
+            amount: "-6,80"
+        )
+        guard case let .imported(first) = try CSVStatementImporter.run(data: Self.sparkasse([adobe, adobe])),
+              case let .imported(second) = try CSVStatementImporter.run(data: Self.sparkasse([adobe, adobe, google]))
+        else {
+            Issue.record("expected two imports")
+            return
+        }
+        let database = try Self.database()
+        let repository = StatementLineRepository(database)
+        #expect(try repository.insert(first.drafts, accountKey: first.accountKey).inserted == 2)
+        let report = try repository.insert(second.drafts, accountKey: second.accountKey)
+        #expect(report.inserted == 1)
+        #expect(report.alreadyKnown == 2)
+    }
+
+    @Test("A separately reported fee is stored with the line")
+    func feeIsStored() throws {
+        let database = try Self.database()
+        let repository = StatementLineRepository(database)
+        let result = try Support.run("paypal", accountKey: "paypal:julia.beispiel@beispiel-design.test")
+        try repository.insert(result.drafts, accountKey: result.accountKey)
+
+        let lines = try repository.lines(accountKey: result.accountKey)
+        let charged = try #require(lines.first { $0.externalId == "2TB34567BC890123D" })
+        #expect(charged.feeMinor == 5855)
+        #expect(charged.amountMinor == 351_145)
+        // A line without a reported fee keeps NULL rather than a zero.
+        #expect(lines.contains { $0.feeMinor == nil })
+        #expect(lines.allSatisfy { ($0.feeMinor ?? 0) >= 0 })
     }
 
     @Test("Known account keys come from the lines already stored")
@@ -194,20 +253,63 @@ struct StatementLineRepositoryTests {
         let dkbWithSibling = try Support.run("dkb", knownAccountKeys: sparkasseKeys)
         #expect(dkbWithSibling.drafts.count { $0.classification == .internalTransfer } == 1)
     }
+}
 
-    @Test("A separately reported fee is stored with the line")
-    func feeIsStored() throws {
-        let database = try Self.database()
-        let repository = StatementLineRepository(database)
-        let result = try Support.run("paypal", accountKey: "paypal:julia.beispiel@beispiel-design.test")
-        try repository.insert(result.drafts, accountKey: result.accountKey)
+/// What makes two statement lines the same line (`LineFingerprint`).
+@Suite("Line identity")
+struct LineFingerprintTests {
+    static func draft(
+        amount: Int64 = -2379,
+        reference: String? = "Rechnung RE-2026-0042",
+        counterparty: String? = "Nordwind Handels GmbH",
+        externalID: String? = nil
+    ) -> StatementLineDraft {
+        StatementLineDraft(
+            sourceLineNumber: 1,
+            lineFingerprint: "",
+            bookingDate: LocalDate(year: 2026, month: 8, day: 3),
+            amountMinor: amount,
+            counterpartyRaw: counterparty,
+            reference: reference,
+            externalId: externalID
+        )
+    }
 
-        let lines = try repository.lines(accountKey: result.accountKey)
-        let charged = try #require(lines.first { $0.externalId == "2TB34567BC890123D" })
-        #expect(charged.feeMinor == 5855)
-        #expect(charged.amountMinor == 351_145)
-        // A line without a reported fee keeps NULL rather than a zero.
-        #expect(lines.contains { $0.feeMinor == nil })
-        #expect(lines.allSatisfy { ($0.feeMinor ?? 0) >= 0 })
+    @Test("The export's own transaction id is the identity")
+    func externalIDWins() {
+        let first = LineFingerprint.make(accountID: "a", line: Self.draft(externalID: "1TA23456AB789012C"))
+        // The same movement, exported again with a reworded purpose and name.
+        let second = LineFingerprint.make(accountID: "a", line: Self.draft(
+            reference: "RE-2026-0042 Webdesign",
+            counterparty: "NORDWIND HANDELS GMBH",
+            externalID: "1TA23456AB789012C"
+        ))
+        #expect(first == second)
+        // A different transaction id is a different line, even with the same
+        // date, amount and text.
+        #expect(first != LineFingerprint.make(accountID: "a", line: Self.draft(externalID: "2TB34567BC890123D")))
+    }
+
+    @Test("Without a transaction id the facts of the line decide")
+    func textFields() {
+        let line = LineFingerprint.make(accountID: "a", line: Self.draft())
+        #expect(line == LineFingerprint.make(accountID: "a", line: Self.draft(
+            reference: "  RECHNUNG   RE-2026-0042 ",
+            counterparty: "nordwind handels gmbh"
+        )))
+        #expect(line != LineFingerprint.make(accountID: "b", line: Self.draft()))
+        #expect(line != LineFingerprint.make(accountID: "a", line: Self.draft(amount: -2380)))
+        #expect(line != LineFingerprint.make(accountID: "a", line: Self.draft(reference: "Rechnung RE-2026-0051")))
+    }
+
+    @Test("A repeated occurrence is a line of its own")
+    func occurrence() {
+        let first = LineFingerprint.make(accountID: "a", line: Self.draft())
+        #expect(LineFingerprint.make(accountID: "a", line: Self.draft(), occurrence: 1) == first)
+        #expect(LineFingerprint.make(accountID: "a", line: Self.draft(), occurrence: 2) != first)
+        #expect(
+            LineFingerprint.make(accountID: "a", line: Self.draft(), occurrence: 2)
+                != LineFingerprint.make(accountID: "a", line: Self.draft(), occurrence: 3)
+        )
     }
 }

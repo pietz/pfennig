@@ -118,16 +118,9 @@ struct RowReader {
             .flatMap { value($0, in: row) }
             .flatMap { StatementValueParser.looksLikeIBAN($0) ? StatementValueParser.normalizedIBAN($0) : nil }
 
-        let draft = StatementLineDraft(
+        var draft = StatementLineDraft(
             sourceLineNumber: row.lineNumber,
-            lineFingerprint: LineFingerprint.make(
-                accountID: accountKey,
-                bookingDate: bookingDate.description,
-                amountMinor: amountMinor,
-                currency: currency.rawValue,
-                reference: reference,
-                counterpartyRaw: counterparty
-            ),
+            lineFingerprint: "",
             bookingDate: bookingDate,
             valueDate: valueDate,
             amountMinor: amountMinor,
@@ -140,6 +133,10 @@ struct RowReader {
             externalId: mapping.externalID.flatMap { value($0, in: row) },
             rawJson: rawJSON(of: row)
         )
+        // The fingerprint is a function of the finished line, so it is set
+        // once here and raised to a later occurrence by the importer when one
+        // file reports the same movement twice.
+        draft.lineFingerprint = LineFingerprint.make(accountID: accountKey, line: draft)
         return .success(Parsed(draft: draft, balanceMinor: balanceMinor, softErrors: soft))
     }
 

@@ -67,7 +67,7 @@ validation_issues
 | `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base and self-assessed VAT. VAT shown, deductible input VAT and output VAT are not stored - every report and the inspector recompute them. Exactly one row per transaction, enforced by a unique index; replacing it deletes the old row. |
 | `documents` | Imported originals, identified by SHA-256, stored as files under `Documents/`. |
 | `transaction_documents` | Which document plays which role for which transaction. |
-| `statement_lines` | Raw account statement lines with classification. The account is its IBAN; unique per `(account_iban, line_fingerprint)`. |
+| `statement_lines` | Raw account statement lines with classification. The account is its IBAN, or a key the user confirmed where the export names no IBAN; unique per `(account_iban, line_fingerprint)`. The fingerprint is the export's own transaction id when it has one, otherwise booking date, amount, currency, purpose and counterparty, plus an occurrence index from the second identical line of one file onwards - so a repeated or overlapping export adds nothing twice while two genuinely identical movements of one day both stay. `fee_minor` is the processor fee already contained in `amount_minor`. |
 | `payments` | Actual cash movements, from statement lines or entered manually. |
 | `payment_allocations` | How much of a payment belongs to which transaction: partial and combined payments. |
 | `field_provenance` | Origin of every material field (document, agent, calculated, manual, imported) and manual-override protection. |
