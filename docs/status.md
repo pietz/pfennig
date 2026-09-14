@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 295 tests across 43 suites plus a successful Debug app build.
+The latest verification baseline is 301 tests across 43 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -146,7 +146,7 @@ no code ever wrote.
   `~/Library/Application Support/Ziffer/Backups/bookkeeping-pre-schema-cleanup-2026-09-14.sqlite`.
   No archive was reset or deleted.
 
-New baseline: 295 tests across 43 suites plus a successful Debug app build.
+New baseline: 301 tests across 43 suites plus a successful Debug app build.
 
 ### Review of the pre-release cleanups (2026-09-14)
 
