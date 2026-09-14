@@ -23,6 +23,11 @@ settings:
     SWIFT_STRICT_CONCURRENCY: complete
     MARKETING_VERSION: "0.1.0"
     CURRENT_PROJECT_VERSION: "1"
+    # The "Apple Development: ... (85S4HQKSU2)" certificate carries team
+    # 34MWWCL4H2 in its OU; the number in its common name is the certificate's
+    # own id, not a team. Signing Debug with it keeps the designated
+    # requirement identical across rebuilds, which is what lets the Keychain
+    # item stay readable without an access dialog.
     DEVELOPMENT_TEAM: 34MWWCL4H2
     CODE_SIGN_STYLE: Manual
     CODE_SIGN_IDENTITY: Apple Development
