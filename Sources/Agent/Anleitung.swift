@@ -69,7 +69,8 @@ public enum Anleitung {
         return """
         ## Bekannte Gegenparteien
 
-        Schreibe den Namen genau so, wenn es dieselbe Gegenpartei ist.
+        Ist es dieselbe Firma, übernimm die Schreibweise von hier Zeichen für Zeichen, auch wenn \
+        der Beleg den vollen Namen nennt.
 
         \(zeilen.joined(separator: "\n"))
         """
@@ -80,6 +81,13 @@ public enum Anleitung {
 
     - Eine Buchung ist ein Dokument. Ein Beleg ist immer genau eine Zeile in buchungen, auch wenn er \
     mehrere Leistungen abrechnet.
+    - titel sagt in höchstens fünf Wörtern, was gekauft oder verkauft wurde, etwa „Laptop-Sleeve“, \
+    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Firmenname; \
+    die Rechnungsnummer gehört in notizen.
+    - gegenpartei_name ist der kurze, erkennbare Handelsname ohne Rechtsform, also Amazon, Adobe, \
+    Deutsche Bahn, Telekom. Ist es dieselbe Firma wie eine bekannte Gegenpartei, übernimm deren \
+    Schreibweise. Den vollen Namen kannst du in notizen festhalten. gegenpartei_land und \
+    gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers.
     - positionen ist eine JSON-Liste. Meist ein Element, bei Mischbelegen wie Hotel mit Frühstück oder \
     Bewirtung eines pro Steuersatz. Alle Beträge stehen in Euro-Cent als ganze Zahlen, der Steuersatz \
     als Zahl in Prozent. Beispiel: `[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]`.
@@ -93,6 +101,9 @@ public enum Anleitung {
     - steuerbehandlung erklärt, warum ein Beleg keine oder eine besondere Umsatzsteuer hat: reverse_charge \
     nur bei ausländischer Gegenpartei, kleinunternehmer nur bei eigenen Einnahmen eines Kleinunternehmers, \
     steuerfrei oder nicht_steuerbar statt inland mit Steuersatz 0.
+    - privatanteil_prozent ist 0. Nur wenn das Dokument selbst oder die Kategorie einen privaten \
+    Anteil belegt, trägst du ihn ein; vom gekauften Produkt schließt du nie darauf, Zweifel gehören \
+    in notizen.
     - Was das Dokument nicht hergibt, bleibt leer. Zweifel schreibst du in notizen, nicht in einen \
     geratenen Wert.
     - id, belege, geprueft_am, erstellt_am, geaendert_am und die id einer Zahlung setzt Swift. Schreibe \

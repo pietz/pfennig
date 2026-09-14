@@ -310,3 +310,33 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     let anweisungen = try #require(text.components(separatedBy: "## So arbeitest du").last)
     #expect(anweisungen.lowercased().contains("kontoauszug") == false)
 }
+
+/// The three lessons from the first real runs: no guessed private share, one
+/// spelling per company, short titles.
+@Test func anleitungSchaerftPrivatanteilGegenparteiUndTitel() throws {
+    let repository = try Repository.imSpeicher()
+    _ = try repository.speichern(
+        Buchung(
+            richtung: .ausgabe, art: .rechnung, datum: Datum(jahr: 2026, monat: 8, tag: 2),
+            titel: "Laptop-Sleeve", kategorie: "buerobedarf", gegenparteiName: "Amazon",
+            gegenparteiLand: "LU",
+            positionen: [Position(netto: Cent(1000), steuersatz: 19, steuer: Cent(190))],
+            steuerbehandlung: .inland
+        ),
+        akteur: .nutzer
+    )
+    let text = try Anleitung.bauen(repository)
+
+    #expect(text.contains("privatanteil_prozent ist 0."))
+    #expect(text.contains("vom gekauften Produkt schließt du nie darauf"))
+    #expect(text.contains("kurze, erkennbare Handelsname ohne Rechtsform"))
+    #expect(text.contains("gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers"))
+    #expect(text.contains("titel sagt in höchstens fünf Wörtern"))
+    #expect(text.contains("Keine Rechnungsnummer, kein Datum, kein Firmenname"))
+    #expect(text.contains("übernimm die Schreibweise von hier Zeichen für Zeichen"))
+
+    // The examples and the cents rule stay.
+    #expect(text.contains(#"[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]"#))
+    #expect(text.contains(#""betrag": 11900"#))
+    #expect(text.contains("Euro-Cent als ganze Zahlen"))
+}
