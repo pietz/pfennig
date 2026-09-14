@@ -188,6 +188,45 @@ struct BookkeepingRepositoryTests {
             .isManualOverride == false)
     }
 
+    @Test("Replacing the assessment leaves no provenance behind")
+    func replacedAssessmentDropsItsProvenance() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        let id = try Fixture.save(draft, in: database, profile: profile)
+        let firstAssessmentID = try #require(try database.reader.read { db in
+            try String.fetchOne(db, sql: "SELECT id FROM tax_assessments WHERE transaction_id = ?", arguments: [id])
+        })
+
+        // A changed amount produces a new assessment row.
+        draft = try #require(try BookkeepingRepository(database).detail(id: id)?.draft)
+        draft.netMinor = 20000
+        draft.taxMinor = 3800
+        draft.grossMinor = 23800
+        draft.components = [TaxComponentDraft(kind: .standard, rate: "19", netMinor: 20000, taxMinor: 3800)]
+        draft.allocations[0].amountMinor = 20000
+        try Fixture.save(draft, in: database, profile: profile)
+
+        try database.reader.read { db in
+            let assessmentIDs = try String.fetchAll(
+                db,
+                sql: "SELECT id FROM tax_assessments WHERE transaction_id = ?",
+                arguments: [id]
+            )
+            #expect(assessmentIDs.count == 1)
+            #expect(assessmentIDs.first != firstAssessmentID)
+            // No provenance row may address the deleted assessment.
+            let orphans = try Int.fetchOne(
+                db,
+                sql: """
+                SELECT COUNT(*) FROM field_provenance
+                 WHERE entity_type = ? AND entity_id NOT IN (SELECT id FROM tax_assessments)
+                """,
+                arguments: [FieldProvenance.Entity.taxAssessment]
+            )
+            #expect(orphans == 0)
+        }
+    }
+
     @Test("A hard validation failure prevents saving")
     func hardValidationBlocksSave() throws {
         let (database, profile) = try Fixture.database()

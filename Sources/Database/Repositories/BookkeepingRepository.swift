@@ -538,10 +538,16 @@ public struct BookkeepingRepository: Sendable {
                 actor: actor
             )
             // Exactly one assessment per transaction; the replaced row was
-            // never read again, so it is deleted rather than superseded.
+            // never read again, so it is deleted rather than superseded. Its
+            // provenance rows go with it - they address the deleted id and
+            // would otherwise stay behind as unreachable "current" rows.
             try db.execute(
                 sql: "DELETE FROM tax_assessments WHERE id = ?",
                 arguments: [current.id]
+            )
+            try db.execute(
+                sql: "DELETE FROM field_provenance WHERE entity_type = ? AND entity_id = ?",
+                arguments: [FieldProvenance.Entity.taxAssessment, current.id]
             )
         }
         let record = TaxAssessment(
