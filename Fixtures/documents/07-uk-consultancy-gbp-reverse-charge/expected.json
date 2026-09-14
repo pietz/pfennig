@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Thornfield Consulting Ltd",
     "countryCode": "GB",
-    "vatId": "GB123456789",
-    "street": "19 Lancer Row",
-    "postalCode": "EC2A 4NE",
-    "city": "London"
+    "vatId": "GB123456789"
   },
   "invoice": {
     "invoiceNumber": "TC-2026-0187",
@@ -18,8 +15,7 @@
     "currency": "GBP",
     "netAmount": "850.00",
     "taxAmount": "0.00",
-    "grossAmount": "850.00",
-    "statedEurEquivalent": "988.50"
+    "grossAmount": "850.00"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Strategy Consulting - Q2 2026 Engagement",
       "netAmount": "850.00",
-      "categoryHint": "professional_services",
-      "assetCandidate": false
+      "categoryHint": "professional_services"
     }
   ],
   "paymentInfo": {

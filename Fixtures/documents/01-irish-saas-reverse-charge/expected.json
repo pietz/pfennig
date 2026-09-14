@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "CloudForge Software Ireland Limited",
     "countryCode": "IE",
-    "vatId": "IE1234567X",
-    "street": "14 Harbour Quay",
-    "postalCode": "D02 XY45",
-    "city": "Dublin"
+    "vatId": "IE1234567X"
   },
   "invoice": {
     "invoiceNumber": "CF-2026-08931",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "71.39",
     "taxAmount": "0.00",
-    "grossAmount": "71.39",
-    "statedEurEquivalent": null
+    "grossAmount": "71.39"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "CloudForge Suite - Team plan (5 seats)",
       "netAmount": "71.39",
-      "categoryHint": "software_subscriptions",
-      "assetCandidate": false
+      "categoryHint": "software_subscriptions"
     }
   ],
   "paymentInfo": {

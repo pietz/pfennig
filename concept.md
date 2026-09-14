@@ -428,8 +428,7 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
   "counterparty": {
     "name": "Adobe Systems Software Ireland Limited",
     "countryCode": "IE",
-    "vatId": "IE6364992H",
-    "street": null, "postalCode": null, "city": null
+    "vatId": "IE6364992H"
   },
   "invoice": {
     "invoiceNumber": "IEIN123456",
@@ -440,15 +439,14 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
     "currency": "EUR",
     "netAmount": "71.39",
     "taxAmount": "0.00",
-    "grossAmount": "71.39",
-    "statedEurEquivalent": null
+    "grossAmount": "71.39"
   },
   "taxComponents": [
     { "rate": "0", "netAmount": "71.39", "taxAmount": "0.00", "kind": "reverseChargeNote" }
   ],
   "taxTreatmentHint": { "treatment": "reverseCharge" },
   "lineItems": [
-    { "description": "Creative Cloud All Apps", "netAmount": "71.39", "categoryHint": "software_subscriptions", "assetCandidate": false }
+    { "description": "Creative Cloud All Apps", "netAmount": "71.39", "categoryHint": "software_subscriptions" }
   ],
   "paymentInfo": { "paymentMethodHint": "creditCard", "paidIndicator": "paid", "paymentDate": null, "iban": null, "reference": null },
   "missingFields": ["serviceDate"],

@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Schreibwaren Müller e.K.",
     "countryCode": "DE",
-    "vatId": null,
-    "street": "Kastanienallee 51",
-    "postalCode": "10435",
-    "city": "Berlin"
+    "vatId": null
   },
   "invoice": {
     "invoiceNumber": null,
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "21.12",
     "taxAmount": "2.68",
-    "grossAmount": "23.80",
-    "statedEurEquivalent": null
+    "grossAmount": "23.80"
   },
   "taxComponents": [
     {
@@ -42,14 +38,12 @@
     {
       "description": "Kugelschreiber-Set",
       "netAmount": "10.00",
-      "categoryHint": "office_supplies",
-      "assetCandidate": false
+      "categoryHint": "office_supplies"
     },
     {
       "description": "Notizbuch A5",
       "netAmount": "11.12",
-      "categoryHint": "office_supplies",
-      "assetCandidate": false
+      "categoryHint": "office_supplies"
     }
   ],
   "paymentInfo": {

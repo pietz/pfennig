@@ -110,11 +110,11 @@ struct KleinunternehmerTests {
         {
           "documentType": "invoice",
           "direction": "expense",
-          "counterparty": {"name": "Lieferant GmbH", "countryCode": "DE", "vatId": "DE123456789", "street": null, "postalCode": null, "city": null},
-          "invoice": {"invoiceNumber": "DE-1", "invoiceDate": "2026-09-05", "serviceDate": "2026-09-05", "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "19.00", "grossAmount": "119.00", "statedEurEquivalent": null},
+          "counterparty": {"name": "Lieferant GmbH", "countryCode": "DE", "vatId": "DE123456789"},
+          "invoice": {"invoiceNumber": "DE-1", "invoiceDate": "2026-09-05", "serviceDate": "2026-09-05", "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "19.00", "grossAmount": "119.00"},
           "taxComponents": [{"rate": "19", "netAmount": "100.00", "taxAmount": "19.00", "kind": "standard"}],
           "taxTreatmentHint": {"treatment": "domesticVAT"},
-          "lineItems": [{"description": "Lieferung", "netAmount": "100.00", "categoryHint": "uncategorized", "assetCandidate": false}],
+          "lineItems": [{"description": "Lieferung", "netAmount": "100.00", "categoryHint": "uncategorized"}],
           "paymentInfo": {"paymentMethodHint": null, "paidIndicator": "unknown", "paymentDate": null, "iban": null, "reference": null},
           "missingFields": [],
           "warnings": []

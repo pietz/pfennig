@@ -223,11 +223,11 @@ struct ImportFoundationTests {
         {
           "documentType": "invoice",
           "direction": "expense",
-          "counterparty": {"name": "Test GmbH", "countryCode": "DE", "vatId": null, "street": null, "postalCode": null, "city": null},
-          "invoice": {"invoiceNumber": "T-1", "invoiceDate": "2026-01-05", "serviceDate": null, "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "\(tax)", "grossAmount": "\(gross)", "statedEurEquivalent": null},
+          "counterparty": {"name": "Test GmbH", "countryCode": "DE", "vatId": null},
+          "invoice": {"invoiceNumber": "T-1", "invoiceDate": "2026-01-05", "serviceDate": null, "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "\(tax)", "grossAmount": "\(gross)"},
           "taxComponents": [{"rate": "\(rate)", "netAmount": "100.00", "taxAmount": "\(tax)", "kind": "\(componentKind.rawValue)"}],
           "taxTreatmentHint": {"treatment": "\(treatment.rawValue)"},
-          "lineItems": [{"description": "Testleistung", "netAmount": "100.00", "categoryHint": "uncategorized", "assetCandidate": false}],
+          "lineItems": [{"description": "Testleistung", "netAmount": "100.00", "categoryHint": "uncategorized"}],
           "paymentInfo": {"paymentMethodHint": null, "paidIndicator": "unknown", "paymentDate": null, "iban": null, "reference": null},
           "missingFields": [], "warnings": []
         }

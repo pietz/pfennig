@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Nordlicht Systeme GmbH",
     "countryCode": "DE",
-    "vatId": "DE556677889",
-    "street": "Werftallee 5",
-    "postalCode": "28217",
-    "city": "Bremen"
+    "vatId": "DE556677889"
   },
   "invoice": {
     "invoiceNumber": "RE-2026-0042",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "4500.00",
     "taxAmount": "855.00",
-    "grossAmount": "5355.00",
-    "statedEurEquivalent": null
+    "grossAmount": "5355.00"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Softwareentwicklung - Projekt Aurora, August 2026",
       "netAmount": "4500.00",
-      "categoryHint": "revenue_services",
-      "assetCandidate": false
+      "categoryHint": "revenue_services"
     }
   ],
   "paymentInfo": {

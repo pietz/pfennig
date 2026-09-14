@@ -19,10 +19,7 @@ public enum ExtractionSchema {
             "counterparty": object([
                 "name": nullable("string"),
                 "countryCode": nullable("string"),
-                "vatId": nullable("string"),
-                "street": nullable("string"),
-                "postalCode": nullable("string"),
-                "city": nullable("string")
+                "vatId": nullable("string")
             ]),
             "invoice": object([
                 "invoiceNumber": nullable("string"),
@@ -33,8 +30,7 @@ public enum ExtractionSchema {
                 "currency": nullable("string"),
                 "netAmount": nullable("string"),
                 "taxAmount": nullable("string"),
-                "grossAmount": nullable("string"),
-                "statedEurEquivalent": nullable("string")
+                "grossAmount": nullable("string")
             ]),
             "taxComponents": array(object([
                 "rate": nullable("string"),
@@ -48,8 +44,7 @@ public enum ExtractionSchema {
             "lineItems": array(object([
                 "description": nullable("string"),
                 "netAmount": nullable("string"),
-                "categoryHint": nullableEnumeration(categoryIDs),
-                "assetCandidate": ["type": "boolean"]
+                "categoryHint": nullableEnumeration(categoryIDs)
             ])),
             "paymentInfo": object([
                 "paymentMethodHint": nullableEnumeration(PaymentMethod.allCases.map(\.rawValue)),

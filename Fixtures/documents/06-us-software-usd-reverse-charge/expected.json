@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Bright Peak Software Inc.",
     "countryCode": "US",
-    "vatId": null,
-    "street": "880 Beacon Hill Ave",
-    "postalCode": "CA 94107",
-    "city": "San Francisco"
+    "vatId": null
   },
   "invoice": {
     "invoiceNumber": "BP-INV-20264471",
@@ -18,8 +15,7 @@
     "currency": "USD",
     "netAmount": "1000.00",
     "taxAmount": "0.00",
-    "grossAmount": "1000.00",
-    "statedEurEquivalent": null
+    "grossAmount": "1000.00"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Annual Enterprise License - DevTools Suite",
       "netAmount": "1000.00",
-      "categoryHint": "software_subscriptions",
-      "assetCandidate": false
+      "categoryHint": "software_subscriptions"
     }
   ],
   "paymentInfo": {
@@ -47,7 +42,5 @@
     "iban": null,
     "reference": "BP-INV-20264471"
   },
-  "missingFields": [
-    "statedEurEquivalent"
-  ]
+  "missingFields": []
 }

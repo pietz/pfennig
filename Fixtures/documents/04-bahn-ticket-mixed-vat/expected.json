@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Bahn Express AG",
     "countryCode": "DE",
-    "vatId": "DE223456789",
-    "street": "Gleisallee 1",
-    "postalCode": "60329",
-    "city": "Frankfurt am Main"
+    "vatId": "DE223456789"
   },
   "invoice": {
     "invoiceNumber": "BE-778812345",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "87.75",
     "taxAmount": "7.15",
-    "grossAmount": "94.90",
-    "statedEurEquivalent": null
+    "grossAmount": "94.90"
   },
   "taxComponents": [
     {
@@ -42,14 +38,12 @@
     {
       "description": "Fahrkarte 2. Klasse Berlin Hbf - München Hbf",
       "netAmount": "79.35",
-      "categoryHint": "travel_transport",
-      "assetCandidate": false
+      "categoryHint": "travel_transport"
     },
     {
       "description": "Sitzplatzreservierung",
       "netAmount": "8.40",
-      "categoryHint": "travel_transport",
-      "assetCandidate": false
+      "categoryHint": "travel_transport"
     }
   ],
   "paymentInfo": {

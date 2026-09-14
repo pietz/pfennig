@@ -144,8 +144,8 @@ struct NormalizationTests {
     func unknownCategory() {
         let allocations = ExtractionNormalizer.allocations(
             for: [
-                .init(description: "A", netAmount: "10.00", categoryHint: "erfunden", assetCandidate: false),
-                .init(description: "B", netAmount: "5.00", categoryHint: "telecom", assetCandidate: false)
+                .init(description: "A", netAmount: "10.00", categoryHint: "erfunden"),
+                .init(description: "B", netAmount: "5.00", categoryHint: "telecom")
             ],
             total: 1500,
             currency: .eur,

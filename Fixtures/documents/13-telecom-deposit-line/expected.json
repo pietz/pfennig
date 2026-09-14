@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "TeleWelle Kommunikation GmbH",
     "countryCode": "DE",
-    "vatId": "DE667788990",
-    "street": "Sendeturmweg 3",
-    "postalCode": "70173",
-    "city": "Stuttgart"
+    "vatId": "DE667788990"
   },
   "invoice": {
     "invoiceNumber": "TW-2026-88123",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "155.00",
     "taxAmount": "10.45",
-    "grossAmount": "165.45",
-    "statedEurEquivalent": null
+    "grossAmount": "165.45"
   },
   "taxComponents": [
     {
@@ -42,14 +38,12 @@
     {
       "description": "Mobilfunk-Flatrate Business",
       "netAmount": "55.00",
-      "categoryHint": "telecom",
-      "assetCandidate": false
+      "categoryHint": "telecom"
     },
     {
       "description": "Kaution neues Endgerät (Vorschuss, erstattungsfähig)",
       "netAmount": "100.00",
-      "categoryHint": "telecom",
-      "assetCandidate": false
+      "categoryHint": "telecom"
     }
   ],
   "paymentInfo": {

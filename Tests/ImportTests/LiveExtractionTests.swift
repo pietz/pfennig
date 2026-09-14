@@ -75,7 +75,6 @@ struct LiveExtractionTests {
         check("netAmount", expected.invoice.netAmount, actual.invoice.netAmount)
         check("taxAmount", expected.invoice.taxAmount, actual.invoice.taxAmount)
         check("grossAmount", expected.invoice.grossAmount, actual.invoice.grossAmount)
-        check("statedEurEquivalent", expected.invoice.statedEurEquivalent, actual.invoice.statedEurEquivalent)
         check(
             "taxTreatmentHint",
             expected.taxTreatmentHint.treatment.rawValue,

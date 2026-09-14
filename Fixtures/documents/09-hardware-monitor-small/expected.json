@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "ByteWerk Computer GmbH",
     "countryCode": "DE",
-    "vatId": "DE445566778",
-    "street": "Ringstraße 77",
-    "postalCode": "50667",
-    "city": "Köln"
+    "vatId": "DE445566778"
   },
   "invoice": {
     "invoiceNumber": "BW-2026-33450",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "299.00",
     "taxAmount": "56.81",
-    "grossAmount": "355.81",
-    "statedEurEquivalent": null
+    "grossAmount": "355.81"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Monitor UltraView 27\" 4K",
       "netAmount": "299.00",
-      "categoryHint": "hardware_small",
-      "assetCandidate": false
+      "categoryHint": "hardware_small"
     }
   ],
   "paymentInfo": {

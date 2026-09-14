@@ -296,9 +296,6 @@ def build_01_irish_saas(out_dir: Path):
             "name": vendor.name,
             "countryCode": "IE",
             "vatId": "IE1234567X",
-            "street": "14 Harbour Quay",
-            "postalCode": "D02 XY45",
-            "city": "Dublin",
         },
         "invoice": {
             "invoiceNumber": "CF-2026-08931",
@@ -310,7 +307,6 @@ def build_01_irish_saas(out_dir: Path):
             "netAmount": "71.39",
             "taxAmount": "0.00",
             "grossAmount": "71.39",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "0", "netAmount": "71.39", "taxAmount": "0.00", "kind": "reverseChargeNote"}
@@ -319,7 +315,7 @@ def build_01_irish_saas(out_dir: Path):
             "treatment": "reverseCharge",
         },
         "lineItems": [
-            {"description": "CloudForge Suite - Team plan (5 seats)", "netAmount": "71.39", "categoryHint": "software_subscriptions", "assetCandidate": False}
+            {"description": "CloudForge Suite - Team plan (5 seats)", "netAmount": "71.39", "categoryHint": "software_subscriptions"}
         ],
         "paymentInfo": {"paymentMethodHint": "card", "paidIndicator": "paid", "paymentDate": None, "iban": None, "reference": "CF-2026-08931"},
         "missingFields": ["serviceDate"],
@@ -366,9 +362,6 @@ def build_02_german_hosting(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": "DE123456789",
-            "street": "Speicherstraße 8",
-            "postalCode": "20457",
-            "city": "Hamburg",
         },
         "invoice": {
             "invoiceNumber": "NH-100234",
@@ -380,7 +373,6 @@ def build_02_german_hosting(out_dir: Path):
             "netAmount": "40.00",
             "taxAmount": "7.60",
             "grossAmount": "47.60",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "40.00", "taxAmount": "7.60", "kind": "standard"}
@@ -389,7 +381,7 @@ def build_02_german_hosting(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Hosting-Paket Business M, monatlich", "netAmount": "40.00", "categoryHint": "hosting_cloud", "assetCandidate": False}
+            {"description": "Hosting-Paket Business M, monatlich", "netAmount": "40.00", "categoryHint": "hosting_cloud"}
         ],
         "paymentInfo": {
             "paymentMethodHint": "directDebit",
@@ -469,9 +461,6 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": None,
-            "street": "Kastanienallee 51",
-            "postalCode": "10435",
-            "city": "Berlin",
         },
         "invoice": {
             "invoiceNumber": None,
@@ -483,7 +472,6 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
             "netAmount": "21.12",
             "taxAmount": "2.68",
             "grossAmount": "23.80",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "10.00", "taxAmount": "1.90", "kind": "standard"},
@@ -493,8 +481,8 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Kugelschreiber-Set", "netAmount": "10.00", "categoryHint": "office_supplies", "assetCandidate": False},
-            {"description": "Notizbuch A5", "netAmount": "11.12", "categoryHint": "office_supplies", "assetCandidate": False},
+            {"description": "Kugelschreiber-Set", "netAmount": "10.00", "categoryHint": "office_supplies"},
+            {"description": "Notizbuch A5", "netAmount": "11.12", "categoryHint": "office_supplies"},
         ],
         "paymentInfo": {"paymentMethodHint": "cash", "paidIndicator": "paid", "paymentDate": "2026-07-14", "iban": None, "reference": None},
         "missingFields": ["invoiceNumber"],
@@ -555,9 +543,6 @@ def build_04_bahn_ticket(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": "DE223456789",
-            "street": "Gleisallee 1",
-            "postalCode": "60329",
-            "city": "Frankfurt am Main",
         },
         "invoice": {
             "invoiceNumber": "BE-778812345",
@@ -569,7 +554,6 @@ def build_04_bahn_ticket(out_dir: Path):
             "netAmount": "87.75",
             "taxAmount": "7.15",
             "grossAmount": "94.90",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "7", "netAmount": "79.35", "taxAmount": "5.55", "kind": "reduced"},
@@ -579,8 +563,8 @@ def build_04_bahn_ticket(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Fahrkarte 2. Klasse Berlin Hbf - München Hbf", "netAmount": "79.35", "categoryHint": "travel_transport", "assetCandidate": False},
-            {"description": "Sitzplatzreservierung", "netAmount": "8.40", "categoryHint": "travel_transport", "assetCandidate": False},
+            {"description": "Fahrkarte 2. Klasse Berlin Hbf - München Hbf", "netAmount": "79.35", "categoryHint": "travel_transport"},
+            {"description": "Sitzplatzreservierung", "netAmount": "8.40", "categoryHint": "travel_transport"},
         ],
         "paymentInfo": {"paymentMethodHint": "card", "paidIndicator": "paid", "paymentDate": "2026-06-03", "iban": None, "reference": "BE-778812345"},
         "missingFields": [],
@@ -626,9 +610,6 @@ def build_05_hotel(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": "DE334455667",
-            "street": "Parkring 22",
-            "postalCode": "80331",
-            "city": "München",
         },
         "invoice": {
             "invoiceNumber": "HSP-2026-4471",
@@ -640,7 +621,6 @@ def build_05_hotel(out_dir: Path):
             "netAmount": "210.00",
             "taxAmount": "18.30",
             "grossAmount": "228.30",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "7", "netAmount": "180.00", "taxAmount": "12.60", "kind": "reduced"},
@@ -650,8 +630,8 @@ def build_05_hotel(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Übernachtung Doppelzimmer zur Einzelnutzung, 2 Nächte", "netAmount": "180.00", "categoryHint": "travel_lodging", "assetCandidate": False},
-            {"description": "Frühstücksbuffet, 2x", "netAmount": "30.00", "categoryHint": "meals_entertainment", "assetCandidate": False},
+            {"description": "Übernachtung Doppelzimmer zur Einzelnutzung, 2 Nächte", "netAmount": "180.00", "categoryHint": "travel_lodging"},
+            {"description": "Frühstücksbuffet, 2x", "netAmount": "30.00", "categoryHint": "meals_entertainment"},
         ],
         "paymentInfo": {"paymentMethodHint": "card", "paidIndicator": "paid", "paymentDate": "2026-05-12", "iban": None, "reference": "HSP-2026-4471"},
         "missingFields": [],
@@ -699,9 +679,6 @@ def build_06_us_software(out_dir: Path):
             "name": vendor.name,
             "countryCode": "US",
             "vatId": None,
-            "street": "880 Beacon Hill Ave",
-            "postalCode": "CA 94107",
-            "city": "San Francisco",
         },
         "invoice": {
             "invoiceNumber": "BP-INV-20264471",
@@ -713,7 +690,6 @@ def build_06_us_software(out_dir: Path):
             "netAmount": "1000.00",
             "taxAmount": "0.00",
             "grossAmount": "1000.00",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "0", "netAmount": "1000.00", "taxAmount": "0.00", "kind": "zero"}
@@ -722,10 +698,10 @@ def build_06_us_software(out_dir: Path):
             "treatment": "reverseCharge",
         },
         "lineItems": [
-            {"description": "Annual Enterprise License - DevTools Suite", "netAmount": "1000.00", "categoryHint": "software_subscriptions", "assetCandidate": False}
+            {"description": "Annual Enterprise License - DevTools Suite", "netAmount": "1000.00", "categoryHint": "software_subscriptions"}
         ],
         "paymentInfo": {"paymentMethodHint": "card", "paidIndicator": "paid", "paymentDate": "2026-07-15", "iban": None, "reference": "BP-INV-20264471"},
-        "missingFields": ["statedEurEquivalent"],
+        "missingFields": [],
     }
     return expected
 
@@ -771,9 +747,6 @@ def build_07_uk_consultancy(out_dir: Path):
             "name": vendor.name,
             "countryCode": "GB",
             "vatId": "GB123456789",
-            "street": "19 Lancer Row",
-            "postalCode": "EC2A 4NE",
-            "city": "London",
         },
         "invoice": {
             "invoiceNumber": "TC-2026-0187",
@@ -785,7 +758,6 @@ def build_07_uk_consultancy(out_dir: Path):
             "netAmount": "850.00",
             "taxAmount": "0.00",
             "grossAmount": "850.00",
-            "statedEurEquivalent": "988.50",
         },
         "taxComponents": [
             {"rate": "0", "netAmount": "850.00", "taxAmount": "0.00", "kind": "reverseChargeNote"}
@@ -794,7 +766,7 @@ def build_07_uk_consultancy(out_dir: Path):
             "treatment": "reverseCharge",
         },
         "lineItems": [
-            {"description": "Strategy Consulting - Q2 2026 Engagement", "netAmount": "850.00", "categoryHint": "professional_services", "assetCandidate": False}
+            {"description": "Strategy Consulting - Q2 2026 Engagement", "netAmount": "850.00", "categoryHint": "professional_services"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "unpaid", "paymentDate": None, "iban": None, "reference": "TC-2026-0187"},
         "missingFields": [],
@@ -842,9 +814,6 @@ def build_08_laptop(out_dir: Path):
             "name": BYTEWERK.name,
             "countryCode": "DE",
             "vatId": "DE445566778",
-            "street": "Ringstraße 77",
-            "postalCode": "50667",
-            "city": "Köln",
         },
         "invoice": {
             "invoiceNumber": "BW-2026-33210",
@@ -856,7 +825,6 @@ def build_08_laptop(out_dir: Path):
             "netAmount": "1850.00",
             "taxAmount": "351.50",
             "grossAmount": "2201.50",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "1850.00", "taxAmount": "351.50", "kind": "standard"}
@@ -865,7 +833,7 @@ def build_08_laptop(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Notebook ProBook X15 (16GB RAM / 1TB SSD)", "netAmount": "1850.00", "categoryHint": "hardware_equipment", "assetCandidate": True}
+            {"description": "Notebook ProBook X15 (16GB RAM / 1TB SSD)", "netAmount": "1850.00", "categoryHint": "hardware_equipment"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "paid", "paymentDate": "2026-03-06", "iban": BYTEWERK_IBAN, "reference": "BW-2026-33210"},
         "missingFields": [],
@@ -903,9 +871,6 @@ def build_09_monitor(out_dir: Path):
             "name": BYTEWERK.name,
             "countryCode": "DE",
             "vatId": "DE445566778",
-            "street": "Ringstraße 77",
-            "postalCode": "50667",
-            "city": "Köln",
         },
         "invoice": {
             "invoiceNumber": "BW-2026-33450",
@@ -917,7 +882,6 @@ def build_09_monitor(out_dir: Path):
             "netAmount": "299.00",
             "taxAmount": "56.81",
             "grossAmount": "355.81",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "299.00", "taxAmount": "56.81", "kind": "standard"}
@@ -926,7 +890,7 @@ def build_09_monitor(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Monitor UltraView 27\" 4K", "netAmount": "299.00", "categoryHint": "hardware_small", "assetCandidate": False}
+            {"description": "Monitor UltraView 27\" 4K", "netAmount": "299.00", "categoryHint": "hardware_small"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "paid", "paymentDate": "2026-03-21", "iban": BYTEWERK_IBAN, "reference": "BW-2026-33450"},
         "missingFields": [],
@@ -971,9 +935,6 @@ def build_10_income_domestic(out_dir: Path):
             "name": client.name,
             "countryCode": "DE",
             "vatId": "DE556677889",
-            "street": "Werftallee 5",
-            "postalCode": "28217",
-            "city": "Bremen",
         },
         "invoice": {
             "invoiceNumber": "RE-2026-0042",
@@ -985,7 +946,6 @@ def build_10_income_domestic(out_dir: Path):
             "netAmount": "4500.00",
             "taxAmount": "855.00",
             "grossAmount": "5355.00",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "4500.00", "taxAmount": "855.00", "kind": "standard"}
@@ -994,7 +954,7 @@ def build_10_income_domestic(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Softwareentwicklung - Projekt Aurora, August 2026", "netAmount": "4500.00", "categoryHint": "revenue_services", "assetCandidate": False}
+            {"description": "Softwareentwicklung - Projekt Aurora, August 2026", "netAmount": "4500.00", "categoryHint": "revenue_services"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "unpaid", "paymentDate": None, "iban": MARA_IBAN, "reference": "RE-2026-0042"},
         "missingFields": [],
@@ -1041,9 +1001,6 @@ def build_11_income_france(out_dir: Path):
             "name": client.name,
             "countryCode": "FR",
             "vatId": "FR12345678901",
-            "street": "12 Rue des Tisserands",
-            "postalCode": "69002",
-            "city": "Lyon",
         },
         "invoice": {
             "invoiceNumber": "RE-2026-0043",
@@ -1055,7 +1012,6 @@ def build_11_income_france(out_dir: Path):
             "netAmount": "3200.00",
             "taxAmount": "0.00",
             "grossAmount": "3200.00",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "0", "netAmount": "3200.00", "taxAmount": "0.00", "kind": "reverseChargeNote"}
@@ -1064,7 +1020,7 @@ def build_11_income_france(out_dir: Path):
             "treatment": "reverseCharge",
         },
         "lineItems": [
-            {"description": "Backend-Entwicklung - Projekt Icarus", "netAmount": "3200.00", "categoryHint": "revenue_services", "assetCandidate": False}
+            {"description": "Backend-Entwicklung - Projekt Icarus", "netAmount": "3200.00", "categoryHint": "revenue_services"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "unpaid", "paymentDate": None, "iban": MARA_IBAN, "reference": "RE-2026-0043"},
         "missingFields": [],
@@ -1110,9 +1066,6 @@ def build_12_credit_note(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": "DE123456789",
-            "street": "Speicherstraße 8",
-            "postalCode": "20457",
-            "city": "Hamburg",
         },
         "invoice": {
             "invoiceNumber": "NH-CN-100256",
@@ -1124,7 +1077,6 @@ def build_12_credit_note(out_dir: Path):
             "netAmount": "-40.00",
             "taxAmount": "-7.60",
             "grossAmount": "-47.60",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "-40.00", "taxAmount": "-7.60", "kind": "standard"}
@@ -1133,7 +1085,7 @@ def build_12_credit_note(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Erstattung wegen Serviceausfall (Rechnung NH-100234)", "netAmount": "-40.00", "categoryHint": "hosting_cloud", "assetCandidate": False}
+            {"description": "Erstattung wegen Serviceausfall (Rechnung NH-100234)", "netAmount": "-40.00", "categoryHint": "hosting_cloud"}
         ],
         "paymentInfo": {"paymentMethodHint": "bankTransfer", "paidIndicator": "paid", "paymentDate": "2026-09-10", "iban": iban, "reference": "NH-100234"},
         "missingFields": [],
@@ -1180,9 +1132,6 @@ def build_13_telecom(out_dir: Path):
             "name": vendor.name,
             "countryCode": "DE",
             "vatId": "DE667788990",
-            "street": "Sendeturmweg 3",
-            "postalCode": "70173",
-            "city": "Stuttgart",
         },
         "invoice": {
             "invoiceNumber": "TW-2026-88123",
@@ -1194,7 +1143,6 @@ def build_13_telecom(out_dir: Path):
             "netAmount": "155.00",
             "taxAmount": "10.45",
             "grossAmount": "165.45",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "55.00", "taxAmount": "10.45", "kind": "standard"},
@@ -1204,8 +1152,8 @@ def build_13_telecom(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Mobilfunk-Flatrate Business", "netAmount": "55.00", "categoryHint": "telecom", "assetCandidate": False},
-            {"description": "Kaution neues Endgerät (Vorschuss, erstattungsfähig)", "netAmount": "100.00", "categoryHint": "telecom", "assetCandidate": False},
+            {"description": "Mobilfunk-Flatrate Business", "netAmount": "55.00", "categoryHint": "telecom"},
+            {"description": "Kaution neues Endgerät (Vorschuss, erstattungsfähig)", "netAmount": "100.00", "categoryHint": "telecom"},
         ],
         "paymentInfo": {"paymentMethodHint": "directDebit", "paidIndicator": "paid", "paymentDate": "2026-02-12", "iban": iban, "reference": "TW-2026-88123"},
         "missingFields": [],
@@ -1293,9 +1241,6 @@ def build_14_cafe_photo(out_dir: Path):
             "name": "Cafe Sonnenblick",
             "countryCode": "DE",
             "vatId": None,
-            "street": "Karl-Liebknecht-Str. 44",
-            "postalCode": "04107",
-            "city": "Leipzig",
         },
         "invoice": {
             "invoiceNumber": None,
@@ -1307,7 +1252,6 @@ def build_14_cafe_photo(out_dir: Path):
             "netAmount": "16.44",
             "taxAmount": "2.06",
             "grossAmount": "18.50",
-            "statedEurEquivalent": None,
         },
         "taxComponents": [
             {"rate": "19", "netAmount": "7.56", "taxAmount": "1.44", "kind": "standard"},
@@ -1317,9 +1261,9 @@ def build_14_cafe_photo(out_dir: Path):
             "treatment": "domesticVAT",
         },
         "lineItems": [
-            {"description": "Cappuccino", "netAmount": "3.53", "categoryHint": "meals_entertainment", "assetCandidate": False},
-            {"description": "Kuchenstueck", "netAmount": "4.03", "categoryHint": "meals_entertainment", "assetCandidate": False},
-            {"description": "Sandwich to go", "netAmount": "8.88", "categoryHint": "meals_entertainment", "assetCandidate": False},
+            {"description": "Cappuccino", "netAmount": "3.53", "categoryHint": "meals_entertainment"},
+            {"description": "Kuchenstueck", "netAmount": "4.03", "categoryHint": "meals_entertainment"},
+            {"description": "Sandwich to go", "netAmount": "8.88", "categoryHint": "meals_entertainment"},
         ],
         "paymentInfo": {"paymentMethodHint": "cash", "paidIndicator": "paid", "paymentDate": "2026-06-18", "iban": None, "reference": None},
         "missingFields": ["invoiceNumber"],

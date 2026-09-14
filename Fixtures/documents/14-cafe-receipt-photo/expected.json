@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Cafe Sonnenblick",
     "countryCode": "DE",
-    "vatId": null,
-    "street": "Karl-Liebknecht-Str. 44",
-    "postalCode": "04107",
-    "city": "Leipzig"
+    "vatId": null
   },
   "invoice": {
     "invoiceNumber": null,
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "16.44",
     "taxAmount": "2.06",
-    "grossAmount": "18.50",
-    "statedEurEquivalent": null
+    "grossAmount": "18.50"
   },
   "taxComponents": [
     {
@@ -42,20 +38,17 @@
     {
       "description": "Cappuccino",
       "netAmount": "3.53",
-      "categoryHint": "meals_entertainment",
-      "assetCandidate": false
+      "categoryHint": "meals_entertainment"
     },
     {
       "description": "Kuchenstueck",
       "netAmount": "4.03",
-      "categoryHint": "meals_entertainment",
-      "assetCandidate": false
+      "categoryHint": "meals_entertainment"
     },
     {
       "description": "Sandwich to go",
       "netAmount": "8.88",
-      "categoryHint": "meals_entertainment",
-      "assetCandidate": false
+      "categoryHint": "meals_entertainment"
     }
   ],
   "paymentInfo": {

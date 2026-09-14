@@ -9,13 +9,12 @@ schema exactly.
    `null`, and its schema path is listed in `missingFields`.
 2. Distinguish observation from inference. Amounts, numbers, dates, names and
    tax rates must be read off the document. `taxTreatmentHint`,
-   `categoryHint`, `assetCandidate` and `direction` are inferences; base them
-   only on what the document itself supports.
+   `categoryHint` and `direction` are inferences; base them only on what the
+   document itself supports.
 3. Preserve the document's own currency and its exact decimal strings. Write
    amounts as plain decimals with a dot separator and no thousands separator
    or currency symbol: `"1234.56"`, `"71.39"`, `"0.00"`. Never convert
-   currencies. If the document itself prints a EUR equivalent for a foreign
-   currency, put it in `invoice.statedEurEquivalent`, otherwise `null`.
+   currencies.
 4. Dates are `YYYY-MM-DD`. `serviceDate` is a single delivery or service date;
    `servicePeriodStart`/`servicePeriodEnd` are a stated period. Fill either
    the date or the period, not both, and only if the document states it.
@@ -41,9 +40,8 @@ schema exactly.
    Without an explicit document indication, choose another supported treatment
    or `unknown`.
 9. `lineItems[].categoryHint` must be one of the canonical category ids listed
-   below, or `null`. Never invent an id. `assetCandidate` is `true` only for a
-   durable physical asset (hardware, furniture, vehicle) whose net amount
-   suggests it is not immediately deductible.
+   below, or `null`. Never invent an id. Whether a line item is a depreciable
+   asset is decided by the app, not by you.
 10. Return schema-valid JSON and nothing else. No commentary, no markdown.
 
 # Business profile

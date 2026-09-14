@@ -9,9 +9,6 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         public var name: String?
         public var countryCode: String?
         public var vatId: String?
-        public var street: String?
-        public var postalCode: String?
-        public var city: String?
     }
 
     public struct Invoice: Codable, Sendable, Hashable {
@@ -24,8 +21,6 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         public var netAmount: String?
         public var taxAmount: String?
         public var grossAmount: String?
-        /// EUR value printed on a foreign-currency document (§16 Abs. 6 UStG).
-        public var statedEurEquivalent: String?
     }
 
     public struct TaxComponent: Codable, Sendable, Hashable {
@@ -46,7 +41,6 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         public var netAmount: String?
         /// A canonical category id from the supplied list, or `null`.
         public var categoryHint: String?
-        public var assetCandidate: Bool
     }
 
     public enum PaidIndicator: String, Codable, Sendable, Hashable, CaseIterable {

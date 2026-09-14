@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "Lumière Digitale SARL",
     "countryCode": "FR",
-    "vatId": "FR12345678901",
-    "street": "12 Rue des Tisserands",
-    "postalCode": "69002",
-    "city": "Lyon"
+    "vatId": "FR12345678901"
   },
   "invoice": {
     "invoiceNumber": "RE-2026-0043",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "3200.00",
     "taxAmount": "0.00",
-    "grossAmount": "3200.00",
-    "statedEurEquivalent": null
+    "grossAmount": "3200.00"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Backend-Entwicklung - Projekt Icarus",
       "netAmount": "3200.00",
-      "categoryHint": "revenue_services",
-      "assetCandidate": false
+      "categoryHint": "revenue_services"
     }
   ],
   "paymentInfo": {

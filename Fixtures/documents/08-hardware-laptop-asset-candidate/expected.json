@@ -4,10 +4,7 @@
   "counterparty": {
     "name": "ByteWerk Computer GmbH",
     "countryCode": "DE",
-    "vatId": "DE445566778",
-    "street": "Ringstraße 77",
-    "postalCode": "50667",
-    "city": "Köln"
+    "vatId": "DE445566778"
   },
   "invoice": {
     "invoiceNumber": "BW-2026-33210",
@@ -18,8 +15,7 @@
     "currency": "EUR",
     "netAmount": "1850.00",
     "taxAmount": "351.50",
-    "grossAmount": "2201.50",
-    "statedEurEquivalent": null
+    "grossAmount": "2201.50"
   },
   "taxComponents": [
     {
@@ -36,8 +32,7 @@
     {
       "description": "Notebook ProBook X15 (16GB RAM / 1TB SSD)",
       "netAmount": "1850.00",
-      "categoryHint": "hardware_equipment",
-      "assetCandidate": true
+      "categoryHint": "hardware_equipment"
     }
   ],
   "paymentInfo": {
