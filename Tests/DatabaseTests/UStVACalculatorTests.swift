@@ -324,6 +324,42 @@ struct UStVACalculatorTests {
         #expect(q3.isDraft)
     }
 
+    @Test("Eine Bemessungsgrundlage ohne Steuerbetrag wird gemeldet statt still verworfen")
+    func selfAssessedBaseWithoutTax() throws {
+        let (database, profile) = try database()
+        try insert(
+            database, profile: profile, direction: .expense, treatment: .reverseCharge,
+            title: "SaaS ohne Steuerbetrag", invoiceDate: LocalDate(year: 2026, month: 8, day: 5),
+            net: 100_000, tax: 0, counterpartyCountry: "IE", counterpartyName: "Cloud Ltd",
+            selfAssessedVatMinor: 0
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        #expect(q3.line(46)?.amountMinor == 100_000)
+        #expect(q3.line(47) == nil)
+        #expect(q3.isDraft)
+        #expect(q3.exceptions.contains {
+            $0.kind == .other && $0.message.hasPrefix("Bemessungsgrundlage ohne Steuerbetrag")
+        })
+    }
+
+    @Test("Ein innergemeinschaftlicher Erwerb unter einem Euro meldet die fehlende Steuer")
+    func intraCommunityBaseWithoutTax() throws {
+        let (database, profile) = try database()
+        try insert(
+            database, profile: profile, direction: .expense, treatment: .intraCommunityAcquisition,
+            title: "Kleinteil aus NL", invoiceDate: LocalDate(year: 2026, month: 9, day: 1),
+            net: 50, tax: 0, counterpartyCountry: "NL", counterpartyName: "Hardware BV"
+        )
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        #expect(q3.line(89)?.amountMinor == 50)
+        #expect(q3.line(61) == nil)
+        #expect(q3.exceptions.contains {
+            $0.kind == .other && $0.message.hasPrefix("Bemessungsgrundlage ohne Steuerbetrag")
+        })
+    }
+
     @Test("Eine Ausgabe mit Rechnung in Q3 und Zahlung in Q4 zählt zur Vorsteuer in Q4")
     func inputVATFollowsTheLaterOfInvoiceAndPayment() throws {
         let (database, profile) = try database()

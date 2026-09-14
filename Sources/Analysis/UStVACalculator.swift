@@ -389,6 +389,7 @@ private extension UStVACalculator {
                 if !isSmallBusiness {
                     credit(67, tax, row: row, paymentID: nil, date: date)
                 }
+                noteBaseWithoutTax(row, base: base, tax: tax)
                 if UStVA_2026.reverseChargeCountryIsUnclear(supplierCountry: row.counterpartyCountry) {
                     note(
                         .reverseChargeUnclear,
@@ -409,13 +410,14 @@ private extension UStVACalculator {
                 let rate = components.compactMap(\.rate).first { $0 == "7" || $0 == "19" }
                 let kennzahl = UStVA_2026.intraCommunityAcquisitionBase(rate: rate)
                 credit(kennzahl, base, row: row, paymentID: nil, date: date)
+                // The form derives the acquisition tax from the whole-euro
+                // base, so the matching Vorsteuer is taken the same way and
+                // the two cancel exactly.
+                let tax = UStVA_2026.derivedTaxMinor(kennzahl: kennzahl, baseMinor: base)
                 if !isSmallBusiness {
-                    // The form derives the acquisition tax from the whole-euro
-                    // base, so the matching Vorsteuer is taken the same way and
-                    // the two cancel exactly.
-                    let tax = UStVA_2026.derivedTaxMinor(kennzahl: kennzahl, baseMinor: base)
                     credit(61, tax, row: row, paymentID: nil, date: date)
                 }
+                noteBaseWithoutTax(row, base: base, tax: tax)
                 return [date]
 
             case .smallBusiness, .exempt, .nonTaxable:
@@ -528,6 +530,20 @@ private extension UStVACalculator {
                 )
             )
             lines[kennzahl] = builder
+        }
+
+        /// A §13b service or an intra-Community acquisition with a base but no
+        /// tax would report the Bemessungsgrundlage while its Steuer line is
+        /// dropped as a zero amount - the one shape of return that looks
+        /// complete and is not. Say so instead.
+        private mutating func noteBaseWithoutTax(_ row: TransactionRow, base: Int64, tax: Int64) {
+            guard base != 0, tax == 0 else { return }
+            note(
+                .other,
+                row,
+                "Bemessungsgrundlage ohne Steuerbetrag - die geschuldete Steuer fehlt "
+                    + "und wurde nicht gemeldet; bitte im Inspector prüfen."
+            )
         }
 
         private mutating func note(_ kind: UStVAReturn.Exception.Kind, _ row: TransactionRow, _ message: String) {
