@@ -1,3 +1,4 @@
+import Agent
 import Kern
 import SwiftUI
 
@@ -6,6 +7,7 @@ import SwiftUI
 @MainActor @Observable
 final class AppModell {
     let repository: Repository
+    let eingang: Eingang
 
     var buchungen: [Buchung] = []
     var auswahl: Int64?
@@ -14,6 +16,14 @@ final class AppModell {
     var sortierung = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspektorSichtbar = true
     var fehler: String?
+
+    /// The files still to be processed, the two counters behind the progress
+    /// in the toolbar and the ones that did not make it.
+    private var warteschlange: [URL] = []
+    private(set) var gesamt = 0
+    private(set) var fertig = 0
+    private(set) var gescheitert: [GescheiterteDatei] = []
+    private var laeuft = false
 
     var zeigtFehler: Bool {
         get { fehler != nil }
@@ -28,13 +38,72 @@ final class AppModell {
         do {
             try Archivpfad.anlegen()
             repository = try Repository(pfad: Archivpfad.datenbank)
+            eingang = try Eingang(repository: repository)
         } catch {
             fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
         }
     }
 
+    // MARK: - Eingang
+
+    var laeuftEingang: Bool {
+        gesamt > 0
+    }
+
+    /// The files the user dropped. Everything the agent cannot read is dropped
+    /// silently; the window accepts only the allowed types in the first place.
+    func dateienAnnehmen(_ urls: [URL]) {
+        einreihen(urls.filter(Eingang.erlaubt))
+    }
+
+    /// A non-empty inbox is worked through when the app starts.
+    func inboxAbarbeiten() {
+        einreihen(Eingang.inbox().filter { datei in
+            gescheitert.contains { $0.id == datei } == false
+        })
+    }
+
+    func erneutVersuchen(_ datei: GescheiterteDatei) {
+        gescheitert.removeAll { $0.id == datei.id }
+        einreihen([datei.id])
+    }
+
+    func verwerfen(_ datei: GescheiterteDatei) {
+        gescheitert.removeAll { $0.id == datei.id }
+        try? FileManager.default.removeItem(at: datei.id)
+    }
+
+    private func einreihen(_ urls: [URL]) {
+        guard urls.isEmpty == false else { return }
+        warteschlange.append(contentsOf: urls)
+        gesamt += urls.count
+        abarbeiten()
+    }
+
+    /// One file after another, in one task; a second drop joins the queue the
+    /// running task is already working through.
+    private func abarbeiten() {
+        guard gesamt > fertig, laeuft == false else { return }
+        laeuft = true
+        Task {
+            while warteschlange.isEmpty == false {
+                let url = warteschlange.removeFirst()
+                let ergebnis = await eingang.verarbeiten(url)
+                if case let .fehler(datei, text) = ergebnis {
+                    gescheitert.removeAll { $0.id == datei }
+                    gescheitert.append(GescheiterteDatei(id: datei, text: text))
+                }
+                fertig += 1
+            }
+            gesamt = 0
+            fertig = 0
+            laeuft = false
+        }
+    }
+
     /// Feeds the table for as long as the window lives.
     func beobachten() async {
+        inboxAbarbeiten()
         do {
             for try await neue in repository.buchungenBeobachten() {
                 buchungen = neue
@@ -129,5 +198,15 @@ final class AppModell {
         } catch {
             fehler = "\(error)"
         }
+    }
+}
+
+/// A file that stayed in the inbox, with the text the run ended on.
+struct GescheiterteDatei: Identifiable, Hashable {
+    let id: URL
+    let text: String
+
+    var name: String {
+        id.lastPathComponent
     }
 }

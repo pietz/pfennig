@@ -6,14 +6,24 @@ let package = Package(
     platforms: [.macOS(.v15)],
     products: [
         .library(name: "Kern", targets: ["Kern"]),
+        .library(name: "Agent", targets: ["Agent"]),
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.11.1"),
     ],
     targets: [
-        // Schema, Geld, Datum, Repository.
-        .target(name: "Kern", dependencies: [.product(name: "GRDB", package: "GRDB.swift")]),
+        // Schema, Geld, Datum, Repository, Prüfregeln, sql-Werkzeug.
+        .target(
+            name: "Kern",
+            dependencies: [
+                .product(name: "GRDB", package: "GRDB.swift"),
+                .product(name: "GRDBSQLite", package: "GRDB.swift"),
+            ]
+        ),
         .testTarget(name: "KernTests", dependencies: ["Kern"]),
+        // Responses-Client, Anleitung, Werkzeugschleife, Dateieingang.
+        .target(name: "Agent", dependencies: ["Kern"]),
+        .testTarget(name: "AgentTests", dependencies: ["Agent"]),
     ],
     swiftLanguageModes: [.v6]
 )

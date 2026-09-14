@@ -1,3 +1,4 @@
+import Agent
 import Kern
 import SwiftUI
 
@@ -11,11 +12,20 @@ struct Fenster: View {
     var body: some View {
         let zeilen = modell.sichtbar
         VStack(spacing: 0) {
+            if modell.gescheitert.isEmpty == false {
+                Gescheitert(modell: modell)
+                Divider()
+            }
             tabelle(zeilen)
             Divider()
             Fusszeile(summen: Uebersicht.summen(zeilen))
         }
         .task { await modell.beobachten() }
+        // Drag and drop counts for the whole window.
+        .dropDestination(for: URL.self) { urls, _ in
+            modell.dateienAnnehmen(urls)
+            return true
+        }
         .searchable(text: $modell.suche, prompt: "Suchen")
         .toolbar { werkzeuge }
         .inspector(isPresented: $modell.inspektorSichtbar) {
@@ -148,6 +158,18 @@ struct Fenster: View {
     }
 
     @ToolbarContentBuilder private var werkzeuge: some ToolbarContent {
+        // Visible for as long as the inbox is not empty.
+        if modell.laeuftEingang {
+            ToolbarItem(placement: .primaryAction) {
+                HStack(spacing: 8) {
+                    ProgressView().controlSize(.small)
+                    Text("\(modell.fertig + 1) von \(modell.gesamt)")
+                        .font(.callout)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
         ToolbarItem(placement: .primaryAction) {
             Picker("Filter", selection: $modell.filter) {
                 ForEach(Buchungsfilter.allCases) { Text($0.name).tag($0) }
@@ -164,6 +186,36 @@ struct Fenster: View {
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { modell.inspektorSichtbar.toggle() }
         }
+    }
+}
+
+/// The files that stayed in the inbox. The strip is only there while there is
+/// something in it.
+private struct Gescheitert: View {
+    let modell: AppModell
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(modell.gescheitert) { datei in
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(Color.orange)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(datei.name).fontWeight(.medium)
+                        Text(datei.text)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Spacer()
+                    Button("Erneut versuchen") { modell.erneutVersuchen(datei) }
+                    Button("Verwerfen") { modell.verwerfen(datei) }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+        .background(.quaternary.opacity(0.4))
     }
 }
 

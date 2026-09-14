@@ -40,6 +40,9 @@ struct Inspektor: View {
 
     var body: some View {
         Form {
+            if buchung.belege.isEmpty == false {
+                BelegAbschnitt(modell: modell, buchung: buchung)
+            }
             grunddaten
             betraege
             steuer

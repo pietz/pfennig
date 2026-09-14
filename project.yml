@@ -44,6 +44,8 @@ targets:
     dependencies:
       - package: PfennigPackages
         product: Kern
+      - package: PfennigPackages
+        product: Agent
     settings:
       base:
         PRODUCT_NAME: Pfennig

@@ -360,6 +360,88 @@ Keychain, and does not run any of its own servers."
 
 ---
 
+## 8. Function Calling (Werkzeugschleife)
+
+Source: https://developers.openai.com/api/docs/guides/function-calling ,
+https://developers.openai.com/api/reference/resources/responses/methods/create (fetched 2026-09-14).
+
+These are the shapes Pfennig's `Agentenlauf` relies on; they were read off the official guide, not
+guessed.
+
+**Tools in the request.** Unlike Chat Completions, the Responses API puts `name`, `description` and
+`parameters` at the top level of the tool object, *not* nested under a `function` key:
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "reasoning": { "effort": "medium" },
+  "input": [ { "role": "user", "content": "..." } ],
+  "tools": [
+    {
+      "type": "function",
+      "name": "sql",
+      "description": "Führt genau eine SQL-Anweisung aus.",
+      "parameters": {
+        "type": "object",
+        "properties": { "sql": { "type": "string", "description": "Eine einzelne SQL-Anweisung." } },
+        "required": ["sql"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  ]
+}
+```
+
+`strict: true` carries the same rules as Structured Outputs in section 2: every key in `properties`
+must appear in `required`, and every object must set `"additionalProperties": false`.
+
+**The call in the response.** A `function_call` is one item of the `output` array, next to
+`reasoning` items and an eventual `message`; the same warning as in section 5 applies, never index
+`output[0]`. `arguments` is a **JSON string**, not an object, and must be parsed:
+
+```json
+{
+  "id": "fc_12345xyz",
+  "call_id": "call_12345xyz",
+  "type": "function_call",
+  "name": "sql",
+  "arguments": "{\"sql\":\"SELECT id FROM buchungen\"}"
+}
+```
+
+`call_id` (not `id`) is what the answer refers to.
+
+**Sending the result back.** A `function_call_output` item goes into `input`. Either append it to
+the full conversation, or send only the new items together with `previous_response_id`; the latter
+needs the previous response to be stored server-side, which is the default (`store: true`). `tools`
+has to be repeated on every turn:
+
+```json
+{
+  "model": "gpt-5.6-luna",
+  "previous_response_id": "resp_xyz",
+  "tools": [ { "type": "function", "name": "sql", "...": "..." } ],
+  "input": [
+    {
+      "type": "function_call_output",
+      "call_id": "call_12345xyz",
+      "output": "ok, berührte Buchungen: 1"
+    }
+  ]
+}
+```
+
+`output` is a plain string; a tool that fails answers with its error text there, and the model
+corrects from it. The loop ends with the response whose `output` holds no `function_call` any more.
+
+**Other knobs** (documented, not used by Pfennig): `tool_choice` accepts `"auto"` (default),
+`"required"`, `"none"` or `{"type": "function", "name": "..."}`; `parallel_tool_calls: false` limits
+a turn to at most one call. Pfennig leaves both at their defaults and simply answers every
+`function_call` of a turn before sending the next request.
+
+---
+
 ## Sources
 
 - https://developers.openai.com/api/docs
@@ -378,3 +460,4 @@ Keychain, and does not run any of its own servers."
 - https://developers.openai.com/api/docs/guides/error-codes
 - https://developers.openai.com/api/docs/guides/rate-limits
 - https://developers.openai.com/api/docs/guides/your-data
+- https://developers.openai.com/api/docs/guides/function-calling

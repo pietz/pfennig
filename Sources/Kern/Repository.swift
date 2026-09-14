@@ -53,13 +53,22 @@ public final class Repository: Sendable {
         }
     }
 
-    private static func speichern(_ buchung: Buchung, akteur: Akteur, in db: Database) throws -> Buchung {
+    /// The one write of a booking inside an open transaction. The sql tool
+    /// uses it for the rows the agent touched, so agent and user leave the
+    /// same kind of trail in `aktivitaeten`.
+    static func speichern(_ buchung: Buchung, akteur: Akteur, in db: Database) throws -> Buchung {
+        let vorher = try buchung.id.flatMap { try Buchung.fetchOne(db, key: $0) }
+        return try speichern(buchung, akteur: akteur, vorher: vorher, in: db)
+    }
+
+    /// The same with a state the caller read earlier. The agent writes its row
+    /// with its own INSERT, so only the caller still knows whether the row
+    /// existed before the statement ran.
+    static func speichern(_ buchung: Buchung, akteur: Akteur, vorher: Buchung?, in db: Database) throws -> Buchung {
         let jetzt = Date()
         var neu = buchung
         neu.zahlungen = nummeriert(buchung.zahlungen)
         neu.geaendertAm = jetzt
-
-        let vorher = try buchung.id.flatMap { try Buchung.fetchOne(db, key: $0) }
         neu.erstelltAm = vorher?.erstelltAm ?? jetzt
         try neu.save(db)
         guard let id = neu.id else { preconditionFailure("save() assigns the row id") }
@@ -106,6 +115,25 @@ public final class Repository: Sendable {
         try datenbank.read { try Datei.exists($0, key: sha256) }
     }
 
+    /// The rows behind the hashes in `buchungen.belege`, in the order asked for.
+    public func dateien(zu hashes: [String]) throws -> [Datei] {
+        let gefunden = try datenbank.read { try Datei.fetchAll($0, keys: hashes) }
+        return hashes.compactMap { hash in gefunden.first { $0.sha256 == hash } }
+    }
+
+    /// Hangs the file on the bookings the agent run touched. The list of
+    /// receipts belongs to Swift, not to the agent.
+    public func belegAnhaengen(_ sha256: String, an ids: [Int64]) throws {
+        try datenbank.write { db in
+            for id in ids {
+                guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
+                guard buchung.belege.contains(sha256) == false else { continue }
+                buchung.belege.append(sha256)
+                _ = try Repository.speichern(buchung, akteur: .agent, in: db)
+            }
+        }
+    }
+
     // MARK: - Anfragen
 
     public func anfrageStarten(dateiSha256: String, modell: String) throws -> Int64 {
@@ -114,6 +142,10 @@ public final class Repository: Sendable {
             try anfrage.insert(db)
             return db.lastInsertedRowID
         }
+    }
+
+    public func alleAnfragen() throws -> [Anfrage] {
+        try datenbank.read { try Anfrage.fetchAll($0, sql: "SELECT * FROM anfragen ORDER BY id") }
     }
 
     public func anfrageBeenden(
@@ -132,6 +164,20 @@ public final class Repository: Sendable {
                 """,
                 arguments: [Date(), status, eingabeTokens, ausgabeTokens, konversation, id]
             )
+        }
+    }
+
+    // MARK: - Schema
+
+    /// The CREATE statements as SQLite stores them. The agent reads the schema
+    /// from the database itself, so it can never drift from what is there.
+    public func schematext() throws -> String {
+        try datenbank.read { db in
+            try String.fetchAll(
+                db,
+                sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+            )
+            .joined(separator: ";\n\n") + ";"
         }
     }
 
@@ -162,21 +208,23 @@ public final class Repository: Sendable {
     /// The profile, with the defaults of a fresh installation for keys that
     /// were never set.
     public func profil() throws -> Profil {
-        try datenbank.read { db in
-            var werte: [String: String] = [:]
-            for zeile in try Row.fetchAll(db, sql: "SELECT schluessel, wert FROM einstellungen") {
-                let schluessel: String = zeile["schluessel"]
-                let wert: String = zeile["wert"]
-                werte[schluessel] = wert
-            }
-            return Profil(
-                steuernummer: werte["steuernummer"] ?? "",
-                ustid: werte["ustid"] ?? "",
-                kleinunternehmer: werte["kleinunternehmer"] == "true",
-                rhythmus: werte["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
-                dauerfristverlaengerung: werte["dauerfristverlaengerung"] == "true"
-            )
+        try datenbank.read { try Repository.profil($0) }
+    }
+
+    static func profil(_ db: Database) throws -> Profil {
+        var werte: [String: String] = [:]
+        for zeile in try Row.fetchAll(db, sql: "SELECT schluessel, wert FROM einstellungen") {
+            let schluessel: String = zeile["schluessel"]
+            let wert: String = zeile["wert"]
+            werte[schluessel] = wert
         }
+        return Profil(
+            steuernummer: werte["steuernummer"] ?? "",
+            ustid: werte["ustid"] ?? "",
+            kleinunternehmer: werte["kleinunternehmer"] == "true",
+            rhythmus: werte["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
+            dauerfristverlaengerung: werte["dauerfristverlaengerung"] == "true"
+        )
     }
 
     public func profilSpeichern(_ profil: Profil) throws {
