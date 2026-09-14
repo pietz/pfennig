@@ -366,8 +366,10 @@ struct UStVATaskWindow: View {
 
                 Spacer(minLength: 12)
 
-                Button(detail?.isSubmitted == true ? "Übermittlung zurücknehmen" : "Als übermittelt markieren",
-                       action: toggleSubmission)
+                Button(
+                    detail?.isSubmitted == true ? "Übermittlung zurücknehmen" : "Als übermittelt markieren",
+                    action: toggleSubmission
+                )
             }
             .disabled(detail == nil)
 

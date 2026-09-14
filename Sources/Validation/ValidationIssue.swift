@@ -27,5 +27,7 @@ public struct ValidationIssue: Sendable, Equatable, Codable {
     }
 
     /// Localization key, mirrors `IssueCode.messageKey`.
-    public var messageKey: String { code.messageKey }
+    public var messageKey: String {
+        code.messageKey
+    }
 }

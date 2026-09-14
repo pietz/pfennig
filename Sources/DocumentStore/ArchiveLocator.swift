@@ -55,7 +55,9 @@ public struct ArchiveLocator {
     }
 
     private func applicationSupportBase() -> URL {
-        if let applicationSupportURL { return applicationSupportURL }
+        if let applicationSupportURL {
+            return applicationSupportURL
+        }
         return (try? fileManager.url(
             for: .applicationSupportDirectory,
             in: .userDomainMask,

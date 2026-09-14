@@ -13,7 +13,7 @@ public extension AppDatabase {
     }
 
     func setSetting(_ value: some Codable, forKey key: String) throws {
-        let json = String(decoding: try JSONEncoder().encode(value), as: UTF8.self)
+        let json = try String(decoding: JSONEncoder().encode(value), as: UTF8.self)
         try writer.write { db in
             try db.execute(
                 sql: """

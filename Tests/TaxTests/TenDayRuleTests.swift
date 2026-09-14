@@ -56,11 +56,17 @@ struct TenDayRuleTests {
 
     @Test("appliesReassignment true when the related year matches the adjacent year")
     func appliesReassignmentTrue() {
-        #expect(TenDayRule.appliesReassignment(paymentDate: LocalDate(year: 2027, month: 1, day: 5), economicallyRelatedYear: 2026))
+        #expect(TenDayRule.appliesReassignment(
+            paymentDate: LocalDate(year: 2027, month: 1, day: 5),
+            economicallyRelatedYear: 2026
+        ))
     }
 
     @Test("appliesReassignment false when the related year is the payment's own year")
     func appliesReassignmentFalse() {
-        #expect(!TenDayRule.appliesReassignment(paymentDate: LocalDate(year: 2027, month: 1, day: 5), economicallyRelatedYear: 2027))
+        #expect(!TenDayRule.appliesReassignment(
+            paymentDate: LocalDate(year: 2027, month: 1, day: 5),
+            economicallyRelatedYear: 2027
+        ))
     }
 }

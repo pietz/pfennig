@@ -18,7 +18,7 @@ public enum SelfAssessedVAT {
     /// so a future rate change only needs a new entry (spec 16.3-style
     /// versioned data). Currently a single entry: 19 % since 2007-01-01.
     private static let rateHistory: [(effectiveFrom: LocalDate, rate: Decimal)] = [
-        (LocalDate(year: 2007, month: 1, day: 1), Thresholds.standardRate),
+        (LocalDate(year: 2007, month: 1, day: 1), Thresholds.standardRate)
     ]
 
     /// The standard VAT rate in force on `date`.

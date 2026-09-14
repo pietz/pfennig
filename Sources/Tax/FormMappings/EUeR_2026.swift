@@ -42,7 +42,7 @@ public enum EUeR_2026 {
         "memberships": 49,
         "postage_shipping": 46,
         "vat_payment": 60,
-        "other_expense": 62,
+        "other_expense": 62
     ]
 
     public static func line(forCategoryID id: String) -> Int? {

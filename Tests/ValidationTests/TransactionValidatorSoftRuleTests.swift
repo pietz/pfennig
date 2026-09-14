@@ -1,6 +1,6 @@
 import Domain
-@testable import Validation
 import Testing
+@testable import Validation
 
 @Suite("TransactionValidator - soft rules (spec 14.2)")
 struct TransactionValidatorSoftRuleTests {
@@ -9,7 +9,12 @@ struct TransactionValidatorSoftRuleTests {
         #expect(TransactionValidator.validate(Fixture.passingSnapshot()).soft.isEmpty)
 
         var failing = Fixture.passingSnapshot()
-        failing.taxComponents = [TaxComponentSnapshot(rate: "25", net: Fixture.eur("100.00"), tax: Fixture.eur("19.00"), kind: .standard)]
+        failing.taxComponents = [TaxComponentSnapshot(
+            rate: "25",
+            net: Fixture.eur("100.00"),
+            tax: Fixture.eur("19.00"),
+            kind: .standard
+        )]
         let result = TransactionValidator.validate(failing)
         #expect(result.soft.contains { $0.code == .taxRateUnusual })
     }
@@ -114,7 +119,11 @@ struct TransactionValidatorSoftRuleTests {
     @Test("ASSET_CANDIDATE: an allocation flagged as an asset candidate is a soft issue")
     func assetCandidate() {
         var failing = Fixture.passingSnapshot()
-        failing.allocations = [AllocationSnapshot(categoryID: "hardware_equipment", amount: Fixture.eur("1850.00"), assetFlag: true)]
+        failing.allocations = [AllocationSnapshot(
+            categoryID: "hardware_equipment",
+            amount: Fixture.eur("1850.00"),
+            assetFlag: true
+        )]
         failing.allocationExpectedTotal = Fixture.eur("1850.00")
         let result = TransactionValidator.validate(failing)
         #expect(result.soft.contains { $0.code == .assetCandidate })
@@ -139,8 +148,17 @@ struct TransactionValidatorSoftRuleTests {
         failing.gross = Fixture.eur("5000.00")
         failing.net = Fixture.eur("4201.68")
         failing.tax = Fixture.eur("798.32")
-        failing.taxComponents = [TaxComponentSnapshot(rate: "19", net: Fixture.eur("4201.68"), tax: Fixture.eur("798.32"), kind: .standard)]
-        failing.allocations = [AllocationSnapshot(categoryID: "software_subscriptions", amount: Fixture.eur("4201.68"), assetFlag: false)]
+        failing.taxComponents = [TaxComponentSnapshot(
+            rate: "19",
+            net: Fixture.eur("4201.68"),
+            tax: Fixture.eur("798.32"),
+            kind: .standard
+        )]
+        failing.allocations = [AllocationSnapshot(
+            categoryID: "software_subscriptions",
+            amount: Fixture.eur("4201.68"),
+            assetFlag: false
+        )]
         failing.allocationExpectedTotal = Fixture.eur("4201.68")
         failing.highAmountThreshold = Fixture.eur("1000.00")
         failing.provenance = ProvenanceSummary(hasAnyNonAgentProvenance: false)

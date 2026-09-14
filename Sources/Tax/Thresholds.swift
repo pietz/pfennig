@@ -9,11 +9,11 @@ public enum Thresholds {
     /// GWG (geringwertiges Wirtschaftsgut) net threshold, §6 Abs. 2 EStG (spec 5.6).
     /// Expense allocations in a hardware/equipment category above this net
     /// amount are flagged as possible fixed assets.
-    public static let gwgNetThreshold = Money(minorUnits: 80_000, currency: .eur)
+    public static let gwgNetThreshold = Money(minorUnits: 80000, currency: .eur)
 
     /// Kleinbetragsrechnung gross limit, §33 UStDV (spec 5.5). Below this
     /// gross amount, several invoice formalities are relaxed for `domesticVAT`.
-    public static let kleinbetragGrossLimit = Money(minorUnits: 25_000, currency: .eur)
+    public static let kleinbetragGrossLimit = Money(minorUnits: 25000, currency: .eur)
 
     /// Default monetary comparison tolerance for hard validations (spec 14.1),
     /// e.g. `sum(taxComponents.net) == invoice.net` within this tolerance.

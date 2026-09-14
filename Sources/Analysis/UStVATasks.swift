@@ -30,7 +30,9 @@ public enum UStVATasks {
 
     /// One row of the "Steuern" section.
     public struct Summary: Sendable, Equatable, Identifiable {
-        public var id: String { UStVATasks.submissionKey(period) }
+        public var id: String {
+            UStVATasks.submissionKey(period)
+        }
 
         public let period: UStVAPeriod
         /// 10th of the month after the period, plus one month with Dauerfristverlängerung.
@@ -51,8 +53,13 @@ public enum UStVATasks {
         /// The period was marked submitted and its values moved afterwards.
         public let changedSinceSubmission: Bool
 
-        public var isSubmitted: Bool { submittedAt != nil }
-        public var isDraft: Bool { exceptionCount > 0 }
+        public var isSubmitted: Bool {
+            submittedAt != nil
+        }
+
+        public var isDraft: Bool {
+            exceptionCount > 0
+        }
 
         public init(
             period: UStVAPeriod,
@@ -208,7 +215,7 @@ public enum UStVATasks {
     ) -> ValueObservation<ValueReducers.Fetch<[Summary]>> {
         let mode = mode(for: profile)
         return ValueObservation.tracking { db in
-            startRows(try summaries(db, profile: profile, today: today), mode: mode)
+            try startRows(summaries(db, profile: profile, today: today), mode: mode)
         }
     }
 
@@ -255,7 +262,9 @@ public enum UStVATasks {
         public let submittedAt: String?
         public let changedSinceSubmission: Bool
 
-        public var isSubmitted: Bool { submittedAt != nil }
+        public var isSubmitted: Bool {
+            submittedAt != nil
+        }
 
         public init(
             result: UStVAReturn,
@@ -280,10 +289,10 @@ public enum UStVATasks {
         let result = try UStVACalculator.prepare(period: period, profile: profile, db: db)
         let ids = Array(Set(result.exceptions.compactMap(\.transactionID)))
         let record = try submittedRecords(db, profileID: profile.id)[submissionKey(period)]
-        return TaskDetail(
+        return try TaskDetail(
             result: result,
-            subjects: try exceptionSubjects(db, transactionIDs: ids),
-            dueDate: period.dueDate(dauerfristverlaengerung: try dauerfristverlaengerung(db)),
+            subjects: exceptionSubjects(db, transactionIDs: ids),
+            dueDate: period.dueDate(dauerfristverlaengerung: dauerfristverlaengerung(db)),
             submittedAt: record?.submittedAt,
             changedSinceSubmission: record.map {
                 $0.contentHash != SubmittedReturnRepository.contentHash(of: result)

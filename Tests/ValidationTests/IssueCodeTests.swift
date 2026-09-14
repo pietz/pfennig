@@ -1,6 +1,6 @@
 import Domain
-@testable import Validation
 import Testing
+@testable import Validation
 
 @Suite("IssueCode")
 struct IssueCodeTests {
@@ -29,7 +29,12 @@ struct IssueCodeTests {
 
     @Test("Only the tolerance-mismatch family can be overridable")
     func onlyToleranceMismatchOverridable() {
-        let toleranceFamily: Set<IssueCode> = [.taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch, .allocationSumMismatch]
+        let toleranceFamily: Set<IssueCode> = [
+            .taxComponentNetMismatch,
+            .taxComponentTaxMismatch,
+            .grossMismatch,
+            .allocationSumMismatch
+        ]
         let tinyDeviation = Money(minorUnits: 1, currency: .eur)
         for code in IssueCode.allCases {
             let overridable = code.isOverridable(deviation: tinyDeviation)

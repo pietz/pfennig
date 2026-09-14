@@ -1,6 +1,6 @@
 import Domain
-@testable import Validation
 import Testing
+@testable import Validation
 
 @Suite("TransactionValidator - baseline")
 struct TransactionValidatorBaselineTests {
@@ -58,7 +58,12 @@ struct TransactionValidatorHardRuleTests {
         #expect(TransactionValidator.validate(Fixture.passingSnapshot()).hard.isEmpty)
 
         var failing = Fixture.passingSnapshot()
-        failing.taxComponents = [TaxComponentSnapshot(rate: "19", net: Fixture.eur("90.00"), tax: Fixture.eur("19.00"), kind: .standard)]
+        failing.taxComponents = [TaxComponentSnapshot(
+            rate: "19",
+            net: Fixture.eur("90.00"),
+            tax: Fixture.eur("19.00"),
+            kind: .standard
+        )]
         let result = TransactionValidator.validate(failing)
         let issue = result.hard.first { $0.code == .taxComponentNetMismatch }
         #expect(issue != nil)
@@ -68,7 +73,12 @@ struct TransactionValidatorHardRuleTests {
     @Test("TAX_COMPONENT_NET_MISMATCH within 1 EUR is overridable")
     func taxComponentNetMismatchOverridable() {
         var failing = Fixture.passingSnapshot()
-        failing.taxComponents = [TaxComponentSnapshot(rate: "19", net: Fixture.eur("99.50"), tax: Fixture.eur("19.00"), kind: .standard)]
+        failing.taxComponents = [TaxComponentSnapshot(
+            rate: "19",
+            net: Fixture.eur("99.50"),
+            tax: Fixture.eur("19.00"),
+            kind: .standard
+        )]
         let issue = TransactionValidator.validate(failing).hard.first { $0.code == .taxComponentNetMismatch }
         #expect(issue?.isOverridable == true)
     }
@@ -76,7 +86,12 @@ struct TransactionValidatorHardRuleTests {
     @Test("TAX_COMPONENT_TAX_MISMATCH: component tax sum differing beyond tolerance is a hard issue")
     func taxComponentTaxMismatch() {
         var failing = Fixture.passingSnapshot()
-        failing.taxComponents = [TaxComponentSnapshot(rate: "19", net: Fixture.eur("100.00"), tax: Fixture.eur("10.00"), kind: .standard)]
+        failing.taxComponents = [TaxComponentSnapshot(
+            rate: "19",
+            net: Fixture.eur("100.00"),
+            tax: Fixture.eur("10.00"),
+            kind: .standard
+        )]
         let result = TransactionValidator.validate(failing)
         #expect(result.hard.contains { $0.code == .taxComponentTaxMismatch })
     }
@@ -92,7 +107,11 @@ struct TransactionValidatorHardRuleTests {
     @Test("ALLOCATION_SUM_MISMATCH: allocation sum differing from the expected total is a hard issue")
     func allocationSumMismatch() {
         var failing = Fixture.passingSnapshot()
-        failing.allocations = [AllocationSnapshot(categoryID: "software_subscriptions", amount: Fixture.eur("50.00"), assetFlag: false)]
+        failing.allocations = [AllocationSnapshot(
+            categoryID: "software_subscriptions",
+            amount: Fixture.eur("50.00"),
+            assetFlag: false
+        )]
         let result = TransactionValidator.validate(failing)
         #expect(result.hard.contains { $0.code == .allocationSumMismatch })
     }
@@ -108,7 +127,7 @@ struct TransactionValidatorHardRuleTests {
                 paymentBookedAmount: Fixture.eur("100.00"),
                 allocatedToThisTransaction: Fixture.eur("100.00"),
                 totalAllocatedForPayment: Fixture.eur("150.00")
-            ),
+            )
         ]
         let result = TransactionValidator.validate(failing)
         #expect(result.hard.contains { $0.code == .paymentAllocationExceeds })

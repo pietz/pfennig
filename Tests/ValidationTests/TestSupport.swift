@@ -17,10 +17,10 @@ enum Fixture {
             tax: eur("19.00"),
             gross: eur("119.00"),
             taxComponents: [
-                TaxComponentSnapshot(rate: "19", net: eur("100.00"), tax: eur("19.00"), kind: .standard),
+                TaxComponentSnapshot(rate: "19", net: eur("100.00"), tax: eur("19.00"), kind: .standard)
             ],
             allocations: [
-                AllocationSnapshot(categoryID: "software_subscriptions", amount: eur("100.00"), assetFlag: false),
+                AllocationSnapshot(categoryID: "software_subscriptions", amount: eur("100.00"), assetFlag: false)
             ],
             allocationExpectedTotal: eur("100.00"),
             treatment: .domesticVAT,

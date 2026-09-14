@@ -255,16 +255,16 @@ struct UStVATaskTests {
             database: database
         )
         // Q3 as the current period, Q2 because the archive starts there.
-        #expect(UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular).count == 2)
+        #expect(try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular).count == 2)
 
         try SubmittedReturnRepository.markSubmitted(database, profileID: profile.id, result: q2)
-        let afterSubmission = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        let afterSubmission = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular)
         #expect(afterSubmission.count == 1)
         #expect(!afterSubmission.contains { $0.period == UStVAPeriod(year: 2026, quarter: 2) })
 
         // A later booking inside the filed quarter brings it back with a note.
         try income(database, profile, net: 50000, on: LocalDate(year: 2026, month: 6, day: 4))
-        let afterChange = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        let afterChange = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular)
         let q2Row = try #require(afterChange.first { $0.period == UStVAPeriod(year: 2026, quarter: 2) })
         #expect(q2Row.changedSinceSubmission)
         #expect(q2Row.isSubmitted)
@@ -281,7 +281,7 @@ struct UStVATaskTests {
         )
         try SubmittedReturnRepository.markSubmitted(database, profileID: profile.id, result: q3)
 
-        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        let rows = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular)
         let current = try #require(rows.first)
         #expect(current.period == UStVAPeriod(year: 2026, quarter: 3))
         #expect(current.isSubmitted)
@@ -297,7 +297,7 @@ struct UStVATaskTests {
         // Seven quarters are prepared, ...
         #expect(try summaries(database, profile, today: today).count == 7)
         // ... but the archive starts in Q3 2026, so nothing lies before it.
-        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        let rows = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular)
         #expect(rows.map(\.period) == [UStVAPeriod(year: 2026, quarter: 3)])
     }
 
@@ -309,7 +309,7 @@ struct UStVATaskTests {
         try income(database, profile, net: 50000, on: LocalDate(year: 2025, month: 2, day: 3))
         try income(database, profile, net: 100_000, on: LocalDate(year: 2026, month: 8, day: 1))
 
-        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        let rows = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .regular)
 
         // Every quarter from the first booking on is listed, the empty ones
         // included: a regular filer owes a Nullmeldung for them.
@@ -338,13 +338,13 @@ struct UStVATaskTests {
             invoiceDate: LocalDate(year: 2026, month: 8, day: 1),
             net: 100_000, tax: 0, paidOn: LocalDate(year: 2026, month: 8, day: 1)
         )
-        #expect(UStVATasks.startRows(
-            try summaries(database, profile, today: today),
+        #expect(try UStVATasks.startRows(
+            summaries(database, profile, today: today),
             mode: .selfAssessedOnly
         ).isEmpty)
 
         try reverseCharge(database, profile, net: 100_000, on: LocalDate(year: 2026, month: 8, day: 5))
-        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .selfAssessedOnly)
+        let rows = try UStVATasks.startRows(summaries(database, profile, today: today), mode: .selfAssessedOnly)
         let row = try #require(rows.first)
         #expect(rows.count == 1)
         #expect(row.period == UStVAPeriod(year: 2026, quarter: 3))

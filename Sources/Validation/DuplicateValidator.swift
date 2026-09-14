@@ -18,13 +18,20 @@ public enum DuplicateValidator {
     ) -> ValidationIssue? {
         let key = StatementLineFingerprintKey(accountIBAN: accountIBAN, fingerprint: fingerprint)
         guard existingFingerprints.contains(key) else { return nil }
-        return ValidationIssue(code: .duplicateStatementLineFingerprint, fieldName: "fingerprint", params: ["fingerprint": fingerprint])
+        return ValidationIssue(
+            code: .duplicateStatementLineFingerprint,
+            fieldName: "fingerprint",
+            params: ["fingerprint": fingerprint]
+        )
     }
 
     /// Spec 14.2 / 25: "Likely semantic duplicate." The caller computes the
     /// similarity score against DB-resident candidates (same counterparty,
     /// amount and nearby date, per spec 25); this only applies the threshold.
-    public static func validateSemanticDuplicate(similarityScore: Double, threshold: Double = 0.85) -> ValidationIssue? {
+    public static func validateSemanticDuplicate(
+        similarityScore: Double,
+        threshold: Double = 0.85
+    ) -> ValidationIssue? {
         guard similarityScore >= threshold else { return nil }
         return ValidationIssue(code: .semanticDuplicate, params: ["score": String(similarityScore)])
     }

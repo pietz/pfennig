@@ -25,7 +25,12 @@ public struct PaymentAllocationFact: Sendable, Equatable {
     public let allocatedToThisTransaction: Money
     public let totalAllocatedForPayment: Money
 
-    public init(paymentID: String, paymentBookedAmount: Money, allocatedToThisTransaction: Money, totalAllocatedForPayment: Money) {
+    public init(
+        paymentID: String,
+        paymentBookedAmount: Money,
+        allocatedToThisTransaction: Money,
+        totalAllocatedForPayment: Money
+    ) {
         self.paymentID = paymentID
         self.paymentBookedAmount = paymentBookedAmount
         self.allocatedToThisTransaction = allocatedToThisTransaction

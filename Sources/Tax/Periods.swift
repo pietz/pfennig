@@ -16,15 +16,15 @@ public struct UStVAPeriod: Sendable, Equatable {
     public init(year: Int, month: Int) {
         precondition((1 ... 12).contains(month), "month must be 1...12")
         self.year = year
-        self.kind = .monthly
-        self.index = month
+        kind = .monthly
+        index = month
     }
 
     public init(year: Int, quarter: Int) {
         precondition((1 ... 4).contains(quarter), "quarter must be 1...4")
         self.year = year
-        self.kind = .quarterly
-        self.index = quarter
+        kind = .quarterly
+        index = quarter
     }
 
     /// First calendar month (1...12) of this period.

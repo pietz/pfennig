@@ -1,6 +1,6 @@
 import Domain
-@testable import Tax
 import Foundation
+@testable import Tax
 import Testing
 
 /// Mirrors the subset of `Fixtures/documents/*/expected.json` (spec 13) that
@@ -44,7 +44,7 @@ struct FixtureScenarioTests {
         "11-income-invoice-france-reverse-charge": .service,
         "12-credit-note-hosting": .digitalService,
         "13-telecom-deposit-line": .service,
-        "14-cafe-receipt-photo": .goods,
+        "14-cafe-receipt-photo": .goods
     ]
 
     static var fixturesRoot: URL {
@@ -57,11 +57,12 @@ struct FixtureScenarioTests {
 
     static var fixtureCases: [(name: String, url: URL)] {
         let fixtures = fixturesRoot
-        guard let entries = try? FileManager.default.contentsOfDirectory(at: fixtures, includingPropertiesForKeys: nil) else {
+        guard let entries = try? FileManager.default.contentsOfDirectory(at: fixtures, includingPropertiesForKeys: nil)
+        else {
             return []
         }
         return entries
-            .filter { $0.hasDirectoryPath }
+            .filter(\.hasDirectoryPath)
             .map { ($0.lastPathComponent, $0.appendingPathComponent("expected.json")) }
             .sorted { $0.name < $1.name }
     }
@@ -82,7 +83,10 @@ struct FixtureScenarioTests {
         let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
             profile: ProfileFacts(countryCode: "DE", vatStatus: .taxable, accountingMethod: .cash),
             direction: expected.direction,
-            counterparty: CounterpartyTaxFacts(countryCode: expected.counterparty.countryCode, hasVATId: expected.counterparty.vatId != nil),
+            counterparty: CounterpartyTaxFacts(
+                countryCode: expected.counterparty.countryCode,
+                hasVATId: expected.counterparty.vatId != nil
+            ),
             supplyType: supplyType,
             document: DocumentTaxFacts(taxShown: taxShown)
         ))

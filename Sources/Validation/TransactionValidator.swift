@@ -8,10 +8,12 @@ import Foundation
 /// caller and passed in as plain values.
 public struct TransactionSnapshot: Sendable {
     // MARK: Currency / dates not parseable upstream (spec 14.1)
+
     public var unparseableCurrencyCode: String?
     public var unparseableDateFields: [String]
 
     // MARK: Dates
+
     public var invoiceDate: LocalDate?
     public var serviceDate: LocalDate?
     public var servicePeriodStart: LocalDate?
@@ -19,6 +21,7 @@ public struct TransactionSnapshot: Sendable {
     public var paymentDates: [LocalDate]
 
     // MARK: Amounts (booked currency)
+
     public var net: Money
     public var tax: Money
     public var gross: Money
@@ -29,11 +32,13 @@ public struct TransactionSnapshot: Sendable {
     public var allocationExpectedTotal: Money
 
     // MARK: Payments
+
     public var paymentAllocations: [PaymentAllocationFact]
     /// Total already paid toward this transaction (sum of `allocatedToThisTransaction`).
     public var totalPaid: Money?
 
     // MARK: Treatment / counterparty
+
     public var treatment: TaxTreatment
     public var direction: Direction
     public var isCounterpartyDomestic: Bool
@@ -41,17 +46,21 @@ public struct TransactionSnapshot: Sendable {
     public var customerVATIDPresent: Bool
 
     // MARK: Kleinbetrag (precomputed via `Tax.Kleinbetrag.appliesTo`)
+
     public var isKleinbetrag: Bool
     public var invoiceNumberPresent: Bool
 
     // MARK: 10-day rule (precomputed via `Tax.TenDayRule.isInWindow`)
+
     public var paymentsInTenDayWindow: [LocalDate]
 
     // MARK: Exchange rate
+
     public var bookedExchangeRate: Decimal?
     public var bankActualExchangeRate: Decimal?
 
     // MARK: High-amount / provenance (spec 14.2)
+
     public var highAmountThreshold: Money?
     public var provenance: ProvenanceSummary
 
@@ -125,7 +134,9 @@ public struct TransactionValidationResult: Sendable, Equatable {
         self.soft = soft
     }
 
-    public var isValid: Bool { hard.isEmpty }
+    public var isValid: Bool {
+        hard.isEmpty
+    }
 }
 
 /// Runs every spec-14 rule that can be evaluated from a `TransactionSnapshot`
@@ -139,26 +150,43 @@ public enum TransactionValidator {
         var soft: [ValidationIssue] = []
 
         // MARK: Hard (14.1)
-        hard.append(contentsOf: MoneyValidator.validateImpossibleDates(unparseableDateFields: snapshot.unparseableDateFields))
+
+        hard
+            .append(contentsOf: MoneyValidator
+                .validateImpossibleDates(unparseableDateFields: snapshot.unparseableDateFields))
         if let issue = MoneyValidator.validateCurrency(rawCurrencyCode: snapshot.unparseableCurrencyCode) {
             hard.append(issue)
         }
-        if let issue = MoneyValidator.validateServicePeriod(start: snapshot.servicePeriodStart, end: snapshot.servicePeriodEnd) {
+        if let issue = MoneyValidator.validateServicePeriod(
+            start: snapshot.servicePeriodStart,
+            end: snapshot.servicePeriodEnd
+        ) {
             hard.append(issue)
         }
 
-        let componentsNetSum = (try? snapshot.taxComponents.reduce(Money.zero(snapshot.net.currency)) { try $0 + $1.net }) ?? snapshot.net
-        if let issue = MoneyValidator.validateTaxComponentsNet(componentsNetSum: componentsNetSum, invoiceNet: snapshot.net) {
+        let componentsNetSum = (try? snapshot.taxComponents
+            .reduce(Money.zero(snapshot.net.currency)) { try $0 + $1.net }) ?? snapshot.net
+        if let issue = MoneyValidator.validateTaxComponentsNet(
+            componentsNetSum: componentsNetSum,
+            invoiceNet: snapshot.net
+        ) {
             hard.append(issue)
         }
-        let componentsTaxSum = (try? snapshot.taxComponents.reduce(Money.zero(snapshot.tax.currency)) { try $0 + $1.tax }) ?? snapshot.tax
-        if let issue = MoneyValidator.validateTaxComponentsTax(componentsTaxSum: componentsTaxSum, invoiceTax: snapshot.tax) {
+        let componentsTaxSum = (try? snapshot.taxComponents
+            .reduce(Money.zero(snapshot.tax.currency)) { try $0 + $1.tax }) ?? snapshot.tax
+        if let issue = MoneyValidator.validateTaxComponentsTax(
+            componentsTaxSum: componentsTaxSum,
+            invoiceTax: snapshot.tax
+        ) {
             hard.append(issue)
         }
         if let issue = MoneyValidator.validateGross(net: snapshot.net, tax: snapshot.tax, gross: snapshot.gross) {
             hard.append(issue)
         }
-        if let issue = AllocationValidator.validateAllocationSum(allocations: snapshot.allocations, expectedTotal: snapshot.allocationExpectedTotal) {
+        if let issue = AllocationValidator.validateAllocationSum(
+            allocations: snapshot.allocations,
+            expectedTotal: snapshot.allocationExpectedTotal
+        ) {
             hard.append(issue)
         }
         for fact in snapshot.paymentAllocations {
@@ -171,7 +199,11 @@ public enum TransactionValidator {
         }
 
         // MARK: Soft (14.2)
-        soft.append(contentsOf: TaxValidator.validateTaxRateUnusual(components: snapshot.taxComponents, treatment: snapshot.treatment))
+
+        soft.append(contentsOf: TaxValidator.validateTaxRateUnusual(
+            components: snapshot.taxComponents,
+            treatment: snapshot.treatment
+        ))
         if let issue = TaxValidator.validateTreatmentCountryMismatch(
             treatment: snapshot.treatment,
             isCounterpartyDomestic: snapshot.isCounterpartyDomestic,
@@ -194,7 +226,10 @@ public enum TransactionValidator {
         ) {
             soft.append(issue)
         }
-        if let issue = TaxValidator.validateInvoiceNumberMissing(isKleinbetrag: snapshot.isKleinbetrag, invoiceNumberPresent: snapshot.invoiceNumberPresent) {
+        if let issue = TaxValidator.validateInvoiceNumberMissing(
+            isKleinbetrag: snapshot.isKleinbetrag,
+            invoiceNumberPresent: snapshot.invoiceNumberPresent
+        ) {
             soft.append(issue)
         }
         if let totalPaid = snapshot.totalPaid,
@@ -202,12 +237,19 @@ public enum TransactionValidator {
         {
             soft.append(issue)
         }
-        if let issue = MoneyValidator.validateExchangeRateDeviation(bookedRate: snapshot.bookedExchangeRate, bankActualRate: snapshot.bankActualExchangeRate) {
+        if let issue = MoneyValidator.validateExchangeRateDeviation(
+            bookedRate: snapshot.bookedExchangeRate,
+            bankActualRate: snapshot.bankActualExchangeRate
+        ) {
             soft.append(issue)
         }
         soft.append(contentsOf: AllocationValidator.validateAssetCandidates(allocations: snapshot.allocations))
         soft.append(contentsOf: TaxValidator.validateTenDayRule(paymentsInWindow: snapshot.paymentsInTenDayWindow))
-        if let issue = TaxValidator.validateHighAmountAgentOnly(amount: snapshot.gross, threshold: snapshot.highAmountThreshold, provenance: snapshot.provenance) {
+        if let issue = TaxValidator.validateHighAmountAgentOnly(
+            amount: snapshot.gross,
+            threshold: snapshot.highAmountThreshold,
+            provenance: snapshot.provenance
+        ) {
             soft.append(issue)
         }
 

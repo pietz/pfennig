@@ -1,6 +1,6 @@
 import Domain
-@testable import Validation
 import Testing
+@testable import Validation
 
 @Suite("ReferentialValidator (needs DB context)")
 struct ReferentialValidatorTests {
@@ -25,14 +25,22 @@ struct ReferentialValidatorTests {
     @Test("UNSUPPORTED_STATE_TRANSITION: an allowed transition produces no issue")
     func allowedStateTransition() {
         let allowed: Set<WorkflowTransition> = [WorkflowTransition(from: .active, to: .archived)]
-        let issue = ReferentialValidator.validateStateTransition(from: .active, to: .archived, allowedTransitions: allowed)
+        let issue = ReferentialValidator.validateStateTransition(
+            from: .active,
+            to: .archived,
+            allowedTransitions: allowed
+        )
         #expect(issue == nil)
     }
 
     @Test("UNSUPPORTED_STATE_TRANSITION: an unlisted transition is a hard issue")
     func disallowedStateTransition() {
         let allowed: Set<WorkflowTransition> = [WorkflowTransition(from: .active, to: .archived)]
-        let issue = ReferentialValidator.validateStateTransition(from: .archived, to: .active, allowedTransitions: allowed)
+        let issue = ReferentialValidator.validateStateTransition(
+            from: .archived,
+            to: .active,
+            allowedTransitions: allowed
+        )
         #expect(issue?.code == .unsupportedStateTransition)
     }
 
@@ -59,22 +67,43 @@ struct DuplicateValidatorTests {
 
     @Test("DUPLICATE_STATEMENT_LINE_FINGERPRINT: a new fingerprint on the account produces no issue")
     func newStatementLineFingerprint() {
-        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(accountIBAN: "acc1", fingerprint: "fp1")]
-        let issue = DuplicateValidator.validateStatementLineFingerprint(accountIBAN: "acc1", fingerprint: "fp2", existingFingerprints: existing)
+        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(
+            accountIBAN: "acc1",
+            fingerprint: "fp1"
+        )]
+        let issue = DuplicateValidator.validateStatementLineFingerprint(
+            accountIBAN: "acc1",
+            fingerprint: "fp2",
+            existingFingerprints: existing
+        )
         #expect(issue == nil)
     }
 
     @Test("DUPLICATE_STATEMENT_LINE_FINGERPRINT: a repeated fingerprint on the same account is a hard issue")
     func duplicateStatementLineFingerprint() {
-        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(accountIBAN: "acc1", fingerprint: "fp1")]
-        let issue = DuplicateValidator.validateStatementLineFingerprint(accountIBAN: "acc1", fingerprint: "fp1", existingFingerprints: existing)
+        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(
+            accountIBAN: "acc1",
+            fingerprint: "fp1"
+        )]
+        let issue = DuplicateValidator.validateStatementLineFingerprint(
+            accountIBAN: "acc1",
+            fingerprint: "fp1",
+            existingFingerprints: existing
+        )
         #expect(issue?.code == .duplicateStatementLineFingerprint)
     }
 
     @Test("The same fingerprint on a different account produces no issue")
     func sameFingerprintDifferentAccount() {
-        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(accountIBAN: "acc1", fingerprint: "fp1")]
-        let issue = DuplicateValidator.validateStatementLineFingerprint(accountIBAN: "acc2", fingerprint: "fp1", existingFingerprints: existing)
+        let existing: Set<StatementLineFingerprintKey> = [StatementLineFingerprintKey(
+            accountIBAN: "acc1",
+            fingerprint: "fp1"
+        )]
+        let issue = DuplicateValidator.validateStatementLineFingerprint(
+            accountIBAN: "acc2",
+            fingerprint: "fp1",
+            existingFingerprints: existing
+        )
         #expect(issue == nil)
     }
 

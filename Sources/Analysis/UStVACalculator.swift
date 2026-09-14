@@ -337,7 +337,9 @@ private extension UStVACalculator {
                     // A Kleinunternehmer files a UStVA only because of §13b
                     // (§18 Abs. 4a UStG) and reports only that; the §19 income
                     // itself does not go into Kz 48.
-                    if isSmallBusiness, kennzahl == 48 { continue }
+                    if isSmallBusiness, kennzahl == 48 {
+                        continue
+                    }
                     credit(
                         kennzahl,
                         slice.baseMinor,

@@ -8,7 +8,10 @@ import Domain
 public struct UStVAReturn: Sendable, Equatable {
     /// One transaction/payment slice contributing to a form line.
     public struct Contribution: Sendable, Equatable, Identifiable {
-        public var id: String { "\(transactionID)|\(paymentID ?? "-")|\(kennzahl)" }
+        public var id: String {
+            "\(transactionID)|\(paymentID ?? "-")|\(kennzahl)"
+        }
+
         public let kennzahl: Int
         public let transactionID: String
         public let paymentID: String?
@@ -18,8 +21,15 @@ public struct UStVAReturn: Sendable, Equatable {
         public let description: String
         public let amountMinor: Int64
 
-        public init(kennzahl: Int, transactionID: String, paymentID: String?, date: LocalDate,
-                    counterpartyName: String?, description: String, amountMinor: Int64) {
+        public init(
+            kennzahl: Int,
+            transactionID: String,
+            paymentID: String?,
+            date: LocalDate,
+            counterpartyName: String?,
+            description: String,
+            amountMinor: Int64
+        ) {
             self.kennzahl = kennzahl
             self.transactionID = transactionID
             self.paymentID = paymentID
@@ -32,7 +42,10 @@ public struct UStVAReturn: Sendable, Equatable {
 
     /// One Kennzahl of the form.
     public struct Line: Sendable, Equatable, Identifiable {
-        public var id: Int { kennzahl }
+        public var id: Int {
+            kennzahl
+        }
+
         public let kennzahl: Int
         /// Short German label as printed on the form, e.g. "Steuerpflichtige Umsätze 19 %".
         public let title: String
@@ -43,8 +56,14 @@ public struct UStVAReturn: Sendable, Equatable {
         public let isVerified: Bool
         public let contributions: [Contribution]
 
-        public init(kennzahl: Int, title: String, isBase: Bool, amountMinor: Int64, isVerified: Bool,
-                    contributions: [Contribution]) {
+        public init(
+            kennzahl: Int,
+            title: String,
+            isBase: Bool,
+            amountMinor: Int64,
+            isVerified: Bool,
+            contributions: [Contribution]
+        ) {
             self.kennzahl = kennzahl
             self.title = title
             self.isBase = isBase
@@ -66,7 +85,10 @@ public struct UStVAReturn: Sendable, Equatable {
             case other
         }
 
-        public var id: String { "\(kind.rawValue)|\(transactionID ?? "-")|\(paymentID ?? "-")" }
+        public var id: String {
+            "\(kind.rawValue)|\(transactionID ?? "-")|\(paymentID ?? "-")"
+        }
+
         public let kind: Kind
         public let transactionID: String?
         public let paymentID: String?
@@ -90,10 +112,19 @@ public struct UStVAReturn: Sendable, Equatable {
     public let payableMinor: Int64
     public let exceptions: [Exception]
 
-    public var isDraft: Bool { !exceptions.isEmpty }
+    public var isDraft: Bool {
+        !exceptions.isEmpty
+    }
 
-    public init(period: UStVAPeriod, formYear: Int, taxNumber: String?, isSmallBusiness: Bool,
-                lines: [Line], payableMinor: Int64, exceptions: [Exception]) {
+    public init(
+        period: UStVAPeriod,
+        formYear: Int,
+        taxNumber: String?,
+        isSmallBusiness: Bool,
+        lines: [Line],
+        payableMinor: Int64,
+        exceptions: [Exception]
+    ) {
         self.period = period
         self.formYear = formYear
         self.taxNumber = taxNumber
@@ -103,5 +134,7 @@ public struct UStVAReturn: Sendable, Equatable {
         self.exceptions = exceptions
     }
 
-    public func line(_ kennzahl: Int) -> Line? { lines.first { $0.kennzahl == kennzahl } }
+    public func line(_ kennzahl: Int) -> Line? {
+        lines.first { $0.kennzahl == kennzahl }
+    }
 }
