@@ -1,6 +1,6 @@
 # UStVA-Vorbereitung
 
-**Status:** Draft — awaiting approval (2026-09-14)
+**Status:** Approved 2026-09-14. Decisions: Vorsteuer bei max(Rechnung, Zahlung); Ausnahmen warnen statt blockieren; Erstnutzer ohne Dauerfristverlängerung, Testtermin 10.10.2026.
 
 Ausbau der [Workflow-Spezifikation](document-to-tax-workflow.md), Abschnitt „Steueraufgaben und Ausgabe“, für die Umsatzsteuer-Voranmeldung. Fachliche Grundlage: [Implementierungslücken](../research-user-workflow.md) und [XML-Upload-Recherche](../research-ustva-xml.md). Erstes Zielereignis: die Voranmeldung Q3 2026 des Erstnutzers (Regelbesteuerung, quartalsweise, Ist-Versteuerung).
 
@@ -52,9 +52,3 @@ Anlage EÜR (eigene Spezifikation), Dauerfristverlängerungsantrag und Sondervor
 - Ein leerer Zeitraum zeigt Nullwerte und die Aufgabe, keinen Fehler.
 - Kopieren und Export markieren nichts als übermittelt; „Als übermittelt markieren“ sperrt keine Buchung.
 - Jede Formularsumme ist durch die Einzelaufstellung reproduzierbar.
-
-## Offene Entscheidungen des Nutzers
-
-1. Vorsteuerzeitpunkt max(Rechnung, Zahlung) statt Rechnungsbesitz: bestätigen.
-2. Ausnahmen warnen statt blockieren: bestätigen.
-3. Dauerfristverlängerung des Erstnutzers: ja/nein (nur für den Testtermin relevant, die Einstellung gibt es in jedem Fall).
