@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 345 tests across 46 suites plus a successful Debug app build.
+The latest verification baseline is 348 tests across 46 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -275,6 +275,13 @@ no relations table, no reversal bookings, no new transaction type.
   `Direction.settlingPaymentDirection` and
   `TransactionQueryRules.signedAllocationExpression` are the single definition,
   shared by `v_transaction_status`, `UStVACalculator` and the write boundary.
+- **The document type carries the sign.** Choosing "Gutschrift" in the
+  inspector mirrors net, tax, gross, the components and the allocations to
+  negative, and choosing any other type mirrors them back
+  (`TransactionDraft.mirrorAmounts(toCreditNote:)`, magnitudes, so mirroring
+  twice changes nothing). `AMOUNT_SIGN_INVALID` now works in both directions:
+  a credit note with positive amounts is as hard an issue as a negative
+  invoice. An amount-less draft has no sign yet and is not an issue.
 - **A credit note is a transaction with negative amounts in the direction of
   the document it corrects** - a supplier's Gutschrift is a negative expense.
   Negative net/tax/gross are allowed for `transactionType == .creditNote` and
@@ -324,11 +331,16 @@ no relations table, no reversal bookings, no new transaction type.
 
 No stored column changed, but `v_transaction_status` did, and a view lives in
 the database file. `v001_initial` is the only migration and does not run again
-on an existing archive, so **the development archive still holds the previous
-view definition** and would report the old, unsigned payment status. It needs
-`DROP VIEW v_transaction_status;` plus the current `CREATE VIEW` once, run
-against `~/Library/Application Support/Pfennig/bookkeeping.sqlite`. That was
-not done here: the archive is user data and was not opened.
+on an existing archive, so an archive created earlier keeps the previous view
+definition and would report the old, unsigned payment status.
+
+**The development archive's view was refreshed by hand on 2026-09-14**
+(`DROP VIEW v_transaction_status;` plus the current `CREATE VIEW`, run against
+`~/Library/Application Support/Pfennig/bookkeeping.sqlite`). The
+pre-refresh copy is kept as
+`bookkeeping-pre-view-refresh-2026-09-14.sqlite`; no row was touched. Every
+future change to a view needs the same one-time step for as long as
+`v001_initial` is edited in place instead of a forward migration being added.
 
 ## Product boundary
 

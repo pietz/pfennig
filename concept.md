@@ -477,8 +477,9 @@ Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile +
 - Impossible dates; service period end < start
 - `sum(taxComponents.net) ≠ invoice.net` or `sum(taxComponents.tax) ≠ invoice.tax` beyond tolerance (default 0.02 EUR)
 - `net + tax ≠ gross` beyond tolerance
-- A negative amount on anything but a `creditNote`, or net, tax and gross with
-  differing signs (`AMOUNT_SIGN_INVALID`)
+- A negative amount on anything but a `creditNote`, a `creditNote` with
+  positive amounts, or net, tax and gross with differing signs
+  (`AMOUNT_SIGN_INVALID`)
 - `sum(bookkeeping_allocations.amount) ≠ booked net amount` (or gross for non-deductible cases) beyond tolerance
 - Payment allocation total exceeds payment amount
 - A new payment settling more than the booked gross amount, or a refund giving
