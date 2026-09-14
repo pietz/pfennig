@@ -154,6 +154,8 @@ struct TransactionsView: View {
             isConfirmingDiscard = true
             return
         }
+        // The booking has to be in the list, whatever was filtered before.
+        filter = TransactionListFilter()
         search = ""
         showsInspector = true
         selection = id

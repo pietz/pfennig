@@ -180,7 +180,11 @@ final class AppModel {
     /// window of its own and must raise the ledger itself.
     func showTransaction(_ id: String) {
         requestedTransactionID = id
-        mainWindow?.makeKeyAndOrderFront(nil)
+        guard let mainWindow else { return }
+        if mainWindow.isMiniaturized {
+            mainWindow.deminiaturize(nil)
+        }
+        mainWindow.makeKeyAndOrderFront(nil)
     }
 
     // MARK: - Import (spec 39 M4)

@@ -82,8 +82,7 @@ struct RootView: View {
         .onChange(of: model.requestedTransactionID) { _, id in
             // Another window asked for a booking; the ledger has to be on
             // screen before `TransactionsView` can select it.
-            guard id != nil, selection != .transactions else { return }
-            transactionFilter = TransactionListFilter()
+            guard id != nil else { return }
             selection = .transactions
         }
         .confirmationDialog(
@@ -176,22 +175,40 @@ struct RootView: View {
     }
 }
 
-/// Hands the enclosing `NSWindow` to the model once, so a task window can
-/// bring the main window forward when it navigates the user back into the
-/// ledger. SwiftUI has no scene-level equivalent for raising an existing
+/// Hands the enclosing `NSWindow` to the model, so a task window can bring
+/// the main window forward when it navigates the user back into the ledger.
+/// SwiftUI has no scene-level equivalent for raising an existing
 /// `WindowGroup` window.
 private struct WindowReader: NSViewRepresentable {
     let onWindow: (NSWindow) -> Void
 
-    func makeNSView(context: Context) -> NSView {
-        let view = NSView(frame: .zero)
-        DispatchQueue.main.async {
-            if let window = view.window {
+    func makeNSView(context: Context) -> ReaderView {
+        ReaderView(onWindow: onWindow)
+    }
+
+    func updateNSView(_ nsView: ReaderView, context: Context) {}
+
+    /// Reports the window whenever the view joins one. A one-shot read after
+    /// `makeNSView` would miss it: the view is not in a window yet, and gets
+    /// no second chance.
+    final class ReaderView: NSView {
+        private let onWindow: (NSWindow) -> Void
+
+        init(onWindow: @escaping (NSWindow) -> Void) {
+            self.onWindow = onWindow
+            super.init(frame: .zero)
+        }
+
+        @available(*, unavailable)
+        required init?(coder: NSCoder) {
+            fatalError("init(coder:) is not used")
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            if let window {
                 onWindow(window)
             }
         }
-        return view
     }
-
-    func updateNSView(_ nsView: NSView, context: Context) {}
 }
