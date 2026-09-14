@@ -2,7 +2,7 @@
 
 Pfennig welcomes focused bug fixes, tests, documentation, and features that fit its German, local-first bookkeeping scope.
 
-Before starting substantial work, open or comment on a GitHub issue so the product behavior can be agreed before implementation. The principles in [`AGENTS.md`](AGENTS.md) and the detailed rules in [`concept.md`](concept.md) guide scope decisions.
+Before starting substantial work, open or comment on a GitHub issue so the product behavior can be agreed before implementation. The principles in [`AGENTS.md`](AGENTS.md) and the specification in [`docs/specs/pfennig-neu.md`](docs/specs/pfennig-neu.md) guide scope decisions.
 
 ## Development setup
 
@@ -25,7 +25,7 @@ Keep changes small and coherent. A pull request should explain:
 - how it was verified
 - whether it changes stored data, tax behavior, AI prompts, or data sent to an external service
 
-Add deterministic tests for bookkeeping and tax rules. AI extraction tests must use synthetic documents and recorded responses; live API access must remain optional.
+Add deterministic tests for bookkeeping and tax rules. Agent tests must use synthetic documents and a fake transport; live API access must remain optional.
 
 ## Tax-related changes
 
