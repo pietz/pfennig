@@ -2,13 +2,9 @@ import Database
 import Domain
 import Foundation
 
-/// The single decision function behind the automation level
-/// (`statement-import.md` 1: "Eine einzige Entscheidungsfunktion beantwortet
-/// für jeden Vorschlag: sofort übernehmen oder in Prüfen legen"). It is pure
-/// and deterministic: the model's own confidence is not one of its inputs.
-///
-/// The same function answers for document imports and for statement
-/// movements, so the level means the same thing everywhere.
+/// The single decision function behind the automation level: for every
+/// proposal it answers "commit now" or "put it into Prüfen". It is pure and
+/// deterministic: the model's own confidence is not one of its inputs.
 public enum AutomationPolicy {
     /// - Parameters:
     ///   - level: the user's setting.

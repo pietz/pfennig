@@ -15,10 +15,6 @@ public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     case amountSignInvalid = "AMOUNT_SIGN_INVALID"
     case allocationSumMismatch = "ALLOCATION_SUM_MISMATCH"
     case paymentAllocationExceeds = "PAYMENT_ALLOCATION_EXCEEDS"
-    case linkedEntityMissing = "LINKED_ENTITY_MISSING"
-    case unsupportedStateTransition = "UNSUPPORTED_STATE_TRANSITION"
-    case duplicateDocumentIdentity = "DUPLICATE_DOCUMENT_IDENTITY"
-    case duplicateStatementLineFingerprint = "DUPLICATE_STATEMENT_LINE_FINGERPRINT"
 
     // MARK: Soft (14.2)
 
@@ -29,10 +25,8 @@ public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     case invoiceNumberMissing = "INVOICE_NUMBER_MISSING"
     case paymentAmountDiffers = "PAYMENT_AMOUNT_DIFFERS"
     case exchangeRateDeviation = "EXCHANGE_RATE_DEVIATION"
-    case semanticDuplicate = "SEMANTIC_DUPLICATE"
     case assetCandidate = "ASSET_CANDIDATE"
     case tenDayRule = "TEN_DAY_RULE"
-    case unmatchedBusinessLine = "UNMATCHED_BUSINESS_LINE"
     case highAmountAgentOnly = "HIGH_AMOUNT_AGENT_ONLY"
 }
 
@@ -41,9 +35,7 @@ public extension IssueCode {
     static let hardCodes: Set<IssueCode> = [
         .currencyInvalid, .dateImpossible, .servicePeriodInverted,
         .taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch, .amountSignInvalid,
-        .allocationSumMismatch, .paymentAllocationExceeds, .linkedEntityMissing,
-        .unsupportedStateTransition, .duplicateDocumentIdentity,
-        .duplicateStatementLineFingerprint
+        .allocationSumMismatch, .paymentAllocationExceeds
     ]
 
     /// True for a hard (blocking) code; false for a soft one.
@@ -87,14 +79,6 @@ public extension IssueCode {
             "Summe der Buchungszuordnungen weicht vom gebuchten Betrag ab."
         case .paymentAllocationExceeds:
             "Summe der Zahlungszuordnungen übersteigt den Zahlungsbetrag."
-        case .linkedEntityMissing:
-            "Verknüpfte ID existiert nicht."
-        case .unsupportedStateTransition:
-            "Nicht unterstützter Statusübergang."
-        case .duplicateDocumentIdentity:
-            "Dokument mit identischem Hash bereits vorhanden."
-        case .duplicateStatementLineFingerprint:
-            "Kontoumsatz mit identischem Fingerabdruck bereits vorhanden."
         case .taxRateUnusual:
             "Unüblicher Steuersatz für diese steuerliche Behandlung."
         case .treatmentCountryMismatch:
@@ -109,14 +93,10 @@ public extension IssueCode {
             "Zahlbetrag weicht vom Rechnungsbetrag ab."
         case .exchangeRateDeviation:
             "Wechselkurs weicht mehr als 5 % vom Bankkurs ab."
-        case .semanticDuplicate:
-            "Möglicherweise ein Duplikat."
         case .assetCandidate:
             "Möglicherweise Anlagevermögen – nicht vollständig als Betriebsausgabe abzugsfähig."
         case .tenDayRule:
             "Zahlung liegt in der 10-Tage-Regel um den Jahreswechsel."
-        case .unmatchedBusinessLine:
-            "Geschäftlicher Kontoumsatz seit 60 Tagen ohne zugeordnetes Dokument."
         case .highAmountAgentOnly:
             "Hoher Betrag, bislang nur durch den Agenten bestätigt."
         }

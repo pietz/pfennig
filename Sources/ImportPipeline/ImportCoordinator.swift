@@ -176,9 +176,9 @@ public actor ImportCoordinator {
                 derivationContext: derivationContext
             )
             // One decision function answers for every import: commit now or
-            // put it into "Prüfen" (`statement-import.md` 1). A document
-            // import creates a new transaction, so there is no competing match
-            // and no manually entered field it could overwrite.
+            // put it into "Prüfen". A document import creates a new
+            // transaction, so there is no competing match and no manually
+            // entered field it could overwrite.
             let decision = AutomationPolicy.decide(
                 level: automationLevel,
                 hardIssues: derived.hardIssues,

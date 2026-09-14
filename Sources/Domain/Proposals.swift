@@ -3,7 +3,7 @@ import Foundation
 /// A typed mutation the agent proposes (spec 26). The model never writes; it
 /// produces facts, Swift turns them into operations, and `CommitService`
 /// applies them in one SQLite transaction. Milestone M4 needs the first two
-/// cases; payments, statement lines and relations follow with M5-M7.
+/// cases; payments and relations follow later.
 public enum ProposedOperation: Codable, Sendable, Hashable {
     case createTransaction(TransactionDraft)
     case updateTransaction(id: String, changes: [FieldChange])

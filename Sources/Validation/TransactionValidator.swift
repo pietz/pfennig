@@ -141,10 +141,8 @@ public struct TransactionValidationResult: Sendable, Equatable {
 }
 
 /// Runs every spec-14 rule that can be evaluated from a `TransactionSnapshot`
-/// alone. Rules that need other rows in the database (duplicate detection,
-/// linked-ID existence, semantic duplicates, unmatched statement lines) are
-/// separate small functions on `ReferentialValidator`, `DuplicateValidator`
-/// and `PaymentMatchValidator` that take the needed facts directly.
+/// alone. Rules that need other rows in the database are not part of this
+/// module.
 public enum TransactionValidator {
     public static func validate(_ snapshot: TransactionSnapshot) -> TransactionValidationResult {
         var hard: [ValidationIssue] = []

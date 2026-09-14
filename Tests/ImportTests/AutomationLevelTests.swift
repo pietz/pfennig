@@ -5,8 +5,7 @@ import ImportPipeline
 import Testing
 
 /// The automation level and the single decision function behind it
-/// (`statement-import.md` 1, `document-to-tax-workflow.md` "Automatik und
-/// Ausnahmen").
+/// (`document-to-tax-workflow.md` "Automatik und Ausnahmen").
 @Suite("Automatisierungsstufe")
 struct AutomationLevelTests {
     private static let hard = ValidationIssueDraft(

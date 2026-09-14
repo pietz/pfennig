@@ -47,7 +47,6 @@ payment_allocations
 payments
 proposals
 settings
-statement_lines
 submitted_returns
 tax_assessments
 tax_components
@@ -67,8 +66,7 @@ validation_issues
 | `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base and self-assessed VAT. VAT shown, deductible input VAT and output VAT are not stored - every report and the inspector recompute them. Exactly one row per transaction, enforced by a unique index; replacing it deletes the old row. |
 | `documents` | Imported originals, identified by SHA-256, stored as files under `Documents/`. |
 | `transaction_documents` | Which document plays which role for which transaction. |
-| `statement_lines` | Raw account statement lines with classification. The account is its IBAN, or a key the user confirmed where the export names no IBAN; unique per `(account_iban, line_fingerprint)`. The fingerprint is the export's own transaction id when it has one, otherwise booking date, amount, currency, purpose and counterparty, plus an occurrence index from the second identical line of one file onwards - so a repeated or overlapping export adds nothing twice while two genuinely identical movements of one day both stay. `fee_minor` is the processor fee already contained in `amount_minor`. |
-| `payments` | Actual cash movements, from statement lines or entered manually. |
+| `payments` | Actual cash movements, entered manually. |
 | `payment_allocations` | How much of a payment belongs to which transaction: partial and combined payments. |
 | `field_provenance` | Origin of every material field (document, agent, calculated, manual, imported) and manual-override protection. |
 | `import_batches`, `import_items` | Restartable import of dropped files. |
@@ -107,12 +105,11 @@ v_transaction_status
 `idx_counterparties_normalized` (unique), `idx_alloc_transaction`,
 `idx_alloc_category`, `idx_taxcomp_transaction`,
 `idx_taxassess_transaction` (unique),
-`idx_stmt_account_date`, `idx_stmt_classification`, `idx_payments_date`,
+`idx_payments_date`,
 `idx_payalloc_transaction`, `idx_payalloc_payment`,
 `idx_import_items_batch`, `idx_prov_current` (unique, partial),
 `idx_proposals_status`, `idx_issues_entity`, `idx_audit_entity`.
 
 Unique constraints additionally cover `documents.sha256`,
-`statement_lines(account_iban, line_fingerprint)`,
 `proposals.idempotency_key` and
 `submitted_returns(business_profile_id, year, kind, period_index)`.

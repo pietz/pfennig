@@ -21,7 +21,6 @@ struct EnumRawValueTests {
         "DocumentType": ["invoice", "receipt", "creditNote", "statement", "contract", "other", "unknown"],
         "DocumentRole": ["invoice", "receipt", "creditNote", "statement", "other"],
         "DocumentSource": ["dragDrop", "fileImport", "other"],
-        "StatementLineClass": ["business", "private", "internalTransfer", "taxPayment", "unknown"],
         "PaymentDirection": ["inflow", "outflow"],
         "PaymentMethod": ["bankTransfer", "card", "paypal", "directDebit", "cash", "other", "unknown"],
         "PaymentSource": ["statementLine", "manual"],
@@ -32,8 +31,7 @@ struct EnumRawValueTests {
                              "skipped", "duplicate", "failed"],
         "ModelRunOperation": ["extraction", "disambiguation", "statementMapping"],
         "ModelRunStatus": ["running", "succeeded", "failed"],
-        "ProposalKind": ["createTransaction", "updateTransaction", "linkPayment", "attachDocument",
-                         "classifyStatementLines", "mergeDuplicate"],
+        "ProposalKind": ["createTransaction", "updateTransaction", "attachDocument", "mergeDuplicate"],
         "ProposalStatus": ["pending", "accepted", "acceptedEdited", "rejected", "skipped", "superseded", "committed"],
         "PolicyDecision": ["autoCommit", "needsReview", "blocked"],
         "AutomationLevel": ["manual", "balanced", "automatic"],
@@ -60,7 +58,7 @@ struct EnumRawValueTests {
         add(TaxTreatment.self); add(TaxComponentKind.self); add(TaxAssessmentStatus.self)
         add(CustomerType.self); add(SupplyType.self)
         add(DocumentType.self); add(DocumentRole.self); add(DocumentSource.self)
-        add(StatementLineClass.self); add(PaymentDirection.self)
+        add(PaymentDirection.self)
         add(PaymentMethod.self); add(PaymentSource.self); add(MatchMethod.self); add(Provenance.self)
         add(ImportBatchStatus.self); add(ImportItemStatus.self)
         add(ModelRunOperation.self); add(ModelRunStatus.self); add(ProposalKind.self); add(ProposalStatus.self)

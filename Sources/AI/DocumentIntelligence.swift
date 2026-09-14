@@ -126,9 +126,8 @@ public struct ExtractionOutcome: Sendable {
     }
 }
 
-/// The single AI entry point of V1 (spec 10.1). `disambiguate` and
-/// `inferStatementColumnMapping` arrive with milestone M6 together with the
-/// statement and payment types they need.
+/// The single AI entry point of V1 (spec 10.1). `disambiguate` arrives later
+/// together with the payment types it needs.
 public protocol DocumentIntelligenceProvider: Sendable {
     func extract(document: PreparedDocument, context: ExtractionContext) async throws -> ExtractionOutcome
 }

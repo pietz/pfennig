@@ -50,26 +50,3 @@ public struct ProvenanceSummary: Sendable, Equatable {
         self.hasAnyNonAgentProvenance = hasAnyNonAgentProvenance
     }
 }
-
-/// A workflow-status transition (spec 18 `WorkflowStatus`).
-public struct WorkflowTransition: Hashable, Sendable {
-    public let from: WorkflowStatus
-    public let to: WorkflowStatus
-
-    public init(from: WorkflowStatus, to: WorkflowStatus) {
-        self.from = from
-        self.to = to
-    }
-}
-
-/// Key for a statement-line duplicate fingerprint check (spec 14.1: "on the
-/// same account").
-public struct StatementLineFingerprintKey: Hashable, Sendable {
-    public let accountIBAN: String
-    public let fingerprint: String
-
-    public init(accountIBAN: String, fingerprint: String) {
-        self.accountIBAN = accountIBAN
-        self.fingerprint = fingerprint
-    }
-}

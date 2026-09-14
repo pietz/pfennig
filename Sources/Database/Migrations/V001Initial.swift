@@ -199,39 +199,6 @@ enum V001Initial {
         )
         """,
         "CREATE INDEX idx_payments_date ON payments(payment_date)",
-        // 17.12 statement_lines
-        """
-        CREATE TABLE statement_lines (
-            id TEXT PRIMARY KEY,
-            account_iban TEXT NOT NULL,
-            document_id TEXT REFERENCES documents(id),
-            line_fingerprint TEXT NOT NULL,
-            external_id TEXT,
-
-            booking_date TEXT NOT NULL,
-            value_date TEXT,
-            amount_minor INTEGER NOT NULL,
-            -- The processor fee contained in amount_minor, non-negative, when
-            -- the export reports it separately (PayPal, Stripe, Revolut). The
-            -- matcher books it; it is not a second movement.
-            fee_minor INTEGER,
-            currency TEXT NOT NULL,
-            counterparty_raw TEXT,
-            counterparty_iban TEXT,
-            reference TEXT,
-            booking_text TEXT,
-            raw_json TEXT,
-
-            classification TEXT NOT NULL,
-            classification_subtype TEXT,
-            payment_id TEXT REFERENCES payments(id),
-            created_at TEXT NOT NULL,
-            updated_at TEXT NOT NULL,
-            UNIQUE(account_iban, line_fingerprint)
-        )
-        """,
-        "CREATE INDEX idx_stmt_account_date ON statement_lines(account_iban, booking_date)",
-        "CREATE INDEX idx_stmt_classification ON statement_lines(classification)",
         // 17.14 payment_allocations
         """
         CREATE TABLE payment_allocations (

@@ -122,13 +122,6 @@ public enum DocumentSource: String, Codable, CaseIterable, Sendable, UnknownFall
     }
 }
 
-public enum StatementLineClass: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case business, `private`, internalTransfer, taxPayment, unknown
-    public static var fallback: StatementLineClass {
-        .unknown
-    }
-}
-
 public enum PaymentDirection: String, Codable, CaseIterable, Sendable {
     case inflow, outflow
 
@@ -180,7 +173,7 @@ public enum ModelRunStatus: String, Codable, CaseIterable, Sendable {
 }
 
 public enum ProposalKind: String, Codable, CaseIterable, Sendable {
-    case createTransaction, updateTransaction, linkPayment, attachDocument, classifyStatementLines, mergeDuplicate
+    case createTransaction, updateTransaction, attachDocument, mergeDuplicate
 }
 
 public enum ProposalStatus: String, Codable, CaseIterable, Sendable {
@@ -188,10 +181,9 @@ public enum ProposalStatus: String, Codable, CaseIterable, Sendable {
 }
 
 /// How much of an import Pfennig applies without asking, chosen once in
-/// Settings (`document-to-tax-workflow.md` "Automatik und Ausnahmen",
-/// `statement-import.md` 1). It is a user setting, not a per-document
-/// judgement: the same level governs document imports and statement
-/// movements, and `AutomationPolicy` is the one function that reads it.
+/// Settings (`document-to-tax-workflow.md` "Automatik und Ausnahmen").
+/// It is a user setting, not a per-document
+/// judgement, and `AutomationPolicy` is the one function that reads it.
 public enum AutomationLevel: String, Codable, CaseIterable, Sendable {
     /// Every proposal is confirmed by the user, even an unambiguous one.
     case manual

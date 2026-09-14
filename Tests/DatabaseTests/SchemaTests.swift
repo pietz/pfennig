@@ -75,35 +75,4 @@ struct SchemaTests {
         #expect(categories.first { $0.id == "uncategorized" }?.kind == .neutral)
         #expect(Set(categories.map(\.id)).count == categories.count)
     }
-
-    @Test("Duplicate statement line fingerprints are rejected")
-    func duplicateFingerprint() throws {
-        let database = try AppDatabase(inMemoryNamed: "fingerprints")
-        let ownIBAN = "DE02120300000000202051"
-        let otherIBAN = "DE02100500000054540402"
-
-        func line(accountIBAN: String, fingerprint: String) -> StatementLine {
-            StatementLine(
-                accountIban: accountIBAN,
-                lineFingerprint: fingerprint,
-                bookingDate: LocalDate(year: 2026, month: 9, day: 2),
-                amountMinor: -7139,
-                currency: "EUR",
-                counterpartyRaw: "ADOBE SYSTEMS",
-                classification: .business
-            )
-        }
-
-        try database.writer.write { db in try line(accountIBAN: ownIBAN, fingerprint: "8a1").insert(db) }
-
-        // Same account, same fingerprint: rejected (spec 25).
-        #expect(throws: DatabaseError.self) {
-            try database.writer.write { db in try line(accountIBAN: ownIBAN, fingerprint: "8a1").insert(db) }
-        }
-
-        // Same fingerprint on another account is fine.
-        try database.writer.write { db in try line(accountIBAN: otherIBAN, fingerprint: "8a1").insert(db) }
-        let lineCount = try database.reader.read { db in try StatementLine.fetchCount(db) }
-        #expect(lineCount == 2)
-    }
 }
