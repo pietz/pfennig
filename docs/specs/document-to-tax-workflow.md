@@ -1,6 +1,6 @@
 # Dokumente ablegen, Ausnahmen prüfen, Steuerdaten vorbereiten
 
-**Status:** Draft — awaiting approval
+**Status:** Approved 2026-09-14 (user approval in working session; spec was developed jointly)
 
 ## Ziel und Umfang
 
@@ -22,11 +22,15 @@ Geschäftliche Kontobewegungen ohne Beleg können einen Vorgang mit fehlendem Be
 
 ### Automatik und Ausnahmen
 
+Der Nutzer wählt in den Einstellungen eine Automatisierungsstufe. **Manuell** (Standard): jeder neue oder geänderte Vorgang aus einem Import wird vom Nutzer bestätigt. **Ausgewogen**: vollständig validierte, unterstützte Standardfälle mit eindeutiger Zuordnung werden ohne Einzelbestätigung übernommen; alles andere bleibt Ausnahme. **Automatisch**: es gibt keinen Bestätigungsschritt mehr; unklare Angaben bleiben leer oder als offene Ausnahme markiert statt erfunden zu werden. Die folgenden Regeln beschreiben, was in den Stufen Ausgewogen und Automatisch als sicher gilt.
+
 Eindeutige Zuordnungen und vollständig validierte, unterstützte Standardfälle werden ohne Einzelbestätigung übernommen. Dafür müssen die benötigten Fakten vorliegen, die deterministischen Prüfungen bestehen und relevante Widersprüche oder konkurrierende Zuordnungen ausgeschlossen sein. Die Selbsteinschätzung des Modells reicht nicht. Manuelle Änderungen dürfen nicht still überschrieben werden.
 
 Fehlende Informationen, Warnungen und Konflikte werden dauerhaft am betroffenen Vorgang oder Import vermerkt und über „Prüfen“ beziehungsweise Start erreichbar. Die konkrete Korrektur, Ergänzung oder Zuordnung löst die jeweilige Ausnahme. Es ist keine Chat-Unterhaltung erforderlich. Technische Fehlschläge bleiben wiederholbar; bereits erfolgreich bearbeitete Dateien bleiben erhalten. Automatisch übernommene Vorgänge bleiben direkt einsehbar und editierbar.
 
 ### Dokumentverständnis
+
+Der Kontoauszugimport ist bankunabhängig. PDF-Kontoauszüge werden wie Belege visuell vom multimodalen Modell gelesen; für CSV-Auszüge gibt es einen deterministischen Import auf ein normalisiertes Bewegungsformat, das Modell darf dabei nur beim Erkennen der Spaltenzuordnung helfen. Es werden keine bankspezifischen Adapter vorausgebaut.
 
 PDF-/Bildbelege und PDF-Kontoauszüge werden mit dem multimodalen Modell ausgewertet. Das Ergebnis sind strukturierte Fakten für die gemeinsame Normalisierung, Validierung und Persistenz, nicht ungeprüfte Datenbankänderungen. Kontoauszüge werden als einzelne Kontobewegungen verarbeitet. Verfügbare Summen und Salden dienen der Gegenprüfung; abgeschnittene oder unvollständige Verarbeitung darf nicht als erfolgreicher vollständiger Auszug erscheinen.
 
