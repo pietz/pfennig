@@ -201,10 +201,11 @@ public struct StatementColumnMapping: Codable, Sendable, Hashable {
 /// what the generic heuristic uses when the header alone says nothing.
 public enum StatementDateFormat: String, Codable, Sendable, CaseIterable {
     case auto
-    /// `31.08.2026`
+    /// The German dotted date, with either year length: `31.08.2026` and
+    /// `31.08.26` are the same layout. Nothing distinguishes them but the
+    /// export template, and they cannot be confused with each other, so a
+    /// format that gains or loses the century keeps importing.
     case dayMonthYear
-    /// `31.08.26`
-    case dayMonthShortYear
     /// `2026-08-31`, with an optional time part that is ignored.
     case iso
     /// `31/08/2026`

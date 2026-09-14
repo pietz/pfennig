@@ -52,7 +52,7 @@ struct ValueParsingTests {
 
     @Test("Declared date layouts", arguments: [
         ("31.08.2026", StatementDateFormat.dayMonthYear, LocalDate(year: 2026, month: 8, day: 31)),
-        ("03.08.26", .dayMonthShortYear, LocalDate(year: 2026, month: 8, day: 3)),
+        ("03.08.26", .dayMonthYear, LocalDate(year: 2026, month: 8, day: 3)),
         ("2026-08-31", .iso, LocalDate(year: 2026, month: 8, day: 31)),
         ("2026-08-05 10:14:22", .iso, LocalDate(year: 2026, month: 8, day: 5)),
         ("2026-08-05T10:14:22Z", .iso, LocalDate(year: 2026, month: 8, day: 5)),
@@ -63,13 +63,18 @@ struct ValueParsingTests {
         #expect(try StatementValueParser.date(raw, format: format) == expected)
     }
 
-    @Test("A declared layout rejects the other year length")
-    func yearLength() {
+    /// The dotted layout takes both year lengths. They cannot be confused
+    /// with each other, and an export that gains or loses the century - DKB
+    /// and Sparkasse both write the short form today - keeps importing.
+    @Test("The dotted layout reads both year lengths")
+    func yearLength() throws {
+        #expect(try StatementValueParser.date("03.08.2026", format: .dayMonthYear)
+            == LocalDate(year: 2026, month: 8, day: 3))
+        #expect(try StatementValueParser.date("03.08.26", format: .dayMonthYear)
+            == LocalDate(year: 2026, month: 8, day: 3))
+        // A three-digit year is neither and stays an error.
         #expect(throws: StatementValueParser.DateError.self) {
-            try StatementValueParser.date("03.08.2026", format: .dayMonthShortYear)
-        }
-        #expect(throws: StatementValueParser.DateError.self) {
-            try StatementValueParser.date("03.08.26", format: .dayMonthYear)
+            try StatementValueParser.date("03.08.202", format: .dayMonthYear)
         }
     }
 

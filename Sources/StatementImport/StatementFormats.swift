@@ -32,9 +32,9 @@ public extension HeaderMappingCatalog {
         ],
         mapping: StatementColumnMapping(
             bookingDate: "Buchungstag",
-            bookingDateFormat: .dayMonthShortYear,
+            bookingDateFormat: .dayMonthYear,
             valueDate: "Valutadatum",
-            valueDateFormat: .dayMonthShortYear,
+            valueDateFormat: .dayMonthYear,
             amount: .signed(column: "Betrag"),
             currencyColumn: "Waehrung",
             counterparty: .column("Beguenstigter/Zahlungspflichtiger"),
@@ -56,9 +56,9 @@ public extension HeaderMappingCatalog {
         ],
         mapping: StatementColumnMapping(
             bookingDate: "Buchungstag",
-            bookingDateFormat: .dayMonthShortYear,
+            bookingDateFormat: .dayMonthYear,
             valueDate: "Valutadatum",
-            valueDateFormat: .dayMonthShortYear,
+            valueDateFormat: .dayMonthYear,
             amount: .signed(column: "Betrag"),
             currencyColumn: "Waehrung",
             counterparty: .column("Beguenstigter/Zahlungspflichtiger"),
@@ -107,9 +107,9 @@ public extension HeaderMappingCatalog {
         ],
         mapping: StatementColumnMapping(
             bookingDate: "Buchungsdatum",
-            bookingDateFormat: .dayMonthShortYear,
+            bookingDateFormat: .dayMonthYear,
             valueDate: "Wertstellung",
-            valueDateFormat: .dayMonthShortYear,
+            valueDateFormat: .dayMonthYear,
             amount: .signed(column: "Betrag (€)"),
             // Both name columns are always filled, one of them being the
             // account owner; the sign of the amount decides which is which.

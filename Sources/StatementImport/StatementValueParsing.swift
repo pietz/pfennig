@@ -105,11 +105,10 @@ public enum StatementValueParser {
 
         let parsed: LocalDate? = switch format {
         case .iso: iso(head)
-        case .dayMonthYear: dotted(head, shortYear: false)
-        case .dayMonthShortYear: dotted(head, shortYear: true)
+        case .dayMonthYear: dotted(head)
         case .dayMonthYearSlash: slashed(head, dayFirst: true)
         case .monthDayYearSlash: slashed(head, dayFirst: false)
-        case .auto: iso(head) ?? dotted(head, shortYear: nil) ?? slashed(head, dayFirst: true)
+        case .auto: iso(head) ?? dotted(head) ?? slashed(head, dayFirst: true)
         }
         guard let parsed else { throw DateError.malformed(raw) }
         return parsed
@@ -121,13 +120,10 @@ public enum StatementValueParser {
         return make(year: Int(parts[0]), month: Int(parts[1]), day: Int(parts[2]))
     }
 
-    /// `shortYear == nil` accepts both `dd.MM.yyyy` and `dd.MM.yy`.
-    static func dotted(_ text: String, shortYear: Bool?) -> LocalDate? {
+    /// `dd.MM.yyyy` and `dd.MM.yy` alike.
+    static func dotted(_ text: String) -> LocalDate? {
         let parts = text.split(separator: ".", omittingEmptySubsequences: false)
         guard parts.count == 3 else { return nil }
-        if let shortYear, shortYear != (parts[2].count == 2) {
-            return nil
-        }
         return make(year: expandYear(parts[2]), month: Int(parts[1]), day: Int(parts[0]))
     }
 
