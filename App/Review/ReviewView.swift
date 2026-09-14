@@ -40,27 +40,28 @@ struct ReviewView: View {
                 if let lastImport = queue.lastImportAt {
                     Text("Letzter Import: \(Format.timestamp(lastImport))")
                 }
-                if !model.hasAPIKey {
-                    Label(
-                        "Für die Belegerkennung fehlt der OpenAI-Schlüssel. Er wird in den Einstellungen hinterlegt.",
-                        systemImage: "key"
-                    )
-                    .foregroundStyle(.orange)
-                }
+                missingKeyNotice
             }
+        }
+    }
+
+    /// Without a key nothing can be extracted, so "Prüfen" says so in both of
+    /// its states instead of leaving the user with an inexplicably quiet page.
+    @ViewBuilder
+    private var missingKeyNotice: some View {
+        if !model.hasAPIKey {
+            Label(
+                "Für die Belegerkennung fehlt der OpenAI-Schlüssel. Er wird in den Einstellungen hinterlegt.",
+                systemImage: "key"
+            )
+            .foregroundStyle(.orange)
         }
     }
 
     private var list: some View {
         List {
             if !model.hasAPIKey {
-                Section {
-                    Label(
-                        "Für die Belegerkennung fehlt der OpenAI-Schlüssel. Er wird in den Einstellungen hinterlegt.",
-                        systemImage: "key"
-                    )
-                    .foregroundStyle(.orange)
-                }
+                Section { missingKeyNotice }
             }
             if !queue.proposals.isEmpty {
                 Section("Importvorschläge") {

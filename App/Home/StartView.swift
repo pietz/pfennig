@@ -202,14 +202,14 @@ struct StartView: View {
                 }
             }
 
-            if overview.openItems.isEmpty {
-                Label("Alles erledigt", systemImage: "checkmark.circle")
-                    .foregroundStyle(.secondary)
-                    .padding(.vertical, 8)
-            }
-
+            // An archive with nothing in it for the chosen year says that,
+            // rather than also congratulating the user on an empty list.
             if overview.recordedBookingCount == 0 {
                 Label("Noch keine Buchungen für dieses Jahr", systemImage: "tray")
+                    .foregroundStyle(.secondary)
+                    .padding(.vertical, 8)
+            } else if overview.openItems.isEmpty {
+                Label("Alles erledigt", systemImage: "checkmark.circle")
                     .foregroundStyle(.secondary)
                     .padding(.vertical, 8)
             }
