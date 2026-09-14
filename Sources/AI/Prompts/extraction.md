@@ -60,8 +60,9 @@ schema exactly.
    or `unknown`.
 11. `lineItems[].description` stays close to the document's own wording for
    the position, including a model or product name. `lineItems[].categoryHint`
-   must be one of the canonical category ids listed below, or `null`. Never invent an id. Whether a line item is a depreciable
-   asset is decided by the app, not by you.
+   must be one of the canonical category ids listed below, or `null`. Never
+   invent an id. Whether a line item is a depreciable asset is decided by the
+   app, not by you.
 12. Return schema-valid JSON and nothing else. No commentary, no markdown.
 
 # Business profile
