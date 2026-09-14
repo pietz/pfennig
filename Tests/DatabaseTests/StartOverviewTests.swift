@@ -176,6 +176,30 @@ struct StartOverviewTests {
         #expect(items.prefix(2).map(\.id) == [bare.id, paidOnly.id])
     }
 
+    @Test("Das Importdatum filtert im selben Jahr, das die Zeile zeigt")
+    func importDateFilterMatchesDisplayedDate() throws {
+        let (database, profile) = try database()
+        // A UTC timestamp late on New Year's Eve: in Germany this is already
+        // the next year locally, and the row must sort and filter that way.
+        var bare = transaction(profile: profile, direction: .income, grossMinor: 10000, date: nil)
+        bare.createdAt = "2025-12-31T23:30:00Z"
+        try database.writer.write { try bare.insert($0) }
+
+        let item = try #require(try database.reader.read { try TransactionListQuery.fetch($0).first })
+        #expect(item.relevantDateOrigin == "Import")
+        let shownYear = item.relevantDate.year
+        let filtered = try database.reader.read { db in
+            try TransactionListQuery.fetch(db, listFilter: TransactionListFilter(year: shownYear))
+        }
+        #expect(filtered.map(\.id) == [bare.id])
+
+        let overview = try database.reader.read {
+            try StartOverviewQuery.fetch($0, year: shownYear, currentYear: shownYear)
+        }
+        #expect(overview.recordedBookingCount == 1)
+        #expect(overview.availableYears.contains(shownYear))
+    }
+
     @Test("Creditnotes und Erstattungen behalten rohe Vorzeichen")
     func signedRefunds() throws {
         let (database, profile) = try database()

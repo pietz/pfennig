@@ -31,8 +31,10 @@ public enum SelfAssessedVAT {
 
     /// Computes the self-assessed VAT (and matching deductible input VAT) on
     /// `taxableBase`, rounded half-up to the cent via `Money.vat(ratePercent:)`.
-    /// The rate is looked up by `date` (the applicable `input_vat_date`,
-    /// spec 5.1). Pass `fullyDeductible: false` for a partially non-deductible
+    /// The rate is looked up by `date` - for §13b and intra-Community
+    /// acquisitions the invoice date, failing that the service date, the same
+    /// date the UStVA calculation reports them under (spec 5.1). Pass
+    /// `fullyDeductible: false` for a partially non-deductible
     /// business (private-share allocations are handled separately).
     public static func compute(taxableBase: Money, at date: LocalDate, fullyDeductible: Bool = true) throws -> Result {
         let rate = standardRate(at: date)

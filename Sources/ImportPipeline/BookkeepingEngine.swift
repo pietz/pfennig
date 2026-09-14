@@ -102,7 +102,9 @@ public enum BookkeepingEngine {
         let selfAssessesVAT = draft.direction == .expense
             && (treatment == .reverseCharge || treatment == .intraCommunityAcquisition)
         let base = net.isZero ? gross : net
-        let vatDate = draft.invoiceDate ?? LocalDate.today()
+        // Same date the UStVA calculation uses for these two treatments:
+        // invoice date, failing that the service date.
+        let vatDate = draft.invoiceDate ?? draft.serviceDate ?? LocalDate.today()
         let selfAssessed = selfAssessesVAT
             ? try? SelfAssessedVAT.compute(
                 taxableBase: base,

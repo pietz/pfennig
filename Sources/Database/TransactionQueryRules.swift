@@ -7,8 +7,13 @@ public enum TransactionQueryRules {
 
     /// Ledger and Start date: document date, then earliest payment, then import
     /// date. Tax periods are dated by payment and do not use this expression.
+    ///
+    /// `created_at` is a UTC timestamp while the ledger shows its local
+    /// calendar day, so the fallback converts: without `localtime` an evening
+    /// import would sort and filter one day - and on New Year one year -
+    /// before the date printed in its own row.
     public static func relevantDateExpression(for alias: String) -> String {
-        "COALESCE(\(alias).invoice_date, \(firstPaymentDateExpression(for: alias)), DATE(\(alias).created_at))"
+        "COALESCE(\(alias).invoice_date, \(firstPaymentDateExpression(for: alias)), DATE(\(alias).created_at, 'localtime'))"
     }
 
     /// Recorded transactions exclude archived and soft-deleted rows.
