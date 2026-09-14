@@ -34,6 +34,9 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @State private var selection: SidebarItem? = .start
     @State private var transactionFilter = TransactionListFilter()
+    @State private var transactionsInspectorHasChanges = false
+    @State private var pendingSidebarSelection: SidebarItem?
+    @State private var isConfirmingSidebarDiscard = false
     @State private var columnVisibility: NavigationSplitViewVisibility = .all
 
     var body: some View {
@@ -45,7 +48,7 @@ struct RootView: View {
             case .ready:
                 NavigationSplitView(columnVisibility: $columnVisibility) {
                     VStack(spacing: 0) {
-                        List(SidebarItem.allCases, selection: $selection) { item in
+                        List(SidebarItem.allCases, selection: guardedSidebarSelection) { item in
                             Label(item.title, systemImage: item.symbol)
                                 .badge(item == .review ? model.pendingProposalCount : 0)
                                 .tag(item)
@@ -69,6 +72,23 @@ struct RootView: View {
                 }
                 .task { await model.observePendingProposals() }
             }
+        }
+        .confirmationDialog(
+            "Ungespeicherte Änderungen verwerfen?",
+            isPresented: $isConfirmingSidebarDiscard,
+            titleVisibility: .visible
+        ) {
+            Button("Änderungen verwerfen", role: .destructive) {
+                let destination = pendingSidebarSelection
+                pendingSidebarSelection = nil
+                transactionsInspectorHasChanges = false
+                selection = destination
+            }
+            Button("Weiter bearbeiten", role: .cancel) {
+                pendingSidebarSelection = nil
+            }
+        } message: {
+            Text("Speichern Sie die aktuelle Buchung zuerst, wenn Sie Ihre Änderungen behalten möchten.")
         }
         .alert(
             "Es ist ein Fehler aufgetreten",
@@ -102,8 +122,11 @@ struct RootView: View {
             }
         case .transactions:
             if let database = model.database {
-                TransactionsView(database: database, filter: transactionFilter)
-                    .id(transactionFilter)
+                TransactionsView(
+                    database: database,
+                    filter: $transactionFilter,
+                    inspectorHasChanges: $transactionsInspectorHasChanges
+                )
             }
         case .review:
             if let database = model.database {
@@ -112,5 +135,27 @@ struct RootView: View {
         case nil:
             ContentUnavailableView("Nichts ausgewählt", systemImage: "sidebar.left")
         }
+    }
+
+    private var guardedSidebarSelection: Binding<SidebarItem?> {
+        Binding(
+            get: { selection },
+            set: { newSelection in
+                guard selection != newSelection else { return }
+                guard selection == .transactions, transactionsInspectorHasChanges else {
+                    selectSidebarItem(newSelection)
+                    return
+                }
+                pendingSidebarSelection = newSelection
+                isConfirmingSidebarDiscard = true
+            }
+        )
+    }
+
+    private func selectSidebarItem(_ item: SidebarItem?) {
+        if item == .transactions {
+            transactionFilter = TransactionListFilter()
+        }
+        selection = item
     }
 }

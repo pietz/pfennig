@@ -86,16 +86,9 @@ public enum StartOverviewQuery {
     WITH recorded AS (
         SELECT
             t.*,
-            COALESCE(
-                (SELECT MAX(p.payment_date)
-                   FROM payment_allocations pa
-                   JOIN payments p ON p.id = pa.payment_id
-                  WHERE pa.transaction_id = t.id),
-                t.invoice_date,
-                DATE(t.created_at)
-            ) AS relevant_date
+            \(TransactionQueryRules.relevantDateExpression(for: "t")) AS relevant_date
         FROM transactions t
-        WHERE t.deleted_at IS NULL AND t.workflow_status <> 'archived'
+        WHERE \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
     )
     """
 
@@ -147,26 +140,10 @@ public enum StartOverviewQuery {
             sql: recordedCTE + """
             SELECT
                 COALESCE(SUM(CASE
-                    WHEN review_status IN ('unreviewed', 'needsReview', 'conflict') THEN 1 ELSE 0
+                    WHEN \(TransactionQueryRules.needsAttentionPredicate(for: "recorded")) THEN 1 ELSE 0
                 END), 0) AS transactions_to_review,
                 COALESCE(SUM(CASE
-                    WHEN NOT EXISTS (
-                        SELECT 1 FROM transaction_documents td
-                        WHERE td.transaction_id = recorded.id
-                    )
-                    AND (
-                        NOT EXISTS (
-                            SELECT 1 FROM bookkeeping_allocations ba
-                            WHERE ba.transaction_id = recorded.id
-                        )
-                        OR EXISTS (
-                            SELECT 1
-                              FROM bookkeeping_allocations ba
-                              JOIN categories c ON c.id = ba.category_id
-                             WHERE ba.transaction_id = recorded.id
-                               AND c.document_expected = 1
-                        )
-                    )
+                    WHEN \(TransactionQueryRules.missingDocumentsPredicate(for: "recorded"))
                     THEN 1 ELSE 0
                 END), 0) AS documents_to_add
             FROM recorded

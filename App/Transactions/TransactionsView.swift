@@ -22,25 +22,28 @@ struct TransactionsView: View {
     @State private var deletingID: String?
     @State private var pendingSelection: LedgerRow.ID?
     @State private var isConfirmingDiscard = false
-    @State private var inspectorHasChanges = false
+    @Binding private var inspectorHasChanges: Bool
     @State private var search = ""
-    @State private var year: Int?
-    @State private var directionFilter: DirectionFilter
-    @State private var needsAttention = false
-    @State private var missingDocumentsOnly = false
+    @Binding private var filter: TransactionListFilter
     @State private var showsInspector = true
     @State private var isTargeted = false
 
-    init(database: AppDatabase, filter: TransactionListFilter = TransactionListFilter()) {
+    init(
+        database: AppDatabase,
+        filter: Binding<TransactionListFilter>,
+        inspectorHasChanges: Binding<Bool>
+    ) {
         self.database = database
-        _year = State(initialValue: filter.year)
-        _directionFilter = State(initialValue: DirectionFilter(direction: filter.direction))
-        _needsAttention = State(initialValue: filter.needsAttention)
-        _missingDocumentsOnly = State(initialValue: filter.missingDocumentsOnly)
+        _filter = filter
+        _inspectorHasChanges = inspectorHasChanges
+    }
+
+    private var directionFilter: DirectionFilter {
+        DirectionFilter(direction: filter.direction)
     }
 
     private var showsProposals: Bool {
-        year == nil && directionFilter == .all && !needsAttention && !missingDocumentsOnly
+        filter.year == nil && directionFilter == .all && !filter.needsAttention && !filter.missingDocumentsOnly
     }
 
     private var visibleProposals: [ProposalRecord] {
@@ -56,7 +59,7 @@ struct TransactionsView: View {
     }
 
     private var hasActiveFilters: Bool {
-        year != nil || directionFilter != .all || needsAttention || missingDocumentsOnly
+        filter.year != nil || directionFilter != .all || filter.needsAttention || filter.missingDocumentsOnly
     }
 
     var body: some View {
@@ -65,7 +68,7 @@ struct TransactionsView: View {
             .navigationTitle("Buchungen")
             .navigationSubtitle(Text(subtitle))
             .toolbar { toolbar }
-            .inspector(isPresented: $showsInspector) {
+            .inspector(isPresented: guardedInspectorPresentation) {
                 TransactionInspector(
                     subject: subject,
                     newDraft: $newDraft,
@@ -127,10 +130,10 @@ struct TransactionsView: View {
             }
             .task(id: ObservationKey(
                 search: search,
-                year: year,
-                direction: directionFilter.direction,
-                needsAttention: needsAttention,
-                missingDocumentsOnly: missingDocumentsOnly
+                year: filter.year,
+                direction: filter.direction,
+                needsAttention: filter.needsAttention,
+                missingDocumentsOnly: filter.missingDocumentsOnly
             )) { await observeTransactions() }
             .task { await observeProposals() }
             .task { await observeImports() }
@@ -261,13 +264,13 @@ struct TransactionsView: View {
 
     private var subtitle: String {
         var parts = ["\(items.count) Buchungen"]
-        if let year {
+        if let year = filter.year {
             parts.append(String(year))
         }
-        if needsAttention {
+        if filter.needsAttention {
             parts.append("Offen")
         }
-        if missingDocumentsOnly {
+        if filter.missingDocumentsOnly {
             parts.append("Belege fehlen")
         }
         if !visibleProposals.isEmpty {
@@ -284,7 +287,7 @@ struct TransactionsView: View {
             Menu {
                 ForEach(DirectionFilter.allCases) { filter in
                     Button {
-                        directionFilter = filter
+                        self.filter.direction = filter.direction
                     } label: {
                         Label(filter.label, systemImage: filter.symbol)
                     }
@@ -297,10 +300,7 @@ struct TransactionsView: View {
         ToolbarItemGroup {
             if hasActiveFilters {
                 Button {
-                    year = nil
-                    directionFilter = .all
-                    needsAttention = false
-                    missingDocumentsOnly = false
+                    filter = TransactionListFilter()
                     selection = nil
                 } label: {
                     Label("Filter zurücksetzen", systemImage: "xmark.circle")
@@ -333,7 +333,9 @@ struct TransactionsView: View {
             } label: {
                 Label("Informationen", systemImage: "sidebar.trailing")
             }
-            .help(Text("Informationen ein-/ausblenden"))
+            .disabled(inspectorHasChanges)
+            .help(Text(inspectorHasChanges ? "Änderungen zuerst speichern oder verwerfen" :
+                    "Informationen ein-/ausblenden"))
         }
     }
 
@@ -349,6 +351,16 @@ struct TransactionsView: View {
     }
 
     // MARK: - State
+
+    private var guardedInspectorPresentation: Binding<Bool> {
+        Binding(
+            get: { showsInspector },
+            set: { isPresented in
+                guard isPresented || !inspectorHasChanges else { return }
+                showsInspector = isPresented
+            }
+        )
+    }
 
     private var guardedSelection: Binding<LedgerRow.ID?> {
         Binding(
@@ -381,12 +393,7 @@ struct TransactionsView: View {
         do {
             let observation = TransactionListQuery.observation(
                 search: search,
-                listFilter: TransactionListFilter(
-                    year: year,
-                    direction: directionFilter.direction,
-                    needsAttention: needsAttention,
-                    missingDocumentsOnly: missingDocumentsOnly
-                )
+                listFilter: filter
             )
             for try await value in observation.values(in: database.reader) {
                 items = value

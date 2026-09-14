@@ -231,6 +231,75 @@ struct StartOverviewTests {
         #expect(overview.openItems.importProposals == 1)
     }
 
+    @Test("Kombinierte Filter grenzen Jahr, Richtung und Ausnahme gemeinsam ein")
+    func combinedYearDirectionAndExceptionFilter() throws {
+        let (database, profile) = try database()
+        let matching = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: 1000,
+            date: LocalDate(year: 2026, month: 6, day: 1),
+            reviewStatus: .needsReview
+        )
+        let otherYear = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: 2000,
+            date: LocalDate(year: 2025, month: 6, day: 1),
+            reviewStatus: .needsReview
+        )
+        let otherDirection = transaction(
+            profile: profile,
+            direction: .income,
+            grossMinor: 3000,
+            date: LocalDate(year: 2026, month: 6, day: 2),
+            reviewStatus: .needsReview
+        )
+        let otherReviewStatus = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: 4000,
+            date: LocalDate(year: 2026, month: 6, day: 3)
+        )
+        let noDocumentExpected = transaction(
+            profile: profile,
+            direction: .expense,
+            grossMinor: 5000,
+            date: LocalDate(year: 2026, month: 6, day: 4),
+            reviewStatus: .needsReview
+        )
+        try database.writer.write { db in
+            try matching.insert(db)
+            try otherYear.insert(db)
+            try otherDirection.insert(db)
+            try otherReviewStatus.insert(db)
+            try noDocumentExpected.insert(db)
+            try BookkeepingAllocation(
+                transactionId: noDocumentExpected.id,
+                categoryId: "bank_fees",
+                amountMinor: 5000
+            ).insert(db)
+        }
+
+        let overview = try database.reader.read {
+            try StartOverviewQuery.fetch($0, year: 2026, currentYear: 2026)
+        }
+        let filtered = try database.reader.read { db in
+            try TransactionListQuery.fetch(
+                db,
+                listFilter: TransactionListFilter(
+                    year: 2026,
+                    direction: .expense,
+                    needsAttention: true,
+                    missingDocumentsOnly: true
+                )
+            )
+        }
+        #expect(overview.openItems.transactionsToReview == 4)
+        #expect(overview.openItems.documentsToAdd == 4)
+        #expect(filtered.map(\.id) == [matching.id])
+    }
+
     @Test("Belegausnahme gilt für Aggregation und Drilldown gleich")
     func documentExpectationAndFilter() throws {
         let (database, profile) = try database()

@@ -78,13 +78,6 @@ public struct TransactionListFilter: Equatable, Hashable, Sendable {
         self.needsAttention = needsAttention
         self.missingDocumentsOnly = missingDocumentsOnly
     }
-
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(year)
-        hasher.combine(direction?.rawValue)
-        hasher.combine(needsAttention)
-        hasher.combine(missingDocumentsOnly)
-    }
 }
 
 public enum TransactionListQuery {
@@ -96,7 +89,6 @@ public enum TransactionListQuery {
     public static func fetch(
         _ db: Database,
         search: String = "",
-        direction: Direction? = nil,
         listFilter: TransactionListFilter = TransactionListFilter()
     ) throws -> [TransactionListItem] {
         let trimmed = search.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -118,12 +110,11 @@ public enum TransactionListQuery {
                 "amountPattern": "%\(digits.replacingOccurrences(of: ".", with: ""))%"
             ]
         }
-        let selectedDirection = listFilter.direction ?? direction
-        if let selectedDirection {
+        if let direction = listFilter.direction {
             filter += " AND t.direction = :direction"
-            arguments = arguments + ["direction": selectedDirection.rawValue]
+            arguments = arguments + ["direction": direction.rawValue]
         }
-        let relevantDate = "COALESCE((SELECT MAX(p.payment_date) FROM payment_allocations pa JOIN payments p ON p.id = pa.payment_id WHERE pa.transaction_id = t.id), t.invoice_date, DATE(t.created_at))"
+        let relevantDate = TransactionQueryRules.relevantDateExpression(for: "t")
         if let year = listFilter.year {
             filter += " AND \(relevantDate) >= :yearStart AND \(relevantDate) < :nextYearStart"
             arguments = arguments + [
@@ -132,28 +123,10 @@ public enum TransactionListQuery {
             ]
         }
         if listFilter.needsAttention {
-            filter += " AND t.review_status IN ('unreviewed', 'needsReview', 'conflict')"
+            filter += " AND \(TransactionQueryRules.needsAttentionPredicate(for: "t"))"
         }
         if listFilter.missingDocumentsOnly {
-            filter += """
-              AND NOT EXISTS (
-                    SELECT 1 FROM transaction_documents td
-                    WHERE td.transaction_id = t.id
-                  )
-              AND (
-                    NOT EXISTS (
-                        SELECT 1 FROM bookkeeping_allocations ba
-                        WHERE ba.transaction_id = t.id
-                    )
-                    OR EXISTS (
-                        SELECT 1
-                          FROM bookkeeping_allocations ba
-                          JOIN categories expected_category ON expected_category.id = ba.category_id
-                         WHERE ba.transaction_id = t.id
-                           AND expected_category.document_expected = 1
-                    )
-                  )
-            """
+            filter += " AND \(TransactionQueryRules.missingDocumentsPredicate(for: "t"))"
         }
         let sql = """
         SELECT
@@ -164,10 +137,7 @@ public enum TransactionListQuery {
             t.transaction_type,
             t.review_status,
             t.invoice_date,
-            (SELECT MAX(p.payment_date)
-               FROM payment_allocations pa
-               JOIN payments p ON p.id = pa.payment_id
-              WHERE pa.transaction_id = t.id) AS last_payment_date,
+            \(TransactionQueryRules.lastPaymentDateExpression(for: "t")) AS last_payment_date,
             t.created_at,
             t.booked_gross_minor,
             t.booked_currency,
@@ -180,9 +150,9 @@ public enum TransactionListQuery {
         LEFT JOIN counterparties c ON c.id = t.counterparty_id
         LEFT JOIN v_transaction_status v ON v.id = t.id
         LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
-        WHERE t.deleted_at IS NULL AND t.workflow_status <> 'archived'
+        WHERE \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
         \(filter)
-        ORDER BY COALESCE(last_payment_date, t.invoice_date, DATE(t.created_at)) DESC, t.created_at DESC
+        ORDER BY \(relevantDate) DESC, t.created_at DESC
         """
         return try TransactionListItem.fetchAll(db, sql: sql, arguments: arguments)
     }
@@ -190,10 +160,9 @@ public enum TransactionListQuery {
     /// Live query for SwiftUI; emits a new array on every relevant write.
     public static func observation(
         search: String = "",
-        direction: Direction? = nil,
         listFilter: TransactionListFilter = TransactionListFilter()
     ) -> ValueObservation<ValueReducers.Fetch<[TransactionListItem]>> {
-        ValueObservation.tracking { try fetch($0, search: search, direction: direction, listFilter: listFilter) }
+        ValueObservation.tracking { try fetch($0, search: search, listFilter: listFilter) }
     }
 }
 
