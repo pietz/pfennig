@@ -2,6 +2,7 @@ import AI
 import AppKit
 import Database
 import Domain
+import ImportPipeline
 import SwiftUI
 
 /// Settings. The API key lives in the Keychain; model and reasoning effort
@@ -11,6 +12,7 @@ struct SettingsView: View {
     @State private var apiKeyInput = ""
     @State private var selectedModel = OpenAIModel.default
     @State private var selectedEffort = ReasoningEffort.default
+    @State private var automationLevel = AutomationLevel.default
     @State private var business = BusinessSettingsDraft()
     @State private var savedBusiness = BusinessSettingsDraft()
     @State private var businessWasSaved = false
@@ -111,6 +113,20 @@ struct SettingsView: View {
             }
 
             Section {
+                Picker("Automatisierung", selection: $automationLevel) {
+                    ForEach(AutomationLevel.allCases, id: \.self) { level in
+                        Text(level.title).tag(level)
+                    }
+                }
+            } header: {
+                Text("Automatisierung")
+            } footer: {
+                Text(automationLevel.explanation)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
                 SecureField("OpenAI API-Schlüssel", text: $apiKeyInput, prompt: Text("sk-…"))
                     .onSubmit(saveAPIKey)
                 HStack {
@@ -166,6 +182,9 @@ struct SettingsView: View {
         .onChange(of: selectedEffort) { _, newValue in
             try? model.database?.setSetting(newValue, forKey: AIConfiguration.reasoningEffortSettingKey)
         }
+        .onChange(of: automationLevel) { _, newValue in
+            AutomationPreferences.setLevel(newValue, in: model.database)
+        }
     }
 
     private var businessHasChanges: Bool {
@@ -201,6 +220,7 @@ struct SettingsView: View {
 
     private func loadAISettings() {
         guard let database = model.database else { return }
+        automationLevel = AutomationPreferences.level(in: database)
         selectedModel = (try? database.setting(OpenAIModel.self, forKey: AIConfiguration.modelSettingKey))
             ?? .default
         selectedEffort = (try? database.setting(
@@ -266,5 +286,26 @@ private struct BusinessSettingsDraft: Equatable {
     private func optional(_ value: String) -> String? {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+}
+
+extension AutomationLevel {
+    var title: String {
+        switch self {
+        case .manual: "Manuell"
+        case .balanced: "Ausgewogen"
+        case .automatic: "Automatisch"
+        }
+    }
+
+    var explanation: String {
+        switch self {
+        case .manual:
+            "Jeder Import wird von dir bestätigt."
+        case .balanced:
+            "Eindeutige, vollständig geprüfte Standardfälle werden direkt übernommen."
+        case .automatic:
+            "Alles wird übernommen, was sich eindeutig ableiten lässt; offene Fälle erscheinen unter Prüfen."
+        }
     }
 }
