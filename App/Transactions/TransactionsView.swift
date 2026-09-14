@@ -319,8 +319,9 @@ struct TransactionsView: View {
                     }
                 }
             } label: {
-                Label(directionFilter.label, systemImage: directionFilter.symbol)
+                Text(directionFilter.label)
             }
+            .fixedSize()
         }
 
         ToolbarItemGroup {
@@ -467,7 +468,9 @@ struct TransactionsView: View {
 
 // MARK: - Direction filter
 
-/// The "Alle / Eingang / Ausgang" direction menu in the toolbar.
+/// The "Alle / Einnahmen / Ausgaben" direction menu in the toolbar. Its own
+/// label is the selected word, so the current filter is readable without
+/// decoding an icon; the menu entries keep their symbols.
 enum DirectionFilter: String, CaseIterable, Identifiable {
     case all, income, expense
 
@@ -486,8 +489,8 @@ enum DirectionFilter: String, CaseIterable, Identifiable {
     var label: LocalizedStringKey {
         switch self {
         case .all: "Alle"
-        case .income: "Eingang"
-        case .expense: "Ausgang"
+        case .income: "Einnahmen"
+        case .expense: "Ausgaben"
         }
     }
 
