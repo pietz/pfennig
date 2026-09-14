@@ -40,6 +40,8 @@ public enum UStVATasks {
         /// Kz 83: positive = Zahllast, negative = Erstattung.
         public let payableMinor: Int64
         public let exceptionCount: Int
+        /// The period reports at least one Kennzahl.
+        public let hasValues: Bool
         /// True when the period carries §13b or intra-Community amounts.
         public let hasSelfAssessedLines: Bool
         /// The period whose deadline comes next; shown even when it is filed.
@@ -56,6 +58,7 @@ public enum UStVATasks {
             dueDate: LocalDate,
             payableMinor: Int64,
             exceptionCount: Int,
+            hasValues: Bool,
             hasSelfAssessedLines: Bool,
             isCurrent: Bool,
             submittedAt: String?,
@@ -65,6 +68,7 @@ public enum UStVATasks {
             self.dueDate = dueDate
             self.payableMinor = payableMinor
             self.exceptionCount = exceptionCount
+            self.hasValues = hasValues
             self.hasSelfAssessedLines = hasSelfAssessedLines
             self.isCurrent = isCurrent
             self.submittedAt = submittedAt
@@ -153,6 +157,7 @@ public enum UStVATasks {
                     dueDate: dueDates[index],
                     payableMinor: result.payableMinor,
                     exceptionCount: result.exceptions.count,
+                    hasValues: !result.lines.isEmpty,
                     hasSelfAssessedLines: hasSelfAssessedLines(result),
                     isCurrent: index == currentIndex,
                     submittedAt: record?.submittedAt,
@@ -166,36 +171,36 @@ public enum UStVATasks {
     }
 
     /// The rows Start actually shows: the period that is due next, every
-    /// earlier period that is not marked submitted, and every submitted period
-    /// whose values moved since. Without regular Voranmeldungen a row needs
-    /// §13b or intra-Community amounts to appear at all.
+    /// earlier period with something to report that is not marked submitted,
+    /// and every submitted period whose values moved since.
+    ///
+    /// An earlier period without a single Kennzahl and without an exception
+    /// stays off Start. Pfennig has nothing to prepare there, and a list of
+    /// empty quarters marked "überfällig" would drown the period that matters.
+    /// The task window reaches every period through its picker. Without
+    /// regular Voranmeldungen a row needs §13b or intra-Community amounts to
+    /// appear at all.
     public static func startRows(_ summaries: [Summary], mode: Mode) -> [Summary] {
         summaries.filter { summary in
             let isOpen = summary.isCurrent || !summary.isSubmitted || summary.changedSinceSubmission
+            let hasWork = summary.isCurrent || summary.hasValues || summary.exceptionCount > 0
             switch mode {
-            case .regular: return isOpen
+            case .regular: return isOpen && hasWork
             case .selfAssessedOnly: return isOpen && summary.hasSelfAssessedLines
             }
         }
     }
 
-    /// Live "Steuern" section for Start.
+    /// Live "Steuern" section for Start. The deadline setting is read inside
+    /// the observation, so turning Dauerfristverlängerung on moves the dates
+    /// without a reload.
     public static func startObservation(
         profile: BusinessProfile,
-        today: LocalDate = .today(),
-        dauerfristverlaengerung: Bool
+        today: LocalDate = .today()
     ) -> ValueObservation<ValueReducers.Fetch<[Summary]>> {
         let mode = mode(for: profile)
         return ValueObservation.tracking { db in
-            startRows(
-                try summaries(
-                    db,
-                    profile: profile,
-                    today: today,
-                    dauerfristverlaengerung: dauerfristverlaengerung
-                ),
-                mode: mode
-            )
+            startRows(try summaries(db, profile: profile, today: today), mode: mode)
         }
     }
 

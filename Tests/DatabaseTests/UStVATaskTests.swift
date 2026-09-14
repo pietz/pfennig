@@ -261,11 +261,12 @@ struct UStVATaskTests {
             profile: profile,
             database: database
         )
-        #expect(UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular).count == 7)
+        // Q3 as the current period, Q2 because it carries the income.
+        #expect(UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular).count == 2)
 
         try SubmittedReturnRepository.markSubmitted(database, profileID: profile.id, result: q2)
         let afterSubmission = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
-        #expect(afterSubmission.count == 6)
+        #expect(afterSubmission.count == 1)
         #expect(!afterSubmission.contains { $0.period == UStVAPeriod(year: 2026, quarter: 2) })
 
         // A later booking inside the filed quarter brings it back with a note.
@@ -292,6 +293,27 @@ struct UStVATaskTests {
         #expect(current.period == UStVAPeriod(year: 2026, quarter: 3))
         #expect(current.isSubmitted)
         #expect(!current.changedSinceSubmission)
+    }
+
+    @Test("Zurückliegende Zeiträume ohne Werte bleiben von Start fern")
+    func emptyPastPeriodsStayOffStart() throws {
+        let (database, profile) = try database()
+        let today = LocalDate(year: 2026, month: 9, day: 14)
+        try income(database, profile, net: 100_000, on: LocalDate(year: 2026, month: 8, day: 1))
+
+        // Seven quarters are prepared, ...
+        #expect(try summaries(database, profile, today: today).count == 7)
+        // ... but only Q3 2026 has anything in it.
+        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        #expect(rows.map(\.period) == [UStVAPeriod(year: 2026, quarter: 3)])
+
+        // A booking in an older quarter brings that quarter back.
+        try income(database, profile, net: 50000, on: LocalDate(year: 2025, month: 2, day: 3))
+        let withHistory = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+        #expect(withHistory.map(\.period) == [
+            UStVAPeriod(year: 2026, quarter: 3),
+            UStVAPeriod(year: 2025, quarter: 1)
+        ])
     }
 
     @Test("Ohne regelmäßige Voranmeldungen erscheint nur ein Zeitraum mit §13b")
