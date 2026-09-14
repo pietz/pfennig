@@ -8,15 +8,11 @@ final class AppModell {
     let repository: Repository
 
     var buchungen: [Buchung] = []
-    /// `Buchung.ID` is the optional row id, so the selection carries one
-    /// optional more than it looks like.
-    var auswahl: Buchung.ID?
+    var auswahl: Int64?
     var filter: Buchungsfilter = .alle
     var suche = ""
     var sortierung = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspektorSichtbar = true
-    /// Set by the plus button so the inspector puts the cursor in the title.
-    var fokusTitel = false
     var fehler: String?
 
     var zeigtFehler: Bool {
@@ -53,8 +49,8 @@ final class AppModell {
     }
 
     var ausgewaehlt: Buchung? {
-        guard let id = auswahl else { return nil }
-        return buchungen.first { $0.id == id }
+        guard let auswahl else { return nil }
+        return buchungen.first { $0.id == auswahl }
     }
 
     @discardableResult
@@ -67,9 +63,9 @@ final class AppModell {
         }
     }
 
-    /// A new expense of today with one empty position, selected and ready to
-    /// type. The toolbar must not hide it, so a running search or an income
-    /// filter steps aside.
+    /// A new expense of today with one empty position, selected in the table.
+    /// The toolbar must not hide it, so a running search or an income filter
+    /// steps aside.
     func neueBuchung() {
         let buchung = Buchung(
             richtung: .ausgabe,
@@ -87,7 +83,6 @@ final class AppModell {
         suche = ""
         auswahl = gespeichert.id
         inspektorSichtbar = true
-        fokusTitel = true
     }
 
     func bestaetigen(_ buchung: Buchung) {

@@ -1,3 +1,5 @@
+import AppKit
+import Combine
 import Kern
 import SwiftUI
 
@@ -12,9 +14,9 @@ struct Inspektor: View {
     /// The last state that went to the database. It separates a real edit from
     /// the timestamps the repository sets with every write.
     @State private var gesichert: Buchung
-    /// Positions whose rate the user types freely instead of picking it.
-    @State private var freieSaetze: Set<Int> = []
-    @FocusState private var titelFokus: Bool
+    /// True once the user asked for the foreign currency line on a booking
+    /// that does not carry one yet.
+    @State private var fremdwaehrung = false
 
     init(modell: AppModell, buchung: Buchung) {
         self.modell = modell
@@ -41,11 +43,9 @@ struct Inspektor: View {
             gesichert = neu
         }
         .onDisappear(perform: sichern)
-        .onAppear {
-            guard modell.fokusTitel else { return }
-            modell.fokusTitel = false
-            // The field exists only after this pass, so ask for focus in the next one.
-            Task { titelFokus = true }
+        // Quitting must not swallow a field the user typed but never committed.
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            sichern()
         }
         // Controls other than the free text fields commit the moment they change.
         .onChange(of: entwurf.richtung) { sichern() }
@@ -79,11 +79,11 @@ struct Inspektor: View {
             .pickerStyle(.segmented)
 
             Picker("Art", selection: $entwurf.art) {
-                ForEach(Art.allCases, id: \.self) { Text(beschriftung($0)).tag($0) }
+                ForEach(Art.allCases, id: \.self) { Text($0.name).tag($0) }
             }
 
             TextField("Datum", value: $entwurf.datum, format: .deutsch)
-            TextField("Titel", text: $entwurf.titel).focused($titelFokus)
+            TextField("Titel", text: $entwurf.titel)
             TextField("Gegenpartei", text: text(\.gegenparteiName))
             TextField("Land", text: text(\.gegenparteiLand))
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
@@ -129,7 +129,7 @@ struct Inspektor: View {
         Section("Beträge") {
             HStack {
                 Text("Netto").frame(maxWidth: .infinity, alignment: .leading)
-                Text("Satz").frame(width: 90, alignment: .leading)
+                Text("Satz").frame(width: 70, alignment: .leading)
                 Text("Steuer").frame(maxWidth: .infinity, alignment: .leading)
                 Color.clear.frame(width: 16)
             }
@@ -140,8 +140,13 @@ struct Inspektor: View {
                 HStack {
                     TextField("Netto", value: nettoBindung(i), format: .euro)
                         .labelsHidden()
-                    satzfeld(i)
-                    TextField("Steuer", value: $entwurf.positionen[i].steuer, format: .euro)
+                    HStack(spacing: 2) {
+                        TextField("Satz", value: satzBindung(i), format: .number)
+                            .labelsHidden()
+                        Text("%").foregroundStyle(.secondary)
+                    }
+                    .frame(width: 70)
+                    TextField("Steuer", value: position(i, \.steuer, sonst: .null), format: .euro)
                         .labelsHidden()
                     Button("Position entfernen", systemImage: "minus.circle") { positionEntfernen(i) }
                         .labelStyle(.iconOnly)
@@ -154,7 +159,7 @@ struct Inspektor: View {
                 entwurf.positionen.append(Position(netto: .null, steuersatz: 19, steuer: .null))
             }
 
-            if entwurf.waehrung != nil {
+            if entwurf.waehrung != nil || fremdwaehrung {
                 LabeledContent("Original") {
                     HStack {
                         TextField("Betrag", value: originalbetragBindung, format: .number.precision(.fractionLength(2)))
@@ -164,71 +169,42 @@ struct Inspektor: View {
                             .frame(width: 60)
                     }
                 }
+            } else {
+                Button("Fremdwährung…") { fremdwaehrung = true }
             }
 
             LabeledContent("Brutto", value: entwurf.brutto.formatiert)
         }
     }
 
-    @ViewBuilder private func satzfeld(_ i: Int) -> some View {
-        if freieSaetze.contains(i) || feldSaetze.contains(entwurf.positionen[i].steuersatz) == false {
-            TextField("Satz", value: satzBindung(i), format: .number)
-                .labelsHidden()
-                .frame(width: 90)
-        } else {
-            Picker("Satz", selection: satzAuswahl(i)) {
-                Text("0 %").tag(Decimal?.some(0))
-                Text("7 %").tag(Decimal?.some(7))
-                Text("19 %").tag(Decimal?.some(19))
-                Text("anderer").tag(Decimal?.none)
-            }
-            .labelsHidden()
-            .frame(width: 90)
-        }
-    }
-
-    private let feldSaetze: [Decimal] = [0, 7, 19]
-
     /// The tax follows the net amount and the rate, until the user overwrites it.
     private func nettoBindung(_ i: Int) -> Binding<Cent> {
         Binding(
-            get: { entwurf.positionen[i].netto },
+            get: { position(i, \.netto, sonst: .null).wrappedValue },
             set: { neu in
+                guard entwurf.positionen.indices.contains(i) else { return }
                 entwurf.positionen[i].netto = neu
                 entwurf.positionen[i].steuer = Position.steuer(netto: neu, steuersatz: entwurf.positionen[i].steuersatz)
             }
         )
     }
 
+    /// A percentage, any rate the document shows, foreign ones included.
     private func satzBindung(_ i: Int) -> Binding<Decimal> {
         Binding(
-            get: { entwurf.positionen[i].steuersatz },
+            get: { position(i, \.steuersatz, sonst: 0).wrappedValue },
             set: { neu in
-                entwurf.positionen[i].steuersatz = neu
-                entwurf.positionen[i].steuer = Position.steuer(netto: entwurf.positionen[i].netto, steuersatz: neu)
-                if feldSaetze.contains(neu) {
-                    freieSaetze.remove(i)
-                }
-            }
-        )
-    }
-
-    private func satzAuswahl(_ i: Int) -> Binding<Decimal?> {
-        Binding(
-            get: { entwurf.positionen[i].steuersatz },
-            set: { neu in
-                guard let neu else {
-                    freieSaetze.insert(i)
-                    return
-                }
-                satzBindung(i).wrappedValue = neu
+                guard entwurf.positionen.indices.contains(i) else { return }
+                let satz = min(max(neu, 0), 100)
+                entwurf.positionen[i].steuersatz = satz
+                entwurf.positionen[i].steuer = Position.steuer(netto: entwurf.positionen[i].netto, steuersatz: satz)
             }
         )
     }
 
     private func positionEntfernen(_ i: Int) {
+        guard entwurf.positionen.indices.contains(i) else { return }
         entwurf.positionen.remove(at: i)
-        freieSaetze = []
     }
 
     private var originalbetragBindung: Binding<Decimal> {
@@ -243,7 +219,7 @@ struct Inspektor: View {
     private var steuer: some View {
         Section("Steuer") {
             Picker("Behandlung", selection: $entwurf.steuerbehandlung) {
-                ForEach(Steuerbehandlung.allCases, id: \.self) { Text(beschriftung($0)).tag($0) }
+                ForEach(Steuerbehandlung.allCases, id: \.self) { Text($0.name).tag($0) }
             }
             LabeledContent("davon USt", value: entwurf.steuer.formatiert)
         }
@@ -255,22 +231,22 @@ struct Inspektor: View {
         Section("Zahlungen") {
             ForEach(Array(entwurf.zahlungen.indices), id: \.self) { i in
                 HStack {
-                    TextField("Datum", value: $entwurf.zahlungen[i].datum, format: .deutsch)
+                    TextField("Datum", value: zahlung(i, \.datum, sonst: .heute()), format: .deutsch)
                         .labelsHidden()
                         .frame(width: 90)
-                    TextField("Betrag", value: $entwurf.zahlungen[i].betrag, format: .euro)
+                    TextField("Betrag", value: zahlung(i, \.betrag, sonst: .null), format: .euro)
                         .labelsHidden()
-                    Picker("Richtung", selection: $entwurf.zahlungen[i].richtung) {
+                    Picker("Richtung", selection: zahlung(i, \.richtung, sonst: entwurf.richtung)) {
                         Text("Zahlung").tag(entwurf.richtung)
                         Text("Erstattung").tag(gegenrichtung)
                     }
                     .labelsHidden()
                     .frame(width: 110)
-                    Toggle("Geprüft", isOn: $entwurf.zahlungen[i].geprueft)
+                    Toggle("Geprüft", isOn: zahlung(i, \.geprueft, sonst: false))
                         .toggleStyle(.checkbox)
                         .labelsHidden()
                         .help("Geprüft")
-                    Button("Zahlung entfernen", systemImage: "minus.circle") { entwurf.zahlungen.remove(at: i) }
+                    Button("Zahlung entfernen", systemImage: "minus.circle") { zahlungEntfernen(i) }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                 }
@@ -295,6 +271,11 @@ struct Inspektor: View {
                 }
             }
         }
+    }
+
+    private func zahlungEntfernen(_ i: Int) {
+        guard entwurf.zahlungen.indices.contains(i) else { return }
+        entwurf.zahlungen.remove(at: i)
     }
 
     private var gegenrichtung: Richtung {
@@ -328,7 +309,31 @@ struct Inspektor: View {
         }
     }
 
-    // MARK: - Kleinkram
+    // MARK: - Bindungen
+
+    /// A binding into one position of the draft. It answers with a fallback
+    /// once the row is gone, so removing a row cannot read past the end of the
+    /// list while the form is still showing it.
+    private func position<Wert>(_ i: Int, _ pfad: WritableKeyPath<Position, Wert>, sonst: Wert) -> Binding<Wert> {
+        Binding(
+            get: { entwurf.positionen.indices.contains(i) ? entwurf.positionen[i][keyPath: pfad] : sonst },
+            set: { neu in
+                guard entwurf.positionen.indices.contains(i) else { return }
+                entwurf.positionen[i][keyPath: pfad] = neu
+            }
+        )
+    }
+
+    /// The same for one payment.
+    private func zahlung<Wert>(_ i: Int, _ pfad: WritableKeyPath<Zahlung, Wert>, sonst: Wert) -> Binding<Wert> {
+        Binding(
+            get: { entwurf.zahlungen.indices.contains(i) ? entwurf.zahlungen[i][keyPath: pfad] : sonst },
+            set: { neu in
+                guard entwurf.zahlungen.indices.contains(i) else { return }
+                entwurf.zahlungen[i][keyPath: pfad] = neu
+            }
+        )
+    }
 
     /// An optional text column is an empty field in the form and nil in the row.
     private func text(_ pfad: WritableKeyPath<Buchung, String?>) -> Binding<String> {
@@ -337,21 +342,11 @@ struct Inspektor: View {
             set: { entwurf[keyPath: pfad] = $0.isEmpty ? nil : $0 }
         )
     }
+}
 
-    private func beschriftung(_ art: Art) -> String {
-        switch art {
-        case .rechnung: "Rechnung"
-        case .beleg: "Beleg"
-        case .gutschrift: "Gutschrift"
-        case .steuerzahlung: "Steuerzahlung"
-        case .nurZahlung: "Nur Zahlung"
-        case .ignoriert: "Ignoriert"
-        case .sonstiges: "Sonstiges"
-        }
-    }
-
-    private func beschriftung(_ behandlung: Steuerbehandlung) -> String {
-        switch behandlung {
+extension Steuerbehandlung {
+    var name: String {
+        switch self {
         case .inland: "Inland"
         case .reverseCharge: "Reverse Charge"
         case .kleinunternehmer: "Kleinunternehmer"
