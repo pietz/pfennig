@@ -22,6 +22,15 @@ public enum Direction: String, Codable, CaseIterable, Sendable, UnknownFallbackD
     public static var fallback: Direction {
         .unknown
     }
+
+    /// The payment direction that settles an ordinary transaction of this
+    /// direction: money out pays an expense, money in pays an invoice. A
+    /// payment moving the other way is a refund and counts negatively; a
+    /// credit note settles with the opposite direction because its amounts
+    /// are negative, not because this rule changes.
+    public var settlingPaymentDirection: PaymentDirection {
+        self == .income ? .inflow : .outflow
+    }
 }
 
 /// A refund is not a type of its own: it is an opposite-direction payment on
@@ -122,6 +131,11 @@ public enum StatementLineClass: String, Codable, CaseIterable, Sendable, Unknown
 
 public enum PaymentDirection: String, Codable, CaseIterable, Sendable {
     case inflow, outflow
+
+    /// The other way round: the direction a refund of this payment moves in.
+    public var opposite: PaymentDirection {
+        self == .inflow ? .outflow : .inflow
+    }
 }
 
 public enum PaymentMethod: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
@@ -189,8 +203,11 @@ public enum AuditAction: String, Codable, CaseIterable, Sendable {
 
 // MARK: - Derived status dimensions (spec 19)
 
+/// Derived from the *net* allocated amount: payments in the transaction's own
+/// direction minus payments back. `refunded` is the state where money moved
+/// both ways and nothing is left: payments exist, but they cancel out.
 public enum PaymentStatus: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case unknown, unpaid, partiallyPaid, paid
+    case unknown, unpaid, partiallyPaid, paid, refunded
     public static var fallback: PaymentStatus {
         .unknown
     }

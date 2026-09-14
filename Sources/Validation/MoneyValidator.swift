@@ -95,6 +95,26 @@ public enum MoneyValidator {
         )
     }
 
+    /// A negative amount is a credit note and nothing else. Within one
+    /// transaction the three amounts also have to agree: a document cannot
+    /// charge a positive net with a negative tax. Zero has no sign and is
+    /// allowed everywhere.
+    public static func validateAmountSign(
+        net: Money,
+        tax: Money,
+        gross: Money,
+        isCreditNote: Bool
+    ) -> ValidationIssue? {
+        let amounts = [net, tax, gross].map(\.minorUnits)
+        if !isCreditNote, amounts.contains(where: { $0 < 0 }) {
+            return ValidationIssue(code: .amountSignInvalid, fieldName: "grossAmount")
+        }
+        if amounts.contains(where: { $0 < 0 }), amounts.contains(where: { $0 > 0 }) {
+            return ValidationIssue(code: .amountSignInvalid, fieldName: "grossAmount")
+        }
+        return nil
+    }
+
     /// Spec 14.1: "Payment allocation total exceeds payment amount" - exact
     /// comparison, no tolerance.
     public static func validatePaymentAllocationExceeds(

@@ -381,8 +381,11 @@ enum V001Initial {
         SELECT t.id,
           CASE
             WHEN t.booked_gross_minor IS NULL THEN 'unknown'
-            WHEN COALESCE(pa.allocated, 0) = 0 THEN 'unpaid'
-            WHEN pa.allocated < t.booked_gross_minor THEN 'partiallyPaid'
+            WHEN \(TransactionQueryRules.netAllocatedExpression(for: "t")) = 0
+                 AND \(TransactionQueryRules.paymentCountExpression(for: "t")) > 0 THEN 'refunded'
+            WHEN \(TransactionQueryRules.netAllocatedExpression(for: "t")) = 0 THEN 'unpaid'
+            WHEN ABS(\(TransactionQueryRules.netAllocatedExpression(for: "t"))) < ABS(t.booked_gross_minor)
+                 THEN 'partiallyPaid'
             ELSE 'paid' END AS payment_status,
           CASE
             WHEN td.doc_count IS NULL AND t.transaction_type IN ('paymentOnly') THEN 'missing'
@@ -390,7 +393,6 @@ enum V001Initial {
             ELSE 'complete' END AS document_status,
           COALESCE(ta.status, 'unknown') AS tax_status
         FROM transactions t
-        LEFT JOIN (SELECT transaction_id, SUM(allocated_minor) AS allocated FROM payment_allocations GROUP BY transaction_id) pa ON pa.transaction_id = t.id
         LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
         LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
         WHERE t.deleted_at IS NULL

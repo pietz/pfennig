@@ -40,7 +40,7 @@ struct EnumRawValueTests {
         "IssueStatus": ["open", "resolved", "ignored"],
         "AuditActor": ["user", "agent", "system", "import"],
         "AuditAction": ["create", "update", "delete", "link", "unlink", "confirm", "correct", "lock", "unlock"],
-        "PaymentStatus": ["unknown", "unpaid", "partiallyPaid", "paid"],
+        "PaymentStatus": ["unknown", "unpaid", "partiallyPaid", "paid", "refunded"],
         "DocumentStatus": ["missing", "notRequired", "complete"],
         "VATStatus": ["taxable", "smallBusiness"],
         "VATAccountingMethod": ["cash", "accrual"],

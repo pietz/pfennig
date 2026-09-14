@@ -127,6 +127,54 @@ struct TransactionStatusViewTests {
         #expect(try status(database, id).taxStatus == "confirmed")
     }
 
+    /// Books one more payment against the fixture transaction.
+    func addPayment(
+        _ database: AppDatabase,
+        _ id: String,
+        _ minor: Int64,
+        direction: PaymentDirection,
+        on date: LocalDate = LocalDate(year: 2026, month: 10, day: 1)
+    ) throws {
+        try database.writer.write { db in
+            let payment = Payment(
+                direction: direction,
+                paymentDate: date,
+                originalAmountMinor: minor,
+                bookedAmountMinor: minor,
+                source: .manual
+            )
+            try payment.insert(db)
+            try PaymentAllocation(paymentId: payment.id, transactionId: id, allocatedMinor: minor).insert(db)
+        }
+    }
+
+    @Test("A full refund leaves payments but nothing settled")
+    func refunded() throws {
+        let (database, id) = try makeFixture(paidMinor: 10000)
+        #expect(try status(database, id).paymentStatus == .paid)
+        // The income was paid in, so the refund pays back out.
+        try addPayment(database, id, 10000, direction: .outflow)
+        #expect(try status(database, id).paymentStatus == .refunded)
+    }
+
+    @Test("A partial refund falls back to partially paid")
+    func partiallyRefunded() throws {
+        let (database, id) = try makeFixture(paidMinor: 10000)
+        try addPayment(database, id, 4000, direction: .outflow)
+        #expect(try status(database, id).paymentStatus == .partiallyPaid)
+    }
+
+    @Test("A credit note is settled by a payment in the opposite direction")
+    func creditNote() throws {
+        let (database, id) = try makeFixture(paidMinor: nil, grossMinor: -10000)
+        #expect(try status(database, id).paymentStatus == .unpaid)
+        // A negative income (a credit note to a customer) is settled by paying out.
+        try addPayment(database, id, 4000, direction: .outflow)
+        #expect(try status(database, id).paymentStatus == .partiallyPaid)
+        try addPayment(database, id, 6000, direction: .outflow)
+        #expect(try status(database, id).paymentStatus == .paid)
+    }
+
     @Test("Soft-deleted transactions disappear")
     func softDelete() throws {
         let (database, id) = try makeFixture(paidMinor: 10000)

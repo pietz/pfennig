@@ -12,6 +12,7 @@ public enum IssueCode: String, CaseIterable, Sendable, Codable, Equatable {
     case taxComponentNetMismatch = "TAX_COMPONENT_NET_MISMATCH"
     case taxComponentTaxMismatch = "TAX_COMPONENT_TAX_MISMATCH"
     case grossMismatch = "GROSS_MISMATCH"
+    case amountSignInvalid = "AMOUNT_SIGN_INVALID"
     case allocationSumMismatch = "ALLOCATION_SUM_MISMATCH"
     case paymentAllocationExceeds = "PAYMENT_ALLOCATION_EXCEEDS"
     case linkedEntityMissing = "LINKED_ENTITY_MISSING"
@@ -39,7 +40,7 @@ public extension IssueCode {
     /// Every hard (blocking) code, spec 14.1.
     static let hardCodes: Set<IssueCode> = [
         .currencyInvalid, .dateImpossible, .servicePeriodInverted,
-        .taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch,
+        .taxComponentNetMismatch, .taxComponentTaxMismatch, .grossMismatch, .amountSignInvalid,
         .allocationSumMismatch, .paymentAllocationExceeds, .linkedEntityMissing,
         .unsupportedStateTransition, .duplicateDocumentIdentity,
         .duplicateStatementLineFingerprint
@@ -80,6 +81,8 @@ public extension IssueCode {
             "Summe der Steuerbeträge der Steuerkomponenten weicht vom Rechnungssteuerbetrag ab."
         case .grossMismatch:
             "Netto plus Steuer ergibt nicht den Bruttobetrag."
+        case .amountSignInvalid:
+            "Negative Beträge sind nur bei einer Gutschrift zulässig, und Netto, Steuer und Brutto müssen dasselbe Vorzeichen haben."
         case .allocationSumMismatch:
             "Summe der Buchungszuordnungen weicht vom gebuchten Betrag ab."
         case .paymentAllocationExceeds:

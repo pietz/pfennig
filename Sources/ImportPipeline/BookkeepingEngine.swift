@@ -171,6 +171,7 @@ public enum BookkeepingEngine {
                 )
             },
             allocationExpectedTotal: isSmallBusinessExpense ? gross : (net.isZero ? gross : net),
+            isCreditNote: draft.isCreditNote,
             paymentAllocations: draft.payments.map {
                 let amount = Money(minorUnits: $0.amountMinor, currency: $0.currency)
                 let allocated = Money(minorUnits: $0.allocated, currency: $0.currency)
@@ -181,9 +182,10 @@ public enum BookkeepingEngine {
                     totalAllocatedForPayment: allocated
                 )
             },
+            // Net of refunds: a payment that came back has not been paid.
             totalPaid: paymentDates.isEmpty
                 ? nil
-                : Money(minorUnits: draft.payments.reduce(0) { $0 + $1.allocated }, currency: currency),
+                : Money(minorUnits: draft.netAllocatedMinor, currency: currency),
             treatment: treatment,
             direction: draft.direction,
             isCounterpartyDomestic: counterpartyCountry == profile.countryCode.uppercased(),

@@ -16,6 +16,44 @@ public enum TransactionQueryRules {
         "COALESCE(\(alias).invoice_date, \(firstPaymentDateExpression(for: alias)), DATE(\(alias).created_at, 'localtime'))"
     }
 
+    /// The signed contribution of one payment allocation: positive when the
+    /// payment moves in the transaction's own direction (money out on an
+    /// expense, money in on an income), negative when it moves back. A refund
+    /// is exactly that opposite-direction payment; amounts stay positive on
+    /// both the payment and its allocation.
+    public static func signedAllocationExpression(
+        allocation: String,
+        payment: String,
+        transaction: String
+    ) -> String {
+        """
+        CASE WHEN \(payment).direction =
+                  CASE \(transaction).direction WHEN 'income' THEN 'inflow' ELSE 'outflow' END
+             THEN \(allocation).allocated_minor ELSE -\(allocation).allocated_minor END
+        """
+    }
+
+    /// What the payments of a transaction have settled: everything allocated
+    /// in its own direction minus everything paid back. A credit note is
+    /// settled with a negative amount, because its gross is negative too.
+    public static func netAllocatedExpression(for alias: String) -> String {
+        """
+        (SELECT COALESCE(SUM(\(signedAllocationExpression(
+            allocation: "pa",
+            payment: "p",
+            transaction: alias
+        ))), 0)
+           FROM payment_allocations pa
+           JOIN payments p ON p.id = pa.payment_id
+          WHERE pa.transaction_id = \(alias).id)
+        """
+    }
+
+    /// How many payments are allocated to a transaction, refunds included.
+    public static func paymentCountExpression(for alias: String) -> String {
+        "(SELECT COUNT(*) FROM payment_allocations pa WHERE pa.transaction_id = \(alias).id)"
+    }
+
     /// Recorded transactions exclude archived and soft-deleted rows.
     public static func recordedVisibilityPredicate(for alias: String) -> String {
         "\(alias).deleted_at IS NULL AND \(alias).workflow_status <> 'archived'"

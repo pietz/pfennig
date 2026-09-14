@@ -9,6 +9,11 @@ public enum BookkeepingError: Error, LocalizedError, Sendable, Equatable {
     case manualOverrideProtected(field: String, actor: AuditActor)
     case invalidPaymentAmount
     case invalidPaymentAllocation
+    /// Only a credit note may book a negative amount.
+    case negativeAmountNotAllowed
+    /// The payments of a transaction may never settle more than its gross
+    /// amount, and a refund may never give back more than was paid.
+    case paymentBoundsExceeded
     case transactionNotFound(String)
 
     public var errorDescription: String? {
@@ -21,6 +26,10 @@ public enum BookkeepingError: Error, LocalizedError, Sendable, Equatable {
             "Der Zahlungsbetrag muss größer als 0 sein."
         case .invalidPaymentAllocation:
             "Der zugeordnete Zahlungsbetrag muss größer als 0 sein und darf den Zahlungsbetrag nicht überschreiten."
+        case .negativeAmountNotAllowed:
+            "Negative Beträge sind nur bei einer Gutschrift zulässig."
+        case .paymentBoundsExceeded:
+            "Die Zahlungen dürfen den Betrag der Buchung weder überschreiten noch mehr zurückgeben, als gezahlt wurde."
         case let .transactionNotFound(id):
             "Buchung \(id) existiert nicht."
         }
@@ -124,6 +133,11 @@ public struct BookkeepingRepository: Sendable {
     ) throws -> String {
         if let blocking = issues.filter(\.isHard).map(\.code).nilIfEmpty {
             throw BookkeepingError.hardValidation(blocking)
+        }
+        // A negative amount is a credit note and nothing else - independent of
+        // who writes and of which validations the caller ran (spec 14.1).
+        if !draft.isCreditNote, [draft.netMinor, draft.taxMinor, draft.grossMinor].contains(where: { ($0 ?? 0) < 0 }) {
+            throw BookkeepingError.negativeAmountNotAllowed
         }
         let now = Timestamp.string()
         let existing = try draft.id.flatMap { try TransactionRecord.fetchOne(db, key: $0) }
@@ -673,10 +687,37 @@ public struct BookkeepingRepository: Sendable {
                 afterJson: json([
                     "paymentId": record.id,
                     "paymentDate": payment.paymentDate.description,
-                    "allocatedMinor": String(payment.allocated)
+                    "allocatedMinor": String(payment.allocated),
+                    "direction": payment.direction.rawValue
                 ]),
                 createdAt: now
             ).insert(db)
+        }
+        try requirePaymentsWithinBounds(db, draft: draft, transactionID: transactionID)
+    }
+
+    /// What the payments have settled - allocations in the transaction's own
+    /// direction minus refunds - must stay between zero and the booked gross
+    /// amount. Both ends matter: nothing may be paid twice, and no refund may
+    /// give back money that was never paid. Read back from the database so
+    /// payments written by an earlier save count too.
+    private func requirePaymentsWithinBounds(
+        _ db: Database,
+        draft: TransactionDraft,
+        transactionID: String
+    ) throws {
+        guard let gross = draft.grossMinor else { return }
+        let net = try Int64.fetchOne(
+            db,
+            sql: """
+            SELECT \(TransactionQueryRules.netAllocatedExpression(for: "t")) FROM transactions t WHERE t.id = ?
+            """,
+            arguments: [transactionID]
+        ) ?? 0
+        let lower = min(0, gross)
+        let upper = max(0, gross)
+        guard net >= lower, net <= upper else {
+            throw BookkeepingError.paymentBoundsExceeded
         }
     }
 

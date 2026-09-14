@@ -7,6 +7,8 @@ import Testing
 struct TransactionDraftTests {
     private func draft(
         components: [TaxComponentDraft] = [],
+        direction: Direction = .expense,
+        transactionType: TransactionType = .invoice,
         netMinor: Int64? = nil,
         taxMinor: Int64? = nil,
         grossMinor: Int64? = nil,
@@ -14,6 +16,8 @@ struct TransactionDraftTests {
     ) -> TransactionDraft {
         TransactionDraft(
             businessProfileId: "profile",
+            direction: direction,
+            transactionType: transactionType,
             netMinor: netMinor,
             taxMinor: taxMinor,
             grossMinor: grossMinor,
@@ -22,9 +26,13 @@ struct TransactionDraftTests {
         )
     }
 
-    private func payment(_ amountMinor: Int64, allocatedMinor: Int64? = nil) -> PaymentDraft {
+    private func payment(
+        _ amountMinor: Int64,
+        allocatedMinor: Int64? = nil,
+        direction: PaymentDirection = .outflow
+    ) -> PaymentDraft {
         PaymentDraft(
-            direction: .outflow,
+            direction: direction,
             paymentDate: LocalDate(year: 2026, month: 9, day: 14),
             amountMinor: amountMinor,
             currency: .eur,
@@ -143,5 +151,84 @@ struct TransactionDraftTests {
     @Test("Without a gross amount nothing is open")
     func withoutGross() {
         #expect(draft().openAmountMinor == 0)
+    }
+
+    // MARK: Erstattungen
+
+    @Test("A refund is the opposite-direction payment and counts negatively")
+    func refundCountsNegatively() {
+        let value = draft(
+            grossMinor: 11900,
+            payments: [payment(11900), payment(11900, direction: .inflow)]
+        )
+        #expect(value.netAllocatedMinor == 0)
+        #expect(value.openAmountMinor == 11900)
+        #expect(value.payments[1].isRefund(of: .expense))
+        #expect(value.payments[1].signedAllocated(for: .expense) == -11900)
+    }
+
+    @Test("A partial refund leaves the difference settled")
+    func partialRefund() {
+        let value = draft(
+            grossMinor: 11900,
+            payments: [payment(11900), payment(1900, direction: .inflow)]
+        )
+        #expect(value.netAllocatedMinor == 10000)
+        #expect(value.openAmountMinor == 1900)
+    }
+
+    @Test("Money can only be given back once something was settled")
+    func refundNeedsAPayment() {
+        #expect(draft(grossMinor: 11900).canRefund == false)
+        #expect(draft(grossMinor: 11900, payments: [payment(5000)]).canRefund)
+    }
+
+    @Test("On an income transaction the inflow settles and the outflow refunds")
+    func incomeDirections() {
+        let value = draft(
+            direction: .income,
+            grossMinor: 11900,
+            payments: [payment(11900, direction: .inflow), payment(11900, direction: .outflow)]
+        )
+        #expect(value.netAllocatedMinor == 0)
+        #expect(value.payments[0].isRefund(of: .income) == false)
+        #expect(value.payments[1].isRefund(of: .income))
+    }
+
+    // MARK: Gutschriften
+
+    @Test("A credit note is open with a negative amount and settled by the opposite direction")
+    func creditNoteIsSettledTheOtherWayRound() {
+        let value = draft(
+            transactionType: .creditNote,
+            netMinor: -10000,
+            taxMinor: -1900,
+            grossMinor: -11900
+        )
+        #expect(value.isCreditNote)
+        #expect(value.openAmountMinor == -11900)
+        #expect(value.settlingPaymentDirection == .inflow)
+    }
+
+    @Test("A settled credit note has nothing open")
+    func settledCreditNote() {
+        let value = draft(
+            transactionType: .creditNote,
+            grossMinor: -11900,
+            payments: [payment(11900, direction: .inflow)]
+        )
+        #expect(value.netAllocatedMinor == -11900)
+        #expect(value.openAmountMinor == 0)
+        #expect(value.settlingPaymentDirection == nil)
+    }
+
+    @Test("An overpaid credit note reads as nothing open rather than a positive remainder")
+    func overpaidCreditNote() {
+        let value = draft(
+            transactionType: .creditNote,
+            grossMinor: -11900,
+            payments: [payment(15000, direction: .inflow)]
+        )
+        #expect(value.openAmountMinor == 0)
     }
 }

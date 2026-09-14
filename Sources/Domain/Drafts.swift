@@ -141,11 +141,44 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
 }
 
 public extension TransactionDraft {
-    /// What is still unpaid: the booked gross minus everything already
-    /// allocated to this transaction. Never negative, so an overpayment reads
-    /// as "nothing open". It is the default amount of a new payment.
+    /// A credit note books negative amounts in the direction of the document
+    /// it corrects: a supplier's Gutschrift is a negative expense. It is the
+    /// only kind of transaction that may carry a negative amount.
+    var isCreditNote: Bool {
+        transactionType == .creditNote
+    }
+
+    /// What the payments have settled so far: everything allocated in the
+    /// transaction's own direction minus everything paid back. A fully paid
+    /// and then fully refunded transaction is back at zero.
+    var netAllocatedMinor: Int64 {
+        payments.reduce(0) { $0 + $1.signedAllocated(for: direction) }
+    }
+
+    /// What is still open: the booked gross minus what the payments settled.
+    /// It never crosses zero, so an overpayment reads as "nothing open", and
+    /// it carries the sign of the gross amount - a credit note is open with a
+    /// negative amount until the money comes back. It is the default amount
+    /// of a new payment.
     var openAmountMinor: Int64 {
-        max((grossMinor ?? 0) - payments.reduce(0) { $0 + $1.allocated }, 0)
+        let gross = grossMinor ?? 0
+        let remaining = gross - netAllocatedMinor
+        return gross < 0 ? min(remaining, 0) : max(remaining, 0)
+    }
+
+    /// The direction a payment has to move in to settle what is still open:
+    /// the ordinary one for a positive amount, its opposite for a credit
+    /// note. `nil` when nothing is open.
+    var settlingPaymentDirection: PaymentDirection? {
+        let open = openAmountMinor
+        guard open != 0 else { return nil }
+        return open < 0 ? direction.settlingPaymentDirection.opposite : direction.settlingPaymentDirection
+    }
+
+    /// Whether money can be given back at all: only what has been settled can
+    /// be refunded, because the net allocated amount may never cross zero.
+    var canRefund: Bool {
+        netAllocatedMinor != 0
     }
 
     /// The VAT rate behind the tax amount, for the inspector's read-only
@@ -330,8 +363,22 @@ public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
     }
 
     /// Amount booked against the transaction; the full payment by default.
+    /// Always positive: the direction, not the sign, says which way the money
+    /// moved.
     public var allocated: Int64 {
         allocatedMinor ?? amountMinor
+    }
+
+    /// True when this payment moves against the transaction's own direction:
+    /// money back from a supplier, money returned to a customer.
+    public func isRefund(of transactionDirection: Direction) -> Bool {
+        direction != transactionDirection.settlingPaymentDirection
+    }
+
+    /// What this payment contributes to the settled amount: positive in the
+    /// transaction's own direction, negative when it moves back.
+    public func signedAllocated(for transactionDirection: Direction) -> Int64 {
+        isRefund(of: transactionDirection) ? -allocated : allocated
     }
 }
 

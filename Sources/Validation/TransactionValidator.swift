@@ -29,6 +29,8 @@ public struct TransactionSnapshot: Sendable {
     /// The allocation-sum target: booked net (deductible input VAT) or gross
     /// (non-deductible), spec 17.6.
     public var allocationExpectedTotal: Money
+    /// Only a credit note may book negative amounts.
+    public var isCreditNote: Bool
 
     // MARK: Payments
 
@@ -76,6 +78,7 @@ public struct TransactionSnapshot: Sendable {
         taxComponents: [TaxComponentSnapshot] = [],
         allocations: [AllocationSnapshot] = [],
         allocationExpectedTotal: Money,
+        isCreditNote: Bool = false,
         paymentAllocations: [PaymentAllocationFact] = [],
         totalPaid: Money? = nil,
         treatment: TaxTreatment,
@@ -103,6 +106,7 @@ public struct TransactionSnapshot: Sendable {
         self.taxComponents = taxComponents
         self.allocations = allocations
         self.allocationExpectedTotal = allocationExpectedTotal
+        self.isCreditNote = isCreditNote
         self.paymentAllocations = paymentAllocations
         self.totalPaid = totalPaid
         self.treatment = treatment
@@ -178,6 +182,14 @@ public enum TransactionValidator {
             hard.append(issue)
         }
         if let issue = MoneyValidator.validateGross(net: snapshot.net, tax: snapshot.tax, gross: snapshot.gross) {
+            hard.append(issue)
+        }
+        if let issue = MoneyValidator.validateAmountSign(
+            net: snapshot.net,
+            tax: snapshot.tax,
+            gross: snapshot.gross,
+            isCreditNote: snapshot.isCreditNote
+        ) {
             hard.append(issue)
         }
         if let issue = AllocationValidator.validateAllocationSum(
