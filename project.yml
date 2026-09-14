@@ -43,21 +43,7 @@ targets:
       - path: App
     dependencies:
       - package: PfennigPackages
-        product: Domain
-      - package: PfennigPackages
-        product: Database
-      - package: PfennigPackages
-        product: DocumentStore
-      - package: PfennigPackages
-        product: AI
-      - package: PfennigPackages
-        product: ImportPipeline
-      - package: PfennigPackages
-        product: Analysis
-      - package: PfennigPackages
-        product: Tax
-      - package: PfennigPackages
-        product: Export
+        product: Kern
     settings:
       base:
         PRODUCT_NAME: Pfennig

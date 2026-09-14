@@ -1,0 +1,85 @@
+import GRDB
+
+/// The one schema definition of Pfennig. The agent reads the CREATE statements
+/// back from `sqlite_master`, so the text below is documentation for a reader
+/// as much as it is a definition: the enumerations sit in CHECK constraints and
+/// the shape of every JSON column sits in a comment next to it.
+public enum Schema {
+    public static let sql = """
+    CREATE TABLE buchungen (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        richtung TEXT NOT NULL CHECK (richtung IN ('einnahme', 'ausgabe')),
+        art TEXT NOT NULL CHECK (art IN ('rechnung', 'beleg', 'gutschrift', 'steuerzahlung', 'nur_zahlung', 'ignoriert', 'sonstiges')),
+        datum TEXT NOT NULL,                        -- Belegdatum als JJJJ-MM-TT
+        titel TEXT NOT NULL,
+        kategorie TEXT,                             -- Schlüssel aus der EÜR-Kategorienliste im Code
+        privatanteil_prozent INTEGER NOT NULL DEFAULT 0,
+        notizen TEXT,
+        gegenpartei_name TEXT,
+        gegenpartei_land TEXT,                      -- Länderkürzel, zum Beispiel DE
+        gegenpartei_ustid TEXT,
+        -- JSON-Liste, mindestens ein Element, Beträge in EUR-Cent:
+        -- [{"netto": 10000, "steuersatz": 19, "steuer": 1900}]
+        positionen TEXT NOT NULL DEFAULT '[]',
+        waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
+        originalbetrag INTEGER,                     -- nur bei Fremdwährung, in Cent dieser Währung
+        steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
+        -- JSON-Liste, Beträge in EUR-Cent, richtung wie oben, eine Erstattung hat die Gegenrichtung:
+        -- [{"id": 1, "datum": "2026-09-14", "betrag": 11900, "richtung": "ausgabe", "geprueft": true}]
+        zahlungen TEXT NOT NULL DEFAULT '[]',
+        -- JSON-Liste der SHA-256-Hashes der zugehörigen Dateien: ["a1b2c3..."]
+        belege TEXT NOT NULL DEFAULT '[]',
+        geprueft_am TEXT,                           -- leer heißt ungeprüft
+        erstellt_am TEXT NOT NULL DEFAULT (datetime('now')),
+        geaendert_am TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE INDEX buchungen_datum ON buchungen(datum);
+
+    CREATE INDEX buchungen_gegenpartei_name ON buchungen(gegenpartei_name);
+
+    CREATE TABLE dateien (
+        sha256 TEXT PRIMARY KEY,
+        dateiname TEXT NOT NULL,
+        endung TEXT NOT NULL,
+        groesse INTEGER NOT NULL,                   -- in Bytes
+        art TEXT NOT NULL CHECK (art IN ('beleg', 'kontoauszug')),
+        seiten INTEGER,                             -- nur bei PDF
+        importiert_am TEXT NOT NULL
+    );
+
+    CREATE TABLE aktivitaeten (
+        id INTEGER PRIMARY KEY,
+        buchung_id INTEGER NOT NULL,
+        zeitpunkt TEXT NOT NULL,
+        akteur TEXT NOT NULL CHECK (akteur IN ('nutzer', 'agent')),
+        vorher TEXT,                                -- JSON-Objekt der Buchungszeile vor der Änderung, leer bei Neuanlage
+        nachher TEXT NOT NULL                       -- JSON-Objekt der Buchungszeile nach der Änderung
+    );
+
+    CREATE TABLE anfragen (
+        id INTEGER PRIMARY KEY,
+        datei_sha256 TEXT NOT NULL,
+        modell TEXT NOT NULL,
+        gestartet_am TEXT NOT NULL,
+        beendet_am TEXT,
+        status TEXT CHECK (status IN ('erfolg', 'fehler')),
+        eingabe_tokens INTEGER,
+        ausgabe_tokens INTEGER,
+        konversation TEXT                           -- JSON des Agentenlaufs ohne Dateibytes: Text, Werkzeugaufrufe, Antworten
+    );
+
+    CREATE TABLE einstellungen (
+        schluessel TEXT PRIMARY KEY,
+        wert TEXT NOT NULL
+    );
+    """
+
+    static var migrator: DatabaseMigrator {
+        var migrator = DatabaseMigrator()
+        migrator.registerMigration("v1") { db in
+            try db.execute(sql: sql)
+        }
+        return migrator
+    }
+}
