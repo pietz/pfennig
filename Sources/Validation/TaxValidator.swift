@@ -1,6 +1,6 @@
 import Domain
 
-/// Treatment- and tax-point-related soft checks (spec 14.2, 5). The `Tax`
+/// Treatment- and date-related soft checks (spec 14.2, 5). The `Tax`
 /// module owns the actual treatment *decision* and date-window logic;
 /// `Validation` cannot depend on `Tax` (spec 22), so cross-cutting derived
 /// facts (is the counterparty EU, is this payment in the 10-day window, …)
