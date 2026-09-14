@@ -56,7 +56,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 291 tests across 44 suites plus a successful Debug app build.
+The latest verification baseline is 304 tests across 45 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -69,6 +69,18 @@ The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per th
 - `Analysis.SubmittedReturnRepository` stores one `submitted_returns` row per period (reversible, locks nothing) with a fingerprint of the filed values, so `hasChangedSinceSubmission` can flag a period that moved after submission.
 
 **Kennzahlen mapping status:** `Tax/FormMappings/UStVA_2026.swift` is now verified line by line against the official BMF Vordruckmuster USt 1 A 2026 (BMF letter of 29 December 2025), which corrected the earlier placeholders for Kz 66/61/67, Kz 46/47 vs. 84/85, Kz 89/93 vs. 41/44, and Kz 21 vs. 43. Note that Kz 46/47 covers only EU-established suppliers (§13b Abs. 1); third-country services belong in Kz 84/85. The **Anlage EÜR** mapping (`EUeR_2026.swift`) remains an unverified placeholder.
+
+### UStVA interface (2026-09-14)
+
+The user interface of the [UStVA specification](specs/ustva-preparation.md) is implemented; the calculation was not changed for it.
+
+- **Start, section "Steuern"** (`App/Tax/UStVATaskSection.swift`): the Voranmeldung that is due next with its deadline, Zahllast preview and open cases, plus every earlier period of the current and previous year that is not marked submitted and every submitted period whose values moved since ("verändert seit Übermittlung"). A Kleinunternehmer, and a profile set to "keine regelmäßigen Voranmeldungen", only sees a period that actually carries §13b or intra-Community amounts; for them only the current and previous period are prepared. The rows follow the ledger through a live observation.
+- **Task window** (`App/Tax/UStVATaskWindow.swift`): a separate `Window` scene, so the ledger stays open beside it. Period picker with the deadline, exception list with "In Buchungen öffnen", the form values per Kennzahl with an expandable list of their single contributions, the Zahllast row, and the actions "Werte kopieren", "XML exportieren…" (still labelled *experimentell*) and "Als übermittelt markieren". Export warnings appear as a compact note under the buttons, never as a modal; an empty period shows zero values and still exports.
+- **Navigation:** `AppModel.requestUStVATask(_:)` points the single task window at a period; `AppModel.showTransaction(_:)` sends the user from an exception back into Buchungen with the inspector open and raises the main window.
+- `Analysis.UStVATasks` is the only new calculation-adjacent code: which periods are worth showing, their deadlines, their filing state, and the transactions behind the exceptions. `UStVACalculator` gained one safety net: a §13b or intra-Community line with a base but no tax now reports "Bemessungsgrundlage ohne Steuerbetrag" instead of dropping the Steuer line silently.
+- The former UStVA rhythm "Jährlich" now reads "Keine regelmäßigen Voranmeldungen" and is confirmed once, through a small prompt in the Start section or by saving the business settings (`settings` key `ustva.periodConfirmed`).
+
+**What remains:** the XML upload has still never been tried against Mein ELSTER. The user runs the first real test upload (filling the form, without sending) for Q3 2026 on **10 October 2026**. Only after that does the "experimentell" label come off the export; if it fails, the copyable values stay the delivery path.
 
 ## Product boundary
 
@@ -92,6 +104,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
 - Start drilldown filters have one shared state; returning through the Buchungen sidebar entry opens the unfiltered ledger
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved
+- Start carries a "Steuern" section with the UStVA task; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. Existing development databases may retain an unused legacy column; never reset them merely to make their schema look fresh.
