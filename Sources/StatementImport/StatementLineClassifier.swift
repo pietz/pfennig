@@ -23,19 +23,6 @@ public enum StatementLineClassifier {
         return .unknown
     }
 
-    /// Classifies a whole import in one pass, so a later step can hand the
-    /// drafts straight to the repository.
-    public static func classify(
-        _ drafts: [StatementLineDraft],
-        knownAccountKeys: Set<String>
-    ) -> [StatementLineDraft] {
-        drafts.map { draft in
-            var copy = draft
-            copy.classification = classify(draft, knownAccountKeys: knownAccountKeys)
-            return copy
-        }
-    }
-
     /// The counterparty IBAN is one of the user's own accounts, meaning an
     /// account that already has statement lines.
     public static func isInternalTransfer(_ draft: StatementLineDraft, knownAccountKeys: Set<String>) -> Bool {

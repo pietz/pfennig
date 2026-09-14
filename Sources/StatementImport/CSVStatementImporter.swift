@@ -114,8 +114,6 @@ public struct AccountKeyRequest: Sendable, Equatable {
     public let formatID: String?
     public let headerFingerprint: String
     public let columns: [String]
-    /// A stable suggestion when the format implies one, e.g. `paypal:<mail>`.
-    public let suggestedAccountKey: String?
     public let lineCount: Int
 }
 
@@ -214,7 +212,7 @@ public enum CSVStatementImporter {
                 rowIndex: index,
                 columns: header.fields,
                 mapping: mapping,
-                isHeuristic: true
+                isHeuristic: mapping.formatID == nil
             ),
             accountKey: accountKey,
             knownAccountKeys: knownAccountKeys
@@ -270,7 +268,12 @@ public enum CSVStatementImporter {
             guard let mapping = cachedMappings[HeaderFingerprint.make(row.fields)],
                   mapping.missingColumns(in: row.fields).isEmpty
             else { continue }
-            return HeaderResolution(rowIndex: index, columns: row.fields, mapping: mapping, isHeuristic: true)
+            return HeaderResolution(
+                rowIndex: index,
+                columns: row.fields,
+                mapping: mapping,
+                isHeuristic: mapping.formatID == nil
+            )
         }
         return nil
     }
@@ -300,7 +303,6 @@ public enum CSVStatementImporter {
                 formatID: mapping.formatID,
                 headerFingerprint: fingerprint,
                 columns: header,
-                suggestedAccountKey: nil,
                 lineCount: dataRows.count
             ))
         }
@@ -309,7 +311,7 @@ public enum CSVStatementImporter {
         var errors: [StatementLineError] = []
         var skipped: [SkippedStatementRow] = []
         var seen: Set<String> = []
-        var balances: [(line: Int, balance: Int64, amount: Int64)] = []
+        var movements: [Movement] = []
 
         for row in dataRows {
             if let filter = mapping.rowFilter {
@@ -341,9 +343,12 @@ public enum CSVStatementImporter {
                     parsed.draft,
                     knownAccountKeys: knownAccountKeys
                 )
-                if let balance = parsed.balanceMinor {
-                    balances.append((row.lineNumber, balance, parsed.draft.amountMinor))
-                }
+                movements.append(Movement(
+                    line: row.lineNumber,
+                    currency: parsed.draft.currency.rawValue,
+                    amount: parsed.draft.amountMinor,
+                    balance: parsed.balanceMinor
+                ))
                 drafts.append(parsed.draft)
             }
         }
@@ -359,16 +364,16 @@ public enum CSVStatementImporter {
             drafts: drafts,
             errors: errors,
             skippedRows: skipped,
-            balance: continuity(of: balances)
+            balance: continuity(of: movements)
         ))
     }
 
     /// The own account: a dedicated column first, then any IBAN-shaped cell in
     /// the preamble, which is where DKB and ING put it.
     static func detectAccountIBAN(preamble: [CSVRow], dataRows: [CSVRow], reader: RowReader) -> String? {
-        if reader.mapping.ownIBANColumn != nil {
+        if let column = reader.mapping.ownIBANColumn {
             for row in dataRows {
-                guard let raw = reader.value(reader.mapping.ownIBANColumn ?? "", in: row),
+                guard let raw = reader.value(column, in: row),
                       StatementValueParser.looksLikeIBAN(raw)
                 else { continue }
                 return StatementValueParser.normalizedIBAN(raw)
@@ -389,30 +394,58 @@ public enum CSVStatementImporter {
         return nil
     }
 
-    /// Each booking must move the running balance by exactly its own amount.
-    /// Exports sorted newest-first are checked in reverse before a break is
-    /// reported.
-    static func continuity(of entries: [(line: Int, balance: Int64, amount: Int64)]) -> BalanceContinuity {
-        guard entries.count >= 2 else { return .notAvailable }
-        func firstBreak(_ list: [(line: Int, balance: Int64, amount: Int64)]) -> BalanceContinuity.Break? {
-            for index in 1 ..< list.count {
-                let expected = list[index - 1].balance + list[index].amount
-                if expected != list[index].balance {
-                    return BalanceContinuity.Break(
-                        lineNumber: list[index].line,
-                        expectedMinor: expected,
-                        foundMinor: list[index].balance
-                    )
+    /// One imported movement, for the running-balance cross-check.
+    struct Movement {
+        let line: Int
+        let currency: String
+        let amount: Int64
+        /// The balance after this booking, when the export reports one.
+        let balance: Int64?
+    }
+
+    /// Each reported balance must equal the previous one plus everything that
+    /// moved in between.
+    ///
+    /// Two things keep this from crying wolf on a real export: each currency
+    /// is a series of its own, because a multi-currency account reports a
+    /// separate balance per currency; and rows without a balance are carried
+    /// forward instead of breaking the chain. An export sorted newest-first
+    /// satisfies the same rule read backwards, so it is checked in reverse
+    /// before a break is reported.
+    static func continuity(of movements: [Movement]) -> BalanceContinuity {
+        let series = Dictionary(grouping: movements, by: \.currency).values
+            .filter { $0.count { $0.balance != nil } >= 2 }
+        guard !series.isEmpty else { return .notAvailable }
+
+        func firstBreak(_ list: [Movement]) -> BalanceContinuity.Break? {
+            var previous: Int64?
+            var moved: Int64 = 0
+            for movement in list {
+                moved += movement.amount
+                guard let balance = movement.balance else { continue }
+                if let previous {
+                    let expected = previous + moved
+                    if expected != balance {
+                        return BalanceContinuity.Break(
+                            lineNumber: movement.line,
+                            expectedMinor: expected,
+                            foundMinor: balance
+                        )
+                    }
                 }
+                previous = balance
+                moved = 0
             }
             return nil
         }
-        guard let ascending = firstBreak(entries) else {
-            return BalanceContinuity(isConsistent: true, firstBreak: nil)
+
+        for list in series {
+            guard let ascending = firstBreak(list) else { continue }
+            if firstBreak(list.reversed()) == nil {
+                continue
+            }
+            return BalanceContinuity(isConsistent: false, firstBreak: ascending)
         }
-        if firstBreak(entries.reversed()) == nil {
-            return BalanceContinuity(isConsistent: true, firstBreak: nil)
-        }
-        return BalanceContinuity(isConsistent: false, firstBreak: ascending)
+        return BalanceContinuity(isConsistent: true, firstBreak: nil)
     }
 }

@@ -121,14 +121,4 @@ struct ClassificationTests {
         let transfer = try #require(result.drafts.first { $0.reference == "Ruecklage Steuern Q3 2026" })
         #expect(transfer.classification == .unknown)
     }
-
-    @Test("The batch form classifies every draft")
-    func batch() {
-        let drafts = [
-            Self.draft(counterparty: "Finanzamt Muenchen"),
-            Self.draft(counterparty: "REWE")
-        ]
-        let classified = StatementLineClassifier.classify(drafts, knownAccountKeys: [])
-        #expect(classified.map(\.classification) == [.taxPayment, .unknown])
-    }
 }
