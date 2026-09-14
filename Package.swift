@@ -39,13 +39,14 @@ let package = Package(
         .target(name: "StatementImport", dependencies: ["Domain"]),
 
         .target(name: "Analysis", dependencies: ["Domain", "Database"]),
-        .target(name: "Export", dependencies: ["Domain", "Database"]),
+        .target(name: "Export", dependencies: ["Domain", "Database", "Tax"]),
 
         .target(name: "ImportPipeline", dependencies: [
             "Domain", "Database", "DocumentStore", "StatementImport", "AI", "Validation", "Tax",
         ]),
 
         .testTarget(name: "DomainTests", dependencies: ["Domain"]),
+        .testTarget(name: "ExportTests", dependencies: ["Export", "Tax", "Domain"]),
         .testTarget(name: "DatabaseTests", dependencies: ["Analysis", "Database", "Domain"]),
         .testTarget(name: "DocumentStoreTests", dependencies: ["DocumentStore"]),
         .testTarget(name: "TaxTests", dependencies: ["Tax", "Domain"]),
