@@ -76,7 +76,7 @@ struct SubmittedReturnTests {
         try SubmittedReturnRepository.markSubmitted(database, profileID: profile.id, result: prepared)
 
         #expect(try SubmittedReturnRepository.hasChangedSinceSubmission(
-            database, profileID: profile.id, profile: profile, period: period
+            database, profileID: profile.id, current: prepared
         ) == false)
     }
 
@@ -105,8 +105,9 @@ struct SubmittedReturnTests {
             )
         }
 
+        let reprepared = try UStVACalculator.prepare(period: period, profile: profile, database: database)
         #expect(try SubmittedReturnRepository.hasChangedSinceSubmission(
-            database, profileID: profile.id, profile: profile, period: period
+            database, profileID: profile.id, current: reprepared
         ))
     }
 

@@ -9,11 +9,11 @@ import Tax
 /// periods the user already filed, without locking anything. Marking is
 /// reversible and never changes a booking.
 ///
-/// Change detection stores a fingerprint of the prepared form lines instead of
-/// a second copy of the values: `hasChangedSinceSubmission` re-prepares the
-/// period and compares hashes, so any edit that moves a Kennzahl - a new
-/// payment, a corrected rate, a deleted transaction - surfaces as
-/// "Zeitraum verändert seit Übermittlung".
+/// Change detection stores a fingerprint of the filed form lines instead of a
+/// second copy of the values: `hasChangedSinceSubmission` compares it with the
+/// freshly prepared return, so any edit that moves a Kennzahl - a new payment,
+/// a corrected rate, a deleted transaction - surfaces as "Zeitraum verändert
+/// seit Übermittlung".
 public enum SubmittedReturnRepository {
     /// Marks `result`'s period as submitted, replacing an earlier mark for the
     /// same period. Returns the stored row.
@@ -61,61 +61,39 @@ public enum SubmittedReturnRepository {
 
     /// All marked periods, newest period first.
     public static func fetchAll(_ database: AppDatabase, profileID: String) throws -> [SubmittedReturnRecord] {
-        try database.reader.read { try fetchAll($0, profileID: profileID) }
-    }
-
-    public static func fetchAll(_ db: Database, profileID: String) throws -> [SubmittedReturnRecord] {
-        try SubmittedReturnRecord.fetchAll(
-            db,
-            sql: """
-            SELECT * FROM submitted_returns
-             WHERE business_profile_id = ?
-             ORDER BY year DESC, period_index DESC, kind
-            """,
-            arguments: [profileID]
-        )
-    }
-
-    public static func fetch(
-        _ database: AppDatabase,
-        profileID: String,
-        period: UStVAPeriod
-    ) throws -> SubmittedReturnRecord? {
-        try database.reader.read { try fetch($0, profileID: profileID, period: period) }
-    }
-
-    public static func fetch(
-        _ db: Database,
-        profileID: String,
-        period: UStVAPeriod
-    ) throws -> SubmittedReturnRecord? {
-        try SubmittedReturnRecord.fetchOne(
-            db,
-            sql: """
-            SELECT * FROM submitted_returns
-             WHERE business_profile_id = ? AND year = ? AND kind = ? AND period_index = ?
-            """,
-            arguments: [profileID, period.year, kindName(period.kind), period.index]
-        )
-    }
-
-    /// True when the period was marked as submitted and its values no longer
-    /// match what was filed. False when it was never marked.
-    public static func hasChangedSinceSubmission(
-        _ database: AppDatabase,
-        profileID: String,
-        profile: BusinessProfile,
-        period: UStVAPeriod
-    ) throws -> Bool {
         try database.reader.read { db in
-            guard let record = try fetch(db, profileID: profileID, period: period) else { return false }
-            let current = try UStVACalculator.prepare(period: period, profile: profile, db: db)
-            return record.contentHash != contentHash(of: current)
+            try SubmittedReturnRecord.fetchAll(
+                db,
+                sql: """
+                SELECT * FROM submitted_returns
+                 WHERE business_profile_id = ?
+                 ORDER BY year DESC, period_index DESC, kind
+                """,
+                arguments: [profileID]
+            )
         }
     }
 
-    /// Same check against an already prepared return, for callers that just
-    /// computed it (the task window).
+    public static func fetch(
+        _ database: AppDatabase,
+        profileID: String,
+        period: UStVAPeriod
+    ) throws -> SubmittedReturnRecord? {
+        try database.reader.read { db in
+            try SubmittedReturnRecord.fetchOne(
+                db,
+                sql: """
+                SELECT * FROM submitted_returns
+                 WHERE business_profile_id = ? AND year = ? AND kind = ? AND period_index = ?
+                """,
+                arguments: [profileID, period.year, kindName(period.kind), period.index]
+            )
+        }
+    }
+
+    /// True when the period was marked as submitted and the values no longer
+    /// match what was filed. False when it was never marked. Callers pass the
+    /// return they already prepared, so nothing is computed twice.
     public static func hasChangedSinceSubmission(
         _ database: AppDatabase,
         profileID: String,
