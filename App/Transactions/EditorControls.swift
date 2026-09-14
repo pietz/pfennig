@@ -127,7 +127,7 @@ struct OptionalDateField: View {
 /// leniently - "1.9.2026" and "01.09.2026" both work - and anything that is not
 /// a real calendar date leaves the stored value untouched, which keeps the
 /// guarantee of the date picker it replaces.
-private struct DateField: View {
+struct DateField: View {
     let label: LocalizedStringKey
     @Binding var date: LocalDate?
 

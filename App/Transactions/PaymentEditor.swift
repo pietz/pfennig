@@ -47,16 +47,13 @@ struct PaymentEditor: View {
             Form {
                 Section {
                     LabeledContent("Datum") {
-                        DatePicker(
-                            "",
-                            selection: Binding(
-                                get: { payment.paymentDate.date() },
-                                set: { payment.paymentDate = LocalDate($0) }
-                            ),
-                            displayedComponents: .date
+                        DateField(
+                            label: "Datum",
+                            date: Binding(
+                                get: { payment.paymentDate },
+                                set: { payment.paymentDate = $0 ?? payment.paymentDate }
+                            )
                         )
-                        .labelsHidden()
-                        .environment(\.locale, Format.german)
                     }
                     MoneyField(
                         label: "Betrag",
