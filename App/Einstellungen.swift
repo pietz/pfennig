@@ -19,7 +19,7 @@ struct Einstellungen: View {
                 ErscheinungsbildEinstellungen()
             }
         }
-        .frame(width: 460, height: 260)
+        .frame(width: 480, height: 300)
     }
 }
 
@@ -50,6 +50,9 @@ private struct ProfilEinstellungen: View {
 private struct ZugangEinstellungen: View {
     @State private var eingabe = ""
     @State private var hinterlegt = false
+    @State private var pruefung: String?
+    @State private var verbunden = false
+    @State private var prueft = false
 
     var body: some View {
         Form {
@@ -66,16 +69,33 @@ private struct ZugangEinstellungen: View {
                 Button("Entfernen", role: .destructive) {
                     Schluesselbund.entfernen()
                     eingabe = ""
+                    pruefung = nil
                     hinterlegt = false
                 }
                 .disabled(hinterlegt == false)
                 Button("Sichern") {
                     Schluesselbund.schreiben(eingabe.trimmingCharacters(in: .whitespacesAndNewlines))
                     eingabe = ""
+                    pruefung = nil
                     hinterlegt = Schluesselbund.vorhanden
                 }
                 .keyboardShortcut(.defaultAction)
                 .disabled(eingabe.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+            LabeledContent("Prüfen") {
+                HStack(spacing: 8) {
+                    Button("Verbindung testen", action: testen)
+                        .disabled(hinterlegt == false || prueft)
+                    if prueft {
+                        ProgressView().controlSize(.small)
+                    }
+                    if let pruefung {
+                        Text(pruefung)
+                            .font(.callout)
+                            .foregroundStyle(verbunden ? Color.green : Color.red)
+                            .lineLimit(3)
+                    }
+                }
             }
             Text("Der Schlüssel liegt im Schlüsselbund dieses Macs und verlässt ihn nur für Anfragen an OpenAI.")
                 .font(.footnote)
@@ -83,6 +103,24 @@ private struct ZugangEinstellungen: View {
         }
         .formStyle(.grouped)
         .onAppear { hinterlegt = Schluesselbund.vorhanden }
+    }
+
+    /// One tiny request, so a wrong key shows up here and not on the first
+    /// document.
+    private func testen() {
+        prueft = true
+        pruefung = nil
+        Task {
+            do {
+                try await Responses.verbindungPruefen()
+                verbunden = true
+                pruefung = "Verbindung funktioniert"
+            } catch {
+                verbunden = false
+                pruefung = error.localizedDescription
+            }
+            prueft = false
+        }
     }
 }
 

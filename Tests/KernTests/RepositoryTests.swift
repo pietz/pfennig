@@ -159,13 +159,54 @@ private func beispiel(
     #expect(try repository.einstellung("kleinunternehmer") == "ja")
 }
 
-@Test func dateienErkennenBekannteHashes() throws {
+@Test func belegGiltNurAlsBekanntSolangeEineBuchungIhnTraegt() throws {
     let repository = try Repository.imSpeicher()
-    #expect(try repository.hashVorhanden("abc") == false)
     try repository.dateiSpeichern(
         Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 4096, art: .beleg, seiten: 2)
     )
-    #expect(try repository.hashVorhanden("abc"))
+    // The row alone is not the answer; a booking has to point at it.
+    #expect(try repository.belegVerwendet("abc") == false)
+
+    let buchung = try repository.speichern(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: Datum(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
+            positionen: [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
+            steuerbehandlung: .inland, belege: ["abc"]
+        ),
+        akteur: .nutzer
+    )
+    #expect(try repository.belegVerwendet("abc"))
+
+    // Deleting the booking takes the file row with it and names the original.
+    let verwaist = try repository.loeschen(id: #require(buchung.id))
+    #expect(verwaist.map(\.sha256) == ["abc"])
+    #expect(try repository.belegVerwendet("abc") == false)
+    #expect(try repository.dateien(zu: ["abc"]).isEmpty)
+}
+
+@Test func belegLaesstSichVonEinerBuchungNehmen() throws {
+    let repository = try Repository.imSpeicher()
+    try repository.dateiSpeichern(
+        Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg)
+    )
+    func anlegen(_ titel: String) throws -> Int64 {
+        try #require(repository.speichern(
+            Buchung(
+                richtung: .ausgabe, art: .beleg, datum: Datum(jahr: 2026, monat: 9, tag: 1), titel: titel,
+                positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+                steuerbehandlung: .steuerfrei, belege: ["abc"]
+            ),
+            akteur: .nutzer
+        ).id)
+    }
+    let eine = try anlegen("Eine")
+    let andere = try anlegen("Andere")
+
+    // As long as the other booking carries it, the file stays.
+    #expect(try repository.belegEntfernen("abc", von: eine).isEmpty)
+    #expect(try repository.dateien(zu: ["abc"]).count == 1)
+    #expect(try repository.belegEntfernen("abc", von: andere).map(\.sha256) == ["abc"])
+    #expect(try repository.dateien(zu: ["abc"]).isEmpty)
 }
 
 @Test func anfragenWerdenGestartetUndBeendet() throws {

@@ -19,15 +19,16 @@ public enum Anleitung {
         .joined(separator: "\n\n")
     }
 
-    private static let auftrag = """
-    Du bist der Buchhalter einer deutschen Einzelunternehmerin. Du bekommst genau ein Dokument, \
-    eine Rechnung, einen Beleg oder eine Gutschrift, und trägst es in die SQLite-Datenbank ein.
+    private static var auftrag: String {
+        """
+        Du bist der Buchhalter einer deutschen Einzelunternehmerin. Du bekommst genau ein Dokument, \
+        eine Rechnung, einen Beleg oder eine Gutschrift, und trägst es in die SQLite-Datenbank ein.
 
-    Dein einziges Werkzeug heißt sql. Es führt genau eine SQL-Anweisung aus. Erlaubt sind SELECT auf \
-    buchungen, dateien, aktivitaeten und anfragen sowie INSERT und UPDATE auf buchungen. Nach jedem \
-    Schreibvorgang prüft Swift die Zeile; hältst du eine Regel nicht ein, bekommst du den Fehlertext \
-    zurück und korrigierst mit einer neuen Anweisung.
-    """
+        Dein einziges Werkzeug heißt sql. Es führt genau eine SQL-Anweisung aus. \(Werkzeug.erlaubt) \
+        Nach jedem Schreibvorgang prüft Swift die Zeile; hältst du eine Regel nicht ein, bekommst du \
+        den Fehlertext zurück und korrigierst mit einer neuen Anweisung.
+        """
+    }
 
     private static func profiltext(_ profil: Profil) -> String {
         var zeilen = ["Heute ist der \(Datum.heute())."]

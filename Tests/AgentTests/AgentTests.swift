@@ -165,38 +165,95 @@ private func eingabe() -> Dateieingabe {
     #expect(anfrage.konversation?.contains("max_output_tokens") == true)
 }
 
-@Test func eingangUeberspringtEinenBekanntenHash() async throws {
-    let repository = try Repository.imSpeicher()
+/// A transport that refuses every request, so a run ends without the network
+/// and without depending on a key in this Mac's Keychain.
+private let abgewiesen: Transport = { anfrage in
+    let http = HTTPURLResponse(
+        url: anfrage.url!, statusCode: 401, httpVersion: nil, headerFields: nil
+    )!
+    return (Data(#"{"error": {"message": "Kein gültiger Schlüssel."}}"#.utf8), http)
+}
+
+/// An intake on a folder of its own, so no test ever touches the real archive.
+private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     let ordner = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    try FileManager.default.createDirectory(at: ordner, withIntermediateDirectories: true)
+    let pfad = Archivpfad(ordner: ordner)
+    try pfad.anlegen()
+    return try (Repository.imSpeicher(), pfad, ordner)
+}
+
+@Test func eingangUeberspringtNurEinenBelegDerNochAnEinerBuchungHaengt() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
     defer { try? FileManager.default.removeItem(at: ordner) }
     let datei = ordner.appending(path: "beleg.pdf")
     let inhalt = Data("%PDF-1.4 Beleg".utf8)
     try inhalt.write(to: datei)
+    let hash = Eingang.hash(inhalt)
 
     try repository.dateiSpeichern(Datei(
-        sha256: Eingang.hash(inhalt), dateiname: "beleg.pdf", endung: "pdf",
-        groesse: Int64(inhalt.count), art: .beleg
+        sha256: hash, dateiname: "beleg.pdf", endung: "pdf", groesse: Int64(inhalt.count), art: .beleg
     ))
-    let eingang = try Eingang(repository: repository, transport: { _ in
-        Issue.record("Eine bekannte Datei darf keinen Lauf starten.")
-        return (Data(), HTTPURLResponse())
-    })
+    // The key may or may not be in this Mac's Keychain, so the transport
+    // answers with a refusal either way and the run cannot reach the network.
+    let eingang = try Eingang(repository: repository, pfad: pfad, transport: abgewiesen)
 
-    guard case .bereitsVorhanden = await eingang.verarbeiten(datei) else {
-        Issue.record("Der bekannte Hash wurde nicht erkannt.")
+    // The row in `dateien` alone is not enough: without a booking the file is
+    // new work again, and the run starts (and fails here on the missing key).
+    guard case .fehler = await eingang.verarbeiten(datei) else {
+        Issue.record("Ohne Buchung muss der Beleg erneut zum Agenten.")
         return
     }
-    // The file was never in the inbox, so it is still where it was dropped from.
+
+    let buchung = try repository.speichern(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: Datum(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
+            positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+            steuerbehandlung: .steuerfrei, belege: [hash]
+        ),
+        akteur: .nutzer
+    )
+    let vorher = try repository.alleAnfragen().count
+    guard case .bereitsVorhanden = await eingang.verarbeiten(datei) else {
+        Issue.record("Der belegte Hash wurde nicht erkannt.")
+        return
+    }
+    // No run was started for it.
+    #expect(try repository.alleAnfragen().count == vorher)
+
+    // And once the booking is gone, the same file is work again.
+    try pfad.entfernen(repository.loeschen(id: #require(buchung.id)))
+    guard case .fehler = await eingang.verarbeiten(datei) else {
+        Issue.record("Nach dem Löschen muss der Beleg erneut zum Agenten.")
+        return
+    }
+}
+
+@Test func eingangLegtDieDateiInDieInboxUndLaesstSieDortLiegen() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    try Data("%PDF-1.4 Rechnung".utf8).write(to: quelle)
+
+    // No key, so the run ends before the network; the file still has to have
+    // travelled into the inbox and to stay there with the error text.
+    let eingang = try Eingang(repository: repository, pfad: pfad, transport: abgewiesen)
+    guard case let .fehler(datei, text) = await eingang.verarbeiten(quelle) else {
+        Issue.record("Der Lauf hätte scheitern müssen.")
+        return
+    }
+    #expect(datei.lastPathComponent == "rechnung.pdf")
+    #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: datei.path))
-    #expect(try repository.alleAnfragen().isEmpty)
+    #expect(eingang.inbox().map(\.lastPathComponent) == ["rechnung.pdf"])
+    #expect(try FileManager.default.contentsOfDirectory(atPath: pfad.archiv.path).isEmpty)
 }
 
 @Test func eingangLaesstNurDieZugelassenenEndungenDurch() {
-    for endung in ["pdf", "PNG", "jpg", "jpeg", "heic", "csv"] {
+    for endung in ["pdf", "PNG", "jpg", "jpeg", "csv"] {
         #expect(Eingang.erlaubt(URL(filePath: "/tmp/beleg.\(endung)")))
     }
-    for endung in ["txt", "docx", "zip", "sqlite"] {
+    // HEIC is not among them: the API does not take it and Swift converts nothing.
+    for endung in ["heic", "txt", "docx", "zip", "sqlite"] {
         #expect(Eingang.erlaubt(URL(filePath: "/tmp/beleg.\(endung)")) == false)
     }
 }

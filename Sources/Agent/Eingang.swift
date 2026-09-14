@@ -5,7 +5,7 @@ import PDFKit
 
 /// How one file ended.
 public enum Eingangsergebnis: Sendable {
-    case verbucht(ids: [Int64], zusammenfassung: String)
+    case verbucht
     case bereitsVorhanden
     case fehler(datei: URL, text: String)
 }
@@ -15,11 +15,17 @@ public enum Eingangsergebnis: Sendable {
 public struct Eingang: Sendable {
     let repository: Repository
     let werkzeug: Werkzeug
+    let pfad: Archivpfad
     let transport: Transport
 
-    public init(repository: Repository, transport: @escaping Transport = Responses.netz) throws {
+    public init(
+        repository: Repository,
+        pfad: Archivpfad = .standard,
+        transport: @escaping Transport = Responses.netz
+    ) throws {
         self.repository = repository
         werkzeug = try Werkzeug(repository)
+        self.pfad = pfad
         self.transport = transport
     }
 
@@ -35,11 +41,11 @@ public struct Eingang: Sendable {
 
     /// What is still waiting in the inbox, oldest name first. The app works
     /// through it on start and after every drop.
-    public static func inbox() -> [URL] {
+    public func inbox() -> [URL] {
         let inhalt = try? FileManager.default.contentsOfDirectory(
-            at: Archivpfad.inbox, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
+            at: pfad.inbox, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
         )
-        return (inhalt ?? []).filter(erlaubt).sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return (inhalt ?? []).filter(Eingang.erlaubt).sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     /// Hashes the file, copies it into the inbox, runs the agent and archives
@@ -51,8 +57,8 @@ public struct Eingang: Sendable {
         do {
             let daten = try Data(contentsOf: url)
             let hash = Eingang.hash(daten)
-            if try repository.hashVorhanden(hash) {
-                if Eingang.liegtInInbox(url) {
+            if try repository.belegVerwendet(hash) {
+                if liegtInInbox(url) {
                     try? FileManager.default.removeItem(at: url)
                 }
                 return .bereitsVorhanden
@@ -73,18 +79,21 @@ public struct Eingang: Sendable {
             let lauf = Agentenlauf(
                 repository: repository, werkzeug: werkzeug, schluessel: schluessel, transport: transport
             )
-            let ergebnis: Laufergebnis
+            let ergebnis = try await lauf.starten(eingabe)
             do {
-                ergebnis = try await lauf.starten(eingabe)
-            } catch let abbruch as Laufabbruch {
-                // Rows of the broken run go, so a second attempt cannot double them.
-                for id in abbruch.angelegt {
-                    try? repository.loeschen(id: id)
-                }
-                throw abbruch
+                try archivieren(inbox, hash: hash, daten: daten, ergebnis: ergebnis)
+            } catch {
+                // A file that did not reach the archive must be able to run
+                // again, so its bookings go the same way a broken run's do.
+                throw Laufabbruch(angelegt: ergebnis.angelegt, grund: error)
             }
-            try archivieren(inbox, hash: hash, daten: daten, ergebnis: ergebnis)
-            return .verbucht(ids: ergebnis.beruehrt, zusammenfassung: ergebnis.zusammenfassung)
+            return .verbucht
+        } catch let abbruch as Laufabbruch {
+            // Rows of the broken run go, so a second attempt cannot double them.
+            for id in abbruch.angelegt {
+                try? repository.loeschen(id: id)
+            }
+            return .fehler(datei: liegt, text: abbruch.localizedDescription)
         } catch {
             return .fehler(datei: liegt, text: error.localizedDescription)
         }
@@ -93,25 +102,23 @@ public struct Eingang: Sendable {
     /// The file lands in the inbox before the run, so a crash leaves it there
     /// and the next start picks it up again.
     private func inInbox(_ url: URL, daten: Data, hash: String) throws -> URL {
-        guard Eingang.liegtInInbox(url) == false else { return url }
-        try Archivpfad.anlegen()
-        var ziel = Archivpfad.inbox.appending(path: url.lastPathComponent)
+        guard liegtInInbox(url) == false else { return url }
+        try pfad.anlegen()
+        var ziel = pfad.inbox.appending(path: url.lastPathComponent)
         if FileManager.default.fileExists(atPath: ziel.path) {
             // Another file of that name is still waiting; it keeps its place.
             let name = url.deletingPathExtension().lastPathComponent
-            ziel = Archivpfad.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
+            ziel = pfad.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
         }
         try daten.write(to: ziel)
         return ziel
     }
 
-    static func liegtInInbox(_ url: URL) -> Bool {
-        url.deletingLastPathComponent().standardizedFileURL == Archivpfad.inbox.standardizedFileURL
-    }
-
     private func archivieren(_ inbox: URL, hash: String, daten: Data, ergebnis: Laufergebnis) throws {
         let endung = inbox.pathExtension.lowercased()
-        let ziel = Archivpfad.archiv.appending(path: "\(hash).\(endung)")
+        let ziel = pfad.archiv.appending(path: "\(hash).\(endung)")
+        // The original may already be there: its booking was deleted and the
+        // same file came back. One copy is enough.
         if FileManager.default.fileExists(atPath: ziel.path) {
             try FileManager.default.removeItem(at: inbox)
         } else {
@@ -126,5 +133,12 @@ public struct Eingang: Sendable {
             seiten: endung == "pdf" ? PDFDocument(data: daten)?.pageCount : nil
         ))
         try repository.belegAnhaengen(hash, an: ergebnis.beruehrt)
+    }
+
+    /// Symlinks are resolved on both sides: a directory listing answers with
+    /// the resolved path, a dropped file with the one the Finder handed over.
+    func liegtInInbox(_ url: URL) -> Bool {
+        url.deletingLastPathComponent().resolvingSymlinksInPath()
+            == pfad.inbox.resolvingSymlinksInPath()
     }
 }

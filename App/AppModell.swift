@@ -7,6 +7,7 @@ import SwiftUI
 @MainActor @Observable
 final class AppModell {
     let repository: Repository
+    let pfad = Archivpfad.standard
     let eingang: Eingang
 
     var buchungen: [Buchung] = []
@@ -17,13 +18,14 @@ final class AppModell {
     var inspektorSichtbar = true
     var fehler: String?
 
-    /// The files still to be processed, the two counters behind the progress
-    /// in the toolbar and the ones that did not make it.
+    /// The files still to be processed, what the toolbar shows about them and
+    /// the notes the strip over the table carries.
     private var warteschlange: [URL] = []
-    private(set) var gesamt = 0
-    private(set) var fertig = 0
-    private(set) var gescheitert: [GescheiterteDatei] = []
-    private var laeuft = false
+    private var inArbeit: URL?
+    private(set) var fortschritt = Fortschritt()
+    private(set) var meldungen: [Eingangsmeldung] = []
+    /// The inbox is read on the first look at the window, not on every one.
+    private var inboxGelesen = false
 
     var zeigtFehler: Bool {
         get { fehler != nil }
@@ -36,9 +38,9 @@ final class AppModell {
 
     init() {
         do {
-            try Archivpfad.anlegen()
-            repository = try Repository(pfad: Archivpfad.datenbank)
-            eingang = try Eingang(repository: repository)
+            try pfad.anlegen()
+            repository = try Repository(pfad: pfad.datenbank)
+            eingang = try Eingang(repository: repository, pfad: pfad)
         } catch {
             fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
         }
@@ -46,59 +48,70 @@ final class AppModell {
 
     // MARK: - Eingang
 
-    var laeuftEingang: Bool {
-        gesamt > 0
-    }
-
     /// The files the user dropped. Everything the agent cannot read is dropped
     /// silently; the window accepts only the allowed types in the first place.
     func dateienAnnehmen(_ urls: [URL]) {
         einreihen(urls.filter(Eingang.erlaubt))
     }
 
-    /// A non-empty inbox is worked through when the app starts.
+    /// A non-empty inbox is worked through when the app starts, once.
     func inboxAbarbeiten() {
-        einreihen(Eingang.inbox().filter { datei in
-            gescheitert.contains { $0.id == datei } == false
-        })
+        guard inboxGelesen == false else { return }
+        inboxGelesen = true
+        einreihen(eingang.inbox())
     }
 
-    func erneutVersuchen(_ datei: GescheiterteDatei) {
-        gescheitert.removeAll { $0.id == datei.id }
-        einreihen([datei.id])
+    func erneutVersuchen(_ meldung: Eingangsmeldung) {
+        meldungen.removeAll { $0.id == meldung.id }
+        einreihen([meldung.id])
     }
 
-    func verwerfen(_ datei: GescheiterteDatei) {
-        gescheitert.removeAll { $0.id == datei.id }
-        try? FileManager.default.removeItem(at: datei.id)
+    func verwerfen(_ meldung: Eingangsmeldung) {
+        meldungen.removeAll { $0.id == meldung.id }
+        if meldung.art == .fehler {
+            try? FileManager.default.removeItem(at: meldung.id)
+        }
     }
 
+    /// A file already queued or in the machine does not go in a second time.
     private func einreihen(_ urls: [URL]) {
-        guard urls.isEmpty == false else { return }
-        warteschlange.append(contentsOf: urls)
-        gesamt += urls.count
+        let neue = urls.filter { $0 != inArbeit && warteschlange.contains($0) == false }
+        guard neue.isEmpty == false else { return }
+        warteschlange.append(contentsOf: neue)
+        fortschritt.gesamt += neue.count
         abarbeiten()
     }
 
-    /// One file after another, in one task; a second drop joins the queue the
-    /// running task is already working through.
+    /// One file after another in a single task. A drop that arrives while it
+    /// runs joins the queue the task is already working through.
     private func abarbeiten() {
-        guard gesamt > fertig, laeuft == false else { return }
-        laeuft = true
+        guard fortschritt.laeuft == false else { return }
+        fortschritt.laeuft = true
         Task {
             while warteschlange.isEmpty == false {
                 let url = warteschlange.removeFirst()
+                inArbeit = url
                 let ergebnis = await eingang.verarbeiten(url)
-                if case let .fehler(datei, text) = ergebnis {
-                    gescheitert.removeAll { $0.id == datei }
-                    gescheitert.append(GescheiterteDatei(id: datei, text: text))
-                }
-                fertig += 1
+                inArbeit = nil
+                vermerken(ergebnis, fuer: url)
+                fortschritt.erledigt += 1
             }
-            gesamt = 0
-            fertig = 0
-            laeuft = false
+            fortschritt = Fortschritt()
         }
+    }
+
+    private func vermerken(_ ergebnis: Eingangsergebnis, fuer url: URL) {
+        let meldung: Eingangsmeldung? = switch ergebnis {
+        case .verbucht:
+            nil
+        case .bereitsVorhanden:
+            Eingangsmeldung(id: url, art: .hinweis, text: "Bereits vorhanden, der Beleg hängt schon an einer Buchung.")
+        case let .fehler(datei, text):
+            Eingangsmeldung(id: datei, art: .fehler, text: text)
+        }
+        guard let meldung else { return }
+        meldungen.removeAll { $0.id == meldung.id }
+        meldungen.append(meldung)
     }
 
     /// Feeds the table for as long as the window lives.
@@ -177,7 +190,18 @@ final class AppModell {
         buchungen.removeAll { $0.id == id }
         auswahl = nil
         do {
-            try repository.loeschen(id: id)
+            // The last booking of a receipt takes the file with it.
+            try pfad.entfernen(repository.loeschen(id: id))
+        } catch {
+            fehler = "\(error)"
+        }
+    }
+
+    /// Takes one receipt off a booking, and its original out of the archive
+    /// when no other booking carries it.
+    func belegEntfernen(_ sha256: String, von id: Int64) {
+        do {
+            try pfad.entfernen(repository.belegEntfernen(sha256, von: id))
         } catch {
             fehler = "\(error)"
         }
@@ -201,9 +225,32 @@ final class AppModell {
     }
 }
 
-/// A file that stayed in the inbox, with the text the run ended on.
-struct GescheiterteDatei: Identifiable, Hashable {
+/// What the toolbar shows while the inbox is worked through.
+struct Fortschritt: Equatable {
+    var gesamt = 0
+    var erledigt = 0
+    var laeuft = false
+
+    var sichtbar: Bool {
+        gesamt > 0
+    }
+
+    /// The file being worked on right now, not the ones already done.
+    var text: String {
+        "\(min(erledigt + 1, gesamt)) von \(gesamt)"
+    }
+}
+
+/// A note over the table: a file that stayed in the inbox with the text the
+/// run ended on, or a short word that a file was already there.
+struct Eingangsmeldung: Identifiable, Hashable {
+    enum Art: Hashable {
+        case fehler
+        case hinweis
+    }
+
     let id: URL
+    let art: Art
     let text: String
 
     var name: String {

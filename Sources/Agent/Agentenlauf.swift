@@ -16,13 +16,13 @@ public struct Dateieingabe: Sendable {
         self.daten = daten
     }
 
-    static let erlaubteEndungen = ["pdf", "png", "jpg", "jpeg", "heic", "csv"]
+    /// No HEIC: the API does not take it, and Pfennig converts nothing.
+    static let erlaubteEndungen = ["pdf", "png", "jpg", "jpeg", "csv"]
 
     var medientyp: String {
         switch endung.lowercased() {
         case "pdf": "application/pdf"
         case "png": "image/png"
-        case "heic": "image/heic"
         case "csv": "text/csv"
         default: "image/jpeg"
         }
@@ -91,8 +91,7 @@ public struct Agentenlauf: Sendable {
             "type": "function",
             "name": "sql",
             "description": """
-            Führt genau eine SQL-Anweisung auf der Buchhaltungsdatenbank aus. Erlaubt sind SELECT auf \
-            buchungen, dateien, aktivitaeten und anfragen sowie INSERT und UPDATE auf buchungen. Ein \
+            Führt genau eine SQL-Anweisung auf der Buchhaltungsdatenbank aus. \(Werkzeug.erlaubt) Ein \
             SELECT antwortet mit den Zeilen als JSON, ein Schreibvorgang mit den berührten Buchungs-IDs \
             oder mit dem Text der verletzten Prüfregel.
             """,

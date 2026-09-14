@@ -46,6 +46,20 @@ public struct Responses: Sendable {
         return (daten, http)
     }
 
+    /// The smallest request that proves key and connection: no tools, no file,
+    /// a handful of tokens. It throws what the settings window shows.
+    public static func verbindungPruefen(transport: @escaping Transport = netz) async throws {
+        guard let schluessel = Schluesselbund.lesen(), schluessel.isEmpty == false else {
+            throw Agentenfehler.keinSchluessel
+        }
+        _ = try await Responses(schluessel: schluessel, transport: transport).senden([
+            "model": Agentenlauf.modell,
+            "reasoning": ["effort": "none"],
+            "max_output_tokens": 16,
+            "input": "Antworte nur mit OK."
+        ])
+    }
+
     /// One failed attempt, with the wait OpenAI asked for.
     private struct Absage: Error {
         var status: Int

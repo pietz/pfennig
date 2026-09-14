@@ -19,6 +19,13 @@ public final class Werkzeug: Sendable {
     /// A SELECT never hands the agent more than this many rows.
     public static let zeilengrenze = 50
 
+    /// What the authorizer lets through, in one sentence. The tool says it in
+    /// its refusals, the instructions and the tool description repeat it.
+    public static let erlaubt = """
+    Erlaubt sind SELECT auf buchungen, dateien, aktivitaeten und anfragen sowie INSERT und UPDATE \
+    auf buchungen.
+    """
+
     private let repository: Repository
     /// An empty copy of the schema with the authorizer on it. It compiles the
     /// agent's statement and nothing else. Without the schema there is no
@@ -67,10 +74,7 @@ public final class Werkzeug: Sendable {
     }
 
     static func nichtErlaubt(_ grund: String) -> Werkzeugfehler {
-        .text("""
-        Nicht erlaubt: \(grund). Erlaubt sind SELECT auf buchungen, dateien, aktivitaeten und \
-        anfragen sowie INSERT und UPDATE auf buchungen.
-        """)
+        .text("Nicht erlaubt: \(grund). \(erlaubt)")
     }
 
     private func durchfuehren(_ sql: String) throws -> Werkzeugergebnis {

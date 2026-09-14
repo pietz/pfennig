@@ -46,10 +46,14 @@ public final class Repository: Sendable {
 
     /// Removes a booking the user no longer wants. The activity log keeps the
     /// rows it already has; it records what happened and is not a copy of the
-    /// table.
-    public func loeschen(id: Int64) throws {
+    /// table. Answers with the receipts no booking carries any more, so the
+    /// caller can take their originals out of the archive.
+    @discardableResult
+    public func loeschen(id: Int64) throws -> [Datei] {
         try datenbank.write { db in
+            let hashes = try Buchung.fetchOne(db, key: id)?.belege ?? []
             try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
+            return try Repository.verwaisteAufraeumen(hashes, in: db)
         }
     }
 
@@ -107,12 +111,48 @@ public final class Repository: Sendable {
 
     // MARK: - Dateien
 
+    /// The file may already be in the table: its booking was deleted and the
+    /// same original came back. The row is written either way.
     public func dateiSpeichern(_ datei: Datei) throws {
-        try datenbank.write { try datei.insert($0) }
+        try datenbank.write { try datei.upsert($0) }
     }
 
-    public func hashVorhanden(_ sha256: String) throws -> Bool {
-        try datenbank.read { try Datei.exists($0, key: sha256) }
+    /// Dedupe is not "the file was seen once" but "a booking still carries it".
+    /// A file whose booking the user deleted goes to the agent again.
+    public func belegVerwendet(_ sha256: String) throws -> Bool {
+        try datenbank.read { db in
+            try Repository.belegVerwendet(sha256, in: db)
+        }
+    }
+
+    private static func belegVerwendet(_ sha256: String, in db: Database) throws -> Bool {
+        let anzahl = try Int.fetchOne(
+            db, sql: "SELECT COUNT(*) FROM buchungen WHERE instr(belege, ?) > 0", arguments: [sha256]
+        )
+        return (anzahl ?? 0) > 0
+    }
+
+    /// Takes a receipt off a booking and cleans up if it was the last one.
+    @discardableResult
+    public func belegEntfernen(_ sha256: String, von id: Int64) throws -> [Datei] {
+        try datenbank.write { db in
+            guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
+            buchung.belege.removeAll { $0 == sha256 }
+            _ = try Repository.speichern(buchung, akteur: .nutzer, in: db)
+            return try Repository.verwaisteAufraeumen([sha256], in: db)
+        }
+    }
+
+    /// Drops the rows in `dateien` no booking points at any more and answers
+    /// with them, so their originals can leave the archive too.
+    private static func verwaisteAufraeumen(_ hashes: [String], in db: Database) throws -> [Datei] {
+        var verwaist: [Datei] = []
+        for hash in hashes where try belegVerwendet(hash, in: db) == false {
+            guard let datei = try Datei.fetchOne(db, key: hash) else { continue }
+            try datei.delete(db)
+            verwaist.append(datei)
+        }
+        return verwaist
     }
 
     /// The rows behind the hashes in `buchungen.belege`, in the order asked for.

@@ -1,20 +1,20 @@
+import AppKit
 import SwiftUI
 
 @main
 struct PfennigApp: App {
     @State private var modell = AppModell()
-    @AppStorage("erscheinungsbild") private var erscheinungsbild = Erscheinungsbild.system
 
     var body: some Scene {
         WindowGroup {
             Fenster(modell: modell)
-                .preferredColorScheme(erscheinungsbild.schema)
+                .modifier(Erscheinung())
         }
         .defaultSize(width: 1100, height: 700)
 
         Settings {
             Einstellungen(modell: modell)
-                .preferredColorScheme(erscheinungsbild.schema)
+                .modifier(Erscheinung())
         }
     }
 }
@@ -38,11 +38,26 @@ enum Erscheinungsbild: String, CaseIterable, Identifiable {
         }
     }
 
-    var schema: ColorScheme? {
+    /// The whole app, window chrome and toolbar included. A
+    /// `preferredColorScheme` only reaches the view tree and leaves the
+    /// toolbar behind, which is what made "System" look half dark.
+    var aussehen: NSAppearance? {
         switch self {
         case .system: nil
-        case .hell: .light
-        case .dunkel: .dark
+        case .hell: NSAppearance(named: .aqua)
+        case .dunkel: NSAppearance(named: .darkAqua)
         }
+    }
+}
+
+/// Puts the chosen appearance on the application, from whichever window is on
+/// screen first.
+struct Erscheinung: ViewModifier {
+    @AppStorage("erscheinungsbild") private var erscheinungsbild = Erscheinungsbild.system
+
+    func body(content: Content) -> some View {
+        content
+            .onAppear { NSApp.appearance = erscheinungsbild.aussehen }
+            .onChange(of: erscheinungsbild) { NSApp.appearance = erscheinungsbild.aussehen }
     }
 }

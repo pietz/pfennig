@@ -7,16 +7,26 @@ import SwiftUI
 struct Fenster: View {
     @Bindable var modell: AppModell
     @State private var zuLoeschen: Buchung?
+    /// True while a drag hangs over the window.
+    @State private var zielt = false
     @SceneStorage("spalten") private var spalten: TableColumnCustomization<Buchung>
 
     var body: some View {
         let zeilen = modell.sichtbar
         VStack(spacing: 0) {
-            if modell.gescheitert.isEmpty == false {
-                Gescheitert(modell: modell)
+            if modell.meldungen.isEmpty == false {
+                Meldungen(modell: modell)
                 Divider()
             }
             tabelle(zeilen)
+                .overlay {
+                    if zielt {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.accentColor, lineWidth: 3)
+                            .padding(3)
+                            .allowsHitTesting(false)
+                    }
+                }
             Divider()
             Fusszeile(summen: Uebersicht.summen(zeilen))
         }
@@ -25,7 +35,7 @@ struct Fenster: View {
         .dropDestination(for: URL.self) { urls, _ in
             modell.dateienAnnehmen(urls)
             return true
-        }
+        } isTargeted: { zielt = $0 }
         .searchable(text: $modell.suche, prompt: "Suchen")
         .toolbar { werkzeuge }
         .inspector(isPresented: $modell.inspektorSichtbar) {
@@ -71,7 +81,7 @@ struct Fenster: View {
                     Text(buchung.zweiteZeile).font(.caption).foregroundStyle(.secondary)
                 }
             }
-            .width(min: 140, ideal: 240)
+            .width(min: 160, ideal: 260)
             .customizationID("firma")
             .disabledCustomizationBehavior(.visibility)
 
@@ -88,7 +98,7 @@ struct Fenster: View {
                     .foregroundStyle(buchung.richtung == .einnahme ? Color.green : Color.primary)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
-            .width(min: 90, ideal: 110)
+            .width(min: 100, ideal: 120)
             .alignment(.trailing)
             .customizationID("betrag")
 
@@ -158,12 +168,12 @@ struct Fenster: View {
     }
 
     @ToolbarContentBuilder private var werkzeuge: some ToolbarContent {
-        // Visible for as long as the inbox is not empty.
-        if modell.laeuftEingang {
+        // Visible for as long as there is something in the queue.
+        if modell.fortschritt.sichtbar {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text("\(modell.fertig + 1) von \(modell.gesamt)")
+                    Text(modell.fortschritt.text)
                         .font(.callout)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
@@ -189,27 +199,34 @@ struct Fenster: View {
     }
 }
 
-/// The files that stayed in the inbox. The strip is only there while there is
+/// What the intake had to say: files that stayed in the inbox and short notes
+/// about files that were already there. The strip is only there while there is
 /// something in it.
-private struct Gescheitert: View {
+private struct Meldungen: View {
     let modell: AppModell
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(modell.gescheitert) { datei in
+            ForEach(modell.meldungen) { meldung in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(Color.orange)
+                    Image(systemName: meldung.art == .fehler ? "exclamationmark.triangle.fill" : "info.circle")
+                        .foregroundStyle(meldung.art == .fehler ? Color.orange : .secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(datei.name).fontWeight(.medium)
-                        Text(datei.text)
+                        Text(meldung.name).fontWeight(.medium)
+                        Text(meldung.text)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                     Spacer()
-                    Button("Erneut versuchen") { modell.erneutVersuchen(datei) }
-                    Button("Verwerfen") { modell.verwerfen(datei) }
+                    if meldung.art == .fehler {
+                        Button("Erneut versuchen") { modell.erneutVersuchen(meldung) }
+                        Button("Verwerfen") { modell.verwerfen(meldung) }
+                    } else {
+                        Button("Schließen", systemImage: "xmark") { modell.verwerfen(meldung) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                    }
                 }
             }
         }

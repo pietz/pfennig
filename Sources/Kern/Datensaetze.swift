@@ -2,8 +2,14 @@ import Foundation
 import GRDB
 
 /// One imported file in the archive. Dedupe is "hash exists".
-public struct Datei: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
+public struct Datei: Codable, Hashable, Sendable, Identifiable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "dateien"
+
+    /// The hash is the key of the row and the name in the archive.
+    public var id: String {
+        sha256
+    }
+
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
     public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
