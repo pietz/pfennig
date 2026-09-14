@@ -34,10 +34,6 @@ public enum Schema {
         geaendert_am TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
-    CREATE INDEX buchungen_datum ON buchungen(datum);
-
-    CREATE INDEX buchungen_gegenpartei_name ON buchungen(gegenpartei_name);
-
     CREATE TABLE dateien (
         sha256 TEXT PRIMARY KEY,
         dateiname TEXT NOT NULL,

@@ -55,7 +55,7 @@ public final class Repository: Sendable {
         try neu.save(db)
         guard let id = neu.id else { preconditionFailure("save() assigns the row id") }
 
-        var eintrag = Aktivitaet(buchungId: id, zeitpunkt: jetzt, akteur: akteur, vorher: vorher, nachher: neu)
+        let eintrag = Aktivitaet(buchungId: id, zeitpunkt: jetzt, akteur: akteur, vorher: vorher, nachher: neu)
         try eintrag.insert(db)
         return neu
     }
@@ -103,7 +103,7 @@ public final class Repository: Sendable {
 
     public func anfrageStarten(dateiSha256: String, modell: String) throws -> Int64 {
         try datenbank.write { db in
-            var anfrage = Anfrage(dateiSha256: dateiSha256, modell: modell)
+            let anfrage = Anfrage(dateiSha256: dateiSha256, modell: modell)
             try anfrage.insert(db)
             return db.lastInsertedRowID
         }

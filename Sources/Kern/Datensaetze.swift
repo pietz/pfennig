@@ -44,7 +44,7 @@ public struct Datei: Codable, Hashable, Sendable, FetchableRecord, PersistableRe
 
 /// One entry of the activity log, written once per repository write. It carries
 /// the whole booking before and after the change; `vorher` is empty on insert.
-public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, MutablePersistableRecord {
+public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "aktivitaeten"
 
     public var id: Int64?
@@ -79,10 +79,6 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, MutableP
         self.nachher = nachher
     }
 
-    public mutating func didInsert(_ inserted: InsertionSuccess) {
-        id = inserted.rowID
-    }
-
     /// Readable timestamps in the JSON columns; the log is shown to the user.
     public static func databaseJSONEncoder(for column: String) -> JSONEncoder {
         let encoder = JSONEncoder()
@@ -100,7 +96,7 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, MutableP
 
 /// One agent run for one file. `konversation` holds the raw JSON of the run
 /// without file bytes; its shape belongs to the agent.
-public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, MutablePersistableRecord {
+public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "anfragen"
 
     public var id: Int64?
@@ -130,9 +126,5 @@ public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, MutablePers
         self.dateiSha256 = dateiSha256
         self.modell = modell
         self.gestartetAm = gestartetAm
-    }
-
-    public mutating func didInsert(_ inserted: InsertionSuccess) {
-        id = inserted.rowID
     }
 }

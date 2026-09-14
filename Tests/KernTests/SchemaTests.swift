@@ -15,16 +15,11 @@ import Testing
     #expect(tabellen.contains("einstellungen"))
 }
 
-@Test func schemaHatIndizesUndBleibtDemAgentenLesbar() throws {
+@Test func schemaBleibtDemAgentenLesbar() throws {
     let repository = try Repository.imSpeicher()
-    let (indizes, text) = try repository.datenbank.read { db in
-        try (
-            String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'index'"),
-            String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE name = 'buchungen'").joined()
-        )
+    let text = try repository.datenbank.read { db in
+        try String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE name = 'buchungen'").joined()
     }
-    #expect(indizes.contains("buchungen_datum"))
-    #expect(indizes.contains("buchungen_gegenpartei_name"))
     // The agent reads the schema back from sqlite_master, so the comments that
     // describe the JSON columns have to survive the round trip.
     #expect(text.contains("\"netto\": 10000"))
