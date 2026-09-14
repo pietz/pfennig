@@ -643,7 +643,8 @@ public struct BookkeepingRepository: Sendable {
                 throw BookkeepingError.invalidPaymentAllocation
             }
         }
-        for payment in draft.payments where payment.id == nil {
+        let added = draft.payments.filter { $0.id == nil }
+        for payment in added {
             let record = Payment(
                 direction: payment.direction,
                 paymentDate: payment.paymentDate,
@@ -693,7 +694,9 @@ public struct BookkeepingRepository: Sendable {
                 createdAt: now
             ).insert(db)
         }
-        try requirePaymentsWithinBounds(db, draft: draft, transactionID: transactionID)
+        if !added.isEmpty {
+            try requirePaymentsWithinBounds(db, draft: draft, transactionID: transactionID)
+        }
     }
 
     /// What the payments have settled - allocations in the transaction's own
@@ -701,6 +704,11 @@ public struct BookkeepingRepository: Sendable {
     /// amount. Both ends matter: nothing may be paid twice, and no refund may
     /// give back money that was never paid. Read back from the database so
     /// payments written by an earlier save count too.
+    ///
+    /// Only a *new* payment is refused this way. Correcting the amount of a
+    /// transaction that is already paid stays an ordinary edit - there is no
+    /// way to take a payment back - and the soft `PAYMENT_AMOUNT_DIFFERS`
+    /// warning reports the difference.
     private func requirePaymentsWithinBounds(
         _ db: Database,
         draft: TransactionDraft,

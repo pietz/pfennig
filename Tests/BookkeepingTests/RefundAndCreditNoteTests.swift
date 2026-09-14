@@ -99,6 +99,26 @@ struct RefundAndCreditNoteTests {
         }
     }
 
+    /// Lowering the amount of a transaction that is already paid stays an
+    /// ordinary edit: the bound refuses new payments, not corrections.
+    @Test("Ein bezahlter Vorgang bleibt nach unten korrigierbar")
+    func loweringAPaidAmountStillSaves() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        draft.payments = [payment(11900, .outflow, day: 20)]
+        let id = try Fixture.save(draft, in: database, profile: profile)
+
+        var corrected = try #require(try BookkeepingRepository(database).detail(id: id)).draft
+        corrected.netMinor = 8000
+        corrected.taxMinor = 1520
+        corrected.grossMinor = 9520
+        corrected.components = [TaxComponentDraft(kind: .standard, rate: "19", netMinor: 8000, taxMinor: 1520)]
+        corrected.allocations = [AllocationDraft(categoryId: "telecom", amountMinor: 8000)]
+        try Fixture.save(corrected, in: database, profile: profile)
+
+        #expect(try #require(database.transactionList().first { $0.id == id }).bookedGrossMinor == 9520)
+    }
+
     // MARK: Gutschrift
 
     @Test("Eine Gutschrift wird mit negativen Beträgen gespeichert")
