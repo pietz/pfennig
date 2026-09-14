@@ -151,10 +151,14 @@ public extension TransactionDraft {
     /// The VAT rate behind the tax amount, for the inspector's read-only
     /// "Steuersatz": `"19 %"`, `"7 % / 19 %"`. The document's own components
     /// are the source whenever there are any; they are distinct and ordered
-    /// from low to high, and a decimal rate is written the German way. A
-    /// hand-entered booking has no components, so the rate is calculated from
-    /// tax and net and rounded to one decimal - otherwise every manual
-    /// booking would claim "0 %". `"0 %"` when there is nothing to divide.
+    /// from low to high, and a decimal rate is written the German way.
+    ///
+    /// A hand-entered booking has no components, so the rate is calculated
+    /// from tax over net - otherwise every manual booking would claim
+    /// `"0 %"`. That quotient is only ever named when it lands on one of the
+    /// German rates, within 0.05 percentage points of 0, 7 or 19; anything
+    /// else is a receipt over several rates and reads `"gemischt"` rather
+    /// than as an average nobody charged.
     var effectiveTaxRateText: String {
         let rates = components
             .compactMap { $0.rate?.trimmingCharacters(in: .whitespaces) }
@@ -164,19 +168,26 @@ public extension TransactionDraft {
         guard distinct.isEmpty else {
             return distinct.map(Self.percent).joined(separator: " / ")
         }
-        return Self.percent(calculatedTaxRate ?? 0)
+        guard let calculated = calculatedTaxRate else { return Self.percent(0) }
+        guard let standard = Self.standardRates.first(where: { abs(calculated - $0) <= Self.rateTolerance })
+        else { return "gemischt" }
+        return Self.percent(standard)
     }
 
-    /// Tax over net in percent, rounded to one decimal: the rate a booking
-    /// without components implies. Magnitudes, so a negative pair (a credit
-    /// note) reads as its rate and not as a negative one.
+    /// The rates a German document charges, plus the untaxed case.
+    private static let standardRates: [Decimal] = [0, 7, 19]
+
+    /// How far a calculated rate may sit from a standard rate and still be
+    /// that rate: enough for the cent rounding of an ordinary receipt.
+    private static let rateTolerance = Decimal(string: "0.05")!
+
+    /// Tax over net in percent: the rate a booking without components
+    /// implies. Magnitudes, so a negative pair (a credit note) reads as its
+    /// rate and not as a negative one.
     private var calculatedTaxRate: Decimal? {
         guard let taxMinor else { return nil }
         guard let netMinor = netMinor ?? grossMinor.map({ $0 - taxMinor }), netMinor != 0 else { return nil }
-        var rate = Decimal(abs(taxMinor)) / Decimal(abs(netMinor)) * 100
-        var rounded = Decimal()
-        NSDecimalRound(&rounded, &rate, 1, .plain)
-        return rounded
+        return Decimal(abs(taxMinor)) / Decimal(abs(netMinor)) * 100
     }
 
     private static func percent(_ rate: Decimal) -> String {

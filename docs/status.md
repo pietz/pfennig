@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 316 tests across 45 suites plus a successful Debug app build.
+The latest verification baseline is 318 tests across 45 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -222,7 +222,9 @@ something Swift already knows, and the schema went with them.
 - **Inspector:** "Beträge" shows the effective rate next to "Steuer"
   (`TransactionDraft.effectiveTaxRateText`; the document's own tax components
   when it has any, otherwise Steuer over Netto, because a hand-entered booking
-  has no components and would otherwise always claim "0 %"); "Aufteilung" is a
+  has no components and would otherwise always claim "0 %" - that quotient is
+  named only when it lands within 0,05 points of 0, 7 or 19 %, and reads
+  "gemischt" otherwise instead of an average nobody charged); "Aufteilung" is a
   vertical list of four full-width fields; "Steuer" edits only the Behandlung
   and shows a compact read-only summary below it. The per-component tax editor
   is gone - components come from the document and are corrected through the
@@ -246,7 +248,7 @@ row count (8 transactions, 8 assessments, 170 provenance rows, 4 payments),
 name byte-identical to a database freshly created by the app's own migrator.
 The temporary tool was removed. No archive was reset or deleted.
 
-New baseline: 316 tests across 45 suites plus a successful Debug app build.
+New baseline: 318 tests across 45 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
@@ -284,7 +286,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - below the cards Start has two columns: "Offen" is what the user still has to decide or add (review items, missing documents, import proposals, later unmatched statement movements), "Anstehend" are the outward-facing deadlines (UStVA periods with due dates, later other tax tasks); they share `StartRow`, sit side by side while both fit and stack when narrow
 - "Prüfen" is the single page for everything that needs a decision: Importvorschläge, Fehlgeschlagen, Buchungen prüfen, Belege fehlen; a booking row opens the booking in "Buchungen" with the inspector, and each booking section still leads into the matching ledger filter
 - the ledger filters have one shared state, reachable from "Prüfen"; returning through the Buchungen sidebar entry opens the unfiltered ledger
-- leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved
+- leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved. A booking opened from "Prüfen" or from the UStVA task window asks the same question, and "Weiter bearbeiten" drops that request instead of queueing it
 - the UStVA task is the content of Start's "Anstehend" column, including the one-time rhythm confirmation; the task itself opens in a window of its own instead of a sheet, so the ledger stays reachable while exceptions are corrected
 - the window may shrink to 560 pt; Start lets `ViewThatFits` stack its three metric cards, so no view measures the window itself
 - the inspector uses the standard `inspector` behaviour: showing it does not resize the window, the ledger column gives up the width. The earlier `WindowWidthCompensation` was tried live and removed again

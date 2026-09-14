@@ -78,16 +78,31 @@ struct TransactionDraftTests {
     @Test("A booking without components calculates its rate from tax and net")
     func rateFromAmounts() {
         #expect(draft(netMinor: 10000, taxMinor: 1900).effectiveTaxRateText == "19 %")
+        #expect(draft(netMinor: 10000, taxMinor: 700).effectiveTaxRateText == "7 %")
         // Rounded cent amounts still name the plain rate.
         #expect(draft(netMinor: 4197, taxMinor: 798).effectiveTaxRateText == "19 %")
-        // A mixed receipt without components shows the rate it actually paid.
-        #expect(draft(netMinor: 8775, taxMinor: 715).effectiveTaxRateText == "8,1 %")
         // Without a net amount, gross minus tax is enough.
         #expect(draft(taxMinor: 1900, grossMinor: 11900).effectiveTaxRateText == "19 %")
         // A credit note with negative amounts names the same rate.
         #expect(draft(netMinor: -10000, taxMinor: -1900).effectiveTaxRateText == "19 %")
         #expect(draft(netMinor: 10000, taxMinor: 0).effectiveTaxRateText == "0 %")
         #expect(draft(netMinor: 10000).effectiveTaxRateText == "0 %")
+    }
+
+    @Test("A calculated rate off every German rate reads as mixed")
+    func mixedRateFromAmounts() {
+        // 8,15 %: a ticket with a 7 % fare and a 19 % reservation.
+        #expect(draft(netMinor: 8775, taxMinor: 715).effectiveTaxRateText == "gemischt")
+        #expect(draft(netMinor: 10000, taxMinor: 1000).effectiveTaxRateText == "gemischt")
+    }
+
+    @Test("A rate within 0,05 points of a German rate is that rate")
+    func rateTolerance() {
+        #expect(draft(netMinor: 10000, taxMinor: 1905).effectiveTaxRateText == "19 %")
+        #expect(draft(netMinor: 10000, taxMinor: 1906).effectiveTaxRateText == "gemischt")
+        #expect(draft(netMinor: 10000, taxMinor: 695).effectiveTaxRateText == "7 %")
+        #expect(draft(netMinor: 10000, taxMinor: 4).effectiveTaxRateText == "0 %")
+        #expect(draft(netMinor: 10000, taxMinor: 6).effectiveTaxRateText == "gemischt")
     }
 
     @Test("The document's own components beat the calculated rate")
