@@ -4,7 +4,7 @@
 
 The project is **Pfennig** (`pfennig.app`), with its workspace at `/Users/pietz/Private/pfennig` and private repository `pietz/pfennig`. The rename from Ziffer is complete: application target, scheme, bundle identifier, Swift identifiers, interface text, scripts and documentation all use Pfennig, and the archive now lives in `~/Library/Application Support/Pfennig`. The old `/Users/pietz/Private/ziffer` directory and `pietz/ziffer` repository are retained unchanged. Identifiers that address existing local credentials or data deliberately keep their old names; see `docs/status.md`. Do not blindly rename remaining technical identifiers or move user data as part of branding.
 
-Read `docs/status.md` for the handoff, then `docs/specs/document-to-tax-workflow.md` for the latest workflow decisions. That specification was **approved on 2026-09-14** and is the implementation basis; older manual-first/CSV-only plans do not reopen its decisions. Historical GitHub issues are preserved in `docs/legacy-github-issues.md`.
+Read `docs/status.md` for the handoff, then `docs/specs/document-to-tax-workflow.md` for the latest workflow decisions. That specification was **approved on 2026-09-14** and is the implementation basis; older manual-first plans do not reopen its decisions. Historical GitHub issues are preserved in `docs/legacy-github-issues.md`.
 
 ## Product
 
@@ -20,10 +20,10 @@ The product north star is:
 
 The product exists to remove as much routine bookkeeping work as possible for the initial audience, not merely to digitize manual entry. Aim to cover the great majority of their everyday workflows; “90%” expresses this product ambition, not a measured accuracy or coverage guarantee.
 
-- One drag-and-drop entrance accepts the ordinary bookkeeping documents the user has, including receipts, invoice PDFs/images, CSV and PDF statements, and structured e-invoices. Do not make users select a workflow before importing or artificially restrict statement support to CSV.
+- One drag-and-drop entrance accepts the ordinary bookkeeping documents the user has, including receipts, invoice PDFs/images and structured e-invoices. Do not make users select a workflow before importing.
 - A business transaction can start with either its document or its payment. Pfennig identifies, organizes, and joins the corresponding evidence, enriching the same transaction rather than creating duplicate income or expense.
 - Automation is a user setting with three levels: manual (default, every new or changed imported item is confirmed), balanced (fully validated supported standard cases with unambiguous links are applied without confirmation), automatic (no confirmation step; unclear facts stay empty or become open exceptions). In balanced and automatic mode do not require routine confirmation of safe standard cases. Missing facts, conflicting evidence, ambiguous matches, and material tax uncertainty become durable, actionable exceptions; model confidence alone is not sufficient authorization.
-- Statement import is bank-independent: PDF statements are read visually by the multimodal model like receipts; CSV statements go through a deterministic importer onto a normalized movement format, with the model at most helping to map columns. Do not build bank-specific adapters ahead of demonstrated need. Statement movements must be classified as business, private, or internal transfer; only business movements become income or expense.
+- Statement import approach is not yet decided; do not build parsers or matchers without an approved design.
 - Use capable multimodal models for understanding PDFs/images and unstructured documents. Use local parsers for structured facts where appropriate; both paths feed the same validated workflow. Choose preprocessing and bounded tools to remove user work, not to create separate product modes. Neither an agent framework nor a chat interface is required.
 - Complete the outgoing workflow too: derive the applicable tax tasks and deadlines, surface them on Start, and prepare UStVA/EÜR values and practical handoff with minimal manual work. Users should not have to select all relevant bookings again for each report.
 - Keep the workspace clean. Show what needs a decision rather than exposing the machinery of extraction, matching, or agent execution. Chat is outside the current scope.

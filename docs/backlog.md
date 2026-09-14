@@ -84,7 +84,7 @@ Offizielle Quellen:
 ## D. Vorschlag für die nächsten Schritte
 
 1. **Erstes Steuerergebnis:** Einen UStVA-Zeitraum fachlich korrekt und nachvollziehbar bis zur Übertragungshilfe schließen. Einfachen CSV-Nachweis mitliefern. XML-Machbarkeit früh separat prüfen, aber nicht zum Blocker machen.
-2. **Weniger Handarbeit:** Ein Kontoformat und beidseitigen Beleg-/Zahlungsabgleich schließen, einschließlich vorhandener manueller Zahlungen und Teilzahlungen.
+2. **Weniger Handarbeit:** Beidseitigen Beleg-/Zahlungsabgleich schließen, einschließlich vorhandener manueller Zahlungen und Teilzahlungen. Kontoauszüge: Ansatz offen, KI-first.
 3. **Jahresabschluss vorbereiten:** EÜR-Ausgabe auf der gemeinsamen Berichtsbasis ergänzen. Nicht unterstützte Jahresabschlussarbeiten sichtbar halten, keine scheinbar vollständige Erklärung erzeugen.
 4. **Strukturierten Eingang ergänzen:** E-Rechnungen als begrenztes Importinkrement, bei passender Arbeitsteilung parallel zu den anderen Schritten.
 5. **Danach Komfort:** Regeln, echte Termine und Periodenfreigabe erst auf einem nutzbaren Eingangs-/Ausgangsworkflow aufbauen.

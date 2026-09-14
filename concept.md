@@ -21,7 +21,7 @@ The application is **AI-native from the core**:
 - It extracts relevant information.
 - It creates or updates bookkeeping records.
 - It identifies missing information.
-- It proposes links between invoices, receipts, payments, credit notes, and statements.
+- It proposes links between invoices, receipts, payments, and credit notes.
 - It asks for human confirmation only where required by the configured autonomy level.
 - The user can always manually inspect and edit the underlying bookkeeping data.
 
@@ -40,7 +40,7 @@ The app should feel like a polished native Mac application, not like a chatbot w
 - Primarily B2B services, some B2C possible
 - Typical expenses: office, software/SaaS, advertising, hardware, professional services, telecom, travel
 - Domestic, EU, and third-country invoices in multiple currencies
-- Several payment accounts (bank account, credit card, PayPal, cash), imported via statement files, no bank API
+- Several payment accounts (bank account, credit card, PayPal, cash), no bank API
 
 ## 2.2 Must not be blocked by the data model (later)
 
@@ -104,15 +104,15 @@ Adobe Systems Software Ireland Ltd · Expense · 71.39 EUR
 ├── Invoice 2026-08-31, invoice no. IEIN123456, net 71.39 EUR, VAT 0.00
 ├── Tax assessment: reverseCharge, taxable base 71.39, self-assessed VAT 13.56, deductible input VAT 13.56
 ├── Bookkeeping allocation: software_subscriptions 71.39 EUR
-├── Payment: 2026-09-02 -71.39 EUR from account "Geschäftskonto" (statement line fingerprint 8a1…)
+├── Payment: 2026-09-02 -71.39 EUR from account "Geschäftskonto"
 └── Provenance: invoice fields = document; treatment = agent (0.93); category = rule
 ```
 
-A transaction may exist before all evidence is available (statement first, invoice later; invoice first, payment later).
+A transaction may exist before all evidence is available (payment first, invoice later; invoice first, payment later).
 
-## 4.2 Statement lines are not transactions
+## 4.2 Statements
 
-A statement line is a fact about an account ("on 2026-09-02, -71.39 EUR left account X"). Only lines classified as **business** create a payment and, if needed, a transaction. Private transfers, internal transfers between own accounts, and income-tax prepayments stay outside the business transaction list but remain stored and visible under the account.
+How Pfennig takes in Kontoauszüge is an open question. The deterministic CSV importer and the rule-based matcher that were built for it were removed again by product decision on 2026-09-14; the replacement will be designed AI-first. Until that design is approved there is no statement schema, no parser, no matcher and no classification model in this specification, and none should be built.
 
 ## 4.3 Deterministic core
 
@@ -203,8 +203,8 @@ The user chooses the authoritative EUR amount; default is `bankActual` when a pa
 ## 5.8 Tax payments and private movements on statements
 
 - **VAT payments to / refunds from the Finanzamt** are business transactions (Betriebsausgabe/-einnahme in the EÜR, `transaction_type = taxPayment`, category `vat_payment` / `vat_refund`).
-- **Income-tax and solidarity-surcharge prepayments** are private (statement line class `private`, subclass `incomeTax`).
-- **Internal transfers** between own accounts are `internalTransfer` and create no transaction.
+- **Income-tax and solidarity-surcharge prepayments** are private and create no business transaction.
+- **Internal transfers** between own accounts create no transaction.
 - **Bank fees** are business expenses that legitimately have no invoice; category `bank_fees` sets `document_expected = false`.
 
 ## 5.9 GoBD posture
@@ -242,7 +242,7 @@ Start is the default entry point, with the sidebar visible. Three compact cards 
 
 Below the cards, Start has two columns with the same row presentation:
 
-- **Offen** is what the user still has to decide or add: bookings whose review is open, missing expected documents, open import proposals, and later unmatched statement movements. Its rows lead to "Prüfen", where the decision is actually made. Empty state: "Alles erledigt".
+- **Offen** is what the user still has to decide or add: bookings whose review is open, missing expected documents, and open import proposals. Its rows lead to "Prüfen", where the decision is actually made. Empty state: "Alles erledigt".
 - **Anstehend** are the outward-facing deadlines: the Umsatzsteuer-Voranmeldung periods with their due dates today, other tax tasks later. Its rows open the task itself. Empty state: a quiet "Keine Fristen".
 
 The columns sit side by side while both fit and stack in a narrow window. Open items span all years and are not added into a combined count because categories may overlap. Document-exempt categories do not create missing-document work. Deadlines are reserved for real dates and remain hidden until supported. Keep this overview compact: no separate analysis page, recent-bookings list, or decorative chart is needed.
@@ -255,7 +255,7 @@ Later configurable columns: categories, invoice number, document completeness, c
 
 ## 6.3 Accounts view
 
-Per account: statement lines with classification, balance if derivable, unmatched business lines, and import history. This is where private/internal lines live.
+Deferred with the statement approach (see 4.2).
 
 ## 6.4 Inspector
 
@@ -271,7 +271,7 @@ Every material field is manually editable; manual values carry provenance `manua
 
 ## 7.1 Drag and drop
 
-Files can be dropped nearly anywhere in the main window. Supported inputs V1: PDF, JPG/JPEG, PNG, HEIC (converted locally), XML (XRechnung/ZUGFeRD), CSV (statements), plain-text statements.
+Files can be dropped nearly anywhere in the main window. Supported inputs V1: PDF, JPG/JPEG, PNG, HEIC (converted locally), XML (XRechnung/ZUGFeRD).
 
 ## 7.2 Import batch
 
@@ -320,9 +320,8 @@ Manual overrides are never silently replaced by a later AI run.
 # 9. Automation Level
 
 One user setting with three values, stored in `settings` under
-`automation.level`, default **Manual**. It governs document imports and
-statement movements alike; the earlier per-capability flag presets were
-replaced by this single setting when the
+`automation.level`, default **Manual**. It governs document imports; the
+earlier per-capability flag presets were replaced by this single setting when the
 [workflow specification](docs/specs/document-to-tax-workflow.md) was approved.
 
 | Level | Behaviour |
@@ -356,7 +355,6 @@ V1 uses the **OpenAI Responses API** directly with strict Structured Outputs. No
 protocol DocumentIntelligenceProvider: Sendable {
     func extract(document: PreparedDocument, context: ExtractionContext) async throws -> DocumentExtraction
     func disambiguate(_ request: DisambiguationRequest) async throws -> DisambiguationResult
-    func inferStatementColumnMapping(sample: StatementSample) async throws -> StatementColumnMapping
 }
 ```
 
@@ -375,9 +373,9 @@ Document
 - The extraction schema does **not** contain `proposedMatch`; matching is Swift's job.
 - The disambiguation call receives only the minimal candidate list (id, counterparty, amount, date, invoice number, payment state) and returns a ranked choice with reasoning.
 
-## 10.3 Statement CSV handling
+## 10.3 Statement handling
 
-CSV statement content is **not** sent line by line to the model. For an unknown format the AI receives header + up to 5 sample rows and returns a `StatementColumnMapping` (date column, amount column(s), sign convention, decimal separator, reference/counterparty columns, encoding hints). The mapping is stored as a rule keyed by header fingerprint; all lines are parsed deterministically. Known formats are shipped as built-in mappings (initial set: Sparkasse/Volksbank CAMT-CSV, DKB, N26, ING, comdirect, PayPal activity CSV, Stripe payouts CSV).
+Open, see 4.2.
 
 ## 10.4 Document preparation
 
@@ -415,7 +413,6 @@ Import
   ↓ Archive original (copy, never modify)
   ↓ SHA-256 + exact duplicate check
   ↓ File type / structured format detection
-  ↓ [statement?] → parse lines → fingerprint → classify → payments
   ↓ [document?]  → prepare → AI extraction → normalize
   ↓ Deterministic matching (payment↔transaction, semantic duplicate)
   ↓ [ambiguous?] → AI disambiguation
@@ -489,7 +486,6 @@ Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile +
   back more than was paid (enforced at the write boundary)
 - Linked IDs do not exist; unsupported state transition
 - Duplicate immutable document identity (sha256)
-- Duplicate statement line fingerprint on the same account
 - Mutation inside a locked period without an explicit correction action
 
 ## 14.2 Soft validations (allow save, require attention by autonomy level)
@@ -504,7 +500,6 @@ Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile +
 - Likely semantic duplicate
 - Asset candidate (see 5.6)
 - 10-day-rule window (see 5.3)
-- Business statement line with no matching document after 60 days
 - Amount > configurable threshold with `agent` provenance only
 
 ## 14.3 UI convention
@@ -798,39 +793,6 @@ CREATE TABLE transaction_documents (
 );
 ```
 
-## 17.12 `statement_lines`
-
-```sql
-CREATE TABLE statement_lines (
-    id TEXT PRIMARY KEY,
-    account_iban TEXT NOT NULL,            -- the IBAN of the own account the statement belongs to
-    document_id TEXT REFERENCES documents(id),   -- the statement file
-    line_fingerprint TEXT NOT NULL,        -- sha256 of normalized (account_iban|booking_date|amount_minor|currency|reference|counterparty_raw)
-    external_id TEXT,                      -- bank-provided transaction id if present
-
-    booking_date TEXT NOT NULL,
-    value_date TEXT,
-    amount_minor INTEGER NOT NULL,         -- signed: negative = outflow
-    currency TEXT NOT NULL,
-    counterparty_raw TEXT,
-    counterparty_iban TEXT,
-    reference TEXT,
-    booking_text TEXT,
-    raw_json TEXT,                         -- full original row
-
-    classification TEXT NOT NULL,          -- business | private | internalTransfer | taxPayment | unknown
-    classification_subtype TEXT,           -- e.g. incomeTax | vatPayment | ownTransfer | cardSettlement
-    payment_id TEXT REFERENCES payments(id),
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL,
-    UNIQUE(account_iban, line_fingerprint)
-);
-CREATE INDEX idx_stmt_account_date ON statement_lines(account_iban, booking_date);
-CREATE INDEX idx_stmt_classification ON statement_lines(classification);
-```
-
-Only `business` lines and `taxPayment/vatPayment` lines create a `payment`. Overlapping statement exports are safe by construction.
-
 ## 17.13 `payments`
 
 ```sql
@@ -890,7 +852,7 @@ Values stay typed in their domain tables; this table records origin per field.
 ```sql
 CREATE TABLE field_provenance (
     id TEXT PRIMARY KEY,
-    entity_type TEXT NOT NULL,             -- transaction | payment | taxAssessment | allocation | taxComponent | counterparty | statementLine
+    entity_type TEXT NOT NULL,             -- transaction | payment | taxAssessment | allocation | taxComponent | counterparty
     entity_id TEXT NOT NULL,
     field_name TEXT NOT NULL,
     provenance TEXT NOT NULL,              -- document | agent | calculated | manual | imported
@@ -944,7 +906,7 @@ CREATE TABLE model_runs (
     import_item_id TEXT REFERENCES import_items(id),
     provider TEXT NOT NULL,
     model TEXT NOT NULL,
-    operation TEXT NOT NULL,               -- extraction | disambiguation | statementMapping
+    operation TEXT NOT NULL,               -- extraction | disambiguation
     prompt_version TEXT NOT NULL,
     schema_version TEXT NOT NULL,
     request_metadata_json TEXT,            -- no document content, no key
@@ -965,7 +927,7 @@ CREATE TABLE proposals (
     id TEXT PRIMARY KEY,
     import_item_id TEXT REFERENCES import_items(id),
     idempotency_key TEXT NOT NULL UNIQUE,  -- e.g. "<import_item_id>:<prompt_version>"
-    kind TEXT NOT NULL,                    -- createTransaction | updateTransaction | linkPayment | attachDocument | classifyStatementLines | mergeDuplicate
+    kind TEXT NOT NULL,                    -- createTransaction | updateTransaction | attachDocument | mergeDuplicate
     operations_json TEXT NOT NULL,         -- [ProposedOperation]
     summary_json TEXT NOT NULL,            -- what the review card shows
     issues_json TEXT NOT NULL,             -- validation issues at proposal time
@@ -983,7 +945,7 @@ CREATE INDEX idx_proposals_status ON proposals(status);
 ```sql
 CREATE TABLE validation_issues (
     id TEXT PRIMARY KEY,
-    entity_type TEXT NOT NULL,             -- transaction | payment | statementLine | proposal
+    entity_type TEXT NOT NULL,             -- transaction | payment | proposal
     entity_id TEXT NOT NULL,
     severity TEXT NOT NULL,                -- info | warning | error
     code TEXT NOT NULL,                    -- stable machine code, e.g. 'TAX_RATE_UNUSUAL', 'ASSET_CANDIDATE'
@@ -999,8 +961,8 @@ CREATE INDEX idx_issues_entity ON validation_issues(entity_type, entity_id, stat
 
 ## 17.21 Learned rules
 
-User-visible learned patterns (counterparty defaults, statement-line
-classification, statement column mapping, payment-match patterns) with a
+User-visible learned patterns (counterparty defaults, payment-match
+patterns) with a
 confirmation count and an explicit `auto_apply` flag. Tax-relevant rules
 require `confirmation_count >= 3` and explicit user activation before
 `auto_apply`. Their table arrives with the milestone that writes them (M8);
@@ -1101,7 +1063,6 @@ SupplyType:             service | goods | unknown
 DocumentType:           invoice | receipt | creditNote | statement | contract | other | unknown
 DocumentRole:           invoice | receipt | creditNote | statement | other
 DocumentSource:         dragDrop | fileImport | other
-StatementLineClass:     business | private | internalTransfer | taxPayment | unknown
 PaymentDirection:       inflow | outflow
 PaymentMethod:          bankTransfer | card | paypal | directDebit | cash | other | unknown
 PaymentSource:          statementLine | manual
@@ -1109,9 +1070,9 @@ MatchMethod:            exact | reference | invoiceNumber | heuristic | manual
 Provenance:             document | agent | calculated | manual | imported
 ImportBatchStatus:      running | completed | completedWithErrors | cancelled
 ImportItemStatus:       queued | archiving | analyzing | matching | proposed | committed | skipped | duplicate | failed
-ModelRunOperation:      extraction | disambiguation | statementMapping
+ModelRunOperation:      extraction | disambiguation
 ModelRunStatus:         running | succeeded | failed
-ProposalKind:           createTransaction | updateTransaction | linkPayment | attachDocument | classifyStatementLines | mergeDuplicate
+ProposalKind:           createTransaction | updateTransaction | attachDocument | mergeDuplicate
 ProposalStatus:         pending | accepted | acceptedEdited | rejected | skipped | superseded | committed
 PolicyDecision:         autoCommit | needsReview | blocked
 IssueSeverity:          info | warning | error
@@ -1173,8 +1134,7 @@ Packages (SwiftPM):
 ├── Domain            — pure value types, enums, Money, LocalDate
 ├── Database          — GRDB, migrations, repositories, observation, v_ views
 ├── DocumentStore     — archive folder, hashing, copy, integrity, thumbnails
-├── StatementImport   — CSV/text parsing, column mappings, fingerprints, classification heuristics
-├── ImportPipeline    — coordinator, jobs, matcher, proposal builder, commit
+├── ImportPipeline    — coordinator, jobs, proposal builder, commit
 ├── AI                — Responses API client, schemas, prompts, provider protocol, retries
 ├── Validation        — deterministic, no network
 ├── Tax               — treatment decision, tax points, self-assessed VAT, thresholds, versioned form mappings
@@ -1192,31 +1152,18 @@ Domain type `LocalDate` (year/month/day, `Comparable`, `Codable` as `YYYY-MM-DD`
 
 ---
 
-# 24. Payment Matching (deterministic)
+# 24. Payment Matching
 
-Scoring in Swift, for each unallocated business payment against candidate transactions (open amount > 0, direction compatible, date within ±90 days):
-
-```text
-+50  exact amount equals open amount (booked EUR)
-+35  amount within tolerance (fee/FX ≤ 3 % or ≤ 5 EUR)
-+30  invoice number found in reference/booking text
-+20  counterparty normalized name or alias matches counterparty_raw
-+15  counterparty IBAN previously seen for this counterparty
-+10  date within 14 days after invoice date
-+10  rule paymentMatchPattern matches
--20  currency mismatch without known FX
-```
-
-Decision: score ≥ 70 and next candidate ≥ 25 points lower → `heuristic` match proposed; otherwise if ≥ 2 candidates ≥ 50 → AI disambiguation with those candidates; otherwise unmatched (payment-only transaction proposed if the line is business and no candidate exists). Thresholds are constants in `ImportPipeline/MatchingPolicy.swift` and covered by tests.
-
-Never assume one invoice = one payment. Partial and combined payments produce multiple allocations.
+Open, see 4.2. The scored, rule-based matcher specified here was removed on
+2026-09-14 together with the CSV importer; the replacement will be designed
+AI-first. Never assume one invoice = one payment: partial and combined
+payments produce multiple allocations.
 
 ---
 
 # 25. Duplicate Detection
 
 - **Exact:** same SHA-256 → `import_item.status = duplicate`, existing document referenced, no new record.
-- **Statement line:** same `(account_iban, line_fingerprint)` → skipped silently, counted in batch summary.
 - **Semantic:** different file, same counterparty + invoice number, or same counterparty + date + gross → proposal `mergeDuplicate` with a warning; never silently discarded.
 
 ---
@@ -1245,7 +1192,6 @@ enum ProposedOperation: Codable, Sendable {
     case linkPayment(paymentID: UUID, transactionID: UUID, amountMinor: Int64, method: MatchMethod)
     case unlinkPayment(allocationID: UUID)
     case attachDocument(transactionID: UUID, documentID: UUID, role: DocumentRole)
-    case classifyStatementLine(lineID: UUID, StatementLineClass, subtype: String?)
     case upsertCounterparty(CounterpartyDraft)
     case setProvenance([ProvenanceEntry])
 }
@@ -1326,7 +1272,6 @@ The app is fully usable offline for existing data. If analysis fails: keep the d
 # 34. Idempotency
 
 - Document identity: sha256.
-- Statement line identity: `(account_iban, line_fingerprint)`.
 - Proposal identity: `idempotency_key = "<import_item_id>:<prompt_version>"`; re-running analysis supersedes the old pending proposal rather than adding a second.
 - Commit: inside one SQLite transaction; `proposals.status = committed` set in the same transaction.
 - Restart: items in `analyzing|matching` are re-queued; any `model_runs` row with `running` is marked `timedOut`.
@@ -1395,16 +1340,15 @@ App/
 
 Sources/
 ├── Domain/          Money.swift · CurrencyCode.swift · LocalDate.swift · Enums.swift · Transaction.swift ·
-│                    Payment.swift · Document.swift · StatementLine.swift · TaxAssessment.swift · TaxComponent.swift ·
+│                    Payment.swift · Document.swift · TaxAssessment.swift · TaxComponent.swift ·
 │                    BookkeepingAllocation.swift · Counterparty.swift · Category.swift · Proposal.swift ·
 │                    ProposedOperation.swift · ValidationIssue.swift · Provenance.swift
 ├── Database/        AppDatabase.swift · Migrations/ (v001_initial.swift …) · Records/ · Repositories/ · Views.swift · Seed/
 ├── DocumentStore/   ArchiveLocator.swift · DocumentStore.swift · FileHasher.swift · ThumbnailService.swift
-├── StatementImport/ StatementParser.swift · ColumnMapping.swift · BuiltInMappings/ · LineFingerprint.swift · LineClassifier.swift
-├── ImportPipeline/  ImportCoordinator.swift · ImportJob.swift · Matcher.swift · MatchingPolicy.swift ·
+├── ImportPipeline/  ImportCoordinator.swift · ImportJob.swift ·
 │                    ProposalBuilder.swift · ReviewPolicy.swift · CommitService.swift
 ├── AI/              DocumentIntelligenceProvider.swift · OpenAIResponsesClient.swift · ExtractionSchema.swift ·
-│                    DisambiguationSchema.swift · StatementMappingSchema.swift · Prompts/ · PromptVersion.swift ·
+│                    DisambiguationSchema.swift · Prompts/ · PromptVersion.swift ·
 │                    DocumentPreparer.swift (HEIC→JPEG, PDF paging) · RecordingProvider.swift (fixtures)
 ├── Validation/      TransactionValidator.swift · MoneyValidator.swift · TaxValidator.swift · AllocationValidator.swift · IssueCodes.swift
 ├── Tax/             TaxTreatmentDecider.swift · Periods.swift · SelfAssessedVAT.swift · Thresholds.swift ·
@@ -1443,7 +1387,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 **M1 — Local shell:** onboarding (archive picker, profile), `NavigationSplitView`, table, inspector placeholder, settings, no AI.
 
-**M2 — Storage:** GRDB, `v001_initial` with the schema from 17 (including statement_lines, proposals and provenance), views, seed categories, sample data, repositories, migration tests. Tables arrive with the milestone that writes them.
+**M2 — Storage:** GRDB, `v001_initial` with the schema from 17 (including proposals and provenance), views, seed categories, sample data, repositories, migration tests. Tables arrive with the milestone that writes them.
 
 **M3 — Manual bookkeeping:** create/edit transaction, allocations, tax components, tax assessment, attach document, add/link payment manually, validation, provenance on manual edits, audit, save/reload.
 
@@ -1451,7 +1395,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 **M5 — Batch import:** multiple files, background processing, review queue, error/retry states, exact + semantic duplicate detection.
 
-**M6 — Accounts and statements:** accounts UI, CSV/text parsing with built-in mappings, AI column-mapping inference for unknown formats, fingerprints, line classification (business/private/internal/tax), payments from lines, deterministic matching, AI disambiguation, payment-only transactions, invoice-first and statement-first flows.
+**M6 — Accounts and statements:** open, see 4.2.
 
 **M7 — Tax cases:** reverse charge with self-assessed VAT, intra-community acquisition, export, foreign currency with rate sources, mixed-rate components, Kleinbetrag rule, asset flag, 10-day rule warning, credit notes/refunds via relations.
 
@@ -1467,7 +1411,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 ## 40.1 Unit tests (mandatory)
 
-Money arithmetic and rounding; VAT and self-assessed VAT; period dating for every treatment × direction case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; matching scorer thresholds; statement fingerprint stability; column mapping for each built-in bank format; line classification heuristics; state transitions; duplicate detection; validation codes; the schema shape a fresh database creates (after the first public release, also the upgrade from every released schema version); provenance protection of manual fields.
+Money arithmetic and rounding; VAT and self-assessed VAT; period dating for every treatment × direction case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; state transitions; duplicate detection; validation codes; the schema shape a fresh database creates (after the first public release, also the upgrade from every released schema version); provenance protection of manual fields.
 
 ## 40.2 Fixture-based AI tests
 
@@ -1475,7 +1419,7 @@ Money arithmetic and rounding; VAT and self-assessed VAT; period dating for ever
 
 ## 40.3 Integration tests
 
-Invoice first, payment later · payment first, invoice later · overlapping statement exports · PayPal line + bank settlement (internal transfer) · exact duplicate PDF · semantic duplicate · partial and combined payments · USD invoice paid in EUR with fee · mixed 7/19 receipt · reverse charge expense · reverse charge income without VAT ID · manual override then AI rerun · failed model request · crash mid-import and restart · edit inside locked period.
+Invoice first, payment later · payment first, invoice later · exact duplicate PDF · semantic duplicate · partial and combined payments · USD invoice paid in EUR with fee · mixed 7/19 receipt · reverse charge expense · reverse charge income without VAT ID · manual override then AI rerun · failed model request · crash mid-import and restart · edit inside locked period.
 
 ---
 
@@ -1493,7 +1437,6 @@ Extraction: business profile (name, VAT ID, country, VAT status, accounting meth
 
 Disambiguation: the payment (date, amount, reference, counterparty raw) and ≤ 5 candidates (id, counterparty, open amount, invoice date, invoice number). Nothing else.
 
-Statement mapping: header row and ≤ 5 sample rows with amounts masked to structure-preserving digits where feasible.
 
 ---
 
@@ -1511,7 +1454,7 @@ A manual value replaces the active value, records provenance `manual` with `is_m
 
 # 45. Search and Filters
 
-Search: counterparty, title, invoice number, amount (both formats), date, reference text of linked statement lines; document full text later. No AI for search.
+Search: counterparty, title, invoice number, amount (both formats), date; document full text later. No AI for search.
 
 Filters: date range (by relevant date, invoice date, or payment date), income/expense, payment status, document status, review status, tax treatment, category, account, asset flag, missing document, missing payment.
 
@@ -1539,7 +1482,7 @@ Schema docs, privacy docs (what exactly is sent to OpenAI and when), provider ab
 
 # 49. Definition of MVP
 
-The user can: launch without an account · use a local archive · configure the business profile and accounts · enter an OpenAI API key · drop invoices/receipts · have information extracted · review/edit/confirm proposals · see transactions in a native table · attach documents · record payments manually · import statement files, classify lines, and match payments · handle reverse charge, foreign currency, and mixed-rate documents correctly · persist and restart without loss · inspect and edit all material values · export CSV and create/restore a full backup.
+The user can: launch without an account · use a local archive · configure the business profile and accounts · enter an OpenAI API key · drop invoices/receipts · have information extracted · review/edit/confirm proposals · see transactions in a native table · attach documents · record payments manually · handle reverse charge, foreign currency, and mixed-rate documents correctly · persist and restart without loss · inspect and edit all material values · export CSV and create/restore a full backup.
 
 Analysis and tax preparation are the next layer.
 
@@ -1566,15 +1509,13 @@ Do not revisit unless implementation evidence proves them wrong:
 - SQLite (GRDB) canonical; ordinary files for documents; no BLOBs
 - Local archive in Application Support by default; open, inspectable formats and future portable move/export
 - All money as Int64 minor units; non-monetary decimals as canonical strings; never floating point
-- Transaction-first; documents, statement lines, payments, allocations, tax components, assessments are separate entities
-- Accounts and statement lines from the start; private/internal lines are not business transactions
+- Transaction-first; documents, payments, allocations, tax components, assessments are separate entities
 - Bookkeeping allocations replace a single category; canonical categories with stable IDs; no SKR numbers in core
 - Separate tax points (EÜR, output VAT, input VAT); self-assessed VAT computed by Swift
 - Form mappings (UStVA/EÜR) versioned in the Tax module, not in the schema
 - Field provenance and proposals in the initial schema
 - OpenAI Responses API with strict Structured Outputs; user-provided key in Keychain
-- V1 AI = single-shot extraction + optional disambiguation; no function calling; matching deterministic
-- CSV statements parsed deterministically after one-time AI column mapping
+- V1 AI = single-shot extraction + optional disambiguation; no function calling
 - Manual editing always possible; manual values never overwritten by AI
 - One automation level (Manuell/Ausgewogen/Automatisch) in `settings`; default Manuell; one deterministic decision function
 - No primary chat UX; no direct ELSTER; no DATEV in V1
