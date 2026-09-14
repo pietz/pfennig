@@ -194,6 +194,3 @@ public enum StartOverviewQuery {
         ValueObservation.tracking { try fetch($0, year: year, currentYear: currentYear) }
     }
 }
-
-/// EÜR and VAT aggregation queries (spec 28).
-public enum Aggregations {}

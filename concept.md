@@ -1461,8 +1461,8 @@ Sources/
 ├── Validation/      TransactionValidator.swift · MoneyValidator.swift · TaxValidator.swift · AllocationValidator.swift · IssueCodes.swift
 ├── Tax/             TaxTreatmentDecider.swift · Periods.swift · SelfAssessedVAT.swift · Thresholds.swift ·
 │                    FormMappings/UStVA_2026.swift · FormMappings/EUeR_2026.swift
-├── Analysis/        Aggregations.swift
-└── Export/          CSVExporter.swift · BackupExporter.swift
+├── Analysis/        StartOverview.swift · UStVACalculator.swift · UStVATasks.swift · SubmittedReturns.swift
+└── Export/          UStVAValueList.swift · UStVAXMLExporter.swift · UStVAPeriodText.swift
 ```
 
 ---
