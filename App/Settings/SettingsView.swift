@@ -9,7 +9,6 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
     @State private var apiKeyInput = ""
-    @State private var hasAPIKey = APIKeyStore.hasKey
     @State private var selectedModel = OpenAIModel.default
     @State private var selectedEffort = ReasoningEffort.default
     @State private var business = BusinessSettingsDraft()
@@ -115,11 +114,11 @@ struct SettingsView: View {
                 SecureField("OpenAI API-Schlüssel", text: $apiKeyInput, prompt: Text("sk-…"))
                     .onSubmit(saveAPIKey)
                 HStack {
-                    Text(hasAPIKey ? "Schlüssel gespeichert" : "Kein Schlüssel hinterlegt")
+                    Text(model.hasAPIKey ? "Schlüssel gespeichert" : "Kein Schlüssel hinterlegt")
                         .foregroundStyle(.secondary)
                     Spacer()
                     Button("Entfernen", role: .destructive, action: removeAPIKey)
-                        .disabled(!hasAPIKey)
+                        .disabled(!model.hasAPIKey)
                 }
                 Picker("Modell", selection: $selectedModel) {
                     ForEach(OpenAIModel.allCases, id: \.self) { model in
@@ -214,15 +213,13 @@ struct SettingsView: View {
     private func saveAPIKey() {
         let trimmed = apiKeyInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        APIKeyStore.save(trimmed)
+        model.saveAPIKey(trimmed)
         apiKeyInput = ""
-        hasAPIKey = true
     }
 
     private func removeAPIKey() {
-        APIKeyStore.remove()
+        model.removeAPIKey()
         apiKeyInput = ""
-        hasAPIKey = false
     }
 }
 

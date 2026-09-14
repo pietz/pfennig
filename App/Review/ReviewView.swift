@@ -1,4 +1,3 @@
-import AI
 import Database
 import Domain
 import GRDB
@@ -15,7 +14,7 @@ struct ReviewView: View {
 
     var body: some View {
         List {
-            if !APIKeyStore.hasKey {
+            if !model.hasAPIKey {
                 Section {
                     Label(
                         "Für die Belegerkennung fehlt der OpenAI-Schlüssel. Er wird in den Einstellungen hinterlegt.",

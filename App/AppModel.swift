@@ -28,7 +28,10 @@ final class AppModel {
     private(set) var coordinator: ImportCoordinator?
     /// Badge count of the "Prüfen" sidebar item (spec 7.2).
     private(set) var pendingProposalCount = 0
-    var hasAPIKey = APIKeyStore.hasKey
+    /// Whether an OpenAI key is stored. Read once at launch and kept in step
+    /// by `saveAPIKey`/`removeAPIKey`; views read this instead of the Keychain
+    /// so that no view update can trigger a macOS access dialog.
+    private(set) var hasAPIKey = APIKeyStore.hasKey
 
     /// The Voranmeldungszeitraum the UStVA task window shows. Start points it
     /// at a period before opening the window, the window's picker writes back
@@ -187,6 +190,20 @@ final class AppModel {
         mainWindow.makeKeyAndOrderFront(nil)
     }
 
+    // MARK: - API key (spec 10.5)
+
+    /// Stores `key` in the Keychain and updates `hasAPIKey`.
+    func saveAPIKey(_ key: String) {
+        APIKeyStore.save(key)
+        hasAPIKey = true
+    }
+
+    /// Removes the stored key and updates `hasAPIKey`.
+    func removeAPIKey() {
+        APIKeyStore.remove()
+        hasAPIKey = false
+    }
+
     // MARK: - Import (spec 39 M4)
 
     /// The OpenAI client, built fresh per call so a key or model change in
@@ -205,7 +222,6 @@ final class AppModel {
     /// Archives and analyses dropped or chosen files in the background; the
     /// UI follows along through the database (spec 7.1, 12).
     func importFiles(_ urls: [URL]) {
-        hasAPIKey = APIKeyStore.hasKey
         guard let coordinator else { return }
         Task.detached { await coordinator.import(urls) }
     }

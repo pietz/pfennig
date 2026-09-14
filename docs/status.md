@@ -30,11 +30,21 @@ The default archive is `~/Library/Application Support/Pfennig`. `ArchiveLocator.
 - If the move fails, the app keeps using the old folder in place, so existing bookkeeping stays reachable.
 - Nothing is ever deleted or overwritten. `Tests/DocumentStoreTests/ArchiveTests.swift` covers all four cases in temporary directories; the real archive was not opened during the rename.
 
+### Keychain access
+
+The API key lives under the service `com.pietz.pfennig` with account `openai-api-key`. The old `com.pietz.ziffer` item is not migrated (pre-release rule); the key is entered once in Settings and the new item is then created by, and owned by, the current app.
+
+Two things keep macOS from asking for Keychain access:
+
+- Debug builds are signed with the `Apple Development` identity, whose certificate carries team `34MWWCL4H2` in its OU. That gives every build the same designated requirement, so an item one build created stays readable by the next. `scripts/common.sh` fails rather than falling back to ad-hoc signing, which would change the designated requirement on every build.
+- Only `APIKeyStore.load()` reads the secret, and only when a model request is actually made. `APIKeyStore.hasKey` asks for the item's attributes instead of its data, which macOS answers without a dialog, and it is read once at launch into `AppModel.hasAPIKey`; Settings and Prüfen render from that property. Nothing in a view body touches the Keychain.
+
+The data-protection Keychain was evaluated and rejected: it needs the `keychain-access-groups` entitlement, which is provisioning-profile backed. A locally signed build carrying it is killed by AppleMobileFileIntegrity at launch, and without it `SecItemAdd` returns `errSecMissingEntitlement` (-34018). The file Keychain with stable signing is the working arrangement.
+
 ### Deliberately kept Ziffer identifiers
 
 These address existing local data or credentials. Renaming them would silently lose access, so they stay, each with a comment at its definition:
 
-- Keychain service `com.pietz.ziffer` with account `openai-api-key` in `Sources/AI/APIKeyStore.swift`. The bundle identifier did change, so macOS may show its usual Keychain access dialog the first time the renamed app reads the item. If access is denied, `load()` returns `nil` and the app asks for the key again; nothing else breaks.
 - The notarization Keychain profile `ziffer-notary`, still the default in `scripts/release.sh` and overridable through `NOTARY_PROFILE`.
 - The `UserDefaults` key `de.ziffer.archivePath` of the unused remembered-archive path.
 - `ArchiveLocator.legacyFolderName`, which must keep naming the old folder for the migration to find it.
