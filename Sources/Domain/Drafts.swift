@@ -141,10 +141,6 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
 }
 
 public extension TransactionDraft {
-    /// The VAT rate or rates the document shows, for the inspector's
-    /// read-only "Steuersatz": `"19 %"`, `"7 % / 19 %"`, and `"0 %"` when no
-    /// component carries a rate at all. Rates are distinct and ordered from
-    /// low to high, and a decimal rate is written the German way.
     /// What is still unpaid: the booked gross minus everything already
     /// allocated to this transaction. Never negative, so an overpayment reads
     /// as "nothing open". It is the default amount of a new payment.
@@ -152,16 +148,39 @@ public extension TransactionDraft {
         max((grossMinor ?? 0) - payments.reduce(0) { $0 + $1.allocated }, 0)
     }
 
+    /// The VAT rate behind the tax amount, for the inspector's read-only
+    /// "Steuersatz": `"19 %"`, `"7 % / 19 %"`. The document's own components
+    /// are the source whenever there are any; they are distinct and ordered
+    /// from low to high, and a decimal rate is written the German way. A
+    /// hand-entered booking has no components, so the rate is calculated from
+    /// tax and net and rounded to one decimal - otherwise every manual
+    /// booking would claim "0 %". `"0 %"` when there is nothing to divide.
     var effectiveTaxRateText: String {
         let rates = components
             .compactMap { $0.rate?.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
             .compactMap { Decimal(string: $0, locale: Locale(identifier: "en_US_POSIX")) }
         let distinct = Set(rates).sorted()
-        guard !distinct.isEmpty else { return "0 %" }
-        return distinct
-            .map { "\("\($0)".replacingOccurrences(of: ".", with: ",")) %" }
-            .joined(separator: " / ")
+        guard distinct.isEmpty else {
+            return distinct.map(Self.percent).joined(separator: " / ")
+        }
+        return Self.percent(calculatedTaxRate ?? 0)
+    }
+
+    /// Tax over net in percent, rounded to one decimal: the rate a booking
+    /// without components implies. Magnitudes, so a negative pair (a credit
+    /// note) reads as its rate and not as a negative one.
+    private var calculatedTaxRate: Decimal? {
+        guard let taxMinor else { return nil }
+        guard let netMinor = netMinor ?? grossMinor.map({ $0 - taxMinor }), netMinor != 0 else { return nil }
+        var rate = Decimal(abs(taxMinor)) / Decimal(abs(netMinor)) * 100
+        var rounded = Decimal()
+        NSDecimalRound(&rounded, &rate, 1, .plain)
+        return rounded
+    }
+
+    private static func percent(_ rate: Decimal) -> String {
+        "\("\(rate)".replacingOccurrences(of: ".", with: ",")) %"
     }
 }
 

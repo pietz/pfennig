@@ -7,11 +7,15 @@ import Testing
 struct TransactionDraftTests {
     private func draft(
         components: [TaxComponentDraft] = [],
+        netMinor: Int64? = nil,
+        taxMinor: Int64? = nil,
         grossMinor: Int64? = nil,
         payments: [PaymentDraft] = []
     ) -> TransactionDraft {
         TransactionDraft(
             businessProfileId: "profile",
+            netMinor: netMinor,
+            taxMinor: taxMinor,
             grossMinor: grossMinor,
             components: components,
             payments: payments
@@ -69,6 +73,31 @@ struct TransactionDraftTests {
             draft(components: [TaxComponentDraft(kind: .reverseChargeNote, rate: "0")])
                 .effectiveTaxRateText == "0 %"
         )
+    }
+
+    @Test("A booking without components calculates its rate from tax and net")
+    func rateFromAmounts() {
+        #expect(draft(netMinor: 10000, taxMinor: 1900).effectiveTaxRateText == "19 %")
+        // Rounded cent amounts still name the plain rate.
+        #expect(draft(netMinor: 4197, taxMinor: 798).effectiveTaxRateText == "19 %")
+        // A mixed receipt without components shows the rate it actually paid.
+        #expect(draft(netMinor: 8775, taxMinor: 715).effectiveTaxRateText == "8,1 %")
+        // Without a net amount, gross minus tax is enough.
+        #expect(draft(taxMinor: 1900, grossMinor: 11900).effectiveTaxRateText == "19 %")
+        // A credit note with negative amounts names the same rate.
+        #expect(draft(netMinor: -10000, taxMinor: -1900).effectiveTaxRateText == "19 %")
+        #expect(draft(netMinor: 10000, taxMinor: 0).effectiveTaxRateText == "0 %")
+        #expect(draft(netMinor: 10000).effectiveTaxRateText == "0 %")
+    }
+
+    @Test("The document's own components beat the calculated rate")
+    func componentsWinOverAmounts() {
+        let value = draft(
+            components: [TaxComponentDraft(kind: .reduced, rate: "7", netMinor: 10000, taxMinor: 700)],
+            netMinor: 10000,
+            taxMinor: 1900
+        )
+        #expect(value.effectiveTaxRateText == "7 %")
     }
 
     // MARK: Offener Restbetrag

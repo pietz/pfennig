@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 314 tests across 45 suites plus a successful Debug app build.
+The latest verification baseline is 316 tests across 45 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -220,10 +220,13 @@ something Swift already knows, and the schema went with them.
   `idx_taxassess_transaction` is **unique**, so a second assessment per
   transaction is impossible rather than merely unwritten.
 - **Inspector:** "Beträge" shows the effective rate next to "Steuer"
-  (`TransactionDraft.effectiveTaxRateText`); "Aufteilung" is a vertical list of
-  four full-width fields; "Steuer" edits only the Behandlung and shows a
-  compact read-only summary below it. The per-component tax editor is gone -
-  components come from the document and are corrected through the amounts.
+  (`TransactionDraft.effectiveTaxRateText`; the document's own tax components
+  when it has any, otherwise Steuer over Netto, because a hand-entered booking
+  has no components and would otherwise always claim "0 %"); "Aufteilung" is a
+  vertical list of four full-width fields; "Steuer" edits only the Behandlung
+  and shows a compact read-only summary below it. The per-component tax editor
+  is gone - components come from the document and are corrected through the
+  amounts.
 - **Zahlungen:** the editor asks for Datum and Betrag only, defaulting to today
   and `TransactionDraft.openAmountMinor`. "Vollständig bezahlt" books that
   remainder in one click. `PaymentDraft.paymentMethod` no longer defaults to
@@ -243,7 +246,7 @@ row count (8 transactions, 8 assessments, 170 provenance rows, 4 payments),
 name byte-identical to a database freshly created by the app's own migrator.
 The temporary tool was removed. No archive was reset or deleted.
 
-New baseline: 314 tests across 45 suites plus a successful Debug app build.
+New baseline: 316 tests across 45 suites plus a successful Debug app build.
 
 ### UStVA interface (2026-09-14)
 
