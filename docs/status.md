@@ -9,8 +9,8 @@ This file records the current implementation boundary and the next deliberate de
 - The coordinated rename from Ziffer to Pfennig was **completed on 2026-09-14** and is described in the section below. No website or DNS setup was requested.
 - Do not run private-document tests or relocate/reset data without authorization.
 - Ignored build directories, generated project files and release artifacts were not copied. Regenerate/rebuild using the existing scripts. Credentials remain in the existing local Keychain, not in either repository.
-- The [document-to-tax specification](specs/document-to-tax-workflow.md) and the [statement-import specification](specs/statement-import.md) were **approved on 2026-09-14** and are the implementation basis. The user already selected automatic processing of safe cases, CSV **and PDF** statements, and copyable form values as an acceptable first delivery with XML pursued early. Do not repeat those questions.
-- The latest user direction is automation-first: one document entrance, receipt-first or payment-first enrichment, durable actionable exceptions, a clean interface without chat, and tax tasks linked from Start. This supersedes older manual-first and CSV-only suggestions in research/backlog documents. The automation level (below) is the first piece of it that is built; a fresh archive still confirms every import, because the default is Manuell.
+- The [document-to-tax specification](specs/document-to-tax-workflow.md) was **approved on 2026-09-14** and is the implementation basis. The user already selected automatic processing of safe cases and copyable form values as an acceptable first delivery with XML pursued early. Do not repeat those questions.
+- The latest user direction is automation-first: one document entrance, receipt-first or payment-first enrichment, durable actionable exceptions, a clean interface without chat, and tax tasks linked from Start. This supersedes older manual-first suggestions in research/backlog documents. The automation level (below) is the first piece of it that is built; a fresh archive still confirms every import, because the default is Manuell.
 - All seven original GitHub issues and their available comment are captured in [the local issue archive](legacy-github-issues.md), including the deliberate closure of issue 1. The new GitHub repository has no copied issues yet. Do not transfer, recreate or reopen old tickets automatically; review them against the latest decisions first.
 
 **Resume here:** read this handoff and the workflow specification. Obtain explicit approval of that draft before implementation. The rename did not authorize new features, private archive access, a release, a push, or making the repository public.
@@ -63,25 +63,29 @@ The core local bookkeeping loop works:
 - internal field provenance protects manual edits but is intentionally not displayed
 - business-profile settings are editable prospectively; profile changes do not recalculate historical bookings
 - the automation level decides whether an import is committed at once or waits in "Prüfen"; the default is Manuell, so nothing changes until the user says so
-- CSV statements are read deterministically into `statement_lines` (twelve known formats plus a header heuristic); matching them to transactions is the next step and does not exist yet
+- statement handling does not exist; the approach is open (see "Removed on 2026-09-14")
 - ordinary 7%/19% VAT, mixed rates, common Kleinunternehmer cases, and typical foreign-service reverse-charge amounts have deterministic proposal derivation; this is not yet a verified tax-reporting path
 - ambiguous Kleinunternehmer EU-goods cases remain unresolved for manual tax review
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 440 tests across 57 suites plus a successful Debug app build.
+The latest verification baseline is 346 tests across 46 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
-### Statement import smoke test (2026-09-14)
+## Removed on 2026-09-14: deterministic CSV statement importer and rule-based matcher
 
-The user's private Revolut export for August 2026 (kept outside the repository) ran through `CSVStatementImporter` via the `PFENNIG_PRIVATE_STATEMENT_CSV` hook: format `revolut` recognized from the catalog, 182 lines parsed with 0 errors, 12 non-completed rows skipped, balance continuity consistent, all lines still `unknown` pending the matcher. The development archive's empty `statement_lines` table was dropped and recreated once with `fee_minor` (backup `bookkeeping-pre-statement-table-2026-09-14.sqlite`).
+By product decision the deterministic CSV statement importer and the
+rule-based payment matcher were removed again: the `StatementImport` module
+with its fixtures and tests, the `statement_lines` table and record,
+`MatchingPolicy`, the statement-line validators and the two specifications
+that described them. Statement handling will be designed AI-first later; do
+not rebuild parsers or matchers without an approved design.
 
 ## Automation level (2026-09-14)
 
-Step 1 of the [statement-import specification](specs/statement-import.md): the
-setting that decides what may be booked without confirmation. It governs
-document imports today and statement movements once they exist.
+The setting that decides what may be booked without confirmation. It governs
+document imports today.
 
 - `AutomationLevel` (`manual`, `balanced`, `automatic`) lives in `Domain` and is
   stored in the `settings` table under `automation.level`. `manual` is the
@@ -111,88 +115,6 @@ document imports today and statement movements once they exist.
   leaves the item in "Prüfen" with its proposal instead of marking the import
   failed. The extraction worked; only the write did not.
 
-### CSV statement import (2026-09-14)
-
-Step 2 of the [statement-import specification](specs/statement-import.md): a
-deterministic, offline CSV importer in `Sources/StatementImport`, from file
-bytes to `statement_lines`. No bank connection and no bank-specific parser.
-
-- `CSVReader` is a small RFC-4180-tolerant reader: the delimiter is the one
-  that makes the file most rectangular (counted in cells, so a prose preamble
-  cannot outvote the table), a byte-order mark is stripped, UTF-8 falls back to
-  Windows-1252 and then Latin-1, quoted fields carry doubled quotes and
-  embedded newlines, and `CRLF`/`LF`/`CR` are all accepted. Reported line
-  numbers count records, not newlines.
-- `HeaderMappingCatalog` recognizes the twelve exports researched in
-  [statement-formats.md](statement-formats.md) by their header signature, and
-  falls back to a generic German/English header heuristic that only counts as a
-  header when the row below it parses as a date. A header neither recognizes
-  comes back as `UnmappedHeader` for the model, and the answer is cached per
-  header fingerprint. Every entry in the catalog is data - a
-  `StatementColumnMapping` plus the identifying cells - not a parser.
-- `StatementValueParser` reads amounts (German, English and plain notation,
-  leading or trailing sign, currency marks, accountants' parentheses) and
-  dates. The German dotted layout accepts both year lengths: `31.08.2026` and
-  `31.08.26` cannot be confused, so an export that gains or loses the century
-  keeps importing. `dd/MM` versus `MM/dd` is genuinely ambiguous and stays a
-  declared property of the format (Amex DE is `dd/MM`).
-- The separator ambiguity of a lone `,` or `.` is resolved by value shape in
-  `Money.parseDecimal`, not per format: three trailing digits after a single
-  separator are a thousands group. All twelve formats write two decimals, so
-  the ambiguous shape only occurs on grouped integers, where the reading is
-  right.
-- Per-line failures never abort an import: the line is reported with its
-  number, column and value, and the rest is imported. A broken value date
-  costs the value date, not the line. Rows the format itself excludes (a
-  Revolut `REVERTED` or `PENDING` state) are reported as skipped, not dropped
-  silently.
-- `BalanceContinuity` is the CSV counterpart of the closing-balance control:
-  each reported balance must equal the previous one plus everything that moved
-  in between. Each currency is a series of its own, rows without a balance are
-  carried forward instead of breaking the chain, and an export sorted
-  newest-first satisfies the same rule read backwards.
-- `StatementLineClassifier` decides only the two classes that follow from the
-  data - internal transfer (the counterparty IBAN is an account the archive
-  already holds lines for, compared without spaces or casing) and tax payment
-  (a Finanzamt counterparty, or a Steuernummer together with a whole-word VAT
-  keyword). Business versus private stays the user's decision.
-- **Line identity.** `LineFingerprint` uses the export's own transaction id
-  when there is one (PayPal `Transaktionscode`, Stripe
-  `balance_transaction_id`); that survives a reworded purpose between two
-  exports of the same period. Otherwise the identity is booking date, amount,
-  currency, purpose and counterparty. Two identical rows in one file are two
-  real movements - the same amount at the same shop on one day - so the second
-  and any further one carry an occurrence index instead of being dropped; an
-  overlapping later export reproduces the same indices and is still recognized
-  as already known. `StatementLineRepository.insert` writes one transaction
-  and skips what the account already has.
-- **`fee_minor`.** The fee a processor reports separately is stored on the line
-  (`statement_lines.fee_minor`, non-negative, already contained in
-  `amount_minor`). Nothing books it yet; the matcher will. PayPal and Stripe
-  report the amount net of the fee, Revolut does not, so there the booked
-  movement is `Amount - Fee`. Per the pre-release rule the column was added to
-  `v001_initial` rather than as a migration.
-- **Development archive.** Verified read-only on 2026-09-14:
-  `~/Library/Application Support/Pfennig/bookkeeping.sqlite` holds **zero**
-  `statement_lines` rows, so no data had to be rewritten for the new column or
-  the new fingerprint definition. The archive's `statement_lines` table itself
-  still predates `fee_minor` - `v001_initial` is already recorded as applied,
-  so nothing adds it automatically. The empty table has to be recreated once in
-  the archive (`DROP TABLE` plus the current `CREATE TABLE` and its two
-  indexes) before a statement is imported into it. **Not done here: it changes
-  the user's archive and was not authorized.**
-- **Private smoke test.** `Tests/StatementImportTests/PrivateStatementSmokeTests.swift`
-  runs the importer against a real export the user keeps outside the
-  repository. It is skipped unless `PFENNIG_PRIVATE_STATEMENT_CSV` points at an
-  existing file, and prints an aggregate summary only - format, line, error and
-  classification counts, skipped rows, balance result, first and last booking
-  date - so no content of the file reaches the terminal or the repository:
-
-  ```
-  PFENNIG_PRIVATE_STATEMENT_CSV=/pfad/zum/auszug.csv \
-      swift test --filter PrivateStatementSmokeTests
-  ```
-
 ### UStVA calculation (2026-09-14)
 
 The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per the approved [UStVA specification](specs/ustva-preparation.md):
@@ -220,10 +142,7 @@ no code ever wrote.
 - **Tables gone:** `accounts`, `rules`, `transaction_relations`,
   `locked_periods`, with the enums `AccountKind`, `RuleKind`, `RelationType`
   and `LockScope` and the columns that only referenced them
-  (`payments.account_id`, `field_provenance.rule_id`,
-  `statement_lines.counter_account_id`). A statement line names its own
-  account by IBAN in `account_iban`; the `statement_lines` table and the
-  `StatementImport` module stay.
+  (`payments.account_id`, `field_provenance.rule_id`).
 - **Columns gone, each verified unread:** `exchange_rate_source` on
   transactions and payments with `ExchangeRateSource`,
   `transactions.deductibility_note`, `documents.page_count`,
@@ -236,8 +155,7 @@ no code ever wrote.
 - **Enum cases gone:** `DocumentRole.supportingEvidence`,
   `MatchMethod.aiDisambiguated`, `DocumentSource.shareExtension`,
   `PaymentSource.documentStated`, `ModelRunStatus.timedOut`,
-  `WorkflowStatus.draft` and `.resolved`. The statement and automation cases
-  stay.
+  `WorkflowStatus.draft` and `.resolved`. The automation cases stay.
 - **Code gone:** the empty `CSVExporter` and `Aggregations` placeholders
   (`Analysis/Aggregations.swift` is now `StartOverview.swift`),
   `Tax.FiscalYear` (a freelancer's fiscal year is the calendar year;
@@ -298,13 +216,6 @@ Left deliberately, as decisions rather than defects:
   `deductible_input_vat_minor` were written and never read again, and
   `idx_taxassess_transaction` was not unique. Both were resolved in the
   inspector cleanup below.
-- `statement_lines.account_iban` stays `NOT NULL`. For a statement without an
-  IBAN (PDF, PayPal, Stripe) the importer should store a non-null account key
-  rather than the column becoming nullable: SQLite treats NULLs as distinct,
-  so `UNIQUE(account_iban, line_fingerprint)` would stop catching duplicates
-  exactly where the account is unknown.
-- `DuplicateValidator`, `ReferentialValidator` and `PaymentMatchValidator` have
-  no production call site yet; they belong to the statement-import milestone.
 - The three recorded `Fixtures/documents/*/response.json` predate the slimmed
   extraction schema. The replay passes (unknown keys are ignored), but it
   proves the parser against the older payload; re-record on the next live run.
@@ -320,9 +231,8 @@ something Swift already knows, and the schema went with them.
 - **`TransactionType.refund` removed.** Nothing ever constructed it, and a
   refund is an opposite-direction payment (built on 2026-09-14, see
   "Refunds and credit notes").
-  `paymentOnly` stays in the enum - `v_transaction_status` names it and the
-  statement import will write it - but `TransactionType.userSelectable` keeps
-  it out of the picker. "Beleg / Quittung" is now just "Beleg".
+  `paymentOnly` stays in the enum - `v_transaction_status` names it - but
+  `TransactionType.userSelectable` keeps it out of the picker. "Beleg / Quittung" is now just "Beleg".
 - **`SupplyType.digitalService` removed.** The only place it was read,
   `TaxTreatmentDecider`, treated it exactly like `.service` (`isServiceLike`);
   the one rule that would separate them, B2C digital services to EU consumers,
@@ -485,7 +395,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - Start totals use recorded EUR gross amounts and the ledger's relevant date, not tax-profit or cash-flow calculations; open items span all years
 - the ledger and Start share one date, the "Datum" column: the document date, then the earliest payment date, then the import date; tax periods stay dated by payment, and payment dates remain in the inspector
 - upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
-- below the cards Start has two columns: "Offen" is what the user still has to decide or add (review items, missing documents, import proposals, later unmatched statement movements), "Anstehend" are the outward-facing deadlines (UStVA periods with due dates, later other tax tasks); they share `StartRow`, sit side by side while both fit and stack when narrow
+- below the cards Start has two columns: "Offen" is what the user still has to decide or add (review items, missing documents, import proposals), "Anstehend" are the outward-facing deadlines (UStVA periods with due dates, later other tax tasks); they share `StartRow`, sit side by side while both fit and stack when narrow
 - "Prüfen" is the single page for everything that needs a decision: Importvorschläge, Fehlgeschlagen, Buchungen prüfen, Belege fehlen; a booking row opens the booking in "Buchungen" with the inspector, and each booking section still leads into the matching ledger filter
 - Settings has an "Automatisierung" section directly above "KI": one picker with Manuell, Ausgewogen und Automatisch, and the sentence of the selected level below it
 - the ledger filters have one shared state, reachable from "Prüfen"; returning through the Buchungen sidebar entry opens the unfiltered ledger
@@ -496,7 +406,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - editable dates are typed as `TT.MM.JJJJ` text with two-digit day and month, in the inspector and in the payment editor, because the macOS date field omits leading zeros
 - the inspector asks only for what a person actually decides. "Art" offers Rechnung, Beleg, Gutschrift, Steuerzahlung, Sonstiges; "Leistung von"/"bis" replace the former three service-date fields; "Leistungsart" is Automatisch/Dienstleistung/Ware; each Aufteilung is a plain vertical list of Kategorie, Betrag, Beschreibung, Privatanteil
 - the Steuer section edits the Behandlung and nothing else. Steuersatz, Umsatzsteuer, the §13b amount and "Vorsteuer abziehbar" are read-only and recomputed live; "Beträge" shows the effective rate next to "Steuer"
-- the payment editor asks for Datum (today) and Betrag (the open remainder). Methode, Referenz, IBAN and Gegenpartei stay in the schema for the statement import to fill; "Vollständig bezahlt" books the open remainder in one click, partial payments still go through the editor
+- the payment editor asks for Datum (today) and Betrag (the open remainder). Methode, Referenz, IBAN and Gegenpartei stay in the schema; "Vollständig bezahlt" books the open remainder in one click, partial payments still go through the editor
 - provenance and extraction-evidence UI are intentionally absent
 
 Extraction evidence metadata was removed as a clean pre-1.0 schema break. Typed proposal derivation context carries treatment hints and reverse-charge notes. The development archive was rewritten onto the current schema on 2026-09-14; never reset or delete an archive merely to make its schema look fresh.
@@ -532,7 +442,7 @@ Nothing at present. The refunds and credit notes that stood here were built on
 
 ## Backlog
 
-[Product backlog](backlog.md) groups implemented features and proposed priorities across the full input-to-tax-output workflow. Current recommendation: UStVA preparation first with an early, bounded XML feasibility check, then statement reconciliation and EÜR; e-invoices are a separate import increment. Private-document quality testing is parked with the user, not a blocker to this planning. No manufacturer registration or direct ELSTER transmission is planned. Public UStVA XML upload is documented, but no current Pfennig-generated file has been validated; an analogous EÜR upload remains unverified.
+[Product backlog](backlog.md) groups implemented features and proposed priorities across the full input-to-tax-output workflow. Current recommendation: UStVA preparation first with an early, bounded XML feasibility check, then EÜR; e-invoices are a separate import increment. Private-document quality testing is parked with the user, not a blocker to this planning. No manufacturer registration or direct ELSTER transmission is planned. Public UStVA XML upload is documented, but no current Pfennig-generated file has been validated; an analogous EÜR upload remains unverified.
 
 Historical GitHub issues remain in the old `pietz/ziffer` repository, with their full contents preserved [locally](legacy-github-issues.md). Their scope and priorities must be reconciled with the newer workflow decisions, not implemented blindly:
 

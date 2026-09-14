@@ -1,6 +1,6 @@
 # Produkt-Backlog: vom Beleg zur Steuerabgabe
 
-**Aktualisierung beim Umzug zu Pfennig:** Die anschließend getroffenen Nutzerentscheidungen in der [Workflow-Spezifikation](specs/document-to-tax-workflow.md) ergänzen und korrigieren diese Rechercheplanung: sichere Standardfälle automatisch übernehmen, CSV **und PDF-Kontoauszüge** unterstützen, Steueraufgaben auf Start verlinken. Die Spezifikation wartet noch auf Freigabe; diese Entscheidungen selbst sind bereits getroffen. Alte GitHub-Issues sind [lokal gesichert](legacy-github-issues.md). Übergabestand: [status.md](status.md).
+**Aktualisierung beim Umzug zu Pfennig:** Die anschließend getroffenen Nutzerentscheidungen in der [Workflow-Spezifikation](specs/document-to-tax-workflow.md) ergänzen und korrigieren diese Rechercheplanung: sichere Standardfälle automatisch übernehmen, Steueraufgaben auf Start verlinken. Die Spezifikation wartet noch auf Freigabe; diese Entscheidungen selbst sind bereits getroffen. Alte GitHub-Issues sind [lokal gesichert](legacy-github-issues.md). Übergabestand: [status.md](status.md).
 
 Stand 14.09.2026, Recherche nach `e84acc2`. Prioritäten sind Empfehlungen, keine Zusage für den nächsten Release. GitHub Issues bleiben die technischen Arbeitspakete; diese Übersicht ordnet den Nutzerablauf. Produktscope: deutsche Selbstständige, EÜR, Ist-Versteuerung, Regelbesteuerung und Kleinunternehmer. Begründung, Code-Lücken und Abnahmekriterien stehen in [Recherche zum Nutzerworkflow](research-user-workflow.md).
 
@@ -14,8 +14,8 @@ Stand 14.09.2026, Recherche nach `e84acc2`. Prioritäten sind Empfehlungen, kein
 | Eingang | PDF-/Bildimport, strukturierte KI-Extraktion, mehrere Dateien, Wiederholung fehlgeschlagener Importe | Qualität an vielfältigen echten Belegen noch nicht ausreichend belegt |
 | Prüfung | Vorschläge prüfen, bearbeiten, bestätigen oder ablehnen; direkte manuelle Buchungen | Nicht jede steuerliche Ausnahme wird automatisch gelöst |
 | Nachvollziehbarkeit | Interne Änderungs-/Herkunftshistorie und Schutz manueller Änderungen; exakte Dateiduplikate erkennen | Keine allgemeine semantische Dublettenerkennung |
-| Beleg ergänzen | Fehlenden Beleg an bestehende Buchung hängen | Späteren Beleg automatisch einer Kontobewegung zuordnen fehlt |
-| Zahlungen | Manuelle Zahlungen und Teilzahlungen | Kein nutzbarer Kontoauszugimport oder automatisches Matching |
+| Beleg ergänzen | Fehlenden Beleg an bestehende Buchung hängen | Automatische Zuordnung zu einer Kontobewegung fehlt |
+| Zahlungen | Manuelle Zahlungen und Teilzahlungen | Kontoauszüge: Ansatz offen, KI-first |
 | Fachliche Basis | Häufige 7%/19%-Fälle, Mischbelege, §19 und typische Reverse-Charge-Dienstleistungen | Keine fertige UStVA-/EÜR-Auswertung, kein vollständiges AfA-System |
 | Start | Echte Jahressummen, offene Prüfungen, fehlende Belege, Filter-Verlinkungen | Bruttoübersicht, keine steuerliche Gewinnermittlung; noch keine echten Termine |
 | Offline | Bestehende Daten ohne KI/Netz nutzbar, Belege im Finder zugänglich | Kein benutzerfreundlicher Buchungs-/Steuerexport |
@@ -39,22 +39,20 @@ Der Nutzer übernimmt die privaten Belegqualitätstests separat. Dieser Strang b
 |---|---|
 | **UStVA-Vorbereitung zuerst** | Zeitraum → konkrete Ausnahmen → geprüfte Formularwerte mit Einzelbelegen → kopierbare Übertragungshilfe; Teilzahlungen, Vorsteuerzeitpunkt und typische Reverse-Charge-Fälle fachlich schließen |
 | **UStVA-XML früh prüfen** | Begrenzter Machbarkeitstest für lokalen Export und manuelles Hochladen; öffentliche Uploadanleitung ist belegt, aktueller vollständiger Formatvertrag und ein erfolgreicher Import noch nicht; keine Herstellerregistrierung |
-| **Kontoauszugimport + Matching** | Ein tatsächlich verwendetes CSV-Format; privat/intern/geschäftlich unterscheiden; vorhandene manuelle Zahlungen abgleichen, mehrdeutige Fälle manuell prüfen |
+| **Kontoauszüge** | Ansatz offen, KI-first |
 | **Beleg zuerst oder Zahlung zuerst** | Gegenstück am selben Vorgang ergänzen statt doppelt buchen; Teilzahlungen sowie lösbare Zuordnungen; fehlende Belege aus geschäftlichen Kontobewegungen entdecken |
 | **EÜR-Vorbereitung anschließend** | Zahlungsgerechte Jahresauswertung nach geprüften Formularpositionen; Umsatzsteuerzahlungen, Privatanteile und Jahreswechsel berücksichtigen; Anlagen und nicht unterstützte Korrekturen separat ausweisen |
 | **E-Rechnungen als Importinkrement** | XRechnung UBL/CII, danach eingebettetes ZUGFeRD-XML; strukturierte Fakten lokal lesen und vorhandenen Prüfpfad verwenden; kein eigener Buchhaltungsworkflow |
 
-UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-Summen oder das erste Zahlungsdatum. Manuell erfasste Zahlungen erlauben einen ersten Report bereits vor dem Bankimport; für komfortable Vollständigkeit ist der Abgleich aber wesentlich. Die vorhandenen Formular-Mappings sind ausdrücklich ungeprüft und keine freigegebene Abgabegrundlage. Ein aufgabenbezogenes Fenster/Sheet reicht; Start und Buchungen bleiben ruhig. Export ist keine Abgabe, ungelöste relevante Fälle bleiben als Entwurf erkennbar.
+UStVA und EÜR brauchen eigene fachliche Berechnungen, nicht einfach die Start-Summen oder das erste Zahlungsdatum. Manuell erfasste Zahlungen erlauben einen ersten Report. Die vorhandenen Formular-Mappings sind ausdrücklich ungeprüft und keine freigegebene Abgabegrundlage. Ein aufgabenbezogenes Fenster/Sheet reicht; Start und Buchungen bleiben ruhig. Export ist keine Abgabe, ungelöste relevante Fälle bleiben als Entwurf erkennbar.
 
 ### P2: Bedienaufwand reduzieren
 
 | Funktion | Anlass / Grenze |
 |---|---|
 | Wiederkehrende Anbieterregeln | Wiederholt bestätigte Kategorien/Zuordnungen vorschlagen; kein freies Regelwerk vorsorglich bauen |
-| Weitere Kontoformate | Erst aus realem Nutzerbedarf, nicht alle Banken auf einmal |
 | Anstehende Termine auf Start | Nur bekannte Verpflichtungen und zutreffende Termine, keine leeren Kalenderfunktionen |
 | Perioden prüfen/festhalten/sperren | Auf nutzbaren Auswertungen aufbauen; Freigabe, Abgabe und Sperre nicht vermischen |
-| Häufige Abweichungen beim Matching | Gebühren, Fremdwährung und Sammelzahlungen erweitern, wenn der einfache Ablauf erprobt ist |
 
 ### P3: Bewusst zurückgestellt
 

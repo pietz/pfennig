@@ -30,7 +30,7 @@ Fehlende Informationen, Warnungen und Konflikte werden dauerhaft am betroffenen 
 
 ### Dokumentverständnis
 
-Der Kontoauszugimport ist bankunabhängig. PDF-Kontoauszüge werden wie Belege visuell vom multimodalen Modell gelesen; für CSV-Auszüge gibt es einen deterministischen Import auf ein normalisiertes Bewegungsformat, das Modell darf dabei nur beim Erkennen der Spaltenzuordnung helfen. Es werden keine bankspezifischen Adapter vorausgebaut.
+Kontoauszüge werden später behandelt; der Ansatz ist offen.
 
 PDF-/Bildbelege und PDF-Kontoauszüge werden mit dem multimodalen Modell ausgewertet. Das Ergebnis sind strukturierte Fakten für die gemeinsame Normalisierung, Validierung und Persistenz, nicht ungeprüfte Datenbankänderungen. Kontoauszüge werden als einzelne Kontobewegungen verarbeitet. Verfügbare Summen und Salden dienen der Gegenprüfung; abgeschnittene oder unvollständige Verarbeitung darf nicht als erfolgreicher vollständiger Auszug erscheinen.
 
