@@ -194,7 +194,6 @@ enum V001Initial {
             transaction_id TEXT NOT NULL REFERENCES transactions(id),
 
             treatment TEXT NOT NULL,
-            tax_country TEXT,
             customer_type TEXT NOT NULL DEFAULT 'unknown',
             supply_type TEXT NOT NULL DEFAULT 'unknown',
             customer_vat_id TEXT,
@@ -206,17 +205,12 @@ enum V001Initial {
             output_vat_minor INTEGER,
             currency TEXT NOT NULL DEFAULT 'EUR',
 
-            input_vat_date TEXT,
-            output_vat_date TEXT,
-
             status TEXT NOT NULL,
-            reasoning TEXT,
-            superseded_at TEXT,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
         """,
-        "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id, superseded_at)",
+        "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id)",
         // 17.9 transaction_relations
         """
         CREATE TABLE transaction_relations (
@@ -477,7 +471,7 @@ enum V001Initial {
         FROM transactions t
         LEFT JOIN (SELECT transaction_id, SUM(allocated_minor) AS allocated FROM payment_allocations GROUP BY transaction_id) pa ON pa.transaction_id = t.id
         LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
-        LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
+        LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
         WHERE t.deleted_at IS NULL
         """
     ]

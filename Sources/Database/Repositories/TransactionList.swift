@@ -149,7 +149,7 @@ public enum TransactionListQuery {
         FROM transactions t
         LEFT JOIN counterparties c ON c.id = t.counterparty_id
         LEFT JOIN v_transaction_status v ON v.id = t.id
-        LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
+        LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
         WHERE \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
         \(filter)
         ORDER BY \(relevantDate) DESC, t.created_at DESC

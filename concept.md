@@ -88,7 +88,7 @@ A transaction can have:
 - zero or more payments (via payment allocations)
 - one or more bookkeeping allocations (category + amount)
 - one or more tax components (rate + base + tax)
-- one tax assessment (treatment, tax points, self-assessed VAT)
+- one tax assessment (treatment, self-assessed VAT)
 - field-level provenance
 - validation issues
 - relations to other transactions (credit notes, refunds, corrections)
@@ -131,11 +131,10 @@ Do not collapse dates. Each transaction can carry:
 | Invoice date | `invoice_date` | Date on the document |
 | Service date | `service_date` / `service_period_start/end` | When the service was performed |
 | Payment date(s) | `payments.payment_date` | Actual cash movement per payment |
-| EÜR date | derived `eur_date` | Date the amount counts for income tax (§11 EStG, cash basis) |
-| Output VAT point | derived `output_vat_date` | Date output VAT becomes due |
-| Input VAT point | derived `input_vat_date` | Date input VAT becomes deductible |
 
-Derivation rules for a profile with `vat_accounting_method = cash`:
+Tax points are **not** materialized per transaction. `UStVACalculator` applies the rules below to the stored dates when it prepares a period, so a corrected invoice or payment date changes the report without a stored derivation having to be refreshed.
+
+Rules for a profile with `vat_accounting_method = cash`:
 
 - **EÜR date** = payment date (Zufluss/Abfluss, §11 EStG). Partially paid transactions contribute per allocation on each payment date.
 - **Output VAT** (income): due in the period of payment receipt (§13 Abs. 1 Nr. 1 b UStG, Ist-Versteuerung). Per payment allocation.
@@ -164,7 +163,7 @@ deductible_input_vat_minor = 1356
 invoice tax shown        = 0
 ```
 
-The document's own `tax_amount` is 0; `self_assessed_vat` is computed by Swift, never by the model. Rate defaults to the German standard rate applicable at `input_vat_date`.
+The document's own `tax_amount` is 0; `self_assessed_vat` is computed by Swift, never by the model. Rate defaults to the German standard rate applicable at the invoice date.
 
 For **income** with `reverseCharge` (EU B2B service to a customer with a valid VAT ID): no VAT charged, `customer_vat_id` required (soft warning if missing). ZM reporting is a future feature; V1 only tags these transactions so they can be reported later.
 
@@ -455,7 +454,7 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
   "taxComponents": [
     { "rate": "0", "netAmount": "71.39", "taxAmount": "0.00", "kind": "reverseChargeNote" }
   ],
-  "taxTreatmentHint": { "treatment": "reverseCharge", "confidence": 0.93, "reasoning": "Irish supplier, German VAT ID on invoice, 'VAT reverse charged' note" },
+  "taxTreatmentHint": { "treatment": "reverseCharge" },
   "lineItems": [
     { "description": "Creative Cloud All Apps", "netAmount": "71.39", "categoryHint": "software_subscriptions", "assetCandidate": false }
   ],
@@ -465,7 +464,7 @@ Conceptual (production schema lives in `AI/ExtractionSchema.swift`, versioned by
 }
 ```
 
-Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile + counterparty country + VAT IDs + hint. `categoryHint` values must be from the canonical category enum or null. Never rely on confidence alone.
+Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile + counterparty country + VAT IDs + hint. The hint carries the treatment only: a model confidence would never be authorization, and free-text reasoning was never read. `categoryHint` values must be from the canonical category enum or null.
 
 ---
 
@@ -559,7 +558,7 @@ unknown
 ## 16.2 Tax components vs tax assessment
 
 - **`tax_components`**: what the document shows, per rate: rate, net, tax, kind (`standard`, `reduced`, `zero`, `reverseChargeNote`, `exempt`, `fee`, `deposit`, `other`). A Deutsche Bahn ticket has a 7 % and a 19 % component; a hotel invoice has 7 % (lodging) and 19 % (breakfast).
-- **`tax_assessments`**: the single bookkeeping judgement per transaction: treatment, taxable base, VAT shown, self-assessed VAT, deductible input VAT, tax country, customer/supply type, derived tax points, status, reasoning.
+- **`tax_assessments`**: the single bookkeeping judgement per transaction: treatment, taxable base, VAT shown, self-assessed VAT, deductible input VAT, customer/supply type, status. No dates: the tax point is derived when a period is prepared (5.1). No supplier country either: that belongs to the counterparty.
 
 ## 16.3 Form mappings live outside the core schema
 
@@ -570,7 +569,7 @@ Tax/FormMappings/UStVA_2026.swift   — treatment × direction × rate → Kennz
 Tax/FormMappings/EUeR_2026.swift    — category_id → EÜR line
 ```
 
-The core schema stores only stable semantics (treatment, rate, category ID, tax points).
+The core schema stores only stable semantics (treatment, rate, category ID, dates).
 
 ---
 
@@ -762,7 +761,7 @@ CREATE INDEX idx_taxcomp_transaction ON tax_components(transaction_id);
 
 ## 17.8 `tax_assessments`
 
-Exactly one **current** assessment per transaction (`superseded_at IS NULL`); prior assessments are kept for history.
+Exactly one assessment per transaction. Replacing it deletes the previous row; no assessment history is kept.
 
 ```sql
 CREATE TABLE tax_assessments (
@@ -770,7 +769,6 @@ CREATE TABLE tax_assessments (
     transaction_id TEXT NOT NULL REFERENCES transactions(id),
 
     treatment TEXT NOT NULL,               -- see 16.1
-    tax_country TEXT,
     customer_type TEXT NOT NULL DEFAULT 'unknown',   -- b2b | b2c | unknown
     supply_type TEXT NOT NULL DEFAULT 'unknown',     -- service | digitalService | goods | unknown
     customer_vat_id TEXT,
@@ -782,19 +780,14 @@ CREATE TABLE tax_assessments (
     output_vat_minor INTEGER,              -- income side
     currency TEXT NOT NULL DEFAULT 'EUR',
 
-    input_vat_date TEXT,                   -- derived tax point (5.1), overridable
-    output_vat_date TEXT,                  -- derived per payment; here: date of first/only payment, NULL if unpaid
-
     status TEXT NOT NULL,                  -- proposed | confirmed | manualOverride
-    reasoning TEXT,
-    superseded_at TEXT,
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
 );
-CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id, superseded_at);
+CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id);
 ```
 
-Per-payment output VAT dates for partial payments are derived from `payment_allocations` at query time; `output_vat_date` is a convenience for the common single-payment case.
+Tax points are not stored here. Income counts per payment date, input VAT at `max(Rechnungsdatum, Zahlungsdatum)` per payment, and §13b/intra-Community acquisitions at the invoice date, falling back to the service date; `UStVACalculator` reads those dates directly from `transactions` and `payments`.
 
 ## 17.9 `transaction_relations`
 
@@ -1107,7 +1100,7 @@ CREATE TABLE locked_periods (
 );
 ```
 
-A locked UStVA period blocks changes to `output_vat_date`/`input_vat_date`-relevant fields inside it except via the explicit correction action. UI for locking arrives with Milestone 10; schema and enforcement hook exist from Milestone 2.
+A locked UStVA period blocks changes to the tax-point-relevant fields inside it (invoice date, service date, payment dates, amounts) except via the explicit correction action. UI for locking arrives with Milestone 10; schema and enforcement hook exist from Milestone 2.
 
 ## 17.25 Derived status view
 
@@ -1129,7 +1122,7 @@ SELECT t.id,
 FROM transactions t
 LEFT JOIN (SELECT transaction_id, SUM(allocated_minor) AS allocated FROM payment_allocations GROUP BY transaction_id) pa ON pa.transaction_id = t.id
 LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
-LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
+LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
 WHERE t.deleted_at IS NULL;
 ```
 
@@ -1466,7 +1459,7 @@ Sources/
 │                    DisambiguationSchema.swift · StatementMappingSchema.swift · Prompts/ · PromptVersion.swift ·
 │                    DocumentPreparer.swift (HEIC→JPEG, PDF paging) · RecordingProvider.swift (fixtures)
 ├── Validation/      TransactionValidator.swift · MoneyValidator.swift · TaxValidator.swift · AllocationValidator.swift · IssueCodes.swift
-├── Tax/             TaxTreatmentDecider.swift · TaxPoints.swift · SelfAssessedVAT.swift · Thresholds.swift ·
+├── Tax/             TaxTreatmentDecider.swift · Periods.swift · SelfAssessedVAT.swift · Thresholds.swift ·
 │                    FormMappings/UStVA_2026.swift · FormMappings/EUeR_2026.swift
 ├── Analysis/        Aggregations.swift
 └── Export/          CSVExporter.swift · BackupExporter.swift
@@ -1483,7 +1476,7 @@ Drop one invoice PDF into the app and end with a confirmed transaction in SQLite
 3. Empty transaction table
 4. PDF drag-and-drop → copy to `Documents/`, SHA-256
 5. Extraction call (strict Structured Output), `model_runs` row
-6. Normalize → tax treatment decision → tax components → allocation → tax assessment with derived tax points
+6. Normalize → tax treatment decision → tax components → allocation → tax assessment
 7. Proposal persisted, validation run, shown in the review UI
 8. Manual edit of one field (provenance `manual`)
 9. Confirm → one SQLite transaction writes transaction, allocations, components, assessment, document link, provenance, audit
@@ -1504,7 +1497,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 **M2 — Storage:** GRDB, `v001_initial` with the complete schema from 17 (all tables including accounts, statement_lines, proposals, provenance, rules, locked_periods), views, seed categories, sample data, repositories, migration tests.
 
-**M3 — Manual bookkeeping:** create/edit transaction, allocations, tax components, tax assessment with derived tax points, attach document, add/link payment manually, validation, provenance on manual edits, audit, save/reload.
+**M3 — Manual bookkeeping:** create/edit transaction, allocations, tax components, tax assessment, attach document, add/link payment manually, validation, provenance on manual edits, audit, save/reload.
 
 **M4 — AI invoice import:** Keychain, Responses client, extraction schema, document preparer, proposal persistence, review UI, commit path, recording provider for fixtures.
 
@@ -1526,7 +1519,7 @@ Historical milestone outline, not a current implementation checklist. The [statu
 
 ## 40.1 Unit tests (mandatory)
 
-Money arithmetic and rounding; VAT and self-assessed VAT; tax point derivation for every treatment × direction × advance-payment case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; matching scorer thresholds; statement fingerprint stability; column mapping for each built-in bank format; line classification heuristics; state transitions; duplicate detection; validation codes; migrations (upgrade from every prior fixture database); provenance protection of manual fields.
+Money arithmetic and rounding; VAT and self-assessed VAT; period dating for every treatment × direction case; 10-day rule window; Kleinbetrag relaxation; asset threshold; payment allocation invariants; matching scorer thresholds; statement fingerprint stability; column mapping for each built-in bank format; line classification heuristics; state transitions; duplicate detection; validation codes; migrations (upgrade from every prior fixture database); provenance protection of manual fields.
 
 ## 40.2 Fixture-based AI tests
 
@@ -1540,7 +1533,7 @@ Invoice first, payment later · payment first, invoice later · overlapping stat
 
 # 41. Prompting Principles
 
-Extraction system prompt emphasizes: extract only supported facts; never invent; distinguish observed from inferred; preserve original currency and exact decimal strings; determine direction relative to the supplied business profile; identify document type; give a tax-treatment **hint** with reasoning, not a decision; return `missingFields` explicitly; produce only schema-valid output; use canonical category IDs from the supplied list or null.
+Extraction system prompt emphasizes: extract only supported facts; never invent; distinguish observed from inferred; preserve original currency and exact decimal strings; determine direction relative to the supplied business profile; identify document type; give a tax-treatment **hint**, not a decision; return `missingFields` explicitly; produce only schema-valid output; use canonical category IDs from the supplied list or null.
 
 Prompts are versioned (`prompt_version`) and stored in `AI/Prompts/` as resources; changing a prompt requires re-running the fixture suite.
 

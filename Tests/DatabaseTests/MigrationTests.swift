@@ -6,11 +6,90 @@ import Testing
 
 @Suite("Migrations")
 struct MigrationTests {
-    @Test("Fresh database applies v001_initial")
+    @Test("Fresh database applies every migration")
     func freshDatabase() throws {
         let database = try AppDatabase(inMemoryNamed: "migrations")
-        #expect(try database.appliedMigrations() == ["v001_initial"])
-        #expect(AppDatabase.migrationIdentifiers == ["v001_initial"])
+        #expect(try database.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments"])
+        #expect(AppDatabase.migrationIdentifiers == ["v001_initial", "v002_slim_tax_assessments"])
+    }
+
+    @Test("tax_assessments carries no tax points, tax country, reasoning or history")
+    func slimTaxAssessments() throws {
+        let database = try AppDatabase(inMemoryNamed: "slim-assessments")
+        let columns = try database.reader.read { try $0.columns(in: "tax_assessments").map(\.name) }
+        for removed in ["input_vat_date", "output_vat_date", "tax_country", "reasoning", "superseded_at"] {
+            #expect(!columns.contains(removed), "\(removed) is still there")
+        }
+        #expect(columns.contains("treatment"))
+    }
+
+    /// A development database created before the slimming still has the old
+    /// columns; `v002` rebuilds the table and keeps the current assessment.
+    @Test("v002 converges a database that still has the old columns")
+    func legacyTaxAssessmentsAreRebuilt() throws {
+        let database = try AppDatabase(inMemoryNamed: "legacy-assessments")
+        let profile = BusinessProfile(name: "Testbetrieb")
+        let transaction = TransactionRecord(
+            businessProfileId: profile.id,
+            direction: .expense,
+            transactionType: .invoice,
+            title: "Alt"
+        )
+        try database.writer.write { db in
+            try profile.insert(db)
+            try transaction.insert(db)
+
+            // Recreate the pre-v002 shape of the table.
+            try db.execute(sql: "DROP INDEX idx_taxassess_transaction")
+            try db.execute(sql: "DROP TABLE tax_assessments")
+            try db.execute(sql: """
+            CREATE TABLE tax_assessments (
+                id TEXT PRIMARY KEY,
+                transaction_id TEXT NOT NULL REFERENCES transactions(id),
+                treatment TEXT NOT NULL,
+                tax_country TEXT,
+                customer_type TEXT NOT NULL DEFAULT 'unknown',
+                supply_type TEXT NOT NULL DEFAULT 'unknown',
+                customer_vat_id TEXT,
+                taxable_base_minor INTEGER,
+                vat_shown_minor INTEGER,
+                self_assessed_vat_minor INTEGER,
+                deductible_input_vat_minor INTEGER,
+                output_vat_minor INTEGER,
+                currency TEXT NOT NULL DEFAULT 'EUR',
+                input_vat_date TEXT,
+                output_vat_date TEXT,
+                status TEXT NOT NULL,
+                reasoning TEXT,
+                superseded_at TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+            """)
+            try db.execute(sql: "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id, superseded_at)")
+            for (id, superseded) in [("alt", "2026-09-01T00:00:00Z"), ("aktuell", nil)] {
+                try db.execute(
+                    sql: """
+                    INSERT INTO tax_assessments (id, transaction_id, treatment, tax_country, customer_type,
+                        supply_type, taxable_base_minor, currency, input_vat_date, status, reasoning,
+                        superseded_at, created_at, updated_at)
+                    VALUES (?, ?, 'domesticVAT', 'DE', 'unknown', 'service', 10000, 'EUR', '2026-08-31',
+                        'proposed', 'alter Freitext', ?, '2026-08-31T00:00:00Z', '2026-08-31T00:00:00Z')
+                    """,
+                    arguments: [id, transaction.id, superseded]
+                )
+            }
+
+            try V002SlimTaxAssessments.migrate(db)
+        }
+
+        let columns = try database.reader.read { try $0.columns(in: "tax_assessments").map(\.name) }
+        #expect(!columns.contains("superseded_at"))
+        #expect(!columns.contains("input_vat_date"))
+        let remaining = try database.reader.read { db in
+            try String.fetchAll(db, sql: "SELECT id FROM tax_assessments")
+        }
+        #expect(remaining == ["aktuell"])
     }
 
     @Test("Field provenance stores provenance without evidence")
@@ -56,7 +135,7 @@ struct MigrationTests {
         // A restart reopens the same file: the saved profile, and therefore
         // the "onboarding done" decision, must still be there.
         let second = try AppDatabase(path: path)
-        #expect(try second.appliedMigrations() == ["v001_initial"])
+        #expect(try second.appliedMigrations() == ["v001_initial", "v002_slim_tax_assessments"])
         #expect(try second.businessProfile()?.name == "Testbetrieb")
         #expect(try second.needsOnboarding() == false)
         #expect(try second.categories().count == SystemCategories.all.count)

@@ -33,6 +33,7 @@ public final class AppDatabase: Sendable {
     public static var migrator: DatabaseMigrator {
         var migrator = DatabaseMigrator()
         migrator.registerMigration("v001_initial", migrate: V001Initial.migrate)
+        migrator.registerMigration("v002_slim_tax_assessments", migrate: V002SlimTaxAssessments.migrate)
         return migrator
     }
 

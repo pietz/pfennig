@@ -56,7 +56,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 305 tests across 45 suites plus a successful Debug app build.
+The latest verification baseline is 297 tests across 44 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -69,6 +69,15 @@ The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per th
 - `Analysis.SubmittedReturnRepository` stores one `submitted_returns` row per period (reversible, locks nothing) with a fingerprint of the filed values, so `hasChangedSinceSubmission` can flag a period that moved after submission.
 
 **Kennzahlen mapping status:** `Tax/FormMappings/UStVA_2026.swift` is now verified line by line against the official BMF Vordruckmuster USt 1 A 2026 (BMF letter of 29 December 2025), which corrected the earlier placeholders for Kz 66/61/67, Kz 46/47 vs. 84/85, Kz 89/93 vs. 41/44, and Kz 21 vs. 43. Note that Kz 46/47 covers only EU-established suppliers (§13b Abs. 1); third-country services belong in Kz 84/85. The **Anlage EÜR** mapping (`EUeR_2026.swift`) remains an unverified placeholder.
+
+### Slimmer tax assessment (2026-09-14)
+
+`tax_assessments` no longer stores per-transaction tax points or model prose. Removed: `input_vat_date` and `output_vat_date` (the UStVA calculation dates a transaction itself, from its invoice, service and payment dates), `tax_country` (it only ever held the profile's own country; the supplier country lives on the counterparty), `reasoning` (model prose that no report read; the inspector shows the freshly derived explanation instead) and `superseded_at` (unused versioning - there is one assessment per transaction, and replacing it deletes the old row).
+
+- `Tax/TaxPoints.swift` became `Tax/Periods.swift` and keeps only `UStVAPeriod` and `FiscalYear`; `TaxPointDeriver` and its persistence in `BookkeepingEngine` are gone.
+- `UStVACalculator` dates a §13b or intra-Community acquisition by `invoice_date`, failing that `service_date`. With neither it emits the exception "Rechnungsdatum fehlt" and leaves the transaction out of the form lines.
+- The extraction schema's `taxTreatmentHint` now carries the treatment only. Its `confidence` was never read by `TaxTreatmentDecider`, and its free-text `reasoning` was never read at all. `AIConfiguration.promptVersion` moved to `2026-09-14.1`.
+- `v001_initial` creates the slim table directly; `v002_slim_tax_assessments` rebuilds it for development databases created before this change, keeping each transaction's current assessment. No archive is reset or deleted.
 
 ### UStVA interface (2026-09-14)
 

@@ -105,7 +105,6 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
             assessment: assessment.map {
                 TaxAssessmentDraft(
                     treatment: $0.treatment,
-                    taxCountry: $0.taxCountry,
                     customerType: $0.customerType,
                     supplyType: $0.supplyType,
                     customerVatId: $0.customerVatId,
@@ -114,11 +113,7 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
                     selfAssessedVatMinor: $0.selfAssessedVatMinor,
                     deductibleInputVatMinor: $0.deductibleInputVatMinor,
                     outputVatMinor: $0.outputVatMinor,
-                    eurDate: eurDate,
-                    inputVatDate: $0.inputVatDate,
-                    outputVatDate: $0.outputVatDate,
-                    status: $0.status,
-                    reasoning: $0.reasoning
+                    status: $0.status
                 )
             },
             payments: payments.map {
@@ -176,7 +171,7 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
         )
         let assessment = try TaxAssessment.fetchOne(
             db,
-            sql: "SELECT * FROM tax_assessments WHERE transaction_id = ? AND superseded_at IS NULL",
+            sql: "SELECT * FROM tax_assessments WHERE transaction_id = ?",
             arguments: [id]
         )
         let allocationRows = try PaymentAllocation.fetchAll(

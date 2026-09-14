@@ -100,7 +100,6 @@ struct UStVATaskTests {
                     vatShownMinor: tax,
                     selfAssessedVatMinor: selfAssessedVatMinor,
                     deductibleInputVatMinor: selfAssessedVatMinor,
-                    inputVatDate: invoiceDate,
                     status: .confirmed
                 ).insert(db)
             }

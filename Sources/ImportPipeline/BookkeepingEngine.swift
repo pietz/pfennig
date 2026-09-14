@@ -5,14 +5,14 @@ import Tax
 import Validation
 
 /// A draft with everything Swift derives from it: the tax assessment
-/// (treatment, self-assessed VAT, tax points) and the deterministic
+/// (treatment, self-assessed VAT) and the deterministic
 /// validation result. The editor calls this on every keystroke to show live
 /// issues, and the repository stores exactly what it returns.
 public struct DerivedTransaction: Sendable {
     /// The input draft with derived values filled in (assessment, asset flags).
     public var draft: TransactionDraft
     public var issues: [ValidationIssueDraft]
-    /// Why the treatment was decided this way (spec 16.2 `reasoning`).
+    /// Why the treatment was decided this way; shown in the inspector.
     public var reasoning: String?
     /// True when the treatment came from the `TaxTreatmentDecider`, not the user.
     public var isTreatmentAutomatic: Bool
@@ -95,25 +95,14 @@ public enum BookkeepingEngine {
             }
         }
 
-        // 2 - tax points (spec 5.1).
         let paymentDates = draft.payments.map(\.paymentDate)
-        let points = TaxPointDeriver.derive(
-            TaxPointsInput(
-                direction: draft.direction,
-                treatment: treatment,
-                invoiceDate: draft.invoiceDate,
-                serviceDate: draft.serviceDate,
-                servicePeriodEnd: draft.servicePeriodEnd,
-                isAdvancePayment: draft.isAdvancePayment,
-                paymentDates: paymentDates
-            )
-        )
 
-        // 3 - self-assessed VAT for §13b / intra-Community acquisitions (spec 5.4).
+        // 2 - self-assessed VAT for §13b / intra-Community acquisitions (spec 5.4).
+        // §13b Abs. 1/2 UStG: the invoice date drives the self-assessed VAT.
         let selfAssessesVAT = draft.direction == .expense
             && (treatment == .reverseCharge || treatment == .intraCommunityAcquisition)
         let base = net.isZero ? gross : net
-        let vatDate = points.inputVATDate ?? draft.invoiceDate ?? LocalDate.today()
+        let vatDate = draft.invoiceDate ?? LocalDate.today()
         let selfAssessed = selfAssessesVAT
             ? try? SelfAssessedVAT.compute(
                 taxableBase: base,
@@ -129,7 +118,6 @@ public enum BookkeepingEngine {
         }
         draft.assessment = TaxAssessmentDraft(
             treatment: treatment,
-            taxCountry: profile.countryCode,
             customerType: draft.counterpartyVatId?.isEmpty == false ? .b2b : .unknown,
             supplyType: supplyType,
             customerVatId: draft.direction == .income ? draft.counterpartyVatId : nil,
@@ -138,14 +126,10 @@ public enum BookkeepingEngine {
             selfAssessedVatMinor: selfAssessed?.selfAssessedVAT.minorUnits,
             deductibleInputVatMinor: deductibleInputVAT,
             outputVatMinor: draft.direction == .income ? tax.minorUnits : nil,
-            eurDate: points.eurDate,
-            inputVatDate: points.inputVATDate,
-            outputVatDate: points.outputVATDate,
-            status: draft.treatmentOverride == nil ? .proposed : .manualOverride,
-            reasoning: draft.treatmentOverride == nil ? reasoning : nil
+            status: draft.treatmentOverride == nil ? .proposed : .manualOverride
         )
 
-        // 4 - asset candidates (spec 5.6).
+        // 3 - asset candidates (spec 5.6).
         let kinds = Dictionary(uniqueKeysWithValues: categories.map { ($0.id, $0.kind) })
         draft.allocations = draft.allocations.map { allocation in
             var allocation = allocation
@@ -159,7 +143,7 @@ public enum BookkeepingEngine {
             return allocation
         }
 
-        // 5 - deterministic validation (spec 14).
+        // 4 - deterministic validation (spec 14).
         let snapshot = TransactionSnapshot(
             unparseableDateFields: unparseableDateFields,
             invoiceDate: draft.invoiceDate,
@@ -218,8 +202,8 @@ public enum BookkeepingEngine {
         )
     }
 
-    /// The decider reasons in English (it is a pure rule engine); the UI and
-    /// `tax_assessments.reasoning` are German.
+    /// The decider reasons in English (it is a pure rule engine); the text
+    /// the inspector shows is German.
     private static func reasoning(for treatment: TaxTreatment, direction: Direction) -> String {
         switch treatment {
         case .domesticVAT:

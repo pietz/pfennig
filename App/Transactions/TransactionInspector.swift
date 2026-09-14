@@ -448,7 +448,7 @@ struct TransactionInspector: View {
                     Text(assessment.treatment.label)
                 }
                 LabeledContent("Status", value: assessment.status.text)
-                if let reasoning = assessment.reasoning ?? derived?.reasoning {
+                if let reasoning = derived?.reasoning {
                     Text(reasoning)
                         .font(.callout)
                         .foregroundStyle(.secondary)
@@ -463,12 +463,6 @@ struct TransactionInspector: View {
                     LabeledContent("Abziehbare Vorsteuer") {
                         Text(Format.money(deductible, currency: draft.currency))
                     }
-                }
-                if let inputVATDate = assessment.inputVatDate {
-                    LabeledContent("Vorsteuer-Zeitpunkt") { Text(Format.date(inputVATDate)) }
-                }
-                if let outputVATDate = assessment.outputVatDate {
-                    LabeledContent("Umsatzsteuer-Zeitpunkt") { Text(Format.date(outputVATDate)) }
                 }
             }
         } header: {

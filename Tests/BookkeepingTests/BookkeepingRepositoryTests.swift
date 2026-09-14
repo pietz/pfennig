@@ -54,7 +54,6 @@ struct BookkeepingRepositoryTests {
         #expect(reloaded.assessment?.taxableBaseMinor == 10000)
         #expect(reloaded.assessment?.vatShownMinor == 1900)
         #expect(reloaded.assessment?.deductibleInputVatMinor == 1900)
-        #expect(reloaded.assessment?.inputVatDate == LocalDate(year: 2026, month: 9, day: 5))
         #expect(reloaded.payments.count == 1)
         #expect(reloaded.payments[0].amountMinor == 11900)
         #expect(reloaded.payments[0].allocatedMinor == 11900)
@@ -168,7 +167,7 @@ struct BookkeepingRepositoryTests {
         #expect(detail.documents[0].document.relativePath.hasPrefix("Documents/"))
     }
 
-    @Test("Reverse charge derives tax points and self-assessed VAT")
+    @Test("Reverse charge derives the self-assessed VAT")
     func reverseChargeAssessment() throws {
         let (database, profile) = try Fixture.database()
         let id = try Fixture.save(Fixture.reverseChargeExpense(profile), in: database, profile: profile)
@@ -179,11 +178,7 @@ struct BookkeepingRepositoryTests {
         #expect(assessment.vatShownMinor == 0)
         #expect(assessment.selfAssessedVatMinor == 1356)
         #expect(assessment.deductibleInputVatMinor == 1356)
-        // §13b: the invoice date drives both tax points (spec 5.1).
-        #expect(assessment.inputVatDate == LocalDate(year: 2026, month: 8, day: 31))
-        #expect(assessment.outputVatDate == nil)
         #expect(assessment.status == .proposed)
-        #expect(assessment.supersededAt == nil)
 
         // The derived values are marked as calculated, not manual (spec 8.3).
         let detail = try #require(try BookkeepingRepository(database).detail(id: id))

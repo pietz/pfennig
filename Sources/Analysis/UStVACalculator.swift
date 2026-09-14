@@ -22,7 +22,8 @@ import Tax
 ///   Zahlungsdatum)` - conservative against §15 UStG, and it needs no
 ///   "invoice on hand" field.
 /// - **§13b and intra-Community acquisitions** count in full with the invoice
-///   date, regardless of payment.
+///   date - failing that, the service date - regardless of payment. Without
+///   either date the transaction becomes an exception instead of a line.
 public enum UStVACalculator {
     /// Prepares one period. `db` is a GRDB connection inside a read or write.
     public static func prepare(
@@ -67,6 +68,7 @@ public enum UStVACalculator {
         var direction: Direction
         var title: String?
         var invoiceDate: LocalDate?
+        var serviceDate: LocalDate?
         var bookedCurrency: String
         var bookedNetMinor: Int64?
         var bookedTaxMinor: Int64?
@@ -74,7 +76,6 @@ public enum UStVACalculator {
         var treatment: TaxTreatment?
         var taxableBaseMinor: Int64?
         var selfAssessedVatMinor: Int64?
-        var assessmentInputVatDate: LocalDate?
         var counterpartyName: String?
         var counterpartyCountry: String?
         var needsDocument: Bool
@@ -121,9 +122,9 @@ public enum UStVACalculator {
 
     /// Transactions that can touch the period: their invoice date is inside
     /// it, one of their payments is, or - for §13b and intra-Community
-    /// acquisitions without an invoice date - the assessed input VAT date is.
-    /// That covers every dating rule above, because `max(Rechnung, Zahlung)`
-    /// can only land in the period when one of the two does.
+    /// acquisitions without an invoice date - their service date is. That
+    /// covers every dating rule above, because `max(Rechnung, Zahlung)` can
+    /// only land in the period when one of the two does.
     private static func transactionRows(
         _ db: Database,
         period: UStVAPeriod,
@@ -132,24 +133,23 @@ public enum UStVACalculator {
         try TransactionRow.fetchAll(
             db,
             sql: """
-            SELECT t.id, t.direction, t.title, t.invoice_date,
+            SELECT t.id, t.direction, t.title, t.invoice_date, t.service_date,
                    t.booked_currency, t.booked_net_minor, t.booked_tax_minor, t.booked_gross_minor,
                    ta.treatment AS treatment,
                    ta.taxable_base_minor AS taxable_base_minor,
                    ta.self_assessed_vat_minor AS self_assessed_vat_minor,
-                   ta.input_vat_date AS assessment_input_vat_date,
                    c.display_name AS counterparty_name,
                    c.country_code AS counterparty_country,
                    CASE WHEN \(TransactionQueryRules.missingDocumentsPredicate(for: "t"))
                         THEN 1 ELSE 0 END AS needs_document
               FROM transactions t
-              LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id AND ta.superseded_at IS NULL
+              LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
               LEFT JOIN counterparties c ON c.id = t.counterparty_id
              WHERE t.business_profile_id = :profile
                AND \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
                AND (
                     (t.invoice_date >= :start AND t.invoice_date <= :end)
-                 OR (t.invoice_date IS NULL AND ta.input_vat_date >= :start AND ta.input_vat_date <= :end)
+                 OR (t.invoice_date IS NULL AND t.service_date >= :start AND t.service_date <= :end)
                  OR EXISTS (
                         SELECT 1 FROM payment_allocations pa
                           JOIN payments p ON p.id = pa.payment_id
@@ -376,8 +376,8 @@ private extension UStVACalculator {
                 return dates
 
             case .reverseCharge:
-                guard let date = row.invoiceDate ?? row.assessmentInputVatDate else {
-                    note(.other, row, "§13b-Leistung ohne Rechnungsdatum - der Zeitraum ist nicht bestimmbar.")
+                guard let date = row.invoiceDate ?? row.serviceDate else {
+                    note(.other, row, "Rechnungsdatum fehlt")
                     return []
                 }
                 guard period.contains(date) else { return [] }
@@ -401,8 +401,8 @@ private extension UStVACalculator {
                 return [date]
 
             case .intraCommunityAcquisition:
-                guard let date = row.invoiceDate ?? row.assessmentInputVatDate else {
-                    note(.other, row, "Innergemeinschaftlicher Erwerb ohne Rechnungsdatum.")
+                guard let date = row.invoiceDate ?? row.serviceDate else {
+                    note(.other, row, "Rechnungsdatum fehlt")
                     return []
                 }
                 guard period.contains(date) else { return [] }

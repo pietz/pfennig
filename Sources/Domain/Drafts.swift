@@ -204,11 +204,10 @@ public struct TaxComponentDraft: Codable, Sendable, Hashable, Identifiable {
     }
 }
 
-/// The single current `tax_assessments` row (spec 17.8). Everything except
-/// `treatment` and the user-editable dates is derived by Swift.
+/// The single `tax_assessments` row of a transaction (spec 17.8). Everything
+/// except `treatment` is derived by Swift.
 public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
     public var treatment: TaxTreatment
-    public var taxCountry: String?
     public var customerType: CustomerType
     public var supplyType: SupplyType
     public var customerVatId: String?
@@ -217,15 +216,10 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
     public var selfAssessedVatMinor: Int64?
     public var deductibleInputVatMinor: Int64?
     public var outputVatMinor: Int64?
-    public var eurDate: LocalDate?
-    public var inputVatDate: LocalDate?
-    public var outputVatDate: LocalDate?
     public var status: TaxAssessmentStatus
-    public var reasoning: String?
 
     public init(
         treatment: TaxTreatment = .unknown,
-        taxCountry: String? = nil,
         customerType: CustomerType = .unknown,
         supplyType: SupplyType = .unknown,
         customerVatId: String? = nil,
@@ -234,14 +228,9 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
         selfAssessedVatMinor: Int64? = nil,
         deductibleInputVatMinor: Int64? = nil,
         outputVatMinor: Int64? = nil,
-        eurDate: LocalDate? = nil,
-        inputVatDate: LocalDate? = nil,
-        outputVatDate: LocalDate? = nil,
-        status: TaxAssessmentStatus = .proposed,
-        reasoning: String? = nil
+        status: TaxAssessmentStatus = .proposed
     ) {
         self.treatment = treatment
-        self.taxCountry = taxCountry
         self.customerType = customerType
         self.supplyType = supplyType
         self.customerVatId = customerVatId
@@ -250,11 +239,7 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
         self.selfAssessedVatMinor = selfAssessedVatMinor
         self.deductibleInputVatMinor = deductibleInputVatMinor
         self.outputVatMinor = outputVatMinor
-        self.eurDate = eurDate
-        self.inputVatDate = inputVatDate
-        self.outputVatDate = outputVatDate
         self.status = status
-        self.reasoning = reasoning
     }
 }
 

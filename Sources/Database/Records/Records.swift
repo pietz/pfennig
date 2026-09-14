@@ -378,7 +378,6 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
     public var id: String = IDGenerator.new()
     public var transactionId: String
     public var treatment: TaxTreatment
-    public var taxCountry: String?
     public var customerType: CustomerType = .unknown
     public var supplyType: SupplyType = .unknown
     public var customerVatId: String?
@@ -388,11 +387,7 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
     public var deductibleInputVatMinor: Int64?
     public var outputVatMinor: Int64?
     public var currency: String = "EUR"
-    public var inputVatDate: LocalDate?
-    public var outputVatDate: LocalDate?
     public var status: TaxAssessmentStatus = .proposed
-    public var reasoning: String?
-    public var supersededAt: String?
     public var createdAt: String = Timestamp.string()
     public var updatedAt: String = Timestamp.string()
 
@@ -400,7 +395,6 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
         id: String = IDGenerator.new(),
         transactionId: String,
         treatment: TaxTreatment,
-        taxCountry: String? = nil,
         customerType: CustomerType = .unknown,
         supplyType: SupplyType = .unknown,
         customerVatId: String? = nil,
@@ -410,18 +404,13 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
         deductibleInputVatMinor: Int64? = nil,
         outputVatMinor: Int64? = nil,
         currency: String = "EUR",
-        inputVatDate: LocalDate? = nil,
-        outputVatDate: LocalDate? = nil,
         status: TaxAssessmentStatus = .proposed,
-        reasoning: String? = nil,
-        supersededAt: String? = nil,
         createdAt: String = Timestamp.string(),
         updatedAt: String = Timestamp.string()
     ) {
         self.id = id
         self.transactionId = transactionId
         self.treatment = treatment
-        self.taxCountry = taxCountry
         self.customerType = customerType
         self.supplyType = supplyType
         self.customerVatId = customerVatId
@@ -431,11 +420,7 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
         self.deductibleInputVatMinor = deductibleInputVatMinor
         self.outputVatMinor = outputVatMinor
         self.currency = currency
-        self.inputVatDate = inputVatDate
-        self.outputVatDate = outputVatDate
         self.status = status
-        self.reasoning = reasoning
-        self.supersededAt = supersededAt
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }

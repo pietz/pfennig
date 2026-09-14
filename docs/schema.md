@@ -22,6 +22,7 @@ Conventions (spec 17):
 | Identifier | Contents |
 |---|---|
 | `v001_initial` | All tables and views listed below, plus the system categories of spec 17.4. |
+| `v002_slim_tax_assessments` | Rebuilds `tax_assessments` without `input_vat_date`, `output_vat_date`, `tax_country`, `reasoning` and `superseded_at`. A no-op on a fresh database, which `v001_initial` already creates in the slim shape. |
 
 ## Tables
 
@@ -63,7 +64,7 @@ validation_issues
 | `transactions` | The central economic event. No category column: categories live in allocations. |
 | `bookkeeping_allocations` | Category splits of a transaction, including the asset flag and private share. |
 | `tax_components` | What the document shows per VAT rate (7 % and 19 % on one receipt, for example). |
-| `tax_assessments` | The single current bookkeeping judgement per transaction, with derived tax points. History is kept via `superseded_at`. |
+| `tax_assessments` | The single bookkeeping judgement per transaction: treatment, taxable base, VAT shown, self-assessed and deductible VAT. Exactly one row per transaction; replacing it deletes the old row. |
 | `transaction_relations` | Credit notes, refunds, corrections between transactions. |
 | `documents` | Imported originals, identified by SHA-256, stored as files under `Documents/`. |
 | `transaction_documents` | Which document plays which role for which transaction. |

@@ -486,7 +486,7 @@ public struct BookkeepingRepository: Sendable {
         guard let assessment = draft.assessment else { return }
         let current = try TaxAssessment.fetchOne(
             db,
-            sql: "SELECT * FROM tax_assessments WHERE transaction_id = ? AND superseded_at IS NULL",
+            sql: "SELECT * FROM tax_assessments WHERE transaction_id = ?",
             arguments: [transactionID]
         )
         let currentTreatmentWasManual: Bool = if let current {
@@ -542,15 +542,16 @@ public struct BookkeepingRepository: Sendable {
                 fields: current.treatment == assessment.treatment ? [] : ["treatment"],
                 actor: actor
             )
+            // Exactly one assessment per transaction; the replaced row was
+            // never read again, so it is deleted rather than superseded.
             try db.execute(
-                sql: "UPDATE tax_assessments SET superseded_at = ?, updated_at = ? WHERE id = ?",
-                arguments: [now, now, current.id]
+                sql: "DELETE FROM tax_assessments WHERE id = ?",
+                arguments: [current.id]
             )
         }
         let record = TaxAssessment(
             transactionId: transactionID,
             treatment: assessment.treatment,
-            taxCountry: assessment.taxCountry,
             customerType: assessment.customerType,
             supplyType: assessment.supplyType,
             customerVatId: assessment.customerVatId,
@@ -560,17 +561,14 @@ public struct BookkeepingRepository: Sendable {
             deductibleInputVatMinor: assessment.deductibleInputVatMinor,
             outputVatMinor: assessment.outputVatMinor,
             currency: draft.currency.rawValue,
-            inputVatDate: assessment.inputVatDate,
-            outputVatDate: assessment.outputVatDate,
             status: assessment.status,
-            reasoning: assessment.reasoning,
             createdAt: now,
             updatedAt: now
         )
         try record.insert(db)
 
         // The treatment is the user's choice or Swift's decision; the amounts
-        // and tax points are always calculated (spec 8.3, 5.1).
+        // are always calculated (spec 8.3).
         let treatmentEntry = context.entry(FieldProvenance.Entity.taxAssessment, "treatment")
         let manualTreatment = treatmentEntry?.provenance == .manual
             || draft.treatmentOverride != nil
@@ -599,7 +597,7 @@ public struct BookkeepingRepository: Sendable {
             context: context,
             now: now
         )
-        for field in ["selfAssessedVat", "deductibleInputVat", "outputVat", "inputVatDate", "outputVatDate"] {
+        for field in ["selfAssessedVat", "deductibleInputVat", "outputVat"] {
             try writeProvenance(
                 db,
                 entity: FieldProvenance.Entity.taxAssessment,
@@ -615,7 +613,6 @@ public struct BookkeepingRepository: Sendable {
 
     private func matches(_ record: TaxAssessment, _ draft: TaxAssessmentDraft) -> Bool {
         record.treatment == draft.treatment
-            && record.taxCountry == draft.taxCountry
             && record.customerType == draft.customerType
             && record.supplyType == draft.supplyType
             && record.customerVatId == draft.customerVatId
@@ -624,8 +621,6 @@ public struct BookkeepingRepository: Sendable {
             && record.selfAssessedVatMinor == draft.selfAssessedVatMinor
             && record.deductibleInputVatMinor == draft.deductibleInputVatMinor
             && record.outputVatMinor == draft.outputVatMinor
-            && record.inputVatDate == draft.inputVatDate
-            && record.outputVatDate == draft.outputVatDate
             && record.status == draft.status
     }
 

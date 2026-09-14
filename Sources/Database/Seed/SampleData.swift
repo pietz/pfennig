@@ -55,16 +55,13 @@
                 assessment: TaxAssessment(
                     transactionId: adobeTransaction.id,
                     treatment: .reverseCharge,
-                    taxCountry: "DE",
                     customerType: .b2b,
                     supplyType: .digitalService,
                     taxableBaseMinor: 7139,
                     vatShownMinor: 0,
                     selfAssessedVatMinor: 1356,
                     deductibleInputVatMinor: 1356,
-                    inputVatDate: LocalDate(year: 2026, month: 8, day: 31),
-                    status: .confirmed,
-                    reasoning: "Irischer Anbieter, deutsche USt-IdNr. auf der Rechnung"
+                    status: .confirmed
                 )
             )
             try pay(
@@ -101,14 +98,12 @@
                 assessment: TaxAssessment(
                     transactionId: invoice.id,
                     treatment: .domesticVAT,
-                    taxCountry: "DE",
                     customerType: .b2b,
                     supplyType: .service,
                     customerVatId: "DE123456789",
                     taxableBaseMinor: 200_000,
                     vatShownMinor: 38000,
                     outputVatMinor: 38000,
-                    outputVatDate: LocalDate(year: 2026, month: 9, day: 10),
                     status: .proposed
                 )
             )
@@ -146,12 +141,10 @@
                 assessment: TaxAssessment(
                     transactionId: telekomTransaction.id,
                     treatment: .domesticVAT,
-                    taxCountry: "DE",
                     supplyType: .service,
                     taxableBaseMinor: 4197,
                     vatShownMinor: 798,
                     deductibleInputVatMinor: 798,
-                    inputVatDate: LocalDate(year: 2026, month: 9, day: 5),
                     status: .proposed
                 )
             )
@@ -182,16 +175,13 @@
                 assessment: TaxAssessment(
                     transactionId: hosting.id,
                     treatment: .reverseCharge,
-                    taxCountry: "DE",
                     customerType: .b2b,
                     supplyType: .digitalService,
                     taxableBaseMinor: 2000,
                     vatShownMinor: 0,
                     selfAssessedVatMinor: 380,
                     deductibleInputVatMinor: 380,
-                    inputVatDate: LocalDate(year: 2026, month: 9, day: 1),
-                    status: .proposed,
-                    reasoning: "Drittland-Anbieter, Dienstleistung ohne Umsatzsteuer - § 13b UStG"
+                    status: .proposed
                 )
             )
             try pay(
@@ -241,7 +231,7 @@
                     provenance: .document
                 ).insert(db)
             }
-            for field in ["treatment", "selfAssessedVat", "deductibleInputVat", "inputVatDate", "outputVatDate"] {
+            for field in ["treatment", "selfAssessedVat", "deductibleInputVat"] {
                 try FieldProvenance(
                     entityType: FieldProvenance.Entity.taxAssessment,
                     entityId: assessment.id,

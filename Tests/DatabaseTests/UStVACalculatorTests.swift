@@ -49,7 +49,7 @@ struct UStVACalculatorTests {
         counterpartyCountry: String? = nil,
         counterpartyName: String = "Testpartner",
         selfAssessedVatMinor: Int64? = nil,
-        inputVatDate: LocalDate? = nil,
+        serviceDate: LocalDate? = nil,
         attachDocument: Bool = true
     ) throws -> TransactionRecord {
         var counterpartyID: String?
@@ -69,6 +69,7 @@ struct UStVACalculatorTests {
             transactionType: .invoice,
             title: title,
             invoiceDate: invoiceDate,
+            serviceDate: serviceDate,
             bookedNetMinor: net,
             bookedTaxMinor: tax,
             bookedGrossMinor: net + tax,
@@ -84,7 +85,6 @@ struct UStVACalculatorTests {
                     vatShownMinor: tax,
                     selfAssessedVatMinor: selfAssessedVatMinor,
                     deductibleInputVatMinor: selfAssessedVatMinor,
-                    inputVatDate: inputVatDate ?? invoiceDate,
                     status: .confirmed
                 ).insert(db)
             }
@@ -274,7 +274,7 @@ struct UStVACalculatorTests {
         #expect(try prepare(regular, regularProfile, quarter: 3).line(48)?.amountMinor == 100_000)
     }
 
-    @Test("§13b ohne Rechnungsdatum wird über das Vorsteuerdatum gefunden")
+    @Test("§13b ohne Rechnungsdatum wird über das Leistungsdatum gefunden")
     func reverseChargeWithoutInvoiceDate() throws {
         let (database, profile) = try database()
         try insert(
@@ -282,13 +282,29 @@ struct UStVACalculatorTests {
             title: "SaaS ohne Rechnungsdatum", invoiceDate: nil,
             net: 100_000, tax: 0, counterpartyCountry: "IE", counterpartyName: "Cloud Ltd",
             selfAssessedVatMinor: 19000,
-            inputVatDate: LocalDate(year: 2026, month: 8, day: 5)
+            serviceDate: LocalDate(year: 2026, month: 8, day: 5)
         )
 
         let q3 = try prepare(database, profile, quarter: 3)
         #expect(q3.line(46)?.amountMinor == 100_000)
         #expect(q3.line(67)?.amountMinor == 19000)
         #expect(try prepare(database, profile, quarter: 2).lines.isEmpty)
+    }
+
+    @Test("§13b ganz ohne Datum wird zur Ausnahme statt zu einer Zeile")
+    func reverseChargeWithoutAnyDate() throws {
+        let (database, profile) = try database()
+        let transaction = try insert(
+            database, profile: profile, direction: .expense, treatment: .reverseCharge,
+            title: "SaaS ohne Datum", invoiceDate: nil,
+            net: 100_000, tax: 0, counterpartyCountry: "IE", counterpartyName: "Cloud Ltd",
+            selfAssessedVatMinor: 19000
+        )
+        try pay(database, transaction, amountMinor: 100_000, on: LocalDate(year: 2026, month: 8, day: 5))
+
+        let q3 = try prepare(database, profile, quarter: 3)
+        #expect(q3.lines.isEmpty)
+        #expect(q3.exceptions.contains { $0.message == "Rechnungsdatum fehlt" })
     }
 
     @Test("Ein Anbieter aus dem Drittland gehört in Kz 84/85")
