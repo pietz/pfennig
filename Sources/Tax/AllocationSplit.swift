@@ -6,15 +6,13 @@ public struct TaxSlice: Sendable, Equatable {
     /// Normalized decimal rate string of the component ("19", "7", "0"), or
     /// `nil` when the component carries no rate (reverse-charge notes, fees).
     public let rate: String?
-    public let kind: TaxComponentKind
     /// Bemessungsgrundlage share, EUR minor units.
     public let baseMinor: Int64
     /// VAT share, EUR minor units.
     public let taxMinor: Int64
 
-    public init(rate: String?, kind: TaxComponentKind, baseMinor: Int64, taxMinor: Int64) {
+    public init(rate: String?, baseMinor: Int64, taxMinor: Int64) {
         self.rate = rate
-        self.kind = kind
         self.baseMinor = baseMinor
         self.taxMinor = taxMinor
     }
@@ -68,13 +66,11 @@ public enum AllocationSplitter {
     /// One tax component of the transaction being split.
     public struct Component: Sendable, Equatable {
         public let rate: String?
-        public let kind: TaxComponentKind
         public let netMinor: Int64
         public let taxMinor: Int64
 
-        public init(rate: String?, kind: TaxComponentKind, netMinor: Int64, taxMinor: Int64) {
+        public init(rate: String?, netMinor: Int64, taxMinor: Int64) {
             self.rate = rate
-            self.kind = kind
             self.netMinor = netMinor
             self.taxMinor = taxMinor
         }
@@ -108,20 +104,6 @@ public enum AllocationSplitter {
         return result
     }
 
-    /// Splits a single allocation, given the sum of all allocations that come
-    /// before it in the same deterministic order. `split(components:allocations:)`
-    /// is the same computation for a whole list and should be preferred.
-    public static func slice(
-        components: [Component],
-        allocatedBefore: Int64,
-        allocatedMinor: Int64
-    ) -> [TaxSlice] {
-        let weights = buckets(of: components)
-        let previous = apportion(total: allocatedBefore, weights: weights)
-        let current = apportion(total: allocatedBefore + allocatedMinor, weights: weights)
-        return slices(from: previous, to: current, components: components)
-    }
-
     // MARK: - Rate normalization
 
     /// Normalizes a stored rate string ("19", "19.0", "19,00", "19 %") to its
@@ -152,7 +134,6 @@ public enum AllocationSplitter {
         components.enumerated().map { index, component in
             TaxSlice(
                 rate: component.rate,
-                kind: component.kind,
                 baseMinor: current[index * 2] - previous[index * 2],
                 taxMinor: current[index * 2 + 1] - previous[index * 2 + 1]
             )

@@ -5,7 +5,7 @@ import Testing
 @Suite("Anteilige Aufteilung von Zahlungen")
 struct AllocationSplitTests {
     private func component(_ rate: String?, net: Int64, tax: Int64) -> AllocationSplitter.Component {
-        AllocationSplitter.Component(rate: rate, kind: rate == "7" ? .reduced : .standard, netMinor: net, taxMinor: tax)
+        AllocationSplitter.Component(rate: rate, netMinor: net, taxMinor: tax)
     }
 
     @Test("Zwei Teilzahlungen einer 19-%-Rechnung ergeben zusammen exakt den Vorgang")
@@ -56,12 +56,8 @@ struct AllocationSplitTests {
         ]
         let gross = AllocationSplitter.grossMinor(of: components)
         for allocation in stride(from: Int64(0), through: gross, by: 1) {
-            let slices = AllocationSplitter.slice(
-                components: components,
-                allocatedBefore: 0,
-                allocatedMinor: allocation
-            )
-            #expect(slices.reduce(Int64(0)) { $0 + $1.grossMinor } == allocation)
+            let slices = AllocationSplitter.split(components: components, allocations: [allocation])
+            #expect(slices[0].reduce(Int64(0)) { $0 + $1.grossMinor } == allocation)
         }
     }
 

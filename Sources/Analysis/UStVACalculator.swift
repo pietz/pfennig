@@ -99,7 +99,6 @@ public enum UStVACalculator {
 
     struct ComponentRow: FetchableRecord, Decodable {
         var transactionId: String
-        var kind: TaxComponentKind
         var rate: String?
         var netMinor: Int64
         var taxMinor: Int64
@@ -173,7 +172,7 @@ public enum UStVACalculator {
         let rows = try ComponentRow.fetchAll(
             db,
             sql: """
-            SELECT transaction_id, kind, rate, net_minor, tax_minor
+            SELECT transaction_id, rate, net_minor, tax_minor
               FROM tax_components
              WHERE transaction_id IN \(placeholders(transactionIDs.count))
              ORDER BY transaction_id, sort_order, id
@@ -460,10 +459,8 @@ private extension UStVACalculator {
             let ordered = lines.keys.sorted {
                 (UStVA_2026.formLine($0), $0) < (UStVA_2026.formLine($1), $1)
             }
-            let formLines: [UStVAReturn.Line] = ordered.compactMap { kennzahl in
-                guard let builder = lines[kennzahl],
-                      builder.amountMinor != 0 || !builder.contributions.isEmpty
-                else { return nil }
+            let formLines: [UStVAReturn.Line] = ordered.map { kennzahl in
+                let builder = lines[kennzahl] ?? LineBuilder()
                 return UStVAReturn.Line(
                     kennzahl: kennzahl,
                     title: UStVA_2026.title(kennzahl),
@@ -550,7 +547,6 @@ private extension UStVACalculator {
             return rows.map {
                 AllocationSplitter.Component(
                     rate: AllocationSplitter.normalizedRate($0.rate),
-                    kind: $0.kind,
                     netMinor: $0.netMinor,
                     taxMinor: $0.taxMinor
                 )
@@ -565,7 +561,6 @@ private extension UStVACalculator {
             let tax = gross - net
             return AllocationSplitter.Component(
                 rate: inferredRate(net: net, tax: tax),
-                kind: .other,
                 netMinor: net,
                 taxMinor: tax
             )

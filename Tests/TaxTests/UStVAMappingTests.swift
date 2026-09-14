@@ -88,7 +88,7 @@ struct UStVAMappingTests {
 
     @Test("Alle gelieferten Kennzahlen sind gegen das Vordruckmuster 2026 geprüft")
     func everyKennzahlIsVerified() {
-        #expect(UStVA_2026.all.filter { !$0.isVerified }.isEmpty)
+        #expect(UStVA_2026.all.allSatisfy { UStVA_2026.isVerified($0.number) })
         #expect(UStVA_2026.all.count == Set(UStVA_2026.all.map(\.number)).count)
         // An unmapped number is reported as unverified rather than invented.
         #expect(UStVA_2026.isVerified(500) == false)

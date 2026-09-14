@@ -12,9 +12,9 @@ import Foundation
 /// 2026**, published with the BMF letter of 29 December 2025
 /// (GZ III C 3 - S 7344/00039/007/036), downloaded from
 /// <https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/2025-12-29-vordruckmuster-USt-voranmeldung-2026.pdf>
-/// and read as text. Every Kennzahl below carries the form's own Zeile
-/// number; `isVerified` is true only for entries whose number, column
-/// (Bemessungsgrundlage vs. Steuer) and wording were read off that document.
+/// and read as text. Every Kennzahl below carries the form's own Zeile number,
+/// and its number, column (Bemessungsgrundlage vs. Steuer) and wording were
+/// read off that document; `isVerified(_:)` reports that for a given number.
 ///
 /// Corrections this verification produced against the earlier placeholder
 /// table, which had been written before the 2026 form existed:
@@ -59,16 +59,12 @@ public enum UStVA_2026 {
         public let isBase: Bool
         /// "Zeile" of the printed form; also the display order.
         public let formLine: Int
-        /// True when number, column and wording were read off the official
-        /// 2026 Vordruckmuster (see the type documentation).
-        public let isVerified: Bool
 
-        public init(number: Int, title: String, isBase: Bool, formLine: Int, isVerified: Bool = true) {
+        public init(number: Int, title: String, isBase: Bool, formLine: Int) {
             self.number = number
             self.title = title
             self.isBase = isBase
             self.formLine = formLine
-            self.isVerified = isVerified
         }
     }
 
@@ -200,13 +196,16 @@ public enum UStVA_2026 {
     }
 
     /// Printed title, or a stable placeholder for a number Pfennig does not
-    /// know (which then also reports `isVerified == false`).
+    /// know (which then also reports `isVerified(_:) == false`).
     public static func title(_ number: Int) -> String {
         byNumber[number]?.title ?? "Kennzahl \(number)"
     }
 
+    /// True for the Kennzahlen of the table above, all of which were read off
+    /// the official 2026 Vordruckmuster. A number Pfennig does not know is
+    /// reported as unverified rather than presented as checked.
     public static func isVerified(_ number: Int) -> Bool {
-        byNumber[number]?.isVerified ?? false
+        byNumber[number] != nil
     }
 
     public static func isBase(_ number: Int) -> Bool {
@@ -297,10 +296,5 @@ public enum UStVA_2026 {
     /// standard rate, which is what `SelfAssessedVAT` computes.
     public static func intraCommunityAcquisitionBase(rate: String?) -> Int {
         rate == "7" ? 93 : 89
-    }
-
-    /// Statutory percent behind an acquisition base line.
-    public static func ratePercent(forBase kennzahl: Int) -> Decimal {
-        Decimal(derivedTaxRatePercent[kennzahl] ?? 0)
     }
 }
