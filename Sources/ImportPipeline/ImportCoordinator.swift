@@ -15,7 +15,7 @@ public actor ImportCoordinator {
     private let archive: Archive
     private let makeProvider: ProviderFactory
     private let pageLimit: Int
-    private let logger = Logger(subsystem: "com.pietz.ziffer", category: "import")
+    private let logger = Logger(subsystem: "com.pietz.pfennig", category: "import")
 
     public init(
         database: AppDatabase,

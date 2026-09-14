@@ -10,9 +10,9 @@ import Testing
 ///     set -a; source .env; set +a; swift test --filter Live
 @Suite("Live", .enabled(if: ProcessInfo.processInfo.environment["OPENAI_API_KEY"] != nil))
 struct LiveExtractionTests {
-    /// Fixtures recorded by default; `ZIFFER_LIVE_FIXTURES=all` records every one.
+    /// Fixtures recorded by default; `PFENNIG_LIVE_FIXTURES=all` records every one.
     static var selected: [Support.Fixture] {
-        let wanted = ProcessInfo.processInfo.environment["ZIFFER_LIVE_FIXTURES"] ?? "01,03,06"
+        let wanted = ProcessInfo.processInfo.environment["PFENNIG_LIVE_FIXTURES"] ?? "01,03,06"
         if wanted == "all" {
             return Support.fixtures()
         }

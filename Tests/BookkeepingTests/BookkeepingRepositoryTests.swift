@@ -146,7 +146,7 @@ struct BookkeepingRepositoryTests {
     func documentDeduplication() throws {
         let (database, profile) = try Fixture.database()
         let repository = BookkeepingRepository(database)
-        let root = FileManager.default.temporaryDirectory.appending(path: "ziffer-archive-\(UUID().uuidString)")
+        let root = FileManager.default.temporaryDirectory.appending(path: "pfennig-archive-\(UUID().uuidString)")
         let archive = try ArchiveLocator().createArchive(at: root, appVersion: "test", schemaVersion: "v001_initial")
         defer { try? FileManager.default.removeItem(at: root) }
         let store = DocumentStore(archive: archive)

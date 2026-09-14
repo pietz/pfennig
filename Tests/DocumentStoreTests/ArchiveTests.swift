@@ -6,7 +6,7 @@ import Testing
 struct ArchiveTests {
     func makeTemporaryFolder() -> URL {
         FileManager.default.temporaryDirectory
-            .appending(path: "ziffer-archive-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "pfennig-archive-\(UUID().uuidString)", directoryHint: .isDirectory)
     }
 
     @Test("Creating an archive writes the layout of spec 20")
@@ -62,8 +62,8 @@ struct ArchiveTests {
         try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
         let file = root.appending(path: "invoice.txt")
-        try Data("Ziffer".utf8).write(to: file)
-        let expected = FileHasher.sha256(of: Data("Ziffer".utf8))
+        try Data("Pfennig".utf8).write(to: file)
+        let expected = FileHasher.sha256(of: Data("Pfennig".utf8))
         #expect(try FileHasher.sha256(contentsOf: file) == expected)
         #expect(expected.count == 64)
     }

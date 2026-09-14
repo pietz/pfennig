@@ -67,7 +67,7 @@ enum Support {
 
     static func workspace() throws -> Workspace {
         let root = FileManager.default.temporaryDirectory
-            .appending(path: "ziffer-import-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "pfennig-import-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
         let archive = try ArchiveLocator().createArchive(at: root, appVersion: "test", schemaVersion: "v001_initial")
         let database = try AppDatabase(inMemoryNamed: "import-\(UUID().uuidString)")
         let profile = BusinessProfile(

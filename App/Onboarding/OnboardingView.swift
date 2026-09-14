@@ -35,7 +35,7 @@ struct BusinessProfileForm: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Betrieb einrichten").font(.title2.weight(.semibold))
                 Text(
-                    "Diese Angaben bestimmen, wie Ziffer Umsatzsteuer und Fristen berechnet. Sie lassen sich später ändern."
+                    "Diese Angaben bestimmen, wie Pfennig Umsatzsteuer und Fristen berechnet. Sie lassen sich später ändern."
                 )
                 .foregroundStyle(.secondary)
             }
@@ -76,7 +76,7 @@ struct BusinessProfileForm: View {
                             "Kleinunternehmer geben grundsätzlich keine regelmäßige UStVA ab. Sonderfälle wie Reverse Charge werden gesondert behandelt."
                         )
                     } else {
-                        Text("Ziffer unterstützt Ist-Versteuerung; Soll-Versteuerung ist noch nicht enthalten.")
+                        Text("Pfennig unterstützt Ist-Versteuerung; Soll-Versteuerung ist noch nicht enthalten.")
                     }
                 }
             }

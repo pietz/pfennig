@@ -4,7 +4,7 @@ import GRDB
 
 // MARK: - 17.16 import_batches
 
-public struct ImportBatch: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct ImportBatch: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "import_batches"
 
     public var id: String = IDGenerator.new()
@@ -30,7 +30,7 @@ public struct ImportBatch: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.17 import_items
 
-public struct ImportItem: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct ImportItem: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "import_items"
 
     public var id: String = IDGenerator.new()
@@ -74,7 +74,7 @@ public struct ImportItem: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.18 model_runs
 
-public struct ModelRun: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct ModelRun: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "model_runs"
 
     public var id: String = IDGenerator.new()
@@ -127,7 +127,7 @@ public struct ModelRun: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.19 proposals
 
-public struct ProposalRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct ProposalRecord: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "proposals"
 
     public var id: String = IDGenerator.new()

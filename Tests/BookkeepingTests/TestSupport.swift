@@ -71,7 +71,7 @@ enum Fixture {
     /// A temporary file with the given content, for document tests.
     static func temporaryFile(named name: String, content: String) throws -> URL {
         let url = FileManager.default.temporaryDirectory
-            .appending(path: "ziffer-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "pfennig-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
         let file = url.appending(path: name)
         try Data(content.utf8).write(to: file)

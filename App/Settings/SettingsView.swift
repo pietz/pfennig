@@ -88,9 +88,9 @@ struct SettingsView: View {
                 )
             }
 
-            Section("Über Ziffer") {
+            Section("Über Pfennig") {
                 LabeledContent("Version", value: AppModel.appVersion)
-                Link("Quellcode und Lizenz (GPLv3)", destination: URL(string: "https://github.com/pietz/ziffer")!)
+                Link("Quellcode und Lizenz (GPLv3)", destination: URL(string: "https://github.com/pietz/pfennig")!)
                 Text("Freie Software ohne Gewährleistung.")
                     .foregroundStyle(.secondary)
             }

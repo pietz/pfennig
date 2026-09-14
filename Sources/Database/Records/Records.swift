@@ -4,9 +4,9 @@ import GRDB
 
 /// Database records map 1:1 to the tables of spec 17. Column names are
 /// snake_case in SQLite and camelCase in Swift; the conversion is automatic.
-public protocol ZifferRecord: Codable, FetchableRecord, PersistableRecord {}
+public protocol PfennigRecord: Codable, FetchableRecord, PersistableRecord {}
 
-public extension ZifferRecord {
+public extension PfennigRecord {
     static var databaseColumnDecodingStrategy: DatabaseColumnDecodingStrategy {
         .convertFromSnakeCase
     }
@@ -18,7 +18,7 @@ public extension ZifferRecord {
 
 // MARK: - 17.1 business_profiles
 
-public struct BusinessProfile: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct BusinessProfile: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "business_profiles"
 
     public var id: String
@@ -68,7 +68,7 @@ public struct BusinessProfile: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.2 accounts
 
-public struct Account: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct Account: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "accounts"
 
     public var id: String
@@ -115,7 +115,7 @@ public struct Account: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.3 counterparties
 
-public struct Counterparty: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct Counterparty: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "counterparties"
 
     public var id: String
@@ -180,7 +180,7 @@ public struct Counterparty: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.4 categories
 
-public struct Category: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct Category: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "categories"
 
     public var id: String
@@ -220,7 +220,7 @@ public struct Category: ZifferRecord, Identifiable, Sendable, Hashable {
 
 /// The central bookkeeping record. Named `TransactionRecord` because
 /// `SwiftUI.Transaction` and `GRDB` both use the bare name.
-public struct TransactionRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "transactions"
 
     public var id: String
@@ -328,7 +328,7 @@ public struct TransactionRecord: ZifferRecord, Identifiable, Sendable, Hashable 
 
 // MARK: - 17.6 bookkeeping_allocations
 
-public struct BookkeepingAllocation: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct BookkeepingAllocation: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "bookkeeping_allocations"
 
     public var id: String = IDGenerator.new()
@@ -372,7 +372,7 @@ public struct BookkeepingAllocation: ZifferRecord, Identifiable, Sendable, Hasha
 
 // MARK: - 17.8 tax_assessments
 
-public struct TaxAssessment: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "tax_assessments"
 
     public var id: String = IDGenerator.new()
@@ -443,7 +443,7 @@ public struct TaxAssessment: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.13 payments
 
-public struct Payment: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct Payment: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "payments"
 
     public var id: String = IDGenerator.new()
@@ -502,7 +502,7 @@ public struct Payment: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.14 payment_allocations
 
-public struct PaymentAllocation: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct PaymentAllocation: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "payment_allocations"
 
     public var id: String = IDGenerator.new()
@@ -537,7 +537,7 @@ public struct PaymentAllocation: ZifferRecord, Identifiable, Sendable, Hashable 
 
 // MARK: - 17.12 statement_lines
 
-public struct StatementLine: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct StatementLine: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "statement_lines"
 
     public var id: String = IDGenerator.new()
@@ -608,7 +608,7 @@ public struct StatementLine: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.7 tax_components
 
-public struct TaxComponent: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct TaxComponent: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "tax_components"
 
     public var id: String = IDGenerator.new()
@@ -646,7 +646,7 @@ public struct TaxComponent: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.10 documents
 
-public struct DocumentRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct DocumentRecord: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "documents"
 
     public var id: String = IDGenerator.new()
@@ -693,7 +693,7 @@ public struct DocumentRecord: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.11 transaction_documents
 
-public struct TransactionDocument: ZifferRecord, Sendable, Hashable {
+public struct TransactionDocument: PfennigRecord, Sendable, Hashable {
     public static let databaseTableName = "transaction_documents"
 
     public var transactionId: String
@@ -716,7 +716,7 @@ public struct TransactionDocument: ZifferRecord, Sendable, Hashable {
 
 // MARK: - 17.15 field_provenance
 
-public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct FieldProvenance: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "field_provenance"
 
     public var id: String = IDGenerator.new()
@@ -771,7 +771,7 @@ public struct FieldProvenance: ZifferRecord, Identifiable, Sendable, Hashable {
 
 // MARK: - 17.20 validation_issues
 
-public struct ValidationIssueRecord: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct ValidationIssueRecord: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "validation_issues"
 
     public var id: String = IDGenerator.new()
@@ -824,7 +824,7 @@ public struct ValidationIssueRecord: ZifferRecord, Identifiable, Sendable, Hasha
 
 // MARK: - 17.22 audit_events
 
-public struct AuditEvent: ZifferRecord, Identifiable, Sendable, Hashable {
+public struct AuditEvent: PfennigRecord, Identifiable, Sendable, Hashable {
     public static let databaseTableName = "audit_events"
 
     public var id: String = IDGenerator.new()

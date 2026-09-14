@@ -72,7 +72,7 @@ public enum ArchiveError: Error, LocalizedError, Sendable {
         case let .notADirectory(url):
             "\(url.lastPathComponent) ist kein Ordner."
         case let .notAnArchive(url):
-            "In \(url.lastPathComponent) liegt kein Ziffer-Archiv."
+            "In \(url.lastPathComponent) liegt kein Pfennig-Archiv."
         case let .schemaTooNew(found, supported):
             "Das Archiv wurde mit einer neueren Version erstellt (Schema \(found), unterstützt \(supported))."
         }

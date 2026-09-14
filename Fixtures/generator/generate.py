@@ -6,7 +6,7 @@
 # ]
 # ///
 """
-Synthetic test document generator for Ziffer.
+Synthetic test document generator for Pfennig.
 
 Generates fictional, format-valid invoices/receipts (PDF and one JPEG) plus
 matching expected.json extraction ground truth files under

@@ -42,7 +42,7 @@ struct MigrationTests {
     @Test("Migration is idempotent on an existing file")
     func reopen() throws {
         let folder = FileManager.default.temporaryDirectory
-            .appending(path: "ziffer-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "pfennig-tests-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: folder) }
         let path = folder.appending(path: "bookkeeping.sqlite").path(percentEncoded: false)

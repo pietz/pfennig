@@ -238,7 +238,7 @@ struct ImportFoundationTests {
 
     private func temporaryPNG() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
-            .appending(path: "ziffer-import-foundation-\(UUID().uuidString)", directoryHint: .isDirectory)
+            .appending(path: "pfennig-import-foundation-\(UUID().uuidString)", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let file = directory.appending(path: "receipt.png")
         let data =
