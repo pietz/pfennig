@@ -48,11 +48,9 @@
                     transactionId: adobeTransaction.id,
                     treatment: .reverseCharge,
                     customerType: .b2b,
-                    supplyType: .digitalService,
+                    supplyType: .service,
                     taxableBaseMinor: 7139,
-                    vatShownMinor: 0,
                     selfAssessedVatMinor: 1356,
-                    deductibleInputVatMinor: 1356,
                     status: .confirmed
                 )
             )
@@ -76,7 +74,8 @@
                 title: "Beratung September",
                 invoiceNumber: "2026-014",
                 invoiceDate: LocalDate(year: 2026, month: 9, day: 1),
-                serviceDate: LocalDate(year: 2026, month: 8, day: 28),
+                servicePeriodStart: LocalDate(year: 2026, month: 8, day: 28),
+                servicePeriodEnd: LocalDate(year: 2026, month: 8, day: 28),
                 originalNetMinor: 200_000, originalTaxMinor: 38000, originalGrossMinor: 238_000,
                 bookedNetMinor: 200_000, bookedTaxMinor: 38000, bookedGrossMinor: 238_000,
                 reviewStatus: .unreviewed
@@ -93,8 +92,6 @@
                     supplyType: .service,
                     customerVatId: "DE123456789",
                     taxableBaseMinor: 200_000,
-                    vatShownMinor: 38000,
-                    outputVatMinor: 38000,
                     status: .proposed
                 )
             )
@@ -118,7 +115,8 @@
                 title: "Mobilfunk September",
                 invoiceNumber: "R-2026-9912",
                 invoiceDate: LocalDate(year: 2026, month: 9, day: 5),
-                serviceDate: LocalDate(year: 2026, month: 9, day: 5),
+                servicePeriodStart: LocalDate(year: 2026, month: 9, day: 5),
+                servicePeriodEnd: LocalDate(year: 2026, month: 9, day: 5),
                 originalNetMinor: 4197, originalTaxMinor: 798, originalGrossMinor: 4995,
                 bookedNetMinor: 4197, bookedTaxMinor: 798, bookedGrossMinor: 4995,
                 reviewStatus: .needsReview
@@ -133,8 +131,6 @@
                     treatment: .domesticVAT,
                     supplyType: .service,
                     taxableBaseMinor: 4197,
-                    vatShownMinor: 798,
-                    deductibleInputVatMinor: 798,
                     status: .proposed
                 )
             )
@@ -166,11 +162,9 @@
                     transactionId: hosting.id,
                     treatment: .reverseCharge,
                     customerType: .b2b,
-                    supplyType: .digitalService,
+                    supplyType: .service,
                     taxableBaseMinor: 2000,
-                    vatShownMinor: 0,
                     selfAssessedVatMinor: 380,
-                    deductibleInputVatMinor: 380,
                     status: .proposed
                 )
             )

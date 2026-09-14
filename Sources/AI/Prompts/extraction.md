@@ -15,9 +15,10 @@ schema exactly.
    amounts as plain decimals with a dot separator and no thousands separator
    or currency symbol: `"1234.56"`, `"71.39"`, `"0.00"`. Never convert
    currencies.
-4. Dates are `YYYY-MM-DD`. `serviceDate` is a single delivery or service date;
-   `servicePeriodStart`/`servicePeriodEnd` are a stated period. Fill either
-   the date or the period, not both, and only if the document states it.
+4. Dates are `YYYY-MM-DD`. `servicePeriodStart`/`servicePeriodEnd` are when
+   the service was rendered or the goods delivered. For a stated period use
+   its first and last day; for a single delivery or service date write that
+   same date into both. Fill them only if the document states them.
 5. `direction` is relative to the business below. A document the business
    received and has to pay is `expense`; a document the business issued to its
    own customer is `income`. Use the addressee and the sender to decide.

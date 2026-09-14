@@ -139,7 +139,6 @@ public struct CommitService: Sendable {
         compare("title", original.title, edited.title)
         compare("invoiceNumber", original.invoiceNumber, edited.invoiceNumber)
         compare("invoiceDate", original.invoiceDate, edited.invoiceDate)
-        compare("serviceDate", original.serviceDate, edited.serviceDate)
         compare("servicePeriodStart", original.servicePeriodStart, edited.servicePeriodStart)
         compare("servicePeriodEnd", original.servicePeriodEnd, edited.servicePeriodEnd)
         compare("isAdvancePayment", original.isAdvancePayment, edited.isAdvancePayment)
@@ -201,7 +200,7 @@ public struct CommitService: Sendable {
 
         let transactionFields = [
             "counterpartyId", "direction", "transactionType", "title", "invoiceNumber", "invoiceDate",
-            "serviceDate", "servicePeriodStart", "servicePeriodEnd", "isAdvancePayment", "currency",
+            "servicePeriodStart", "servicePeriodEnd", "isAdvancePayment", "currency",
             "netAmount", "taxAmount", "grossAmount", "notes", "reviewStatus"
         ]
         for field in transactionFields {
@@ -220,7 +219,7 @@ public struct CommitService: Sendable {
 
         let transactionManualFields = [
             "counterpartyId", "direction", "transactionType", "title", "invoiceNumber", "invoiceDate",
-            "serviceDate", "servicePeriodStart", "servicePeriodEnd", "isAdvancePayment", "currency",
+            "servicePeriodStart", "servicePeriodEnd", "isAdvancePayment", "currency",
             "netAmount", "taxAmount", "grossAmount", "notes"
         ]
         for field in transactionManualFields where manualFields.contains(field) {

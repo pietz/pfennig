@@ -16,6 +16,10 @@ public struct DerivedTransaction: Sendable {
     public var reasoning: String?
     /// True when the treatment came from the `TaxTreatmentDecider`, not the user.
     public var isTreatmentAutomatic: Bool
+    /// Input VAT this expense may deduct, `nil` for income. Recomputed on
+    /// every keystroke and shown in the inspector; not stored, because every
+    /// report recomputes it from components and payments.
+    public var deductibleInputVatMinor: Int64?
 
     public var hardIssues: [ValidationIssueDraft] {
         issues.filter(\.isHard)
@@ -88,7 +92,6 @@ public enum BookkeepingEngine {
         let unparseableDateFields = (draft.unparseableDateFields ?? []).filter { field in
             switch field {
             case "invoiceDate": draft.invoiceDate == nil
-            case "serviceDate": draft.serviceDate == nil
             case "servicePeriodStart": draft.servicePeriodStart == nil
             case "servicePeriodEnd": draft.servicePeriodEnd == nil
             default: true
@@ -103,8 +106,8 @@ public enum BookkeepingEngine {
             && (treatment == .reverseCharge || treatment == .intraCommunityAcquisition)
         let base = net.isZero ? gross : net
         // Same date the UStVA calculation uses for these two treatments:
-        // invoice date, failing that the service date.
-        let vatDate = draft.invoiceDate ?? draft.serviceDate ?? LocalDate.today()
+        // invoice date, failing that the start of the service period.
+        let vatDate = draft.invoiceDate ?? draft.servicePeriodStart ?? LocalDate.today()
         let selfAssessed = selfAssessesVAT
             ? try? SelfAssessedVAT.compute(
                 taxableBase: base,
@@ -124,10 +127,7 @@ public enum BookkeepingEngine {
             supplyType: supplyType,
             customerVatId: draft.direction == .income ? draft.counterpartyVatId : nil,
             taxableBaseMinor: base.minorUnits,
-            vatShownMinor: tax.minorUnits,
             selfAssessedVatMinor: selfAssessed?.selfAssessedVAT.minorUnits,
-            deductibleInputVatMinor: deductibleInputVAT,
-            outputVatMinor: draft.direction == .income ? tax.minorUnits : nil,
             status: draft.treatmentOverride == nil ? .proposed : .manualOverride
         )
 
@@ -149,7 +149,6 @@ public enum BookkeepingEngine {
         let snapshot = TransactionSnapshot(
             unparseableDateFields: unparseableDateFields,
             invoiceDate: draft.invoiceDate,
-            serviceDate: draft.serviceDate,
             servicePeriodStart: draft.servicePeriodStart,
             servicePeriodEnd: draft.servicePeriodEnd,
             paymentDates: paymentDates,
@@ -200,7 +199,8 @@ public enum BookkeepingEngine {
             draft: draft,
             issues: (result.hard + result.soft).map(Self.issueDraft),
             reasoning: reasoning,
-            isTreatmentAutomatic: draft.treatmentOverride == nil
+            isTreatmentAutomatic: draft.treatmentOverride == nil,
+            deductibleInputVatMinor: deductibleInputVAT
         )
     }
 

@@ -214,26 +214,11 @@ extension TransactionType {
     var label: LocalizedStringKey {
         switch self {
         case .invoice: "Rechnung"
-        case .receipt: "Beleg / Quittung"
+        case .receipt: "Beleg"
         case .creditNote: "Gutschrift"
-        case .refund: "Erstattung"
         case .paymentOnly: "Nur Zahlung"
         case .taxPayment: "Steuerzahlung"
         case .other: "Sonstiges"
-        }
-    }
-}
-
-extension PaymentMethod {
-    var label: LocalizedStringKey {
-        switch self {
-        case .bankTransfer: "Überweisung"
-        case .card: "Karte"
-        case .paypal: "PayPal"
-        case .directDebit: "Lastschrift"
-        case .cash: "Bar"
-        case .other: "Sonstiges"
-        case .unknown: "Unbekannt"
         }
     }
 }
@@ -242,34 +227,8 @@ extension SupplyType {
     var label: LocalizedStringKey {
         switch self {
         case .service: "Dienstleistung"
-        case .digitalService: "Digitale Leistung"
         case .goods: "Ware"
         case .unknown: "Automatisch"
-        }
-    }
-}
-
-extension TaxComponentKind {
-    var label: LocalizedStringKey {
-        switch self {
-        case .standard: "Regelsatz"
-        case .reduced: "Ermäßigt"
-        case .zero: "Ohne Steuer"
-        case .reverseChargeNote: "Reverse-Charge-Hinweis"
-        case .exempt: "Steuerfrei"
-        case .fee: "Gebühr"
-        case .deposit: "Pfand"
-        case .other: "Sonstiges"
-        }
-    }
-}
-
-extension TaxAssessmentStatus {
-    var label: LocalizedStringKey {
-        switch self {
-        case .proposed: "Vorgeschlagen"
-        case .confirmed: "Bestätigt"
-        case .manualOverride: "Manuell gesetzt"
         }
     }
 }
@@ -296,16 +255,6 @@ extension PaymentMethod {
         case .cash: "Bar"
         case .other: "Sonstiges"
         case .unknown: "Unbekannt"
-        }
-    }
-}
-
-extension TaxAssessmentStatus {
-    var text: String {
-        switch self {
-        case .proposed: "Vorgeschlagen"
-        case .confirmed: "Bestätigt"
-        case .manualOverride: "Manuell gesetzt"
         }
     }
 }

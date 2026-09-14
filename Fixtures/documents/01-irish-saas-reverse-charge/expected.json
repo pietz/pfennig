@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "CF-2026-08931",
     "invoiceDate": "2026-08-31",
-    "serviceDate": null,
     "servicePeriodStart": "2026-08-01",
     "servicePeriodEnd": "2026-08-31",
     "currency": "EUR",
@@ -43,7 +42,5 @@
     "iban": null,
     "reference": "CF-2026-08931"
   },
-  "missingFields": [
-    "serviceDate"
-  ]
+  "missingFields": []
 }

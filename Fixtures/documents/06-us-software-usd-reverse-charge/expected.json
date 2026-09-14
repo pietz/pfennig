@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "BP-INV-20264471",
     "invoiceDate": "2026-07-15",
-    "serviceDate": null,
     "servicePeriodStart": null,
     "servicePeriodEnd": null,
     "currency": "USD",

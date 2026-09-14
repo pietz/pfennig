@@ -99,7 +99,7 @@ public extension IssueCode {
         case .customerVATIdMissing:
             "USt-IdNr. des Kunden fehlt bei Reverse Charge."
         case .serviceDateMissing:
-            "Leistungsdatum fehlt."
+            "Leistungszeitraum fehlt."
         case .invoiceNumberMissing:
             "Rechnungsnummer fehlt."
         case .paymentAmountDiffers:

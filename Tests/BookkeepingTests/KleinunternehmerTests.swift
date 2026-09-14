@@ -20,8 +20,8 @@ struct KleinunternehmerTests {
 
         #expect(derived.draft.assessment?.treatment == .smallBusiness)
         #expect(derived.reasoning?.contains("Kleinunternehmerregelung") == true)
-        #expect(derived.draft.assessment?.vatShownMinor == 1900)
-        #expect(derived.draft.assessment?.outputVatMinor == 1900)
+        #expect(derived.draft.taxMinor == 1900)
+        #expect(derived.deductibleInputVatMinor == nil)
         #expect(derived.softIssues.contains { $0.code == "TAX_RATE_UNUSUAL" })
     }
 
@@ -32,8 +32,8 @@ struct KleinunternehmerTests {
         let derived = BookkeepingEngine.derive(draft, profile: profile)
 
         #expect(derived.draft.assessment?.treatment == .domesticVAT)
-        #expect(derived.draft.assessment?.vatShownMinor == 1900)
-        #expect(derived.draft.assessment?.deductibleInputVatMinor == 0)
+        #expect(derived.draft.taxMinor == 1900)
+        #expect(derived.deductibleInputVatMinor == 0)
         #expect(!derived.hardIssues.contains { $0.code == "ALLOCATION_SUM_MISMATCH" })
 
         var netAllocated = draft
@@ -57,15 +57,15 @@ struct KleinunternehmerTests {
             netMinor: 7139,
             taxMinor: 0,
             grossMinor: 7139,
-            supplyType: .digitalService,
+            supplyType: .service,
             components: [TaxComponentDraft(kind: .reverseChargeNote, rate: "0", netMinor: 7139, taxMinor: 0)],
             allocations: [AllocationDraft(categoryId: "software_subscriptions", amountMinor: 7139)]
         )
 
-        let assessment = BookkeepingEngine.derive(draft, profile: profile).draft.assessment
-        #expect(assessment?.treatment == .reverseCharge)
-        #expect(assessment?.selfAssessedVatMinor == 1356)
-        #expect(assessment?.deductibleInputVatMinor == 0)
+        let derived = BookkeepingEngine.derive(draft, profile: profile)
+        #expect(derived.draft.assessment?.treatment == .reverseCharge)
+        #expect(derived.draft.assessment?.selfAssessedVatMinor == 1356)
+        #expect(derived.deductibleInputVatMinor == 0)
     }
 
     @Test("EU goods remain unresolved because the acquisition threshold is out of scope")
@@ -88,10 +88,10 @@ struct KleinunternehmerTests {
             allocations: [AllocationDraft(categoryId: "hardware", amountMinor: 10000)]
         )
 
-        let assessment = BookkeepingEngine.derive(draft, profile: profile).draft.assessment
-        #expect(assessment?.treatment == .unknown)
-        #expect(assessment?.selfAssessedVatMinor == nil)
-        #expect(assessment?.deductibleInputVatMinor == 0)
+        let derived = BookkeepingEngine.derive(draft, profile: profile)
+        #expect(derived.draft.assessment?.treatment == .unknown)
+        #expect(derived.draft.assessment?.selfAssessedVatMinor == nil)
+        #expect(derived.deductibleInputVatMinor == 0)
     }
 
     @Test("Taxable domestic expense keeps deductible VAT and net allocation")
@@ -99,7 +99,7 @@ struct KleinunternehmerTests {
         let profile = BusinessProfile(name: "Regelbesteuerter Betrieb", vatStatus: .taxable)
         let derived = BookkeepingEngine.derive(domesticExpense(profile, allocationMinor: 10000), profile: profile)
 
-        #expect(derived.draft.assessment?.deductibleInputVatMinor == 1900)
+        #expect(derived.deductibleInputVatMinor == 1900)
         #expect(!derived.hardIssues.contains { $0.code == "ALLOCATION_SUM_MISMATCH" })
     }
 
@@ -111,7 +111,7 @@ struct KleinunternehmerTests {
           "documentType": "invoice",
           "direction": "expense",
           "counterparty": {"name": "Lieferant GmbH", "countryCode": "DE", "vatId": "DE123456789"},
-          "invoice": {"invoiceNumber": "DE-1", "invoiceDate": "2026-09-05", "serviceDate": "2026-09-05", "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "19.00", "grossAmount": "119.00"},
+          "invoice": {"invoiceNumber": "DE-1", "invoiceDate": "2026-09-05", "servicePeriodStart": "2026-09-05", "servicePeriodEnd": "2026-09-05", "currency": "EUR", "netAmount": "100.00", "taxAmount": "19.00", "grossAmount": "119.00"},
           "taxComponents": [{"rate": "19", "netAmount": "100.00", "taxAmount": "19.00", "kind": "standard"}],
           "taxTreatmentHint": {"treatment": "domesticVAT"},
           "lineItems": [{"description": "Lieferung", "netAmount": "100.00", "categoryHint": "uncategorized"}],
@@ -141,7 +141,6 @@ struct KleinunternehmerTests {
             transactionType: .invoice,
             invoiceNumber: "DE-1",
             invoiceDate: Self.invoiceDate,
-            serviceDate: Self.invoiceDate,
             netMinor: 10000,
             taxMinor: 1900,
             grossMinor: 11900,

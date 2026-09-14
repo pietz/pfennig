@@ -23,7 +23,8 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
     public var title: String?
     public var invoiceNumber: String?
     public var invoiceDate: LocalDate?
-    public var serviceDate: LocalDate?
+    /// The period the service was rendered in. A single service date is stored
+    /// as the same value in both ends.
     public var servicePeriodStart: LocalDate?
     public var servicePeriodEnd: LocalDate?
     /// Date fields supplied by the model that were nonempty but could not be
@@ -65,7 +66,6 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         title: String? = nil,
         invoiceNumber: String? = nil,
         invoiceDate: LocalDate? = nil,
-        serviceDate: LocalDate? = nil,
         servicePeriodStart: LocalDate? = nil,
         servicePeriodEnd: LocalDate? = nil,
         unparseableDateFields: [String]? = nil,
@@ -96,7 +96,6 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         self.title = title
         self.invoiceNumber = invoiceNumber
         self.invoiceDate = invoiceDate
-        self.serviceDate = serviceDate
         self.servicePeriodStart = servicePeriodStart
         self.servicePeriodEnd = servicePeriodEnd
         self.unparseableDateFields = unparseableDateFields
@@ -138,6 +137,31 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         case let (nil, tax?, gross?): netMinor = gross - tax
         default: break
         }
+    }
+}
+
+public extension TransactionDraft {
+    /// The VAT rate or rates the document shows, for the inspector's
+    /// read-only "Steuersatz": `"19 %"`, `"7 % / 19 %"`, and `"0 %"` when no
+    /// component carries a rate at all. Rates are distinct and ordered from
+    /// low to high, and a decimal rate is written the German way.
+    /// What is still unpaid: the booked gross minus everything already
+    /// allocated to this transaction. Never negative, so an overpayment reads
+    /// as "nothing open". It is the default amount of a new payment.
+    var openAmountMinor: Int64 {
+        max((grossMinor ?? 0) - payments.reduce(0) { $0 + $1.allocated }, 0)
+    }
+
+    var effectiveTaxRateText: String {
+        let rates = components
+            .compactMap { $0.rate?.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+            .compactMap { Decimal(string: $0, locale: Locale(identifier: "en_US_POSIX")) }
+        let distinct = Set(rates).sorted()
+        guard !distinct.isEmpty else { return "0 %" }
+        return distinct
+            .map { "\("\($0)".replacingOccurrences(of: ".", with: ",")) %" }
+            .joined(separator: " / ")
     }
 }
 
@@ -212,10 +236,7 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
     public var supplyType: SupplyType
     public var customerVatId: String?
     public var taxableBaseMinor: Int64?
-    public var vatShownMinor: Int64?
     public var selfAssessedVatMinor: Int64?
-    public var deductibleInputVatMinor: Int64?
-    public var outputVatMinor: Int64?
     public var status: TaxAssessmentStatus
 
     public init(
@@ -224,10 +245,7 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
         supplyType: SupplyType = .unknown,
         customerVatId: String? = nil,
         taxableBaseMinor: Int64? = nil,
-        vatShownMinor: Int64? = nil,
         selfAssessedVatMinor: Int64? = nil,
-        deductibleInputVatMinor: Int64? = nil,
-        outputVatMinor: Int64? = nil,
         status: TaxAssessmentStatus = .proposed
     ) {
         self.treatment = treatment
@@ -235,10 +253,7 @@ public struct TaxAssessmentDraft: Codable, Sendable, Hashable {
         self.supplyType = supplyType
         self.customerVatId = customerVatId
         self.taxableBaseMinor = taxableBaseMinor
-        self.vatShownMinor = vatShownMinor
         self.selfAssessedVatMinor = selfAssessedVatMinor
-        self.deductibleInputVatMinor = deductibleInputVatMinor
-        self.outputVatMinor = outputVatMinor
         self.status = status
     }
 }
@@ -266,7 +281,7 @@ public struct PaymentDraft: Codable, Sendable, Hashable, Identifiable {
         currency: CurrencyCode = .eur,
         counterpartyNameRaw: String? = nil,
         reference: String? = nil,
-        paymentMethod: PaymentMethod? = .bankTransfer,
+        paymentMethod: PaymentMethod? = nil,
         source: PaymentSource = .manual,
         allocatedMinor: Int64? = nil,
         matchMethod: MatchMethod = .manual

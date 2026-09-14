@@ -15,7 +15,6 @@ public struct TransactionSnapshot: Sendable {
     // MARK: Dates
 
     public var invoiceDate: LocalDate?
-    public var serviceDate: LocalDate?
     public var servicePeriodStart: LocalDate?
     public var servicePeriodEnd: LocalDate?
     public var paymentDates: [LocalDate]
@@ -68,7 +67,6 @@ public struct TransactionSnapshot: Sendable {
         unparseableCurrencyCode: String? = nil,
         unparseableDateFields: [String] = [],
         invoiceDate: LocalDate? = nil,
-        serviceDate: LocalDate? = nil,
         servicePeriodStart: LocalDate? = nil,
         servicePeriodEnd: LocalDate? = nil,
         paymentDates: [LocalDate] = [],
@@ -96,7 +94,6 @@ public struct TransactionSnapshot: Sendable {
         self.unparseableCurrencyCode = unparseableCurrencyCode
         self.unparseableDateFields = unparseableDateFields
         self.invoiceDate = invoiceDate
-        self.serviceDate = serviceDate
         self.servicePeriodStart = servicePeriodStart
         self.servicePeriodEnd = servicePeriodEnd
         self.paymentDates = paymentDates
@@ -221,7 +218,7 @@ public enum TransactionValidator {
         }
         if let issue = TaxValidator.validateServiceDateMissing(
             isKleinbetrag: snapshot.isKleinbetrag,
-            serviceDate: snapshot.serviceDate,
+            servicePeriodStart: snapshot.servicePeriodStart,
             servicePeriodEnd: snapshot.servicePeriodEnd
         ) {
             soft.append(issue)

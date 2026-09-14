@@ -62,11 +62,11 @@ public enum TaxValidator {
     /// Spec 5.5 / 14.2: "Missing service date (not for Kleinbetrag)."
     public static func validateServiceDateMissing(
         isKleinbetrag: Bool,
-        serviceDate: LocalDate?,
+        servicePeriodStart: LocalDate?,
         servicePeriodEnd: LocalDate?
     ) -> ValidationIssue? {
-        guard !isKleinbetrag, serviceDate == nil, servicePeriodEnd == nil else { return nil }
-        return ValidationIssue(code: .serviceDateMissing, fieldName: "serviceDate")
+        guard !isKleinbetrag, servicePeriodStart == nil, servicePeriodEnd == nil else { return nil }
+        return ValidationIssue(code: .serviceDateMissing, fieldName: "servicePeriodStart")
     }
 
     /// Spec 5.5 / 14.2: "Missing invoice number (suppressed for Kleinbetrag)."

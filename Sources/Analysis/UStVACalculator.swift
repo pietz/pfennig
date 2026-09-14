@@ -22,8 +22,9 @@ import Tax
 ///   Zahlungsdatum)` - conservative against §15 UStG, and it needs no
 ///   "invoice on hand" field.
 /// - **§13b and intra-Community acquisitions** count in full with the invoice
-///   date - failing that, the service date - regardless of payment. Without
-///   either date the transaction becomes an exception instead of a line.
+///   date - failing that, the start of the service period - regardless of
+///   payment. Without either date the transaction becomes an exception
+///   instead of a line.
 public enum UStVACalculator {
     /// Prepares one period. `db` is a GRDB connection inside a read or write.
     public static func prepare(
@@ -68,7 +69,7 @@ public enum UStVACalculator {
         var direction: Direction
         var title: String?
         var invoiceDate: LocalDate?
-        var serviceDate: LocalDate?
+        var servicePeriodStart: LocalDate?
         var bookedCurrency: String
         var bookedNetMinor: Int64?
         var bookedTaxMinor: Int64?
@@ -122,7 +123,8 @@ public enum UStVACalculator {
 
     /// Transactions that can touch the period: their invoice date is inside
     /// it, one of their payments is, or - for §13b and intra-Community
-    /// acquisitions without an invoice date - their service date is. That
+    /// acquisitions without an invoice date - their service period starts in
+    /// it. That
     /// covers every dating rule above, because `max(Rechnung, Zahlung)` can
     /// only land in the period when one of the two does.
     private static func transactionRows(
@@ -133,7 +135,7 @@ public enum UStVACalculator {
         try TransactionRow.fetchAll(
             db,
             sql: """
-            SELECT t.id, t.direction, t.title, t.invoice_date, t.service_date,
+            SELECT t.id, t.direction, t.title, t.invoice_date, t.service_period_start,
                    t.booked_currency, t.booked_net_minor, t.booked_tax_minor, t.booked_gross_minor,
                    ta.treatment AS treatment,
                    ta.taxable_base_minor AS taxable_base_minor,
@@ -149,7 +151,8 @@ public enum UStVACalculator {
                AND \(TransactionQueryRules.recordedVisibilityPredicate(for: "t"))
                AND (
                     (t.invoice_date >= :start AND t.invoice_date <= :end)
-                 OR (t.invoice_date IS NULL AND t.service_date >= :start AND t.service_date <= :end)
+                 OR (t.invoice_date IS NULL AND t.service_period_start >= :start
+                     AND t.service_period_start <= :end)
                  OR EXISTS (
                         SELECT 1 FROM payment_allocations pa
                           JOIN payments p ON p.id = pa.payment_id
@@ -378,7 +381,7 @@ private extension UStVACalculator {
                 return dates
 
             case .reverseCharge:
-                guard let date = row.invoiceDate ?? row.serviceDate else {
+                guard let date = row.invoiceDate ?? row.servicePeriodStart else {
                     note(.other, row, "Rechnungsdatum fehlt")
                     return []
                 }
@@ -403,7 +406,7 @@ private extension UStVACalculator {
                 return [date]
 
             case .intraCommunityAcquisition:
-                guard let date = row.invoiceDate ?? row.serviceDate else {
+                guard let date = row.invoiceDate ?? row.servicePeriodStart else {
                     note(.other, row, "Rechnungsdatum fehlt")
                     return []
                 }

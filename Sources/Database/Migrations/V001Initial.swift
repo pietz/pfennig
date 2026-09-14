@@ -87,7 +87,6 @@ enum V001Initial {
             title TEXT,
             invoice_number TEXT,
             invoice_date TEXT,
-            service_date TEXT,
             service_period_start TEXT,
             service_period_end TEXT,
             is_advance_payment INTEGER NOT NULL DEFAULT 0,
@@ -159,10 +158,7 @@ enum V001Initial {
             customer_vat_id TEXT,
 
             taxable_base_minor INTEGER,
-            vat_shown_minor INTEGER,
             self_assessed_vat_minor INTEGER,
-            deductible_input_vat_minor INTEGER,
-            output_vat_minor INTEGER,
             currency TEXT NOT NULL DEFAULT 'EUR',
 
             status TEXT NOT NULL,
@@ -170,7 +166,7 @@ enum V001Initial {
             updated_at TEXT NOT NULL
         )
         """,
-        "CREATE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id)",
+        "CREATE UNIQUE INDEX idx_taxassess_transaction ON tax_assessments(transaction_id)",
         // 17.11 transaction_documents
         """
         CREATE TABLE transaction_documents (

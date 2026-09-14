@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "HSP-2026-4471",
     "invoiceDate": "2026-05-12",
-    "serviceDate": null,
     "servicePeriodStart": "2026-05-10",
     "servicePeriodEnd": "2026-05-12",
     "currency": "EUR",

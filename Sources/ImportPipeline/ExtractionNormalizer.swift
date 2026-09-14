@@ -25,7 +25,6 @@ public enum ExtractionNormalizer {
     static let fieldPaths: [String: String] = [
         "invoice.invoiceNumber": "invoiceNumber",
         "invoice.invoiceDate": "invoiceDate",
-        "invoice.serviceDate": "serviceDate",
         "invoice.servicePeriodStart": "servicePeriodStart",
         "invoice.servicePeriodEnd": "servicePeriodEnd",
         "invoice.currency": "currency",
@@ -100,7 +99,6 @@ public enum ExtractionNormalizer {
             return date
         }
         let invoiceDate = date(extraction.invoice.invoiceDate, fieldName: "invoiceDate")
-        let serviceDate = date(extraction.invoice.serviceDate, fieldName: "serviceDate")
         let servicePeriodStart = date(extraction.invoice.servicePeriodStart, fieldName: "servicePeriodStart")
         let servicePeriodEnd = date(extraction.invoice.servicePeriodEnd, fieldName: "servicePeriodEnd")
 
@@ -117,7 +115,6 @@ public enum ExtractionNormalizer {
             title: title(of: extraction),
             invoiceNumber: extraction.invoice.invoiceNumber?.trimmed.nilIfEmpty,
             invoiceDate: invoiceDate,
-            serviceDate: serviceDate,
             servicePeriodStart: servicePeriodStart,
             servicePeriodEnd: servicePeriodEnd,
             unparseableDateFields: unparseableDateFields.isEmpty ? nil : unparseableDateFields,

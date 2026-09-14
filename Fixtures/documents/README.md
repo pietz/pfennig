@@ -29,7 +29,7 @@ Mara Beispiel, Freelance Software Development, Musterstraße 12, 10115 Berlin, U
 
 | # | Folder | What it tests |
 |---|---|---|
-| 01 | `01-irish-saas-reverse-charge` | EU SaaS subscription from Ireland, EUR 71.39, explicit "VAT reverse charged" note, service period Aug 2026. Exercises §13b **reverseCharge** on an expense with a stated service period but no discrete `serviceDate` (`missingFields`). |
+| 01 | `01-irish-saas-reverse-charge` | EU SaaS subscription from Ireland, EUR 71.39, explicit "VAT reverse charged" note, service period Aug 2026. Exercises §13b **reverseCharge** on an expense with a stated service period. |
 | 02 | `02-german-hosting-monthly` | German hosting invoice, 19% VAT, net 40.00, monthly recurring, IBAN + SEPA-Lastschrift hint. Exercises plain **domesticVAT** with direct-debit payment info. |
 | 03 | `03-office-supplies-kassenbon` | Narrow thermal-receipt-style till receipt (Kassenbon), gross 23.80 with one 19% and one 7% item, no invoice number, no customer address. Exercises **Kleinbetragsrechnung** (§33 UStDV) relaxation and mixed tax rates on a single small receipt. |
 | 04 | `04-bahn-ticket-mixed-vat` | Deutsche-Bahn-style train ticket (A6 layout) with a 7% fare component and a 19% seat-reservation component. Exercises mixed `taxComponents` on domestic transport. |

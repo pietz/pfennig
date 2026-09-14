@@ -49,7 +49,7 @@ struct UStVACalculatorTests {
         counterpartyCountry: String? = nil,
         counterpartyName: String = "Testpartner",
         selfAssessedVatMinor: Int64? = nil,
-        serviceDate: LocalDate? = nil,
+        servicePeriodStart: LocalDate? = nil,
         attachDocument: Bool = true
     ) throws -> TransactionRecord {
         var counterpartyID: String?
@@ -69,7 +69,7 @@ struct UStVACalculatorTests {
             transactionType: .invoice,
             title: title,
             invoiceDate: invoiceDate,
-            serviceDate: serviceDate,
+            servicePeriodStart: servicePeriodStart,
             bookedNetMinor: net,
             bookedTaxMinor: tax,
             bookedGrossMinor: net + tax,
@@ -82,9 +82,7 @@ struct UStVACalculatorTests {
                     transactionId: transaction.id,
                     treatment: treatment,
                     taxableBaseMinor: net,
-                    vatShownMinor: tax,
                     selfAssessedVatMinor: selfAssessedVatMinor,
-                    deductibleInputVatMinor: selfAssessedVatMinor,
                     status: .confirmed
                 ).insert(db)
             }
@@ -282,7 +280,7 @@ struct UStVACalculatorTests {
             title: "SaaS ohne Rechnungsdatum", invoiceDate: nil,
             net: 100_000, tax: 0, counterpartyCountry: "IE", counterpartyName: "Cloud Ltd",
             selfAssessedVatMinor: 19000,
-            serviceDate: LocalDate(year: 2026, month: 8, day: 5)
+            servicePeriodStart: LocalDate(year: 2026, month: 8, day: 5)
         )
 
         let q3 = try prepare(database, profile, quarter: 3)

@@ -76,7 +76,6 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
             title: transaction.title,
             invoiceNumber: transaction.invoiceNumber,
             invoiceDate: transaction.invoiceDate,
-            serviceDate: transaction.serviceDate,
             servicePeriodStart: transaction.servicePeriodStart,
             servicePeriodEnd: transaction.servicePeriodEnd,
             isAdvancePayment: transaction.isAdvancePayment,
@@ -108,10 +107,7 @@ public struct TransactionDetail: Sendable, Hashable, Identifiable {
                     supplyType: $0.supplyType,
                     customerVatId: $0.customerVatId,
                     taxableBaseMinor: $0.taxableBaseMinor,
-                    vatShownMinor: $0.vatShownMinor,
                     selfAssessedVatMinor: $0.selfAssessedVatMinor,
-                    deductibleInputVatMinor: $0.deductibleInputVatMinor,
-                    outputVatMinor: $0.outputVatMinor,
                     status: $0.status
                 )
             },

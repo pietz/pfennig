@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "RE-2026-0043",
     "invoiceDate": "2026-08-28",
-    "serviceDate": null,
     "servicePeriodStart": "2026-08-01",
     "servicePeriodEnd": "2026-08-31",
     "currency": "EUR",

@@ -12,7 +12,7 @@ enum Fixture {
     static func passingSnapshot() -> TransactionSnapshot {
         TransactionSnapshot(
             invoiceDate: LocalDate(year: 2026, month: 3, day: 10),
-            serviceDate: LocalDate(year: 2026, month: 3, day: 10),
+            servicePeriodStart: LocalDate(year: 2026, month: 3, day: 10),
             net: eur("100.00"),
             tax: eur("19.00"),
             gross: eur("119.00"),

@@ -56,7 +56,6 @@ public struct BookkeepingRepository: Sendable {
             "title": record.title,
             "invoiceNumber": record.invoiceNumber,
             "invoiceDate": record.invoiceDate?.description,
-            "serviceDate": record.serviceDate?.description,
             "servicePeriodStart": record.servicePeriodStart?.description,
             "servicePeriodEnd": record.servicePeriodEnd?.description,
             "isAdvancePayment": String(record.isAdvancePayment),
@@ -148,7 +147,6 @@ public struct BookkeepingRepository: Sendable {
         record.title = draft.title?.nilIfBlank
         record.invoiceNumber = draft.invoiceNumber?.nilIfBlank
         record.invoiceDate = draft.invoiceDate
-        record.serviceDate = draft.serviceDate
         record.servicePeriodStart = draft.servicePeriodStart
         record.servicePeriodEnd = draft.servicePeriodEnd
         record.isAdvancePayment = draft.isAdvancePayment
@@ -557,10 +555,7 @@ public struct BookkeepingRepository: Sendable {
             supplyType: assessment.supplyType,
             customerVatId: assessment.customerVatId,
             taxableBaseMinor: assessment.taxableBaseMinor,
-            vatShownMinor: assessment.vatShownMinor,
             selfAssessedVatMinor: assessment.selfAssessedVatMinor,
-            deductibleInputVatMinor: assessment.deductibleInputVatMinor,
-            outputVatMinor: assessment.outputVatMinor,
             currency: draft.currency.rawValue,
             status: assessment.status,
             createdAt: now,
@@ -596,18 +591,16 @@ public struct BookkeepingRepository: Sendable {
             context: context,
             now: now
         )
-        for field in ["selfAssessedVat", "deductibleInputVat", "outputVat"] {
-            try writeProvenance(
-                db,
-                entity: FieldProvenance.Entity.taxAssessment,
-                id: record.id,
-                field: field,
-                provenance: .calculated,
-                isManualOverride: false,
-                context: context,
-                now: now
-            )
-        }
+        try writeProvenance(
+            db,
+            entity: FieldProvenance.Entity.taxAssessment,
+            id: record.id,
+            field: "selfAssessedVat",
+            provenance: .calculated,
+            isManualOverride: false,
+            context: context,
+            now: now
+        )
     }
 
     private func matches(_ record: TaxAssessment, _ draft: TaxAssessmentDraft) -> Bool {
@@ -616,10 +609,7 @@ public struct BookkeepingRepository: Sendable {
             && record.supplyType == draft.supplyType
             && record.customerVatId == draft.customerVatId
             && record.taxableBaseMinor == draft.taxableBaseMinor
-            && record.vatShownMinor == draft.vatShownMinor
             && record.selfAssessedVatMinor == draft.selfAssessedVatMinor
-            && record.deductibleInputVatMinor == draft.deductibleInputVatMinor
-            && record.outputVatMinor == draft.outputVatMinor
             && record.status == draft.status
     }
 

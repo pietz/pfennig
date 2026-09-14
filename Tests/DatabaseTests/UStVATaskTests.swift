@@ -97,9 +97,7 @@ struct UStVATaskTests {
                     transactionId: transaction.id,
                     treatment: treatment,
                     taxableBaseMinor: net,
-                    vatShownMinor: tax,
                     selfAssessedVatMinor: selfAssessedVatMinor,
-                    deductibleInputVatMinor: selfAssessedVatMinor,
                     status: .confirmed
                 ).insert(db)
             }

@@ -45,7 +45,7 @@ struct TaxTreatmentDeciderTests {
         let decision = TaxTreatmentDecider.decide(TaxTreatmentDecisionInput(
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "US", hasVATId: false),
-            supplyType: .digitalService, document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"])
+            supplyType: .service, document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"])
         ))
         #expect(decision.treatment == .reverseCharge)
     }

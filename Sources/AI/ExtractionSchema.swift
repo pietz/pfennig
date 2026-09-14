@@ -25,7 +25,6 @@ public enum ExtractionSchema {
             "invoice": object([
                 "invoiceNumber": nullable("string"),
                 "invoiceDate": nullable("string"),
-                "serviceDate": nullable("string"),
                 "servicePeriodStart": nullable("string"),
                 "servicePeriodEnd": nullable("string"),
                 "currency": nullable("string"),

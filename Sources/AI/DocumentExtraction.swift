@@ -14,7 +14,6 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
     public struct Invoice: Codable, Sendable, Hashable {
         public var invoiceNumber: String?
         public var invoiceDate: String?
-        public var serviceDate: String?
         public var servicePeriodStart: String?
         public var servicePeriodEnd: String?
         public var currency: String?

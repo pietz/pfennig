@@ -10,9 +10,8 @@
   "invoice": {
     "invoiceNumber": "BE-778812345",
     "invoiceDate": "2026-06-03",
-    "serviceDate": "2026-06-03",
-    "servicePeriodStart": null,
-    "servicePeriodEnd": null,
+    "servicePeriodStart": "2026-06-03",
+    "servicePeriodEnd": "2026-06-03",
     "currency": "EUR",
     "netAmount": "87.75",
     "taxAmount": "7.15",

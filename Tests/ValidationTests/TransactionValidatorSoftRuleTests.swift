@@ -59,7 +59,7 @@ struct TransactionValidatorSoftRuleTests {
         #expect(TransactionValidator.validate(Fixture.passingSnapshot()).soft.isEmpty)
 
         var failing = Fixture.passingSnapshot()
-        failing.serviceDate = nil
+        failing.servicePeriodStart = nil
         failing.servicePeriodEnd = nil
         let result = TransactionValidator.validate(failing)
         #expect(result.soft.contains { $0.code == .serviceDateMissing })
@@ -68,7 +68,7 @@ struct TransactionValidatorSoftRuleTests {
     @Test("SERVICE_DATE_MISSING is suppressed for Kleinbetrag")
     func serviceDateMissingSuppressedForKleinbetrag() {
         var snapshot = Fixture.passingSnapshot()
-        snapshot.serviceDate = nil
+        snapshot.servicePeriodStart = nil
         snapshot.servicePeriodEnd = nil
         snapshot.isKleinbetrag = true
         #expect(!TransactionValidator.validate(snapshot).soft.contains { $0.code == .serviceDateMissing })

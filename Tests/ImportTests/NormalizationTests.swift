@@ -33,7 +33,6 @@ struct NormalizationTests {
         #expect(result.draft.taxMinor == 0)
         #expect(result.draft.grossMinor == 7139)
         #expect(result.draft.invoiceDate == LocalDate(year: 2026, month: 8, day: 31))
-        #expect(result.draft.serviceDate == nil)
         #expect(result.draft.servicePeriodStart == LocalDate(year: 2026, month: 8, day: 1))
         #expect(result.draft.servicePeriodEnd == LocalDate(year: 2026, month: 8, day: 31))
         #expect(result.draft.counterpartyName == "CloudForge")
@@ -50,7 +49,6 @@ struct NormalizationTests {
         defer { workspace.cleanUp() }
         var input = try extraction("01-")
         input.invoice.invoiceDate = "2026-02-30"
-        input.invoice.serviceDate = "2026-02-31"
         input.invoice.servicePeriodStart = "2026-13-01"
         input.invoice.servicePeriodEnd = "2026-04-31"
 
@@ -61,7 +59,7 @@ struct NormalizationTests {
             categoryIDs: Set(workspace.database.categories().map(\.id))
         )
         #expect((normalized.draft.unparseableDateFields ?? []) == [
-            "invoiceDate", "serviceDate", "servicePeriodStart", "servicePeriodEnd"
+            "invoiceDate", "servicePeriodStart", "servicePeriodEnd"
         ])
 
         let derived = try BookkeepingEngine.derive(
@@ -75,7 +73,7 @@ struct NormalizationTests {
             .filter { $0.code == "DATE_IMPOSSIBLE" }
             .compactMap(\.fieldName)
         #expect(dateIssueFields == [
-            "invoiceDate", "serviceDate", "servicePeriodStart", "servicePeriodEnd"
+            "invoiceDate", "servicePeriodStart", "servicePeriodEnd"
         ])
     }
 
@@ -84,9 +82,8 @@ struct NormalizationTests {
         let workspace = try Support.workspace()
         defer { workspace.cleanUp() }
         var input = try extraction("01-")
-        input.invoice.serviceDate = ""
-        input.invoice.servicePeriodStart = nil
-        input.invoice.servicePeriodEnd = ""
+        input.invoice.servicePeriodStart = ""
+        input.invoice.servicePeriodEnd = nil
 
         let normalized = try ExtractionNormalizer.normalize(
             input,
@@ -95,7 +92,6 @@ struct NormalizationTests {
             categoryIDs: Set(workspace.database.categories().map(\.id))
         )
         #expect(normalized.draft.invoiceDate == LocalDate(year: 2026, month: 8, day: 31))
-        #expect(normalized.draft.serviceDate == nil)
         #expect(normalized.draft.servicePeriodStart == nil)
         #expect(normalized.draft.servicePeriodEnd == nil)
         #expect(normalized.draft.unparseableDateFields == nil)

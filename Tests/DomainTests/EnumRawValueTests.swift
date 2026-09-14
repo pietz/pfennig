@@ -9,7 +9,7 @@ import Testing
 struct EnumRawValueTests {
     static let snapshot: [String: [String]] = [
         "Direction": ["income", "expense", "unknown"],
-        "TransactionType": ["invoice", "receipt", "creditNote", "refund", "paymentOnly", "taxPayment", "other"],
+        "TransactionType": ["invoice", "receipt", "creditNote", "paymentOnly", "taxPayment", "other"],
         "WorkflowStatus": ["active", "archived"],
         "ReviewStatus": ["unreviewed", "needsReview", "confirmed", "conflict"],
         "TaxTreatment": ["domesticVAT", "reverseCharge", "intraCommunityAcquisition", "intraCommunitySupply",
@@ -17,7 +17,7 @@ struct EnumRawValueTests {
         "TaxComponentKind": ["standard", "reduced", "zero", "reverseChargeNote", "exempt", "fee", "deposit", "other"],
         "TaxAssessmentStatus": ["proposed", "confirmed", "manualOverride"],
         "CustomerType": ["b2b", "b2c", "unknown"],
-        "SupplyType": ["service", "digitalService", "goods", "unknown"],
+        "SupplyType": ["service", "goods", "unknown"],
         "DocumentType": ["invoice", "receipt", "creditNote", "statement", "contract", "other", "unknown"],
         "DocumentRole": ["invoice", "receipt", "creditNote", "statement", "other"],
         "DocumentSource": ["dragDrop", "fileImport", "other"],

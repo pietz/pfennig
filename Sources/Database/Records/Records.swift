@@ -156,7 +156,6 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
     public var title: String?
     public var invoiceNumber: String?
     public var invoiceDate: LocalDate?
-    public var serviceDate: LocalDate?
     public var servicePeriodStart: LocalDate?
     public var servicePeriodEnd: LocalDate?
     public var isAdvancePayment: Bool
@@ -191,7 +190,6 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
         title: String? = nil,
         invoiceNumber: String? = nil,
         invoiceDate: LocalDate? = nil,
-        serviceDate: LocalDate? = nil,
         servicePeriodStart: LocalDate? = nil,
         servicePeriodEnd: LocalDate? = nil,
         isAdvancePayment: Bool = false,
@@ -220,7 +218,6 @@ public struct TransactionRecord: PfennigRecord, Identifiable, Sendable, Hashable
         self.title = title
         self.invoiceNumber = invoiceNumber
         self.invoiceDate = invoiceDate
-        self.serviceDate = serviceDate
         self.servicePeriodStart = servicePeriodStart
         self.servicePeriodEnd = servicePeriodEnd
         self.isAdvancePayment = isAdvancePayment
@@ -299,10 +296,7 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
     public var supplyType: SupplyType = .unknown
     public var customerVatId: String?
     public var taxableBaseMinor: Int64?
-    public var vatShownMinor: Int64?
     public var selfAssessedVatMinor: Int64?
-    public var deductibleInputVatMinor: Int64?
-    public var outputVatMinor: Int64?
     public var currency: String = "EUR"
     public var status: TaxAssessmentStatus = .proposed
     public var createdAt: String = Timestamp.string()
@@ -316,10 +310,7 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
         supplyType: SupplyType = .unknown,
         customerVatId: String? = nil,
         taxableBaseMinor: Int64? = nil,
-        vatShownMinor: Int64? = nil,
         selfAssessedVatMinor: Int64? = nil,
-        deductibleInputVatMinor: Int64? = nil,
-        outputVatMinor: Int64? = nil,
         currency: String = "EUR",
         status: TaxAssessmentStatus = .proposed,
         createdAt: String = Timestamp.string(),
@@ -332,10 +323,7 @@ public struct TaxAssessment: PfennigRecord, Identifiable, Sendable, Hashable {
         self.supplyType = supplyType
         self.customerVatId = customerVatId
         self.taxableBaseMinor = taxableBaseMinor
-        self.vatShownMinor = vatShownMinor
         self.selfAssessedVatMinor = selfAssessedVatMinor
-        self.deductibleInputVatMinor = deductibleInputVatMinor
-        self.outputVatMinor = outputVatMinor
         self.currency = currency
         self.status = status
         self.createdAt = createdAt

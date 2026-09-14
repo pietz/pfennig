@@ -338,7 +338,7 @@ public enum UStVATasks {
             SELECT MIN(d) FROM (
                 SELECT MIN(invoice_date) AS d FROM transactions WHERE deleted_at IS NULL
                 UNION ALL
-                SELECT MIN(service_date) FROM transactions WHERE deleted_at IS NULL
+                SELECT MIN(service_period_start) FROM transactions WHERE deleted_at IS NULL
                 UNION ALL
                 SELECT MIN(payment_date) FROM payments
             )

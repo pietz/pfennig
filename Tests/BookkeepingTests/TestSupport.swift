@@ -25,7 +25,6 @@ enum Fixture {
             title: "Mobilfunk September",
             invoiceNumber: "R-2026-9912",
             invoiceDate: LocalDate(year: 2026, month: 9, day: 5),
-            serviceDate: LocalDate(year: 2026, month: 9, day: 5),
             netMinor: 10000,
             taxMinor: 1900,
             grossMinor: 11900,
@@ -50,7 +49,7 @@ enum Fixture {
             netMinor: 7139,
             taxMinor: 0,
             grossMinor: 7139,
-            supplyType: .digitalService,
+            supplyType: .service,
             components: [TaxComponentDraft(kind: .reverseChargeNote, rate: "0", netMinor: 7139, taxMinor: 0)],
             allocations: [AllocationDraft(categoryId: "software_subscriptions", amountMinor: 7139)]
         )

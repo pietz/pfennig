@@ -22,15 +22,14 @@ struct PaymentEditor: View {
         _draft = draft
         self.onSave = onSave
         let transaction = draft.wrappedValue
-        let open = (transaction.grossMinor ?? 0) - transaction.payments.reduce(0) { $0 + $1.allocated }
+        // Datum and Betrag are the only two facts a manual payment needs; the
+        // open remainder and today are almost always the right answer.
         _payment = State(
             initialValue: PaymentDraft(
                 direction: transaction.direction == .income ? .inflow : .outflow,
                 paymentDate: .today(),
-                amountMinor: max(open, 0),
-                currency: transaction.currency,
-                counterpartyNameRaw: transaction.counterpartyName.isEmpty ? nil : transaction.counterpartyName,
-                reference: transaction.invoiceNumber
+                amountMinor: transaction.openAmountMinor,
+                currency: transaction.currency
             )
         )
     }
@@ -68,10 +67,6 @@ struct PaymentEditor: View {
                     if let paymentAmountMessage {
                         IssueRow(severity: .error, message: paymentAmountMessage)
                     }
-                    Picker("Methode", selection: $payment.paymentMethod) {
-                        ForEach(PaymentMethod.allCases, id: \.self) { Text($0.label).tag(PaymentMethod?.some($0)) }
-                    }
-                    TextField("Referenz", text: $payment.reference.orEmpty, prompt: Text("optional"))
                 } footer: {
                     Text(openAmountHint)
                         .font(.callout)
@@ -97,7 +92,7 @@ struct PaymentEditor: View {
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
         }
-        .frame(width: 460, height: 380)
+        .frame(width: 420, height: 280)
     }
 
     private var paymentAmountMessage: String? {
@@ -107,8 +102,8 @@ struct PaymentEditor: View {
     }
 
     private var openAmountHint: String {
-        let open = (draft.grossMinor ?? 0) - draft.payments.reduce(0) { $0 + $1.allocated }
-        return "Offen: \(Format.money(open, currency: draft.currency)). Ein kleinerer Betrag wird als Teilzahlung gebucht."
+        "Offen: \(Format.money(draft.openAmountMinor, currency: draft.currency))."
+            + " Ein kleinerer Betrag wird als Teilzahlung gebucht."
     }
 
     private func save() {

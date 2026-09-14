@@ -10,9 +10,8 @@
   "invoice": {
     "invoiceNumber": null,
     "invoiceDate": "2026-06-18",
-    "serviceDate": "2026-06-18",
-    "servicePeriodStart": null,
-    "servicePeriodEnd": null,
+    "servicePeriodStart": "2026-06-18",
+    "servicePeriodEnd": "2026-06-18",
     "currency": "EUR",
     "netAmount": "16.44",
     "taxAmount": "2.06",

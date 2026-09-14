@@ -35,7 +35,6 @@ struct BookkeepingRepositoryTests {
         #expect(reloaded.title == "Mobilfunk September")
         #expect(reloaded.invoiceNumber == "R-2026-9912")
         #expect(reloaded.invoiceDate == LocalDate(year: 2026, month: 9, day: 5))
-        #expect(reloaded.serviceDate == LocalDate(year: 2026, month: 9, day: 5))
         #expect(reloaded.servicePeriodStart == LocalDate(year: 2026, month: 9, day: 1))
         #expect(reloaded.servicePeriodEnd == LocalDate(year: 2026, month: 9, day: 30))
         #expect(reloaded.currency == .eur)
@@ -52,8 +51,6 @@ struct BookkeepingRepositoryTests {
         #expect(reloaded.allocations[0].amountMinor == 10000)
         #expect(reloaded.assessment?.treatment == .domesticVAT)
         #expect(reloaded.assessment?.taxableBaseMinor == 10000)
-        #expect(reloaded.assessment?.vatShownMinor == 1900)
-        #expect(reloaded.assessment?.deductibleInputVatMinor == 1900)
         #expect(reloaded.payments.count == 1)
         #expect(reloaded.payments[0].amountMinor == 11900)
         #expect(reloaded.payments[0].allocatedMinor == 11900)
@@ -175,9 +172,7 @@ struct BookkeepingRepositoryTests {
         let assessment = try #require(try BookkeepingRepository(database).detail(id: id)?.assessment)
         #expect(assessment.treatment == .reverseCharge)
         #expect(assessment.taxableBaseMinor == 7139)
-        #expect(assessment.vatShownMinor == 0)
         #expect(assessment.selfAssessedVatMinor == 1356)
-        #expect(assessment.deductibleInputVatMinor == 1356)
         #expect(assessment.status == .proposed)
 
         // The derived values are marked as calculated, not manual (spec 8.3).
@@ -186,6 +181,33 @@ struct BookkeepingRepositoryTests {
             .provenance == .calculated)
         #expect(detail.provenance(of: "treatment", entity: FieldProvenance.Entity.taxAssessment)?
             .isManualOverride == false)
+    }
+
+    @Test("A transaction can only ever have one assessment")
+    func assessmentIsUniquePerTransaction() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        let id = try Fixture.save(draft, in: database, profile: profile)
+
+        // Re-deriving and saving replaces the row instead of adding one.
+        draft = try #require(try BookkeepingRepository(database).detail(id: id)?.draft)
+        draft.netMinor = 20000
+        draft.taxMinor = 3800
+        draft.grossMinor = 23800
+        draft.components = [TaxComponentDraft(kind: .standard, rate: "19", netMinor: 20000, taxMinor: 3800)]
+        draft.allocations = [AllocationDraft(categoryId: "telecom", amountMinor: 20000)]
+        _ = try Fixture.save(draft, in: database, profile: profile)
+        let count = try database.reader.read { db in
+            try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM tax_assessments WHERE transaction_id = ?", arguments: [id])
+        }
+        #expect(count == 1)
+
+        // And the database itself refuses a second one.
+        #expect(throws: (any Error).self) {
+            try database.writer.write { db in
+                try TaxAssessment(transactionId: id, treatment: .domesticVAT).insert(db)
+            }
+        }
     }
 
     @Test("Replacing the assessment leaves no provenance behind")

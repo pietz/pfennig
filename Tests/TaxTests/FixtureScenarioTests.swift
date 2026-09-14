@@ -31,18 +31,18 @@ struct FixtureScenarioTests {
     /// (spec 13 has no explicit supplyType field); inferred from the
     /// document description the same way a human bookkeeper would.
     static let supplyTypes: [String: SupplyType] = [
-        "01-irish-saas-reverse-charge": .digitalService,
-        "02-german-hosting-monthly": .digitalService,
+        "01-irish-saas-reverse-charge": .service,
+        "02-german-hosting-monthly": .service,
         "03-office-supplies-kassenbon": .goods,
         "04-bahn-ticket-mixed-vat": .service,
         "05-hotel-invoice-lodging-breakfast": .service,
-        "06-us-software-usd-reverse-charge": .digitalService,
+        "06-us-software-usd-reverse-charge": .service,
         "07-uk-consultancy-gbp-reverse-charge": .service,
         "08-hardware-laptop-asset-candidate": .goods,
         "09-hardware-monitor-small": .goods,
         "10-income-invoice-domestic-gmbh": .service,
         "11-income-invoice-france-reverse-charge": .service,
-        "12-credit-note-hosting": .digitalService,
+        "12-credit-note-hosting": .service,
         "13-telecom-deposit-line": .service,
         "14-cafe-receipt-photo": .goods
     ]

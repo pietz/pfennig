@@ -308,7 +308,6 @@ def build_01_irish_saas(out_dir: Path):
         "invoice": {
             "invoiceNumber": "CF-2026-08931",
             "invoiceDate": "2026-08-31",
-            "serviceDate": None,
             "servicePeriodStart": "2026-08-01",
             "servicePeriodEnd": "2026-08-31",
             "currency": "EUR",
@@ -326,7 +325,7 @@ def build_01_irish_saas(out_dir: Path):
             {"description": "CloudForge Suite - Team plan (5 seats)", "netAmount": "71.39", "categoryHint": "software_subscriptions"}
         ],
         "paymentInfo": {"paymentMethodHint": "card", "paidIndicator": "paid", "paymentDate": None, "iban": None, "reference": "CF-2026-08931"},
-        "missingFields": ["serviceDate"],
+        "missingFields": [],
     }
     return expected
 
@@ -376,7 +375,6 @@ def build_02_german_hosting(out_dir: Path):
         "invoice": {
             "invoiceNumber": "NH-100234",
             "invoiceDate": "2026-09-01",
-            "serviceDate": None,
             "servicePeriodStart": "2026-08-01",
             "servicePeriodEnd": "2026-08-31",
             "currency": "EUR",
@@ -477,9 +475,8 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
         "invoice": {
             "invoiceNumber": None,
             "invoiceDate": "2026-07-14",
-            "serviceDate": "2026-07-14",
-            "servicePeriodStart": None,
-            "servicePeriodEnd": None,
+            "servicePeriodStart": "2026-07-14",
+            "servicePeriodEnd": "2026-07-14",
             "currency": "EUR",
             "netAmount": "21.12",
             "taxAmount": "2.68",
@@ -561,9 +558,8 @@ def build_04_bahn_ticket(out_dir: Path):
         "invoice": {
             "invoiceNumber": "BE-778812345",
             "invoiceDate": "2026-06-03",
-            "serviceDate": "2026-06-03",
-            "servicePeriodStart": None,
-            "servicePeriodEnd": None,
+            "servicePeriodStart": "2026-06-03",
+            "servicePeriodEnd": "2026-06-03",
             "currency": "EUR",
             "netAmount": "87.75",
             "taxAmount": "7.15",
@@ -630,7 +626,6 @@ def build_05_hotel(out_dir: Path):
         "invoice": {
             "invoiceNumber": "HSP-2026-4471",
             "invoiceDate": "2026-05-12",
-            "serviceDate": None,
             "servicePeriodStart": "2026-05-10",
             "servicePeriodEnd": "2026-05-12",
             "currency": "EUR",
@@ -701,7 +696,6 @@ def build_06_us_software(out_dir: Path):
         "invoice": {
             "invoiceNumber": "BP-INV-20264471",
             "invoiceDate": "2026-07-15",
-            "serviceDate": None,
             "servicePeriodStart": None,
             "servicePeriodEnd": None,
             "currency": "USD",
@@ -771,7 +765,6 @@ def build_07_uk_consultancy(out_dir: Path):
         "invoice": {
             "invoiceNumber": "TC-2026-0187",
             "invoiceDate": "2026-04-22",
-            "serviceDate": None,
             "servicePeriodStart": None,
             "servicePeriodEnd": None,
             "currency": "GBP",
@@ -840,9 +833,8 @@ def build_08_laptop(out_dir: Path):
         "invoice": {
             "invoiceNumber": "BW-2026-33210",
             "invoiceDate": "2026-03-05",
-            "serviceDate": "2026-03-05",
-            "servicePeriodStart": None,
-            "servicePeriodEnd": None,
+            "servicePeriodStart": "2026-03-05",
+            "servicePeriodEnd": "2026-03-05",
             "currency": "EUR",
             "netAmount": "1850.00",
             "taxAmount": "351.50",
@@ -898,9 +890,8 @@ def build_09_monitor(out_dir: Path):
         "invoice": {
             "invoiceNumber": "BW-2026-33450",
             "invoiceDate": "2026-03-20",
-            "serviceDate": "2026-03-20",
-            "servicePeriodStart": None,
-            "servicePeriodEnd": None,
+            "servicePeriodStart": "2026-03-20",
+            "servicePeriodEnd": "2026-03-20",
             "currency": "EUR",
             "netAmount": "299.00",
             "taxAmount": "56.81",
@@ -964,7 +955,6 @@ def build_10_income_domestic(out_dir: Path):
         "invoice": {
             "invoiceNumber": "RE-2026-0042",
             "invoiceDate": "2026-08-15",
-            "serviceDate": None,
             "servicePeriodStart": "2026-08-01",
             "servicePeriodEnd": "2026-08-31",
             "currency": "EUR",
@@ -1032,7 +1022,6 @@ def build_11_income_france(out_dir: Path):
         "invoice": {
             "invoiceNumber": "RE-2026-0043",
             "invoiceDate": "2026-08-28",
-            "serviceDate": None,
             "servicePeriodStart": "2026-08-01",
             "servicePeriodEnd": "2026-08-31",
             "currency": "EUR",
@@ -1099,7 +1088,6 @@ def build_12_credit_note(out_dir: Path):
         "invoice": {
             "invoiceNumber": "NH-CN-100256",
             "invoiceDate": "2026-09-05",
-            "serviceDate": None,
             "servicePeriodStart": None,
             "servicePeriodEnd": None,
             "currency": "EUR",
@@ -1167,7 +1155,6 @@ def build_13_telecom(out_dir: Path):
         "invoice": {
             "invoiceNumber": "TW-2026-88123",
             "invoiceDate": "2026-02-10",
-            "serviceDate": None,
             "servicePeriodStart": "2026-02-01",
             "servicePeriodEnd": "2026-02-28",
             "currency": "EUR",
@@ -1277,9 +1264,8 @@ def build_14_cafe_photo(out_dir: Path):
         "invoice": {
             "invoiceNumber": None,
             "invoiceDate": "2026-06-18",
-            "serviceDate": "2026-06-18",
-            "servicePeriodStart": None,
-            "servicePeriodEnd": None,
+            "servicePeriodStart": "2026-06-18",
+            "servicePeriodEnd": "2026-06-18",
             "currency": "EUR",
             "netAmount": "16.44",
             "taxAmount": "2.06",

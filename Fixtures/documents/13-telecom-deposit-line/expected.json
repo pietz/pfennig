@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "TW-2026-88123",
     "invoiceDate": "2026-02-10",
-    "serviceDate": null,
     "servicePeriodStart": "2026-02-01",
     "servicePeriodEnd": "2026-02-28",
     "currency": "EUR",

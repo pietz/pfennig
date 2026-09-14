@@ -111,7 +111,6 @@ public enum TaxTreatmentDecider {
         let isDomestic = counterpartyCountry == home
         let isEU = counterpartyCountry.map { euMemberStates.contains($0) } ?? false
         let taxShown = input.document.taxShown
-        let isServiceLike = input.supplyType == .service || input.supplyType == .digitalService
 
         var softIssues: [TreatmentSoftIssue] = []
         let treatment: TaxTreatment
@@ -128,11 +127,11 @@ public enum TaxTreatmentDecider {
                   input.profile.vatStatus == .taxable
         {
             treatment = .intraCommunityAcquisition
-        } else if input.direction == .expense, !isDomestic, isServiceLike, !taxShown {
+        } else if input.direction == .expense, !isDomestic, input.supplyType == .service, !taxShown {
             // §13b applies to a third-country supplier just as it does to an
             // EU one, so the origin does not change the treatment here.
             treatment = .reverseCharge
-        } else if input.direction == .income, !isDomestic, isEU, isServiceLike, !taxShown {
+        } else if input.direction == .income, !isDomestic, isEU, input.supplyType == .service, !taxShown {
             treatment = .reverseCharge
             if !input.counterparty.hasVATId {
                 softIssues.append(.missingCustomerVATIdOnReverseChargeIncome)

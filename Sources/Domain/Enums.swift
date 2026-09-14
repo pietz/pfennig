@@ -24,8 +24,15 @@ public enum Direction: String, Codable, CaseIterable, Sendable, UnknownFallbackD
     }
 }
 
+/// A refund is not a type of its own: it is an opposite-direction payment on
+/// the transaction it refunds. `paymentOnly` belongs to the statement import
+/// and is not offered in the user's picker (`userSelectable`).
 public enum TransactionType: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case invoice, receipt, creditNote, refund, paymentOnly, taxPayment, other
+    case invoice, receipt, creditNote, paymentOnly, taxPayment, other
+
+    /// The types a person can choose in the inspector.
+    public static let userSelectable: [TransactionType] = [.invoice, .receipt, .creditNote, .taxPayment, .other]
+
     public static var fallback: TransactionType {
         .other
     }
@@ -74,8 +81,12 @@ public enum CustomerType: String, Codable, CaseIterable, Sendable, UnknownFallba
     }
 }
 
+/// Services and goods are the distinction that separates a §13b reverse
+/// charge from an intra-Community acquisition. A digital service is a service;
+/// the only rule that would separate the two - B2C supplies to EU consumers -
+/// is out of scope.
 public enum SupplyType: String, Codable, CaseIterable, Sendable, UnknownFallbackDecodable {
-    case service, digitalService, goods, unknown
+    case service, goods, unknown
     public static var fallback: SupplyType {
         .unknown
     }

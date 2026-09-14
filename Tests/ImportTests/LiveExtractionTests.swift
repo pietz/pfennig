@@ -68,7 +68,6 @@ struct LiveExtractionTests {
         check("counterparty.vatId", expected.counterparty.vatId, actual.counterparty.vatId)
         check("invoiceNumber", expected.invoice.invoiceNumber, actual.invoice.invoiceNumber)
         check("invoiceDate", expected.invoice.invoiceDate, actual.invoice.invoiceDate)
-        check("serviceDate", expected.invoice.serviceDate, actual.invoice.serviceDate)
         check("servicePeriodStart", expected.invoice.servicePeriodStart, actual.invoice.servicePeriodStart)
         check("servicePeriodEnd", expected.invoice.servicePeriodEnd, actual.invoice.servicePeriodEnd)
         check("currency", expected.invoice.currency, actual.invoice.currency)

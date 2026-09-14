@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "TC-2026-0187",
     "invoiceDate": "2026-04-22",
-    "serviceDate": null,
     "servicePeriodStart": null,
     "servicePeriodEnd": null,
     "currency": "GBP",

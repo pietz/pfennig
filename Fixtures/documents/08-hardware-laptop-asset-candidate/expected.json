@@ -10,9 +10,8 @@
   "invoice": {
     "invoiceNumber": "BW-2026-33210",
     "invoiceDate": "2026-03-05",
-    "serviceDate": "2026-03-05",
-    "servicePeriodStart": null,
-    "servicePeriodEnd": null,
+    "servicePeriodStart": "2026-03-05",
+    "servicePeriodEnd": "2026-03-05",
     "currency": "EUR",
     "netAmount": "1850.00",
     "taxAmount": "351.50",

@@ -10,7 +10,6 @@
   "invoice": {
     "invoiceNumber": "NH-CN-100256",
     "invoiceDate": "2026-09-05",
-    "serviceDate": null,
     "servicePeriodStart": null,
     "servicePeriodEnd": null,
     "currency": "EUR",

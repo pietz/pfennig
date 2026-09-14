@@ -240,7 +240,7 @@ struct TransactionInspector: View {
             }
             field(label: "Art") {
                 Picker("Art", selection: $draft.transactionType) {
-                    ForEach(TransactionType.allCases, id: \.self) { Text($0.label).tag($0) }
+                    ForEach(TransactionType.userSelectable, id: \.self) { Text($0.label).tag($0) }
                 }
             }
             field(label: "Titel") {
@@ -271,12 +271,19 @@ struct TransactionInspector: View {
                 )
             }
             field(label: "Steuer") {
-                MoneyField(
-                    label: "Steuer",
-                    minor: $draft.taxMinor,
-                    currency: draft.currency,
-                    onValidityChange: { setMoneyFieldValidity("taxAmount", isValid: $0) }
-                )
+                HStack(spacing: 8) {
+                    MoneyField(
+                        label: "Steuer",
+                        minor: $draft.taxMinor,
+                        currency: draft.currency,
+                        onValidityChange: { setMoneyFieldValidity("taxAmount", isValid: $0) }
+                    )
+                    Text(draft.effectiveTaxRateText)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                        .fixedSize()
+                        .accessibilityLabel(Text("Steuersatz"))
+                }
             }
             field(label: "Brutto") {
                 MoneyField(
@@ -297,18 +304,15 @@ struct TransactionInspector: View {
             field(label: "USt-IdNr.") {
                 TextField("USt-IdNr.", text: $draft.counterpartyVatId.orEmpty, prompt: Text("optional"))
             }
-            field(label: "Leistungsdatum") {
-                OptionalDateField(label: "Leistungsdatum", date: $draft.serviceDate, showsLabel: false)
-            }
             field(label: "Leistung von") {
                 OptionalDateField(label: "Leistung von", date: $draft.servicePeriodStart, showsLabel: false)
             }
-            field(label: "Leistung bis") {
+            field(label: "bis") {
                 OptionalDateField(label: "Leistung bis", date: $draft.servicePeriodEnd, showsLabel: false)
             }
             field(label: "Leistungsart") {
                 Picker("Leistungsart", selection: $draft.supplyType) {
-                    ForEach(SupplyType.allCases, id: \.self) { Text($0.label).tag($0) }
+                    ForEach([SupplyType.unknown, .service, .goods], id: \.self) { Text($0.label).tag($0) }
                 }
             }
             field(label: "Anzahlung") {
@@ -331,14 +335,14 @@ struct TransactionInspector: View {
             }
             ForEach($draft.allocations) { $allocation in
                 let rowNumber = allocationRowNumber(for: allocation.id)
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: 8) {
+                    field(label: "Kategorie") {
                         Picker("Kategorie", selection: $allocation.categoryId) {
                             ForEach(categoryOptions) { Text($0.nameDe).tag($0.id) }
                         }
-                        .labelsHidden()
                         .accessibilityLabel(Text("Aufteilung \(rowNumber), Kategorie"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    field(label: "Betrag") {
                         MoneyField(
                             label: "Betrag",
                             minor: Binding(
@@ -352,16 +356,17 @@ struct TransactionInspector: View {
                         )
                         .accessibilityLabel(Text("Aufteilung \(rowNumber), Betrag"))
                     }
-                    HStack(spacing: 8) {
+                    field(label: "Beschreibung") {
                         TextField("Beschreibung", text: $allocation.description.orEmpty, prompt: Text("optional"))
                             .accessibilityLabel(Text("Aufteilung \(rowNumber), Beschreibung"))
+                    }
+                    field(label: "Privatanteil") {
                         TextField(
-                            "Privatanteil (%)",
+                            "Privatanteil",
                             text: $allocation.privateSharePercent.orEmpty,
                             prompt: Text("optional")
                         )
                         .accessibilityLabel(Text("Aufteilung \(rowNumber), Privatanteil in Prozent"))
-                        .frame(width: 118)
                     }
                     if allocation.assetFlag {
                         Label("Anlagegut prüfen", systemImage: "exclamationmark.triangle")
@@ -386,8 +391,10 @@ struct TransactionInspector: View {
 
     // MARK: - Steuer
 
+    /// Only the treatment is a decision; everything under it is the live
+    /// result of the current values, the same derivation the reports use.
     private var taxDisclosure: some View {
-        Section(isExpanded: $taxExpanded) {
+        Section("Steuer", isExpanded: $taxExpanded) {
             field(label: "Behandlung") {
                 Picker("Behandlung", selection: $draft.treatmentOverride) {
                     Text("Automatisch").tag(TaxTreatment?.none)
@@ -397,85 +404,50 @@ struct TransactionInspector: View {
                     }
                 }
             }
-            if draft.components.isEmpty {
-                Label("Keine Steuerpositionen erfasst", systemImage: "percent")
+            taxSummary
+        }
+    }
+
+    @ViewBuilder
+    private var taxSummary: some View {
+        if let derived, let assessment = derived.draft.assessment {
+            LabeledContent("Entschieden als") { Text(assessment.treatment.label) }
+            LabeledContent("Steuersatz") { Text(draft.effectiveTaxRateText).monospacedDigit() }
+            LabeledContent("Umsatzsteuer") {
+                Text(Format.money(draft.taxMinor ?? 0, currency: draft.currency)).monospacedDigit()
+            }
+            if let selfAssessed = assessment.selfAssessedVatMinor {
+                LabeledContent("Selbst berechnet (§ 13b)") {
+                    Text(Format.money(selfAssessed, currency: draft.currency)).monospacedDigit()
+                }
+            }
+            if draft.direction == .expense {
+                LabeledContent("Vorsteuer abziehbar") {
+                    Text(deductibleInputVatText(derived.deductibleInputVatMinor)).monospacedDigit()
+                }
+            }
+            if let reasoning = derived.reasoning {
+                Text(reasoning)
+                    .font(.callout)
                     .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
-            ForEach($draft.components) { $component in
-                let rowNumber = taxComponentRowNumber(for: component.id)
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Picker("Art", selection: $component.kind) {
-                            ForEach(TaxComponentKind.allCases, id: \.self) { Text($0.label).tag($0) }
-                        }
-                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Art"))
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        TextField("Satz (%)", text: $component.rate.orEmpty, prompt: Text("optional"))
-                            .accessibilityLabel(Text("Steuerposition \(rowNumber), Satz in Prozent"))
-                            .frame(width: 110)
-                    }
-                    HStack(spacing: 8) {
-                        MoneyField(
-                            label: "Netto",
-                            minor: Binding(
-                                get: { component.netMinor },
-                                set: { component.netMinor = $0 ?? 0 }
-                            ),
-                            currency: draft.currency,
-                            onValidityChange: {
-                                setMoneyFieldValidity("taxComponent.\(component.id).netAmount", isValid: $0)
-                            }
-                        )
-                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Netto"))
-                        MoneyField(
-                            label: "Steuer",
-                            minor: Binding(
-                                get: { component.taxMinor },
-                                set: { component.taxMinor = $0 ?? 0 }
-                            ),
-                            currency: draft.currency,
-                            onValidityChange: {
-                                setMoneyFieldValidity("taxComponent.\(component.id).taxAmount", isValid: $0)
-                            }
-                        )
-                        .accessibilityLabel(Text("Steuerposition \(rowNumber), Steuerbetrag"))
-                    }
-                }
-                .padding(.vertical, 4)
-            }
-            if let assessment = derived?.draft.assessment {
-                LabeledContent("Entschieden als") {
-                    Text(assessment.treatment.label)
-                }
-                LabeledContent("Status", value: assessment.status.text)
-                if let reasoning = derived?.reasoning {
-                    Text(reasoning)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-                if let selfAssessed = assessment.selfAssessedVatMinor {
-                    LabeledContent("Selbst berechnete USt.") {
-                        Text(Format.money(selfAssessed, currency: draft.currency))
-                    }
-                }
-                if let deductible = assessment.deductibleInputVatMinor {
-                    LabeledContent("Abziehbare Vorsteuer") {
-                        Text(Format.money(deductible, currency: draft.currency))
-                    }
-                }
-            }
-        } header: {
-            HStack {
-                Text("Steuer")
-                Spacer()
-                if !draft.components.isEmpty {
-                    Text("\(draft.components.count) Positionen")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+            if isSmallBusiness(assessment.treatment) {
+                Text("Kleinunternehmer nach § 19 UStG: keine Umsatzsteuer, kein Vorsteuerabzug.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    private func deductibleInputVatText(_ minor: Int64?) -> String {
+        guard let minor, minor > 0 else { return "Nein" }
+        return "Ja · \(Format.money(minor, currency: draft.currency))"
+    }
+
+    private func isSmallBusiness(_ treatment: TaxTreatment) -> Bool {
+        treatment == .smallBusiness || model.profile?.vatStatus == .smallBusiness
     }
 
     // MARK: - Zahlungen
@@ -490,16 +462,21 @@ struct TransactionInspector: View {
                 LabeledContent(Format.date(entry.payment.paymentDate)) {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text(entry.allocated.formatted(locale: Format.german)).monospacedDigit()
-                        Text(
-                            [entry.payment.paymentMethod?.text, entry.payment.reference]
-                                .compactMap(\.self)
-                                .joined(separator: " · ")
-                        )
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        if let origin = paymentOrigin(entry.payment) {
+                            Text(origin)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
                     }
                 }
+            }
+            if draft.openAmountMinor > 0 {
+                Button(action: recordFullPayment) {
+                    Label("Vollständig bezahlt", systemImage: "checkmark.circle")
+                }
+                .disabled(!moneyFieldsAreValid)
+                .help("Bucht den offenen Restbetrag mit dem heutigen Datum")
             }
             Button {
                 operationError = nil
@@ -524,6 +501,35 @@ struct TransactionInspector: View {
                 }
             }
         }
+    }
+
+    /// Where a payment came from. Manual payments carry neither method nor
+    /// reference; the statement import fills both.
+    private func paymentOrigin(_ payment: Payment) -> String? {
+        let parts = [payment.paymentMethod?.text, payment.reference].compactMap(\.self)
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    /// One click for the ordinary case: the open remainder, paid today.
+    private func recordFullPayment() {
+        let open = draft.openAmountMinor
+        guard moneyFieldsAreValid, open > 0 else { return }
+        var updatedDraft = draft
+        updatedDraft.payments.append(
+            PaymentDraft(
+                direction: draft.direction == .income ? .inflow : .outflow,
+                paymentDate: .today(),
+                amountMinor: open,
+                currency: draft.currency
+            )
+        )
+        guard model.save(updatedDraft) != nil else {
+            operationError = "Zahlung konnte nicht gespeichert werden. Ihre Änderungen bleiben erhalten."
+            return
+        }
+        draft = updatedDraft
+        original = updatedDraft
+        operationError = nil
     }
 
     // MARK: - Hinweise und Verlauf
@@ -692,10 +698,6 @@ struct TransactionInspector: View {
 
     private func allocationRowNumber(for id: String) -> Int {
         draft.allocations.firstIndex { $0.id == id }.map { $0 + 1 } ?? 1
-    }
-
-    private func taxComponentRowNumber(for id: String) -> Int {
-        draft.components.firstIndex { $0.id == id }.map { $0 + 1 } ?? 1
     }
 
     private var categoryOptions: [Database.Category] {
