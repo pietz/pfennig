@@ -1,3 +1,4 @@
+import Analysis
 import Database
 
 /// UStVA settings that are not columns of `business_profiles`.
@@ -5,9 +6,10 @@ import Database
 /// Dauerfristverlängerung (§§46-48 UStDV) shifts every filing deadline out by
 /// one month. It lives in the generic `settings` table (spec 10.5) rather than
 /// in the business profile: it is an approval by the tax office, not a property
-/// of the business, and the archive schema needs no change for it.
+/// of the business, and the archive schema needs no change for it. The
+/// deadlines themselves read it inside their observation, from the same key.
 enum UStVAPreferences {
-    static let dauerfristverlaengerungKey = "ustva.dauerfristverlaengerung"
+    static let dauerfristverlaengerungKey = UStVATasks.dauerfristverlaengerungKey
 
     static func dauerfristverlaengerung(in database: AppDatabase?) -> Bool {
         guard let database else { return false }

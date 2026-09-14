@@ -150,7 +150,7 @@ struct StartView: View {
             StartSectionTitle("Offen", detail: "alle Jahre")
 
             if overview.openItems.transactionsToReview > 0 {
-                StartOpenRow(
+                StartRow(
                     title: "Buchungen prüfen",
                     detail: "Ungeprüft oder Konflikt",
                     count: overview.openItems.transactionsToReview,
@@ -162,7 +162,7 @@ struct StartView: View {
             }
 
             if overview.openItems.documentsToAdd > 0 {
-                StartOpenRow(
+                StartRow(
                     title: "Belege ergänzen",
                     detail: "Belege fehlen",
                     count: overview.openItems.documentsToAdd,
@@ -174,7 +174,7 @@ struct StartView: View {
             }
 
             if overview.openItems.importProposals > 0 {
-                StartOpenRow(
+                StartRow(
                     title: "Importvorschläge",
                     detail: "Vorschläge offen",
                     count: overview.openItems.importProposals,
@@ -296,10 +296,14 @@ struct StartSectionTitle: View {
     }
 }
 
-private struct StartOpenRow: View {
+/// One actionable line of a Start section: symbol, title, a caption, an
+/// optional second caption for a state worth colouring, and either a count or
+/// nothing on the right. Shared by "Offen" and "Steuern" so both read alike.
+struct StartRow: View {
     let title: String
     let detail: String
-    let count: Int
+    var note: (text: String, tint: Color)?
+    var count: Int?
     let symbol: String
     let tint: Color
     let action: () -> Void
@@ -317,13 +321,20 @@ private struct StartOpenRow: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let note {
+                        Text(note.text)
+                            .font(.caption)
+                            .foregroundStyle(note.tint)
+                    }
                 }
 
                 Spacer(minLength: 8)
 
-                Text(String(count))
-                    .font(.title3.weight(.semibold))
-                    .monospacedDigit()
+                if let count {
+                    Text(String(count))
+                        .font(.title3.weight(.semibold))
+                        .monospacedDigit()
+                }
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))

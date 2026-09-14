@@ -30,9 +30,7 @@ public enum UStVATasks {
 
     /// One row of the "Steuern" section.
     public struct Summary: Sendable, Equatable, Identifiable {
-        public var id: String {
-            "\(period.year)-\(SubmittedReturnRepository.kindName(period.kind))-\(period.index)"
-        }
+        public var id: String { UStVATasks.submissionKey(period) }
 
         public let period: UStVAPeriod
         /// 10th of the month after the period, plus one month with Dauerfristverlängerung.
@@ -139,9 +137,9 @@ public enum UStVATasks {
     public static func summaries(
         _ db: Database,
         profile: BusinessProfile,
-        today: LocalDate = .today(),
-        dauerfristverlaengerung: Bool
+        today: LocalDate = .today()
     ) throws -> [Summary] {
+        let dauerfristverlaengerung = try dauerfristverlaengerung(db)
         let periods = candidatePeriods(profile: profile, today: today)
         let dueDates = periods.map { $0.dueDate(dauerfristverlaengerung: dauerfristverlaengerung) }
         let currentIndex = dueDates.firstIndex { $0 >= today } ?? periods.indices.last
@@ -241,6 +239,9 @@ public enum UStVATasks {
         public let result: UStVAReturn
         /// Keyed by transaction id.
         public let subjects: [String: ExceptionSubject]
+        /// 10th of the month after the period, plus one month with
+        /// Dauerfristverlängerung.
+        public let dueDate: LocalDate
         public let submittedAt: String?
         public let changedSinceSubmission: Bool
 
@@ -249,11 +250,13 @@ public enum UStVATasks {
         public init(
             result: UStVAReturn,
             subjects: [String: ExceptionSubject],
+            dueDate: LocalDate,
             submittedAt: String?,
             changedSinceSubmission: Bool
         ) {
             self.result = result
             self.subjects = subjects
+            self.dueDate = dueDate
             self.submittedAt = submittedAt
             self.changedSinceSubmission = changedSinceSubmission
         }
@@ -270,6 +273,7 @@ public enum UStVATasks {
         return TaskDetail(
             result: result,
             subjects: try exceptionSubjects(db, transactionIDs: ids),
+            dueDate: period.dueDate(dauerfristverlaengerung: try dauerfristverlaengerung(db)),
             submittedAt: record?.submittedAt,
             changedSinceSubmission: record.map {
                 $0.contentHash != SubmittedReturnRepository.contentHash(of: result)
@@ -305,6 +309,23 @@ public enum UStVATasks {
         return Dictionary(rows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
+    // MARK: - Settings
+
+    /// Dauerfristverlängerung (§§46-48 UStDV) shifts every deadline out by one
+    /// month. It lives in the generic `settings` table; reading it through the
+    /// same connection as the values keeps both live in one observation.
+    public static let dauerfristverlaengerungKey = "ustva.dauerfristverlaengerung"
+
+    public static func dauerfristverlaengerung(_ db: Database) throws -> Bool {
+        let json = try String.fetchOne(
+            db,
+            sql: "SELECT value_json FROM settings WHERE key = ?",
+            arguments: [dauerfristverlaengerungKey]
+        )
+        guard let json else { return false }
+        return (try? JSONDecoder().decode(Bool.self, from: Data(json.utf8))) ?? false
+    }
+
     // MARK: - Submission state
 
     private static func submittedRecords(
@@ -322,7 +343,7 @@ public enum UStVATasks {
         )
     }
 
-    private static func submissionKey(_ period: UStVAPeriod) -> String {
+    static func submissionKey(_ period: UStVAPeriod) -> String {
         "\(period.year)-\(SubmittedReturnRepository.kindName(period.kind))-\(period.index)"
     }
 }

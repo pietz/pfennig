@@ -6,8 +6,9 @@ import SwiftUI
 import Tax
 
 /// The "Steuern" section of Start (spec `ustva-preparation.md`, "Aufgabe auf
-/// Start"): the Voranmeldung that is due next, every earlier period that is
-/// not marked submitted, and every submitted period whose values moved since.
+/// Start"): the Voranmeldung that is due next, every earlier period with
+/// something to report that is not marked submitted, and every submitted
+/// period whose values moved since.
 ///
 /// The rows follow the ledger live, so a booking entered now changes the
 /// Zahllast preview here without a reload.
@@ -31,13 +32,21 @@ struct UStVATaskSection: View {
                     }
 
                     ForEach(rows) { row in
-                        UStVATaskRow(summary: row, today: today) { onOpen(row.period) }
+                        StartRow(
+                            title: "UStVA \(UStVAPeriodText.title(row.period))",
+                            detail: detail(row),
+                            note: note(row),
+                            symbol: "building.columns",
+                            tint: isOverdue(row) ? .orange : .accentColor
+                        ) {
+                            onOpen(row.period)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
-        .task { await observe() }
+        .task(id: model.profile) { await observe() }
         .onAppear { needsPeriodConfirmation = Self.needsConfirmation(model) }
     }
 
@@ -78,11 +87,7 @@ struct UStVATaskSection: View {
             return
         }
         do {
-            let observation = UStVATasks.startObservation(
-                profile: profile,
-                today: today,
-                dauerfristverlaengerung: UStVAPreferences.dauerfristverlaengerung(in: database)
-            )
+            let observation = UStVATasks.startObservation(profile: profile, today: today)
             for try await value in observation.values(in: database.reader) {
                 guard !Task.isCancelled else { return }
                 rows = value
@@ -91,51 +96,14 @@ struct UStVATaskSection: View {
             rows = []
         }
     }
-}
 
-private struct UStVATaskRow: View {
-    let summary: UStVATasks.Summary
-    let today: LocalDate
-    let action: () -> Void
+    // MARK: - Row texts
 
-    private var isOverdue: Bool {
+    private func isOverdue(_ summary: UStVATasks.Summary) -> Bool {
         !summary.isSubmitted && summary.dueDate < today
     }
 
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 10) {
-                Image(systemName: "building.columns")
-                    .foregroundStyle(isOverdue ? Color.orange : Color.accentColor)
-                    .frame(width: 20)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("UStVA \(UStVAPeriodText.title(summary.period))")
-                    Text(detail)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    if let note {
-                        Text(note.text)
-                            .font(.caption)
-                            .foregroundStyle(note.tint)
-                    }
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
-                    .accessibilityHidden(true)
-            }
-            .padding(.vertical, 7)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private var detail: String {
+    private func detail(_ summary: UStVATasks.Summary) -> String {
         var parts = ["fällig \(Format.date(summary.dueDate))"]
         let label = summary.payableMinor < 0 ? "Erstattung" : "Zahllast"
         parts.append("\(label) \(Format.money(abs(summary.payableMinor), currency: .eur))")
@@ -147,14 +115,14 @@ private struct UStVATaskRow: View {
         return parts.joined(separator: " · ")
     }
 
-    private var note: (text: String, tint: Color)? {
+    private func note(_ summary: UStVATasks.Summary) -> (text: String, tint: Color)? {
         if summary.changedSinceSubmission {
             return ("verändert seit Übermittlung", .orange)
         }
         if let submittedAt = summary.submittedAt {
             return ("übermittelt am \(Format.timestamp(submittedAt))", .secondary)
         }
-        if isOverdue {
+        if isOverdue(summary) {
             return ("überfällig", .orange)
         }
         return nil

@@ -145,16 +145,10 @@ struct UStVATaskTests {
     private func summaries(
         _ database: AppDatabase,
         _ profile: BusinessProfile,
-        today: LocalDate,
-        dauerfristverlaengerung: Bool = false
+        today: LocalDate
     ) throws -> [UStVATasks.Summary] {
         try database.reader.read { db in
-            try UStVATasks.summaries(
-                db,
-                profile: profile,
-                today: today,
-                dauerfristverlaengerung: dauerfristverlaengerung
-            )
+            try UStVATasks.summaries(db, profile: profile, today: today)
         }
     }
 
@@ -224,17 +218,17 @@ struct UStVATaskTests {
         #expect(rows.last?.period == UStVAPeriod(year: 2025, quarter: 1))
     }
 
-    @Test("Dauerfristverlängerung verschiebt die Frist um einen Monat")
+    @Test("Dauerfristverlängerung aus den Einstellungen verschiebt die Frist um einen Monat")
     func dauerfristverlaengerungShiftsTheDueDate() throws {
         let (database, profile) = try database()
-        let rows = try summaries(
-            database,
-            profile,
-            today: LocalDate(year: 2026, month: 9, day: 14),
-            dauerfristverlaengerung: true
-        )
+        let today = LocalDate(year: 2026, month: 9, day: 14)
+        #expect(try summaries(database, profile, today: today).first?.dueDate
+            == LocalDate(year: 2026, month: 10, day: 10))
 
-        #expect(rows.first?.dueDate == LocalDate(year: 2026, month: 11, day: 10))
+        try database.setSetting(true, forKey: UStVATasks.dauerfristverlaengerungKey)
+
+        #expect(try summaries(database, profile, today: today).first?.dueDate
+            == LocalDate(year: 2026, month: 11, day: 10))
     }
 
     @Test("Der Zeitraum mit der nächsten Frist ist der laufende, auch nach Quartalsende")
