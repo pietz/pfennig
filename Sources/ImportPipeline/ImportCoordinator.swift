@@ -33,14 +33,18 @@ public actor ImportCoordinator {
     public static let acceptedExtensions: Set<String> = ["pdf", "jpg", "jpeg", "png", "heic"]
 
     /// Archives and analyses every file, one after another. Returns the batch id.
+    ///
+    /// The automation level arrives as a value; the coordinator never reads a
+    /// setting or any interface state of its own, so a batch is decided by the
+    /// level that was in force when the user started it.
     @discardableResult
-    public func `import`(_ urls: [URL]) async -> String? {
+    public func `import`(_ urls: [URL], automationLevel: AutomationLevel = .default) async -> String? {
         let files = urls.filter { Self.acceptedExtensions.contains($0.pathExtension.lowercased()) }
         guard !files.isEmpty else { return nil }
         let repository = ImportRepository(database)
         guard let batch = try? repository.createBatch(fileCount: files.count) else { return nil }
         for url in files {
-            await process(url, batchID: batch.id, repository: repository)
+            await process(url, batchID: batch.id, repository: repository, automationLevel: automationLevel)
         }
         try? repository.finishBatch(batch.id)
         return batch.id
@@ -48,7 +52,7 @@ public actor ImportCoordinator {
 
     /// Runs the pipeline again for a failed item, reusing its archived
     /// document when it was already copied in (spec 33: retry never re-imports).
-    public func retry(itemID: String) async {
+    public func retry(itemID: String, automationLevel: AutomationLevel = .default) async {
         let repository = ImportRepository(database)
         guard let item = try? repository.item(itemID),
               item.status == .failed,
@@ -59,6 +63,7 @@ public actor ImportCoordinator {
             archive.url(forRelativePath: document.relativePath),
             batchID: item.batchId,
             repository: repository,
+            automationLevel: automationLevel,
             existingItem: item
         )
     }
@@ -69,6 +74,7 @@ public actor ImportCoordinator {
         _ url: URL,
         batchID: String,
         repository: ImportRepository,
+        automationLevel: AutomationLevel,
         existingItem: ImportItem? = nil
     ) async {
         let item: ImportItem
@@ -169,17 +175,40 @@ public actor ImportCoordinator {
                 provenance: normalized.provenance,
                 derivationContext: derivationContext
             )
-            // Autonomy is Manual in V1: nothing commits itself (spec 9).
-            try repository.upsertProposal(
+            // One decision function answers for every import: commit now or
+            // put it into "Prüfen" (`statement-import.md` 1). A document
+            // import creates a new transaction, so there is no competing match
+            // and no manually entered field it could overwrite.
+            let decision = AutomationPolicy.decide(
+                level: automationLevel,
+                hardIssues: derived.hardIssues,
+                softIssues: derived.softIssues,
+                isUnambiguous: true,
+                touchesManualOverride: false
+            )
+            let proposalID = try repository.upsertProposal(
                 importItemID: item.id,
                 idempotencyKey: "\(item.id):\(AIConfiguration.promptVersion)",
                 kind: .createTransaction,
                 operations: [.createTransaction(derived.draft)],
                 summary: summary,
                 issues: derived.issues,
-                policyDecision: derived.hardIssues.isEmpty ? .needsReview : .blocked
+                policyDecision: decision
             )
-            try repository.updateItem(item.id, status: .proposed)
+            if decision == .autoCommit {
+                // The same path the user's "Übernehmen" takes, so provenance,
+                // duplicate handling and atomicity are identical. The proposal
+                // row keeps `policy_decision = autoCommit` next to its
+                // `committed` status: that pair is the record of a commit
+                // nobody confirmed.
+                try CommitService(database).accept(
+                    proposalID: proposalID,
+                    reviewStatus: AutomationPolicy.reviewStatus(forAutoCommitWith: derived.softIssues)
+                )
+                // `commitProposal` already moved the import item to `committed`.
+            } else {
+                try repository.updateItem(item.id, status: .proposed)
+            }
         } catch {
             let aiError = error as? AIError
             logger

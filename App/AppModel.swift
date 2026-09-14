@@ -222,10 +222,18 @@ final class AppModel {
     }
 
     /// Archives and analyses dropped or chosen files in the background; the
-    /// UI follows along through the database (spec 7.1, 12).
+    /// UI follows along through the database (spec 7.1, 12). The automation
+    /// level is read here, once per batch, and handed to the coordinator.
     func importFiles(_ urls: [URL]) {
         guard let coordinator else { return }
-        Task.detached { await coordinator.import(urls) }
+        let level = automationLevel
+        Task.detached { await coordinator.import(urls, automationLevel: level) }
+    }
+
+    /// The automation level from the `settings` table, `manual` until the user
+    /// chooses another one in Settings.
+    var automationLevel: AutomationLevel {
+        AutomationPreferences.level(in: database)
     }
 
     /// Keeps the sidebar badge in step with the review queue.
@@ -243,7 +251,8 @@ final class AppModel {
 
     func retryImport(itemID: String) {
         guard let coordinator else { return }
-        Task.detached { await coordinator.retry(itemID: itemID) }
+        let level = automationLevel
+        Task.detached { await coordinator.retry(itemID: itemID, automationLevel: level) }
     }
 
     /// Confirms a proposal, optionally with the fields the user edited in the

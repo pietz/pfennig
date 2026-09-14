@@ -35,11 +35,17 @@ public struct CommitService: Sendable {
 
     /// Commits `proposalID`, optionally with the draft the user edited.
     /// Returns the id of the written transaction.
+    ///
+    /// `reviewStatus` is what the booking gets. Confirming by hand always
+    /// means `confirmed`; an automatic commit passes `needsReview` when the
+    /// derivation left warnings, so the booking exists but stays an exception
+    /// under "Prüfen" (`AutomationPolicy.reviewStatus(forAutoCommitWith:)`).
     @discardableResult
     public func accept(
         proposalID: String,
         edited draft: TransactionDraft? = nil,
-        expectedUpdatedAt: String? = nil
+        expectedUpdatedAt: String? = nil,
+        reviewStatus: ReviewStatus = .confirmed
     ) throws -> String {
         let repository = ImportRepository(database)
         guard let proposal = try repository.proposal(proposalID) else {
@@ -62,7 +68,7 @@ public struct CommitService: Sendable {
             // The proposal already contains the reviewed derivation. Reusing
             // it avoids losing model-only facts such as exempt/nonTaxable.
             var preserved = original
-            preserved.reviewStatus = .confirmed
+            preserved.reviewStatus = reviewStatus
             derived = DerivedTransaction(
                 draft: preserved,
                 issues: proposal.issues,
@@ -83,7 +89,7 @@ public struct CommitService: Sendable {
                 hint: derivation.modelHint,
                 reverseChargeNote: derivation.reverseChargeNote
             )
-            rederived.draft.reviewStatus = .confirmed
+            rederived.draft.reviewStatus = reviewStatus
             derived = rederived
         }
 
