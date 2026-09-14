@@ -2,7 +2,7 @@ import Tax
 
 /// Human and machine names for a UStVA period, shared by the XML exporter and
 /// the copyable value list.
-enum UStVAPeriodText {
+public enum UStVAPeriodText {
     private static let monthNames = [
         "Januar", "Februar", "März", "April", "Mai", "Juni",
         "Juli", "August", "September", "Oktober", "November", "Dezember"
@@ -13,7 +13,7 @@ enum UStVAPeriodText {
     /// Unverified: the quarter codes come from the open-source project
     /// geierlein and the common ELSTER convention, not from an elster.de page
     /// (see docs/research-ustva-xml.md, "Verifiziert vs. unsicher").
-    static func zeitraumCode(_ period: UStVAPeriod) -> String {
+    public static func zeitraumCode(_ period: UStVAPeriod) -> String {
         switch period.kind {
         case .monthly: String(format: "%02d", period.index)
         case .quarterly: String(40 + period.index)
@@ -21,15 +21,20 @@ enum UStVAPeriodText {
     }
 
     /// Compact token used in file names: `Q3` or `07`.
-    static func fileToken(_ period: UStVAPeriod) -> String {
+    public static func fileToken(_ period: UStVAPeriod) -> String {
         switch period.kind {
         case .monthly: String(format: "%02d", period.index)
         case .quarterly: "Q\(period.index)"
         }
     }
 
+    /// German month name for 1...12, for period pickers.
+    public static func monthName(_ month: Int) -> String {
+        monthNames[min(max(month, 1), 12) - 1]
+    }
+
     /// Heading used in the copyable value list: `Q3 2026` or `Juli 2026`.
-    static func title(_ period: UStVAPeriod) -> String {
+    public static func title(_ period: UStVAPeriod) -> String {
         switch period.kind {
         case .monthly: "\(monthNames[period.index - 1]) \(period.year)"
         case .quarterly: "Q\(period.index) \(period.year)"
