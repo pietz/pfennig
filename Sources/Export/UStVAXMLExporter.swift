@@ -1,3 +1,4 @@
+import Domain
 import Foundation
 import Tax
 
@@ -82,7 +83,7 @@ public enum UStVAXMLExporter {
         }
         // Kz 83 is always written: the help page states the uploaded value is
         // taken over as the user's own figure instead of being recalculated.
-        body.append(element("Kz83", UStVAAmounts.decimalString(result.payableMinor)))
+        body.append(element("Kz83", decimalString(result.payableMinor)))
 
         let namespace = "http://finkonsens.de/elster/elsteranmeldung/ustva/v\(schemaYear)"
         var xml = "<?xml version=\"1.0\" encoding=\"\(encodingName)\" standalone=\"no\"?>\n"
@@ -119,7 +120,12 @@ public enum UStVAXMLExporter {
     private static func value(of line: UStVAReturn.Line) -> String {
         line.isBase
             ? String(UStVA_2026.wholeEuros(line.amountMinor))
-            : UStVAAmounts.decimalString(line.amountMinor)
+            : decimalString(line.amountMinor)
+    }
+
+    /// Machine format for the XML payload, e.g. `1234.56`, `-19.00`.
+    private static func decimalString(_ minor: Int64) -> String {
+        Money(minorUnits: minor, currency: .eur).decimalString
     }
 
     /// Returns the Steuernummer to write, or `nil` if there is none.

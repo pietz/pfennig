@@ -1,3 +1,4 @@
+import Domain
 import Tax
 
 /// Renders a prepared `UStVAReturn` as plain text for the clipboard, so the
@@ -23,16 +24,37 @@ public enum UStVAValueList {
         for line in result.lines where line.kennzahl != 83 {
             lines.append("Kz \(line.kennzahl): \(amount(of: line)) €")
         }
-        lines.append("Kz 83: \(UStVAAmounts.germanDecimal(result.payableMinor)) €")
+        lines.append("Kz 83: \(germanDecimal(result.payableMinor)) €")
         let label = result.payableMinor < 0 ? "Erstattung" : "Zahllast"
-        lines.append("\(label): \(UStVAAmounts.germanDecimal(abs(result.payableMinor))) €")
+        lines.append("\(label): \(germanDecimal(abs(result.payableMinor))) €")
         return lines.joined(separator: "\n")
     }
 
-    /// Base Kennzahlen show whole euros with the cents cut off, as on the form.
+    /// Bemessungsgrundlagen show whole euros with the cents cut off, as on the
+    /// form; Steuer Kennzahlen show two decimals.
     private static func amount(of line: UStVAReturn.Line) -> String {
         line.isBase
-            ? UStVAAmounts.germanInteger(UStVA_2026.wholeEuros(line.amountMinor))
-            : UStVAAmounts.germanDecimal(line.amountMinor)
+            ? germanInteger(UStVA_2026.wholeEuros(line.amountMinor))
+            : germanDecimal(line.amountMinor)
+    }
+
+    /// German grouped integer, e.g. `12.345`.
+    static func germanInteger(_ value: Int64) -> String {
+        let sign = value < 0 ? "-" : ""
+        var digits = String(value.magnitude)
+        var grouped = ""
+        while digits.count > 3 {
+            let cut = digits.index(digits.endIndex, offsetBy: -3)
+            grouped = "." + digits[cut...] + grouped
+            digits = String(digits[..<cut])
+        }
+        return sign + digits + grouped
+    }
+
+    /// German amount with two decimals, e.g. `1.234,56`.
+    static func germanDecimal(_ minor: Int64) -> String {
+        let sign = minor < 0 ? "-" : ""
+        let absolute = minor.magnitude
+        return "\(sign)\(germanInteger(Int64(absolute / 100))),\(String(format: "%02d", absolute % 100))"
     }
 }
