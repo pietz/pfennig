@@ -72,10 +72,10 @@ See [`releasing.md`](releasing.md) for commands. Never inspect or commit `.env`,
 
 ## Backlog
 
-GitHub Issues are the source of truth:
+[Product backlog](backlog.md) groups implemented features and proposed priorities across the full input-to-tax-output workflow. GitHub Issues remain the technical work items:
 
 - [#2 Core German EÜR tax cases](https://github.com/pietz/ziffer/issues/2): Kleinunternehmer core is implemented; audit and finish remaining common-case acceptance criteria before closing.
-- [#3 XRechnung/ZUGFeRD](https://github.com/pietz/ziffer/issues/3): recommended next product slice after release foundations.
+- [#3 XRechnung/ZUGFeRD](https://github.com/pietz/ziffer/issues/3): structured input support; prioritize alongside real-document validation, exports, and the tax-output workflow in the product backlog.
 - [#4 Local statement reconciliation](https://github.com/pietz/ziffer/issues/4)
 - [#5 Deterministic vendor rules](https://github.com/pietz/ziffer/issues/5)
 - [#6 Period closing and corrections](https://github.com/pietz/ziffer/issues/6)
