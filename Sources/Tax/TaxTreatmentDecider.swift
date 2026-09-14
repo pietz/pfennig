@@ -92,7 +92,6 @@ public enum TreatmentSoftIssue: String, Sendable, Equatable, CaseIterable {
 
 public struct TaxTreatmentDecision: Sendable, Equatable {
     public let treatment: TaxTreatment
-    public let reasoning: String
     public let softIssues: [TreatmentSoftIssue]
 }
 
@@ -116,44 +115,34 @@ public enum TaxTreatmentDecider {
 
         var softIssues: [TreatmentSoftIssue] = []
         let treatment: TaxTreatment
-        let reasoning: String
 
         if isDomestic, input.direction == .income, input.profile.vatStatus == .smallBusiness {
             treatment = .smallBusiness
-            reasoning = "Domestic income for a small-business profile (§19 UStG)."
         } else if isDomestic, taxShown {
             treatment = .domesticVAT
-            reasoning = "Domestic counterparty with VAT shown on the document (§13 UStG)."
         } else if isDomestic, input.direction == .expense, !taxShown,
                   input.modelHint?.treatment == .smallBusiness
         {
             treatment = .smallBusiness
-            reasoning = "Domestic supplier document without VAT; explicit small-business hint accepted (§19 UStG)."
         } else if input.direction == .expense, !isDomestic, isEU, input.supplyType == .goods, !taxShown,
                   input.profile.vatStatus == .taxable
         {
             treatment = .intraCommunityAcquisition
-            reasoning = "EU counterparty, goods, no VAT shown - intra-Community acquisition (§1a UStG)."
         } else if input.direction == .expense, !isDomestic, isServiceLike, !taxShown {
+            // §13b applies to a third-country supplier just as it does to an
+            // EU one, so the origin does not change the treatment here.
             treatment = .reverseCharge
-            reasoning = isEU
-                ? "EU counterparty, service, no VAT shown - reverse charge (§13b UStG)."
-                : "Third-country counterparty, service, no VAT shown - §13b reverse charge applies regardless of origin."
         } else if input.direction == .income, !isDomestic, isEU, isServiceLike, !taxShown {
             treatment = .reverseCharge
-            reasoning = "EU B2B service, no VAT charged - reverse charge (§3a UStG)."
             if !input.counterparty.hasVATId {
                 softIssues.append(.missingCustomerVATIdOnReverseChargeIncome)
             }
         } else if input.direction == .income, !isDomestic, !isEU, !taxShown {
             treatment = .export
-            reasoning = "Income to a third-country customer without VAT - export (§4 Nr. 1 UStG)."
         } else if let hint = input.modelHint, hint.treatment == .nonTaxable || hint.treatment == .exempt, !taxShown {
             treatment = hint.treatment
-            reasoning = "Model hint of \(hint.treatment.rawValue) accepted; no VAT shown on the document."
         } else {
             treatment = .unknown
-            reasoning = "Facts do not match a known rule; manual review required."
         }
 
         if !isDomestic, isEU, taxShown,
@@ -165,6 +154,6 @@ public enum TaxTreatmentDecider {
             softIssues.append(.hintDisagreesWithFacts)
         }
 
-        return TaxTreatmentDecision(treatment: treatment, reasoning: reasoning, softIssues: softIssues)
+        return TaxTreatmentDecision(treatment: treatment, softIssues: softIssues)
     }
 }
