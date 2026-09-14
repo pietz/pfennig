@@ -21,7 +21,8 @@ import Tax
 /// - Unverified: the `Zeitraum` codes 41-44 for quarters, whether the schema
 ///   version for 2026 is still `v2023`, and the decimal notation of the tax
 ///   Kennzahlen. We write `1234.56` (dot, two decimals) for tax lines and plain
-///   truncated euros for base lines.
+///   truncated euros for base lines, and name the namespace after the form
+///   year, which is what every public example does.
 /// - The `<Unternehmer>` block is omitted; a forum report says the web upload
 ///   does not require it, and the user's Mein-ELSTER session supplies the
 ///   identity anyway.
@@ -29,34 +30,14 @@ import Tax
 /// Treat the export as experimental until a real test upload (without sending)
 /// has filled the form correctly.
 public enum UStVAXMLExporter {
-    /// Character set of the produced file.
-    public enum Encoding: String, Sendable, CaseIterable {
-        /// ISO-8859-15, the character set named by the elster.de help page.
-        case isoLatin9
-        /// UTF-8, reported to work as well but not officially documented.
-        case utf8
-
-        /// Name written into the XML declaration.
-        var declarationName: String {
-            switch self {
-            case .isoLatin9: "ISO-8859-15"
-            case .utf8: "UTF-8"
-            }
-        }
-
-        var stringEncoding: String.Encoding {
-            switch self {
-            case .isoLatin9:
-                String.Encoding(
-                    rawValue: CFStringConvertEncodingToNSStringEncoding(
-                        CFStringEncoding(CFStringEncodings.isoLatin9.rawValue)
-                    )
-                )
-            case .utf8:
-                .utf8
-            }
-        }
-    }
+    /// ISO-8859-15, the character set named by the elster.de help page, and
+    /// the name it is declared under in the XML prologue.
+    public static let encoding = String.Encoding(
+        rawValue: CFStringConvertEncodingToNSStringEncoding(
+            CFStringEncoding(CFStringEncodings.isoLatin9.rawValue)
+        )
+    )
+    private static let encodingName = "ISO-8859-15"
 
     /// The produced file plus everything the user should know before uploading.
     public struct Export: Sendable, Equatable {
@@ -71,24 +52,15 @@ public enum UStVAXMLExporter {
         public let warnings: [String]
     }
 
-    /// The only schema version shown on the elster.de help page.
+    /// The only schema version shown on the elster.de help page. The
+    /// namespace follows the return's form year, which is the convention every
+    /// public example uses; any other year is flagged as unproven.
     public static let documentedSchemaYear = 2023
 
     /// Builds the upload file.
-    ///
-    /// - Parameters:
-    ///   - result: the prepared return.
-    ///   - encoding: ISO-8859-15 (default, as documented) or UTF-8.
-    ///   - schemaYear: namespace and `version` year. Defaults to the return's
-    ///     `formYear`; only 2023 is publicly documented, so anything else adds
-    ///     a warning.
-    public static func export(
-        _ result: UStVAReturn,
-        encoding: Encoding = .isoLatin9,
-        schemaYear: Int? = nil
-    ) -> Export {
+    public static func export(_ result: UStVAReturn) -> Export {
         var warnings: [String] = []
-        let schemaYear = schemaYear ?? result.formYear
+        let schemaYear = result.formYear
         if schemaYear != documentedSchemaYear {
             warnings.append(
                 "Die Schemaversion v\(schemaYear) ist nicht öffentlich dokumentiert; "
@@ -113,7 +85,7 @@ public enum UStVAXMLExporter {
         body.append(element("Kz83", UStVAAmounts.decimalString(result.payableMinor)))
 
         let namespace = "http://finkonsens.de/elster/elsteranmeldung/ustva/v\(schemaYear)"
-        var xml = "<?xml version=\"1.0\" encoding=\"\(encoding.declarationName)\" standalone=\"no\"?>\n"
+        var xml = "<?xml version=\"1.0\" encoding=\"\(encodingName)\" standalone=\"no\"?>\n"
         xml += "<Anmeldungssteuern xmlns=\"\(namespace)\" version=\"\(schemaYear)\">\n"
         xml += "  <Steuerfall>\n"
         xml += "    <Umsatzsteuervoranmeldung>\n"
@@ -123,14 +95,11 @@ public enum UStVAXMLExporter {
         xml += "</Anmeldungssteuern>\n"
 
         let data: Data
-        if let encoded = xml.data(using: encoding.stringEncoding) {
+        if let encoded = xml.data(using: encoding) {
             data = encoded
         } else {
-            warnings.append(
-                "Nicht alle Zeichen lassen sich in \(encoding.declarationName) abbilden; "
-                    + "sie wurden ersetzt. UTF-8 vermeidet das."
-            )
-            data = xml.data(using: encoding.stringEncoding, allowLossyConversion: true) ?? Data(xml.utf8)
+            warnings.append("Nicht alle Zeichen lassen sich in \(encodingName) abbilden; sie wurden ersetzt.")
+            data = xml.data(using: encoding, allowLossyConversion: true) ?? Data(xml.utf8)
         }
 
         return Export(data: data, xml: xml, filename: suggestedFilename(for: result), warnings: warnings)
@@ -149,7 +118,7 @@ public enum UStVAXMLExporter {
     /// Kennzahlen carry two decimals with a dot.
     private static func value(of line: UStVAReturn.Line) -> String {
         line.isBase
-            ? String(UStVAAmounts.wholeEuros(line.amountMinor))
+            ? String(UStVA_2026.wholeEuros(line.amountMinor))
             : UStVAAmounts.decimalString(line.amountMinor)
     }
 

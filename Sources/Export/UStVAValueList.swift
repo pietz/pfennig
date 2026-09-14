@@ -32,7 +32,7 @@ public enum UStVAValueList {
     /// Base Kennzahlen show whole euros with the cents cut off, as on the form.
     private static func amount(of line: UStVAReturn.Line) -> String {
         line.isBase
-            ? UStVAAmounts.germanInteger(UStVAAmounts.wholeEuros(line.amountMinor))
+            ? UStVAAmounts.germanInteger(UStVA_2026.wholeEuros(line.amountMinor))
             : UStVAAmounts.germanDecimal(line.amountMinor)
     }
 }

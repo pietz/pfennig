@@ -56,16 +56,20 @@ enum UStVAFixture {
 
 @Suite("UStVAXMLExporter")
 struct UStVAXMLExporterTests {
-    @Test("Envelope, namespace and version follow the documented upload structure")
+    @Test("Envelope and namespace follow the documented upload structure, named after the form year")
     func envelope() {
-        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(), schemaYear: 2023)
+        let export = UStVAXMLExporter.export(UStVAFixture.quarterly())
         #expect(export.xml.contains(
-            "<Anmeldungssteuern xmlns=\"http://finkonsens.de/elster/elsteranmeldung/ustva/v2023\" version=\"2023\">"
+            "<Anmeldungssteuern xmlns=\"http://finkonsens.de/elster/elsteranmeldung/ustva/v2026\" version=\"2026\">"
         ))
         #expect(export.xml.contains("<Steuerfall>"))
         #expect(export.xml.contains("<Umsatzsteuervoranmeldung>"))
         #expect(export.xml.hasSuffix("</Anmeldungssteuern>\n"))
-        #expect(export.warnings.isEmpty)
+        // Only v2023 is publicly documented, so 2026 is flagged as unproven.
+        #expect(export.warnings == [
+            "Die Schemaversion v2026 ist nicht öffentlich dokumentiert; "
+                + "belegt ist nur v2023. Der Upload muss geprüft werden."
+        ])
     }
 
     @Test("Element order is deterministic: Jahr, Zeitraum, Steuernummer, Kennzahlen, Kz 83 last")
@@ -146,12 +150,12 @@ struct UStVAXMLExporterTests {
         let result = UStVAFixture.quarterly(lines: [
             UStVAFixture.line(81, "Umsätze 19 %", isBase: true, 1_234_599),
             UStVAFixture.line(86, "Umsätze 7 %", isBase: true, 99),
-            UStVAFixture.line(47, "Leistungen §13b", isBase: true, -1999)
+            UStVAFixture.line(46, "Leistungen §13b", isBase: true, -1999)
         ])
         let export = UStVAXMLExporter.export(result)
         #expect(export.xml.contains("<Kz81>12345</Kz81>"))
         #expect(export.xml.contains("<Kz86>0</Kz86>"))
-        #expect(export.xml.contains("<Kz47>-19</Kz47>"))
+        #expect(export.xml.contains("<Kz46>-19</Kz46>"))
     }
 
     @Test("Tax Kennzahlen keep two decimals with a dot")
@@ -165,58 +169,39 @@ struct UStVAXMLExporterTests {
         #expect(export.xml.contains("<Kz83>-50.01</Kz83>"))
     }
 
-    @Test("ISO-8859-15 is the default declaration and encoding")
+    @Test("The file is written and declared as ISO-8859-15")
     func isoLatin9Declaration() throws {
         let export = UStVAXMLExporter.export(UStVAFixture.quarterly())
         #expect(export.xml.hasPrefix("<?xml version=\"1.0\" encoding=\"ISO-8859-15\" standalone=\"no\"?>"))
-        let roundTrip = try #require(
-            String(data: export.data, encoding: UStVAXMLExporter.Encoding.isoLatin9.stringEncoding)
-        )
+        let roundTrip = try #require(String(data: export.data, encoding: UStVAXMLExporter.encoding))
         #expect(roundTrip == export.xml)
         // ISO-8859-15 is a single-byte encoding: no UTF-8 multi-byte sequences.
         #expect(export.data.count == export.xml.unicodeScalars.count)
     }
 
-    @Test("UTF-8 can be selected and is declared as such")
-    func utf8Declaration() throws {
-        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(), encoding: .utf8)
-        #expect(export.xml.hasPrefix("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>"))
-        let roundTrip = try #require(String(data: export.data, encoding: .utf8))
-        #expect(roundTrip == export.xml)
-    }
-
     @Test("A 13-digit Steuernummer passes through, separators are removed")
     func elsterTaxNumber() {
-        let plain = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "1096081508187"), schemaYear: 2023)
+        let plain = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "1096081508187"))
         #expect(plain.xml.contains("<Steuernummer>1096081508187</Steuernummer>"))
-        #expect(plain.warnings.isEmpty)
+        #expect(plain.warnings.allSatisfy { !$0.contains("Steuernummer") })
 
-        let spaced = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "109/608/15081 87"), schemaYear: 2023)
+        let spaced = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "109/608/15081 87"))
         #expect(spaced.xml.contains("<Steuernummer>1096081508187</Steuernummer>"))
-        #expect(spaced.warnings.isEmpty)
+        #expect(spaced.warnings.allSatisfy { !$0.contains("Steuernummer") })
     }
 
     @Test("A state-format Steuernummer is passed through unchanged and warned about")
     func stateFormatTaxNumberWarns() {
-        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "12/345/67890"), schemaYear: 2023)
+        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: "12/345/67890"))
         #expect(export.xml.contains("<Steuernummer>12/345/67890</Steuernummer>"))
-        #expect(export.warnings.count == 1)
-        #expect(export.warnings[0].contains("13-stellige"))
+        #expect(export.warnings.contains { $0.contains("13-stellige") })
     }
 
     @Test("A missing Steuernummer omits the element and warns")
     func missingTaxNumberWarns() {
-        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: nil), schemaYear: 2023)
+        let export = UStVAXMLExporter.export(UStVAFixture.quarterly(taxNumber: nil))
         #expect(!export.xml.contains("<Steuernummer>"))
-        #expect(export.warnings.count == 1)
-    }
-
-    @Test("An undocumented schema year is flagged")
-    func schemaYearWarning() {
-        let export = UStVAXMLExporter.export(UStVAFixture.quarterly())
-        #expect(export.xml.contains("version=\"2026\""))
-        #expect(export.xml.contains("ustva/v2026"))
-        #expect(export.warnings.contains { $0.contains("v2026") })
+        #expect(export.warnings.contains { $0.contains("keine Steuernummer") })
     }
 
     @Test("Unverified Kennzahlen are flagged")
@@ -224,8 +209,8 @@ struct UStVAXMLExporterTests {
         let result = UStVAFixture.quarterly(lines: [
             UStVAFixture.line(84, "Leistungen §13b Abs. 2 Nr. 5", isBase: true, 10000, isVerified: false)
         ])
-        let export = UStVAXMLExporter.export(result, schemaYear: 2023)
-        #expect(export.warnings == ["Kz 84 ist noch nicht gegen das Vordruckmuster geprüft."])
+        let export = UStVAXMLExporter.export(result)
+        #expect(export.warnings.contains("Kz 84 ist noch nicht gegen das Vordruckmuster geprüft."))
     }
 
     @Test("XML special characters in passed-through values are escaped")

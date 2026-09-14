@@ -1,18 +1,14 @@
 import Foundation
+import Tax
 
 /// Number formatting shared by the UStVA XML export and the copyable value
 /// list. All amounts arrive as EUR minor units (cents).
 ///
-/// Form rule: Bemessungsgrundlagen (base Kennzahlen such as Kz 81, 86, 46, 47)
-/// are entered in whole euros with the cents cut off, not rounded. Tax
-/// Kennzahlen (Kz 66, 67, 83) carry two decimals.
+/// Form rule: Bemessungsgrundlagen (base Kennzahlen such as Kz 81, 86, 46) are
+/// entered in whole euros with the cents cut off, not rounded - that rule lives
+/// in `UStVA_2026.wholeEuros`, so the calculated Zahllast and the exported
+/// values cannot drift apart. Tax Kennzahlen (Kz 66, 67, 83) carry two decimals.
 enum UStVAAmounts {
-    /// Whole euros with the cents cut off, truncating toward zero.
-    /// Swift's integer division already truncates toward zero, so -1999 -> -19.
-    static func wholeEuros(_ minor: Int64) -> Int64 {
-        minor / 100
-    }
-
     /// Machine format for the XML payload, e.g. `1234.56`, `-19.00`.
     static func decimalString(_ minor: Int64) -> String {
         let sign = minor < 0 ? "-" : ""
