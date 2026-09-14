@@ -9,8 +9,8 @@ Conventions (spec 17):
 - Primary keys are lowercase RFC 4122 UUID strings.
 - Timestamps are ISO-8601 UTC strings (`2026-09-12T10:15:00Z`); calendar dates
   are `YYYY-MM-DD`.
-- Money is `INTEGER` minor units with an adjacent currency column. Rates,
-  percentages and confidences are canonical decimal strings, never `REAL`.
+- Money is `INTEGER` minor units with an adjacent currency column. Rates and
+  percentages are canonical decimal strings, never `REAL`.
 - `PRAGMA foreign_keys = ON` for every connection.
 - Soft delete via `deleted_at` where noted.
 

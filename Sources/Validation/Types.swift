@@ -42,7 +42,7 @@ public struct PaymentAllocationFact: Sendable, Equatable {
 /// 14.2's "Amount > configurable threshold with `agent` provenance only".
 public struct ProvenanceSummary: Sendable, Equatable {
     /// True if at least one relevant field has non-`agent` provenance
-    /// (`document`, `manual`, `calculated`, `imported`, `rule`) - i.e. a
+    /// (`document`, `manual`, `calculated`, `imported`) - i.e. a
     /// human or a deterministic source has touched it.
     public let hasAnyNonAgentProvenance: Bool
 

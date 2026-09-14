@@ -125,11 +125,11 @@ public enum PaymentSource: String, Codable, CaseIterable, Sendable {
 }
 
 public enum MatchMethod: String, Codable, CaseIterable, Sendable {
-    case exact, reference, invoiceNumber, heuristic, manual, rule
+    case exact, reference, invoiceNumber, heuristic, manual
 }
 
 public enum Provenance: String, Codable, CaseIterable, Sendable {
-    case document, agent, calculated, manual, imported, rule
+    case document, agent, calculated, manual, imported
 }
 
 public enum ImportBatchStatus: String, Codable, CaseIterable, Sendable {

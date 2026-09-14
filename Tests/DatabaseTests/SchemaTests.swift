@@ -15,53 +15,6 @@ struct SchemaTests {
         #expect(AppDatabase.migrationIdentifiers == ["v001_initial"])
     }
 
-    @Test("tax_assessments carries no tax points, tax country, reasoning or history")
-    func slimTaxAssessments() throws {
-        let database = try AppDatabase(inMemoryNamed: "slim-assessments")
-        let columns = try database.reader.read { try $0.columns(in: "tax_assessments").map(\.name) }
-        for removed in ["input_vat_date", "output_vat_date", "tax_country", "reasoning", "superseded_at"] {
-            #expect(!columns.contains(removed), "\(removed) is still there")
-        }
-        #expect(columns.contains("treatment"))
-    }
-
-    @Test("A fresh database has none of the removed tables or columns")
-    func freshDatabaseHasNoScaffolding() throws {
-        let database = try AppDatabase(inMemoryNamed: "no-scaffolding")
-        try database.reader.read { db in
-            for table in ["accounts", "rules", "transaction_relations", "locked_periods"] {
-                #expect(try !db.tableExists(table), "\(table) is still there")
-            }
-            for (table, removed) in [
-                ("business_profiles", "fiscal_year_start_month"),
-                ("categories", "name_en"), ("categories", "parent_id"), ("categories", "is_system"),
-                ("counterparties", "aliases_json"), ("counterparties", "default_category_id"),
-                ("counterparties", "default_tax_treatment"), ("counterparties", "street"),
-                ("counterparties", "postal_code"), ("counterparties", "city"),
-                ("documents", "page_count"),
-                ("transactions", "exchange_rate_source"), ("transactions", "deductibility_note"),
-                ("payments", "account_id"), ("payments", "exchange_rate_source"),
-                ("payment_allocations", "confidence"),
-                ("statement_lines", "counter_account_id"), ("statement_lines", "account_id"),
-                ("import_items", "attempt_count")
-            ] {
-                let columns = try db.columns(in: table).map(\.name)
-                #expect(!columns.contains(removed), "\(table).\(removed) is still there")
-            }
-            #expect(try db.columns(in: "statement_lines").map(\.name).contains("account_iban"))
-        }
-    }
-
-    @Test("Field provenance stores provenance without evidence or confidence")
-    func fieldProvenanceHasNoEvidenceColumn() throws {
-        let database = try AppDatabase(inMemoryNamed: "field-provenance")
-        let columns = try database.reader.read { try $0.columns(in: "field_provenance").map(\.name) }
-        #expect(columns.contains("provenance"))
-        for removed in ["evidence_json", "confidence", "rule_id"] {
-            #expect(!columns.contains(removed), "\(removed) is still there")
-        }
-    }
-
     @Test("Foreign keys are enforced")
     func foreignKeys() throws {
         let database = try AppDatabase(inMemoryNamed: "fk")

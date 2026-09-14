@@ -500,7 +500,7 @@ Yellow = suspicious/incomplete/needs review · Red = invalid/blocked · Neutral 
 
 All monetary amounts are **`Int64` minor units** with an explicit ISO-4217 currency code; the exponent comes from a currency table in `Domain` (EUR 2, USD 2, JPY 0, …). SQLite `SUM` over minor units is exact.
 
-Exchange rates, tax rates, and confidences are non-monetary decimals stored as canonical decimal **TEXT** (`"0.9214"`, `"19"`); never `REAL` for anything that feeds bookkeeping.
+Exchange rates and tax rates are non-monetary decimals stored as canonical decimal **TEXT** (`"0.9214"`, `"19"`); never `REAL` for anything that feeds bookkeeping.
 
 ## 15.2 Domain type
 
@@ -1063,8 +1063,8 @@ StatementLineClass:     business | private | internalTransfer | taxPayment | unk
 PaymentDirection:       inflow | outflow
 PaymentMethod:          bankTransfer | card | paypal | directDebit | cash | other | unknown
 PaymentSource:          statementLine | manual
-MatchMethod:            exact | reference | invoiceNumber | heuristic | manual | rule
-Provenance:             document | agent | calculated | manual | imported | rule
+MatchMethod:            exact | reference | invoiceNumber | heuristic | manual
+Provenance:             document | agent | calculated | manual | imported
 ImportBatchStatus:      running | completed | completedWithErrors | cancelled
 ImportItemStatus:       queued | archiving | analyzing | matching | proposed | committed | skipped | duplicate | failed
 ModelRunOperation:      extraction | disambiguation | statementMapping
@@ -1086,7 +1086,7 @@ A transaction has no single overloaded state. Dimensions:
 
 ```text
 reviewStatus   (stored):  unreviewed | needsReview | confirmed | conflict
-workflowStatus (stored):  draft | active | resolved | archived
+workflowStatus (stored):  active | archived
 paymentStatus  (derived): unknown | unpaid | partiallyPaid | paid
 documentStatus (derived): missing | notRequired | complete
 taxStatus      (derived): unknown | proposed | confirmed | manualOverride
