@@ -56,9 +56,19 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 226 tests across 38 suites plus a successful Debug app build.
+The latest verification baseline is 291 tests across 44 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
+
+### UStVA calculation (2026-09-14)
+
+The deterministic UStVA calculation for one Voranmeldungszeitraum exists, per the approved [UStVA specification](specs/ustva-preparation.md):
+
+- `Tax.AllocationSplitter` splits a payment allocation proportionally across a transaction's tax components using a cumulative largest-remainder method, so the shares of all payments of a fully paid transaction reproduce its component totals to the cent.
+- `Analysis.UStVACalculator.prepare(period:profile:db:)` produces a `UStVAReturn` from the stored assessments, components and payments: income by payment date, input VAT at `max(Rechnungsdatum, Zahlungsdatum)`, §13b and intra-Community acquisitions by invoice date, Kleinunternehmer without Kz 66/67. Every line carries its contributions; unresolved cases become exceptions and mark the return a draft without blocking export.
+- `Analysis.SubmittedReturnRepository` stores one `submitted_returns` row per period (reversible, locks nothing) with a fingerprint of the filed values, so `hasChangedSinceSubmission` can flag a period that moved after submission.
+
+**Kennzahlen mapping status:** `Tax/FormMappings/UStVA_2026.swift` is now verified line by line against the official BMF Vordruckmuster USt 1 A 2026 (BMF letter of 29 December 2025), which corrected the earlier placeholders for Kz 66/61/67, Kz 46/47 vs. 84/85, Kz 89/93 vs. 41/44, and Kz 21 vs. 43. Note that Kz 46/47 covers only EU-established suppliers (§13b Abs. 1); third-country services belong in Kz 84/85. The **Anlage EÜR** mapping (`EUeR_2026.swift`) remains an unverified placeholder.
 
 ## Product boundary
 

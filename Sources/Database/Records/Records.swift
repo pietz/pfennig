@@ -714,6 +714,50 @@ public struct TransactionDocument: PfennigRecord, Sendable, Hashable {
     }
 }
 
+// MARK: - submitted_returns
+
+/// One UStVA period the user marked as submitted ("Als übermittelt markiert").
+/// Locks nothing and is deletable; `contentHash` is the fingerprint of the
+/// prepared form lines at the moment of submission, so a later change to a
+/// transaction of that period can be surfaced without storing the values twice.
+public struct SubmittedReturnRecord: PfennigRecord, Identifiable, Sendable, Hashable {
+    public static let databaseTableName = "submitted_returns"
+
+    public var id: String = IDGenerator.new()
+    public var businessProfileId: String
+    public var year: Int
+    /// `"monthly"` or `"quarterly"`, matching `UStVAPeriod.Kind`.
+    public var kind: String
+    /// 1...12 for a month, 1...4 for a quarter.
+    public var periodIndex: Int
+    public var submittedAt: String
+    public var payableMinor: Int64
+    public var contentHash: String
+    public var createdAt: String = Timestamp.string()
+
+    public init(
+        id: String = IDGenerator.new(),
+        businessProfileId: String,
+        year: Int,
+        kind: String,
+        periodIndex: Int,
+        submittedAt: String = Timestamp.string(),
+        payableMinor: Int64,
+        contentHash: String,
+        createdAt: String = Timestamp.string()
+    ) {
+        self.id = id
+        self.businessProfileId = businessProfileId
+        self.year = year
+        self.kind = kind
+        self.periodIndex = periodIndex
+        self.submittedAt = submittedAt
+        self.payableMinor = payableMinor
+        self.contentHash = contentHash
+        self.createdAt = createdAt
+    }
+}
+
 // MARK: - 17.15 field_provenance
 
 public struct FieldProvenance: PfennigRecord, Identifiable, Sendable, Hashable {

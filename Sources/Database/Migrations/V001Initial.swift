@@ -445,6 +445,21 @@ enum V001Initial {
             UNIQUE(business_profile_id, scope, period_start, period_end)
         )
         """,
+        // submitted_returns: one row per UStVA period the user marked as filed.
+        """
+        CREATE TABLE submitted_returns (
+            id TEXT PRIMARY KEY,
+            business_profile_id TEXT NOT NULL REFERENCES business_profiles(id),
+            year INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            period_index INTEGER NOT NULL,
+            submitted_at TEXT NOT NULL,
+            payable_minor INTEGER NOT NULL,
+            content_hash TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            UNIQUE(business_profile_id, year, kind, period_index)
+        )
+        """,
         // 17.25 derived status view
         """
         CREATE VIEW v_transaction_status AS

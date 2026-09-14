@@ -45,6 +45,7 @@ proposals
 rules
 settings
 statement_lines
+submitted_returns
 tax_assessments
 tax_components
 transaction_documents
@@ -77,6 +78,7 @@ validation_issues
 | `rules` | Visible, editable learned patterns with confirmation counts. |
 | `audit_events` | Append-only change log for every mutation. |
 | `settings` | Non-secret app settings as JSON values. Never API keys. |
+| `submitted_returns` | UStVA periods the user marked as submitted, with the Zahllast and a fingerprint of the filed values. Locks nothing. |
 | `locked_periods` | Closed UStVA/EÜR periods; changes inside require an explicit correction. |
 
 ## Views
