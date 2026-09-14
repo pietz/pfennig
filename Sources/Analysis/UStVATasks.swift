@@ -40,6 +40,9 @@ public enum UStVATasks {
         public let exceptionCount: Int
         /// The period reports at least one Kennzahl.
         public let hasValues: Bool
+        /// The whole period lies before the first date the archive knows,
+        /// so Pfennig was not keeping these books yet.
+        public let precedesArchive: Bool
         /// True when the period carries §13b or intra-Community amounts.
         public let hasSelfAssessedLines: Bool
         /// The period whose deadline comes next; shown even when it is filed.
@@ -57,6 +60,7 @@ public enum UStVATasks {
             payableMinor: Int64,
             exceptionCount: Int,
             hasValues: Bool,
+            precedesArchive: Bool,
             hasSelfAssessedLines: Bool,
             isCurrent: Bool,
             submittedAt: String?,
@@ -67,6 +71,7 @@ public enum UStVATasks {
             self.payableMinor = payableMinor
             self.exceptionCount = exceptionCount
             self.hasValues = hasValues
+            self.precedesArchive = precedesArchive
             self.hasSelfAssessedLines = hasSelfAssessedLines
             self.isCurrent = isCurrent
             self.submittedAt = submittedAt
@@ -140,6 +145,7 @@ public enum UStVATasks {
         today: LocalDate = .today()
     ) throws -> [Summary] {
         let dauerfristverlaengerung = try dauerfristverlaengerung(db)
+        let firstRecordedDate = try firstRecordedDate(db)
         let periods = candidatePeriods(profile: profile, today: today)
         let dueDates = periods.map { $0.dueDate(dauerfristverlaengerung: dauerfristverlaengerung) }
         let currentIndex = dueDates.firstIndex { $0 >= today } ?? periods.indices.last
@@ -156,6 +162,7 @@ public enum UStVATasks {
                     payableMinor: result.payableMinor,
                     exceptionCount: result.exceptions.count,
                     hasValues: !result.lines.isEmpty,
+                    precedesArchive: firstRecordedDate.map { period.periodEnd < $0 } ?? true,
                     hasSelfAssessedLines: hasSelfAssessedLines(result),
                     isCurrent: index == currentIndex,
                     submittedAt: record?.submittedAt,
@@ -172,16 +179,19 @@ public enum UStVATasks {
     /// earlier period with something to report that is not marked submitted,
     /// and every submitted period whose values moved since.
     ///
-    /// An earlier period without a single Kennzahl and without an exception
-    /// stays off Start. Pfennig has nothing to prepare there, and a list of
-    /// empty quarters marked "überfällig" would drown the period that matters.
-    /// The task window reaches every period through its picker. Without
-    /// regular Voranmeldungen a row needs §13b or intra-Community amounts to
-    /// appear at all.
+    /// An earlier period stays off Start only when it is empty *and* lies
+    /// before the first date in the archive: there Pfennig was not keeping the
+    /// books yet, and a row of empty quarters marked "überfällig" would drown
+    /// the period that matters. An empty period after that first date is a
+    /// real task - a regular filer owes a Nullmeldung - and is listed. The
+    /// task window reaches every period through its picker. Without regular
+    /// Voranmeldungen a row needs §13b or intra-Community amounts to appear at
+    /// all.
     public static func startRows(_ summaries: [Summary], mode: Mode) -> [Summary] {
         summaries.filter { summary in
             let isOpen = summary.isCurrent || !summary.isSubmitted || summary.changedSinceSubmission
-            let hasWork = summary.isCurrent || summary.hasValues || summary.exceptionCount > 0
+            let isEmpty = !summary.hasValues && summary.exceptionCount == 0
+            let hasWork = summary.isCurrent || !(isEmpty && summary.precedesArchive)
             switch mode {
             case .regular: return isOpen && hasWork
             case .selfAssessedOnly: return isOpen && summary.hasSelfAssessedLines
@@ -307,6 +317,25 @@ public enum UStVATasks {
             arguments: StatementArguments(transactionIDs)
         )
         return Dictionary(rows.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+    }
+
+    /// The earliest date the archive knows: the first invoice, service or
+    /// payment date. Nil while nothing is booked at all. Periods that end
+    /// before it are periods Pfennig was not used for.
+    public static func firstRecordedDate(_ db: Database) throws -> LocalDate? {
+        let value = try String.fetchOne(
+            db,
+            sql: """
+            SELECT MIN(d) FROM (
+                SELECT MIN(invoice_date) AS d FROM transactions WHERE deleted_at IS NULL
+                UNION ALL
+                SELECT MIN(service_date) FROM transactions WHERE deleted_at IS NULL
+                UNION ALL
+                SELECT MIN(payment_date) FROM payments
+            )
+            """
+        )
+        return value.flatMap(LocalDate.init)
     }
 
     // MARK: - Settings

@@ -254,7 +254,7 @@ struct UStVATaskTests {
             profile: profile,
             database: database
         )
-        // Q3 as the current period, Q2 because it carries the income.
+        // Q3 as the current period, Q2 because the archive starts there.
         #expect(UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular).count == 2)
 
         try SubmittedReturnRepository.markSubmitted(database, profileID: profile.id, result: q2)
@@ -288,25 +288,44 @@ struct UStVATaskTests {
         #expect(!current.changedSinceSubmission)
     }
 
-    @Test("Zurückliegende Zeiträume ohne Werte bleiben von Start fern")
-    func emptyPastPeriodsStayOffStart() throws {
+    @Test("Leere Zeiträume vor der ersten Buchung bleiben von Start fern")
+    func emptyPeriodsBeforeTheFirstBookingStayOffStart() throws {
         let (database, profile) = try database()
         let today = LocalDate(year: 2026, month: 9, day: 14)
         try income(database, profile, net: 100_000, on: LocalDate(year: 2026, month: 8, day: 1))
 
         // Seven quarters are prepared, ...
         #expect(try summaries(database, profile, today: today).count == 7)
-        // ... but only Q3 2026 has anything in it.
+        // ... but the archive starts in Q3 2026, so nothing lies before it.
         let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
         #expect(rows.map(\.period) == [UStVAPeriod(year: 2026, quarter: 3)])
+    }
 
-        // A booking in an older quarter brings that quarter back.
+    @Test("Leere Zeiträume nach der ersten Buchung bleiben als Nullmeldung stehen")
+    func emptyPeriodsAfterTheFirstBookingStayVisible() throws {
+        let (database, profile) = try database()
+        let today = LocalDate(year: 2026, month: 9, day: 14)
+        // The archive starts in Q1 2025; 2024 and earlier are not Pfennig's.
         try income(database, profile, net: 50000, on: LocalDate(year: 2025, month: 2, day: 3))
-        let withHistory = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
-        #expect(withHistory.map(\.period) == [
+        try income(database, profile, net: 100_000, on: LocalDate(year: 2026, month: 8, day: 1))
+
+        let rows = UStVATasks.startRows(try summaries(database, profile, today: today), mode: .regular)
+
+        // Every quarter from the first booking on is listed, the empty ones
+        // included: a regular filer owes a Nullmeldung for them.
+        #expect(rows.map(\.period) == [
             UStVAPeriod(year: 2026, quarter: 3),
+            UStVAPeriod(year: 2026, quarter: 2),
+            UStVAPeriod(year: 2026, quarter: 1),
+            UStVAPeriod(year: 2025, quarter: 4),
+            UStVAPeriod(year: 2025, quarter: 3),
+            UStVAPeriod(year: 2025, quarter: 2),
             UStVAPeriod(year: 2025, quarter: 1)
         ])
+        let q3_2025 = try #require(rows.first { $0.period == UStVAPeriod(year: 2025, quarter: 3) })
+        #expect(!q3_2025.hasValues)
+        #expect(q3_2025.payableMinor == 0)
+        #expect(!q3_2025.precedesArchive)
     }
 
     @Test("Ohne regelmäßige Voranmeldungen erscheint nur ein Zeitraum mit §13b")
