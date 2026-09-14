@@ -26,7 +26,7 @@ Nicht enthalten: Bankanbindung, Rechnungsstellung, Bilanz, Lohn, Chat, direkte E
 
 Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit der App. Ein Freiberufler hat wenige hundert Buchungen im Jahr; alles passt in den Speicher. SQLite ist eine Datei mit sicherem Schreiben und Änderungsbeobachtung, kein Abfragesystem. Swift lädt, sortiert und rechnet. Tabellen, Spalten und Werte sind deutsch benannt, weil die Fachbegriffe deutsch sind und die App in Deutschland bleibt; etablierte Fremdwörter wie Reverse Charge bleiben.
 
-**Vier Tabellen.** Eine trägt die Buchhaltung, drei sind klein und dienen ihr.
+**Fünf Tabellen.** Eine trägt die Buchhaltung, vier sind klein und dienen ihr.
 
 `buchungen`, eine Zeile pro Dokument. Ein Beleg ist immer genau ein Eintrag.
 - `id` (hochzählende Ganzzahl), `richtung` (einnahme/ausgabe), `art` (rechnung, beleg, gutschrift, steuerzahlung, nur_zahlung, ignoriert, sonstiges), `datum` (Belegdatum), `titel`, `kategorie` (feste EÜR-Kategorienliste im Code, Schlüssel unwiderruflich), `privatanteil_prozent`, `notizen`
@@ -46,13 +46,15 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 `aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `aenderung` (JSON mit Vorher und Nachher). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen, gibt Undo und zeigt, was der Agent geändert hat. Der Agent darf es lesen, nicht schreiben. Das genaue Spaltendesign wird vor der Umsetzung noch einmal geprüft.
 
+`laeufe`: ein Agentenlauf pro Datei, `id`, `datei_sha256`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Der Agent darf lesen, nicht schreiben.
+
 `einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
-Eine Tabelle für abgegebene und anstehende Zeiträume ist Thema 5 und nicht Teil der ersten Version.
+Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
 **Das Dateisystem übernimmt den Rest.** Originale liegen im Archivordner als `<sha256>.<endung>`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
-**Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Modellläufe, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
+**Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung, weil Dateien nacheinander verarbeitet werden. Bekannte Gegenparteien sind eine in Swift aus den Einträgen gruppierte Liste, kein Stammsatz.
 
 ## 3. Oberfläche
 
@@ -89,7 +91,7 @@ Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht
 Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anweisungen aus `sqlite_master`), damit es immer aktuell ist. Aufzählungen wie richtung, art und steuerbehandlung sind als CHECK-Bedingungen im Schema hinterlegt und dadurch im Schematext sichtbar. Für JSON-Spalten steht die Struktur als Kommentar im Schema.
 
 **Drei Grenzen in Swift.**
-1. Erlaubte Anweisungen über den SQLite-Autorisierer: SELECT auf `buchungen`, `dateien`, `aktivitaeten`; INSERT und UPDATE nur auf `buchungen`; kein DELETE, keine Schemaänderung, kein Zugriff auf `einstellungen`.
+1. Erlaubte Anweisungen über den SQLite-Autorisierer: SELECT auf `buchungen`, `dateien`, `aktivitaeten`, `laeufe`; INSERT und UPDATE nur auf `buchungen`; kein DELETE, keine Schemaänderung, kein Zugriff auf `einstellungen`.
 2. Jeder Aufruf läuft in einer Transaktion. Danach laufen die Prüfregeln über die geänderten Zeilen; bestehen sie, wird committet, sonst Rollback, und der Fehlertext geht als Werkzeugantwort an den Agenten, der korrigiert.
 3. Vor und nach dem Aufruf werden die berührten Zeilen verglichen; die Differenz landet automatisch in `aktivitaeten`.
 
@@ -106,3 +108,12 @@ Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anwe
 Schlägt eine Regel fehl, bekommt der Agent den Fehlertext zurück. Gibt er nach wenigen Versuchen auf, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
 
 **Prüfen statt Automatisierungsstufe.** Es gibt keine Automatisierungsstufe. Jede Buchung des Agenten wird sofort geschrieben, mit leerem `geprueft_am`, in der Tabelle als farbiges Symbol sichtbar. Der Nutzer bestätigt sie im Inspector; danach ist sie eine normale Buchung. Mehr Logik gibt es nicht.
+
+## 5. Ausgang: Steuerdaten
+
+Ein Knopf „Export“ in der Toolbar öffnet ein Sheet. Vorausgewählt ist die UStVA für den Zeitraum, der sich aus Rhythmus, Dauerfristverlängerung und heutigem Datum ergibt; wählbar sind andere Zeiträume und die EÜR eines Jahres.
+
+- **UStVA** wird als XML gespeichert, wie es Mein ELSTER im Formular „XML-Daten hochladen“ annimmt, ohne Herstellerregistrierung. Der Nutzer lädt die Datei hoch, prüft das vorausgefüllte Formular und sendet selbst ab. Das Sheet zeigt den Link dazu. Der Aufbau des XML ist aus öffentlichen Quellen rekonstruiert und wird mit einem Testupload ohne Absenden einmal verifiziert.
+- **EÜR** wird als CSV mit Formularzeile, Bezeichnung und Betrag gespeichert; für die Anlage EÜR gibt es keinen Upload, die Werte werden abgetippt.
+
+Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Kleinunternehmer, geprüfte Kennzahlen) und XML-Exporter werden aus dem alten Code übernommen. Mit dem Export kommt eine kleine Tabelle `zeitraeume` (jahr, art, index, exportiert_am), damit die App anstehende Zeiträume erinnern und nachträgliche Änderungen in exportierten Zeiträumen warnen kann. Keine Übermittlung aus der App.
