@@ -95,10 +95,12 @@ public enum MoneyValidator {
         )
     }
 
-    /// A negative amount is a credit note and nothing else. Within one
-    /// transaction the three amounts also have to agree: a document cannot
-    /// charge a positive net with a negative tax. Zero has no sign and is
-    /// allowed everywhere.
+    /// A negative amount is a credit note, and a credit note is negative:
+    /// the sign and the document type say the same thing or the booking is
+    /// wrong in one of them. Within one transaction the three amounts also
+    /// have to agree - a document cannot charge a positive net with a
+    /// negative tax. Zero has no sign and is allowed everywhere, so a credit
+    /// note that has no amounts yet is not an issue.
     public static func validateAmountSign(
         net: Money,
         tax: Money,
@@ -106,10 +108,13 @@ public enum MoneyValidator {
         isCreditNote: Bool
     ) -> ValidationIssue? {
         let amounts = [net, tax, gross].map(\.minorUnits)
-        if !isCreditNote, amounts.contains(where: { $0 < 0 }) {
+        let hasNegative = amounts.contains { $0 < 0 }
+        let hasPositive = amounts.contains { $0 > 0 }
+        guard hasNegative || hasPositive else { return nil }
+        if hasNegative, hasPositive {
             return ValidationIssue(code: .amountSignInvalid, fieldName: "grossAmount")
         }
-        if amounts.contains(where: { $0 < 0 }), amounts.contains(where: { $0 > 0 }) {
+        guard hasNegative == isCreditNote else {
             return ValidationIssue(code: .amountSignInvalid, fieldName: "grossAmount")
         }
         return nil

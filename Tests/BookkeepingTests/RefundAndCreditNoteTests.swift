@@ -173,6 +173,52 @@ struct RefundAndCreditNoteTests {
         #expect(try database.transactionList().isEmpty)
     }
 
+    @Test("Eine Gutschrift mit positiven Beträgen ist ein harter Fehler")
+    func creditNoteMustBeNegative() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        draft.transactionType = .creditNote
+        let derived = try BookkeepingEngine.derive(draft, profile: profile, categories: database.categories())
+
+        #expect(derived.hardIssues.map(\.code).contains("AMOUNT_SIGN_INVALID"))
+    }
+
+    @Test("Eine Gutschrift ohne Beträge ist noch kein Vorzeichenfehler")
+    func emptyCreditNoteIsNotAnIssue() throws {
+        let (database, profile) = try Fixture.database()
+        var draft = creditNote(profile)
+        draft.netMinor = 0
+        draft.taxMinor = 0
+        draft.grossMinor = 0
+        draft.components = []
+        draft.allocations = []
+        let derived = try BookkeepingEngine.derive(draft, profile: profile, categories: database.categories())
+
+        #expect(!derived.hardIssues.map(\.code).contains("AMOUNT_SIGN_INVALID"))
+    }
+
+    @Test("Die Art \"Gutschrift\" spiegelt die Beträge, und zurück")
+    func switchingTypeMirrorsAmounts() throws {
+        let (_, profile) = try Fixture.database()
+        var draft = Fixture.domesticExpense(profile)
+        draft.mirrorAmounts(toCreditNote: true)
+
+        #expect(draft.grossMinor == -11900)
+        #expect(draft.netMinor == -10000)
+        #expect(draft.taxMinor == -1900)
+        #expect(draft.components.map(\.netMinor) == [-10000])
+        #expect(draft.components.map(\.taxMinor) == [-1900])
+        #expect(draft.allocations.map(\.amountMinor) == [-10000])
+
+        // Mirroring twice changes nothing; mirroring back restores the invoice.
+        draft.mirrorAmounts(toCreditNote: true)
+        #expect(draft.grossMinor == -11900)
+        draft.mirrorAmounts(toCreditNote: false)
+        #expect(draft.grossMinor == 11900)
+        #expect(draft.components.map(\.taxMinor) == [1900])
+        #expect(draft.allocations.map(\.amountMinor) == [10000])
+    }
+
     @Test("Netto, Steuer und Brutto müssen dasselbe Vorzeichen haben")
     func mixedSignsAreRejected() throws {
         let (database, profile) = try Fixture.database()

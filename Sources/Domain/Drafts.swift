@@ -128,6 +128,28 @@ public struct TransactionDraft: Codable, Sendable, Hashable, Identifiable {
         grossMinor.map { Money(minorUnits: $0, currency: currency) }
     }
 
+    /// Turns every booked amount to the sign the document type needs: a
+    /// credit note books negatively in the direction it corrects, everything
+    /// else positively. A Gutschrift prints ordinary positive numbers, so
+    /// choosing that type is where the booking is mirrored - the same
+    /// mirroring the import does at its own boundary. Magnitudes, so
+    /// mirroring twice changes nothing.
+    public mutating func mirrorAmounts(toCreditNote isCreditNote: Bool) {
+        func signed(_ value: Int64) -> Int64 {
+            isCreditNote ? -abs(value) : abs(value)
+        }
+        netMinor = netMinor.map(signed)
+        taxMinor = taxMinor.map(signed)
+        grossMinor = grossMinor.map(signed)
+        for index in components.indices {
+            components[index].netMinor = signed(components[index].netMinor)
+            components[index].taxMinor = signed(components[index].taxMinor)
+        }
+        for index in allocations.indices {
+            allocations[index].amountMinor = signed(allocations[index].amountMinor)
+        }
+    }
+
     /// Fills the third of net/tax/gross once two of them are known. Never
     /// overwrites a value the user already entered.
     public mutating func completeAmounts() {

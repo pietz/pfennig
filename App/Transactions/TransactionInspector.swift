@@ -239,7 +239,17 @@ struct TransactionInspector: View {
                 }
             }
             field(label: "Art") {
-                Picker("Art", selection: $draft.transactionType) {
+                // Choosing "Gutschrift" mirrors the amounts to negative and
+                // choosing anything else mirrors them back: a Gutschrift is
+                // printed with positive numbers and booked with negative ones.
+                Picker("Art", selection: Binding(
+                    get: { draft.transactionType },
+                    set: { newType in
+                        guard newType != draft.transactionType else { return }
+                        draft.transactionType = newType
+                        draft.mirrorAmounts(toCreditNote: newType == .creditNote)
+                    }
+                )) {
                     ForEach(TransactionType.userSelectable, id: \.self) { Text($0.label).tag($0) }
                 }
             }

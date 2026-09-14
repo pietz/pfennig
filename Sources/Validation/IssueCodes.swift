@@ -82,7 +82,7 @@ public extension IssueCode {
         case .grossMismatch:
             "Netto plus Steuer ergibt nicht den Bruttobetrag."
         case .amountSignInvalid:
-            "Negative Beträge sind nur bei einer Gutschrift zulässig, und Netto, Steuer und Brutto müssen dasselbe Vorzeichen haben."
+            "Eine Gutschrift hat negative Beträge, jede andere Buchung positive, und Netto, Steuer und Brutto müssen dasselbe Vorzeichen haben."
         case .allocationSumMismatch:
             "Summe der Buchungszuordnungen weicht vom gebuchten Betrag ab."
         case .paymentAllocationExceeds:
