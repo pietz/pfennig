@@ -59,12 +59,22 @@ public enum ExtractionNormalizer {
         default: break
         }
 
+        // A Gutschrift prints ordinary positive amounts under a heading that
+        // says they go the other way. The booking is a negative transaction in
+        // the direction of the document it corrects, so every amount is
+        // mirrored here - once, at the boundary - and a model that already
+        // returned negative numbers changes nothing.
+        let isCreditNote = extraction.documentType == .creditNote
+        net = Self.mirrored(net, isCreditNote)
+        tax = Self.mirrored(tax, isCreditNote)
+        gross = Self.mirrored(gross, isCreditNote)
+
         let components = try extraction.taxComponents.map { component in
             try TaxComponentDraft(
                 kind: component.kind,
                 rate: component.rate?.trimmed.nilIfEmpty,
-                netMinor: minor(component.netAmount, currency) ?? 0,
-                taxMinor: minor(component.taxAmount, currency) ?? 0
+                netMinor: Self.mirrored(minor(component.netAmount, currency) ?? 0, isCreditNote),
+                taxMinor: Self.mirrored(minor(component.taxAmount, currency) ?? 0, isCreditNote)
             )
         }
 
@@ -86,7 +96,8 @@ public enum ExtractionNormalizer {
             for: extraction.lineItems,
             total: allocationBase,
             currency: currency,
-            categoryIDs: categoryIDs
+            categoryIDs: categoryIDs,
+            isCreditNote: isCreditNote
         )
 
         var unparseableDateFields: [String] = []
@@ -139,6 +150,15 @@ public enum ExtractionNormalizer {
     }
 
     // MARK: - Pieces
+
+    /// Negative magnitude for a credit note, the value untouched otherwise.
+    static func mirrored(_ value: Int64, _ isCreditNote: Bool) -> Int64 {
+        isCreditNote ? -abs(value) : value
+    }
+
+    static func mirrored(_ value: Int64?, _ isCreditNote: Bool) -> Int64? {
+        value.map { mirrored($0, isCreditNote) }
+    }
 
     static func minor(_ value: String?, _ currency: CurrencyCode) throws -> Int64? {
         guard let value = value?.trimmed, !value.isEmpty else { return nil }
@@ -201,13 +221,14 @@ public enum ExtractionNormalizer {
         for lineItems: [DocumentExtraction.LineItem],
         total: Int64,
         currency: CurrencyCode,
-        categoryIDs: Set<String>
+        categoryIDs: Set<String>,
+        isCreditNote: Bool = false
     ) -> [AllocationDraft] {
         var order: [String] = []
         var amounts: [String: Int64] = [:]
         for item in lineItems {
             let category = item.categoryHint.flatMap { categoryIDs.contains($0) ? $0 : nil } ?? "uncategorized"
-            let amount = (try? minor(item.netAmount, currency)) ?? nil
+            let amount = mirrored((try? minor(item.netAmount, currency)) ?? nil, isCreditNote)
             if amounts[category] == nil {
                 order.append(category)
                 amounts[category] = 0

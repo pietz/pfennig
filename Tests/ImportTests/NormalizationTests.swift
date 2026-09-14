@@ -118,6 +118,42 @@ struct NormalizationTests {
         #expect(result.draft.grossMinor == -4760)
     }
 
+    @Test("Eine Gutschrift mit positiv gedruckten Beträgen wird negativ gebucht")
+    func creditNoteWithPositiveAmounts() throws {
+        var input = try extraction("12-")
+        input.invoice.netAmount = "40.00"
+        input.invoice.taxAmount = "7.60"
+        input.invoice.grossAmount = "47.60"
+        input.taxComponents = input.taxComponents.map {
+            var component = $0
+            component.netAmount = "40.00"
+            component.taxAmount = "7.60"
+            return component
+        }
+        input.lineItems = input.lineItems.map {
+            var item = $0
+            item.netAmount = "40.00"
+            return item
+        }
+
+        let result = try normalize(input)
+        #expect(result.draft.transactionType == .creditNote)
+        #expect(result.draft.direction == .expense)
+        #expect(result.draft.netMinor == -4000)
+        #expect(result.draft.taxMinor == -760)
+        #expect(result.draft.grossMinor == -4760)
+        #expect(result.draft.components.map(\.netMinor) == [-4000])
+        #expect(result.draft.components.map(\.taxMinor) == [-760])
+        #expect(result.draft.allocations.map(\.amountMinor) == [-4000])
+    }
+
+    @Test("Eine gewöhnliche Rechnung bleibt positiv")
+    func invoiceKeepsItsSign() throws {
+        let result = try normalize(extraction("02-"))
+        #expect(result.draft.transactionType != .creditNote)
+        #expect((result.draft.grossMinor ?? 0) > 0)
+    }
+
     @Test("Mehrere Steuersätze werden als Komponenten übernommen")
     func components() throws {
         let result = try normalize(extraction("04-"))
