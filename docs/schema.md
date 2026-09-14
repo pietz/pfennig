@@ -93,8 +93,8 @@ v_transaction_status
   allocated in the transaction's own direction (money out on an expense, money
   in on an income) minus everything that moved back, because a refund is an
   opposite-direction payment on the same transaction. It is `unknown` when no
-  booked gross amount is known, `refunded` when the net amount is zero but
-  payments exist, `unpaid` when the net amount is zero and there are none,
+  booked gross amount is known, `unpaid` when the transaction has no
+  allocation at all, `refunded` when it has allocations that cancel out,
   `partiallyPaid` while the net amount is below the booked gross amount, and
   `paid` otherwise. A credit note books a negative gross amount and is settled
   by a payment in the opposite direction, so the same rule covers it.

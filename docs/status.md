@@ -67,7 +67,7 @@ The core local bookkeeping loop works:
 
 Confirmed transactions are editable immediately. Correction semantics are reserved for future locked periods and should not burden the ordinary workflow.
 
-The latest verification baseline is 343 tests across 46 suites plus a successful Debug app build.
+The latest verification baseline is 345 tests across 46 suites plus a successful Debug app build.
 
 Research on 2026-09-14 confirmed material reporting gaps: tax derivation collapses payments to the first date, invoice-possession facts are absent, reverse-charge timing is oversimplified, and form-year mappings/exporters remain unverified placeholders. Start totals must not be reused as UStVA/EÜR values. See [workflow/output research](research-user-workflow.md) for the bounded report and import increments; no feature implementation or tax filing was performed in that research.
 
@@ -285,13 +285,19 @@ no relations table, no reversal bookings, no new transaction type.
   credit note moves the other way, so `openAmountMinor` is signed and
   "Vollständig bezahlt" becomes "Vollständig erstattet".
 - **Payment status** is derived from the *net* allocated amount. `paid` when it
-  equals the booked gross, `partiallyPaid` between zero and it, `unpaid` at
-  zero without payments, and the new **`refunded`** at zero with payments. The
-  view uses correlated subqueries now instead of the grouped join. The net
+  equals the booked gross, `partiallyPaid` between zero and it, `unpaid`
+  without any allocation, and the new **`refunded`** when the allocations
+  cancel out. The view's grouped join now sums the signed allocation. The net
   amount may never leave the range between zero and gross; `savePayments`
-  reads it back after writing and throws `paymentBoundsExceeded` otherwise -
-  which also means an overpayment is now rejected instead of being recorded
-  with a soft `PAYMENT_AMOUNT_DIFFERS` warning.
+  reads it back after writing a new payment and throws
+  `paymentBoundsExceeded` otherwise. Only a new payment is refused this way -
+  correcting the amount of a transaction that is already paid stays an
+  ordinary edit, because there is no way to take a payment back, and the soft
+  `PAYMENT_AMOUNT_DIFFERS` warning reports the difference.
+  That is a bound on what a transaction *settles*, not on what may be paid: a
+  transfer larger than the invoice (bank fee, exchange difference, one
+  transfer for several invoices) is recorded in full, the payment sheet caps
+  its allocation at the open remainder and says how much stays unallocated.
 - **UStVA:** the calculator reads the signed allocation, so an expense refunded
   a quarter later contributes +Vorsteuer in the first and -Vorsteuer in the
   second (net zero), a refunded income does the same for its Bemessungs-
@@ -303,8 +309,11 @@ no relations table, no reversal bookings, no new transaction type.
   covered by tests.
 - **Interface:** the payment sheet gains a segmented "Zahlung / Erstattung"
   ("Zahlungseingang / Rückzahlung" on an income), shown only once something has
-  been settled, with the ordinary direction preselected and the refund capped
-  at what was paid. The payment list prints a refund with a leading minus and
+  been settled, with the settling direction preselected and the refund capped
+  at what was paid. Which direction settles follows the sign of the booked
+  amount (`TransactionDraft.settlingPaymentDirection`), not the open
+  remainder, so the sheet still names the two sides correctly once a
+  transaction is fully settled. The payment list prints a refund with a leading minus and
   an "Erstattung" caption; the ledger colours the amount by direction instead
   of by sign, so a credit note keeps the colour of the side it corrects, and
   the payment column shows `refunded` as "Erstattet".
@@ -313,8 +322,13 @@ no relations table, no reversal bookings, no new transaction type.
   Gutschrift that prints positive numbers under its heading books correctly.
   A model that already returns negative numbers is unaffected.
 
-No schema migration was needed beyond the view definition, and no archive was
-rewritten: the change is in the derivation, not in the stored columns.
+No stored column changed, but `v_transaction_status` did, and a view lives in
+the database file. `v001_initial` is the only migration and does not run again
+on an existing archive, so **the development archive still holds the previous
+view definition** and would report the old, unsigned payment status. It needs
+`DROP VIEW v_transaction_status;` plus the current `CREATE VIEW` once, run
+against `~/Library/Application Support/Pfennig/bookkeeping.sqlite`. That was
+not done here: the archive is user data and was not opened.
 
 ## Product boundary
 

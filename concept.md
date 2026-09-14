@@ -481,8 +481,8 @@ Rules: `taxTreatmentHint` is a hint; Swift decides the treatment using profile +
   differing signs (`AMOUNT_SIGN_INVALID`)
 - `sum(bookkeeping_allocations.amount) ≠ booked net amount` (or gross for non-deductible cases) beyond tolerance
 - Payment allocation total exceeds payment amount
-- Payments settling more than the booked gross amount, or a refund giving back
-  more than was paid (enforced at the write boundary)
+- A new payment settling more than the booked gross amount, or a refund giving
+  back more than was paid (enforced at the write boundary)
 - Linked IDs do not exist; unsupported state transition
 - Duplicate immutable document identity (sha256)
 - Duplicate statement line fingerprint on the same account
@@ -873,7 +873,11 @@ Allocation amounts stay positive. A **refund** is a payment in the direction
 opposite to the transaction's own (an inflow on an expense, an outflow on an
 income); its allocation counts negatively against what the transaction has
 settled. The net settled amount may never exceed the booked gross amount nor
-fall below zero, so nothing can be given back that was never paid.
+fall below zero, so nothing can be given back that was never paid. A payment that is
+larger than what the transaction can absorb - a bank fee, an exchange
+difference, one transfer for several invoices - is recorded in full with only
+the open remainder allocated; the surplus stays unallocated rather than being
+refused.
 
 ## 17.15 `field_provenance`
 
@@ -1045,9 +1049,9 @@ CREATE VIEW v_transaction_status AS
 SELECT t.id,
   CASE
     WHEN t.booked_gross_minor IS NULL THEN 'unknown'
-    WHEN net_allocated(t) = 0 AND payment_count(t) > 0 THEN 'refunded'
-    WHEN net_allocated(t) = 0 THEN 'unpaid'
-    WHEN ABS(net_allocated(t)) < ABS(t.booked_gross_minor) THEN 'partiallyPaid'
+    WHEN settled.transaction_id IS NULL THEN 'unpaid'
+    WHEN settled.net_allocated = 0 THEN 'refunded'
+    WHEN ABS(settled.net_allocated) < ABS(t.booked_gross_minor) THEN 'partiallyPaid'
     ELSE 'paid' END AS payment_status,
   CASE
     WHEN td.doc_count IS NULL AND t.transaction_type IN ('paymentOnly') THEN 'missing'
@@ -1055,22 +1059,22 @@ SELECT t.id,
     ELSE 'complete' END AS document_status,
   COALESCE(ta.status, 'unknown') AS tax_status
 FROM transactions t
+LEFT JOIN (SELECT pa.transaction_id, SUM(signed_allocation) AS net_allocated FROM payment_allocations pa JOIN payments p ON p.id = pa.payment_id JOIN transactions tx ON tx.id = pa.transaction_id GROUP BY pa.transaction_id) settled ON settled.transaction_id = t.id
 LEFT JOIN (SELECT transaction_id, COUNT(*) AS doc_count FROM transaction_documents GROUP BY transaction_id) td ON td.transaction_id = t.id
 LEFT JOIN tax_assessments ta ON ta.transaction_id = t.id
 WHERE t.deleted_at IS NULL;
 ```
 
-`net_allocated(t)` stands for the correlated subquery that sums the payment
-allocations of the transaction **signed by direction**: positive when the
-payment moves the way the transaction expects (money out on an expense, money
-in on an income), negative when it moves back. A refund is exactly that
-opposite-direction payment, and a credit note - a transaction with negative
-amounts - is settled by one. `payment_count(t)` counts the allocations, so a
-transaction that was paid and fully refunded reads `refunded` rather than
-`unpaid`. Both expressions live in `TransactionQueryRules` and are shared with
-the UStVA calculation and the write boundary. The net amount may never leave
-the range between zero and the booked gross amount; the repository enforces
-that when payments are written.
+`signed_allocation` stands for the allocated amount **signed by direction**:
+positive when the payment moves the way the transaction expects (money out on
+an expense, money in on an income), negative when it moves back. A refund is
+exactly that opposite-direction payment, and a credit note - a transaction
+with negative amounts - is settled by one. A transaction without any
+allocation has no `settled` row and is `unpaid`; one whose payments cancel out
+has a row summing to zero and is `refunded`. The expression lives in
+`TransactionQueryRules` and is shared with the UStVA calculation and the write
+boundary. The net amount may never leave the range between zero and the booked
+gross amount; the repository enforces that when payments are written.
 
 Categories with `document_expected = 0` map to `document_status = 'notRequired'` (handled in Swift or by extending the view in a later migration).
 
