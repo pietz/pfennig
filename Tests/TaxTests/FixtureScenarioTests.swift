@@ -17,7 +17,6 @@ private struct ExpectedFixture: Decodable {
 
     struct TreatmentHint: Decodable {
         let treatment: TaxTreatment
-        let confidence: Double
     }
 
     let direction: Direction

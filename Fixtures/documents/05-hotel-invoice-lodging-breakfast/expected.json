@@ -36,9 +36,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.95,
-    "reasoning": "German hotel invoice, reduced rate for lodging and standard rate for breakfast"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

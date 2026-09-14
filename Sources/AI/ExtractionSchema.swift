@@ -43,9 +43,7 @@ public enum ExtractionSchema {
                 "kind": enumeration(TaxComponentKind.allCases.map(\.rawValue))
             ])),
             "taxTreatmentHint": object([
-                "treatment": enumeration(TaxTreatment.allCases.map(\.rawValue)),
-                "confidence": nullable("number"),
-                "reasoning": nullable("string")
+                "treatment": enumeration(TaxTreatment.allCases.map(\.rawValue))
             ]),
             "lineItems": array(object([
                 "description": nullable("string"),

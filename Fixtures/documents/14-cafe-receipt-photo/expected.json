@@ -36,9 +36,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.85,
-    "reasoning": "German cafe till receipt (photographed), mixed standard/reduced rates typical for eat-in vs takeaway"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

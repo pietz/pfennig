@@ -46,16 +46,13 @@ public struct ProvenanceEntry: Codable, Sendable, Hashable {
 /// they are derivation inputs, not evidence for a particular stored field.
 public struct ProposalDerivationContext: Codable, Sendable, Hashable {
     public var modelTreatmentHint: TaxTreatment?
-    public var modelTreatmentHintConfidence: Double?
     public var reverseChargeNote: Bool
 
     public init(
         modelTreatmentHint: TaxTreatment? = nil,
-        modelTreatmentHintConfidence: Double? = nil,
         reverseChargeNote: Bool = false
     ) {
         self.modelTreatmentHint = modelTreatmentHint
-        self.modelTreatmentHintConfidence = modelTreatmentHintConfidence
         self.reverseChargeNote = reverseChargeNote
     }
 }

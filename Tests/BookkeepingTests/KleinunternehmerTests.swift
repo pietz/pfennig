@@ -19,7 +19,7 @@ struct KleinunternehmerTests {
         let derived = BookkeepingEngine.derive(draft, profile: profile)
 
         #expect(derived.draft.assessment?.treatment == .smallBusiness)
-        #expect(derived.draft.assessment?.reasoning?.contains("Kleinunternehmerregelung") == true)
+        #expect(derived.reasoning?.contains("Kleinunternehmerregelung") == true)
         #expect(derived.draft.assessment?.vatShownMinor == 1900)
         #expect(derived.draft.assessment?.outputVatMinor == 1900)
         #expect(derived.softIssues.contains { $0.code == "TAX_RATE_UNUSUAL" })
@@ -113,7 +113,7 @@ struct KleinunternehmerTests {
           "counterparty": {"name": "Lieferant GmbH", "countryCode": "DE", "vatId": "DE123456789", "street": null, "postalCode": null, "city": null},
           "invoice": {"invoiceNumber": "DE-1", "invoiceDate": "2026-09-05", "serviceDate": "2026-09-05", "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "19.00", "grossAmount": "119.00", "statedEurEquivalent": null},
           "taxComponents": [{"rate": "19", "netAmount": "100.00", "taxAmount": "19.00", "kind": "standard"}],
-          "taxTreatmentHint": {"treatment": "domesticVAT", "confidence": 0.99, "reasoning": "VAT shown"},
+          "taxTreatmentHint": {"treatment": "domesticVAT"},
           "lineItems": [{"description": "Lieferung", "netAmount": "100.00", "categoryHint": "uncategorized", "assetCandidate": false}],
           "paymentInfo": {"paymentMethodHint": null, "paidIndicator": "unknown", "paymentDate": null, "iban": null, "reference": null},
           "missingFields": [],

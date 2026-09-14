@@ -317,8 +317,6 @@ def build_01_irish_saas(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "reverseCharge",
-            "confidence": 0.93,
-            "reasoning": "Irish supplier, German customer VAT ID shown, 'VAT reverse charged' note on invoice",
         },
         "lineItems": [
             {"description": "CloudForge Suite - Team plan (5 seats)", "netAmount": "71.39", "categoryHint": "software_subscriptions", "assetCandidate": False}
@@ -389,8 +387,6 @@ def build_02_german_hosting(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.97,
-            "reasoning": "German hosting provider, German standard VAT rate shown on invoice",
         },
         "lineItems": [
             {"description": "Hosting-Paket Business M, monatlich", "netAmount": "40.00", "categoryHint": "hosting_cloud", "assetCandidate": False}
@@ -495,8 +491,6 @@ def build_03_office_supplies_kassenbon(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.9,
-            "reasoning": "German retail till receipt, gross amount below 250 EUR (Kleinbetragsrechnung)",
         },
         "lineItems": [
             {"description": "Kugelschreiber-Set", "netAmount": "10.00", "categoryHint": "office_supplies", "assetCandidate": False},
@@ -583,8 +577,6 @@ def build_04_bahn_ticket(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.95,
-            "reasoning": "Domestic long-distance rail ticket, reduced rate on transport plus standard rate on seat reservation",
         },
         "lineItems": [
             {"description": "Fahrkarte 2. Klasse Berlin Hbf - München Hbf", "netAmount": "79.35", "categoryHint": "travel_transport", "assetCandidate": False},
@@ -656,8 +648,6 @@ def build_05_hotel(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.95,
-            "reasoning": "German hotel invoice, reduced rate for lodging and standard rate for breakfast",
         },
         "lineItems": [
             {"description": "Übernachtung Doppelzimmer zur Einzelnutzung, 2 Nächte", "netAmount": "180.00", "categoryHint": "travel_lodging", "assetCandidate": False},
@@ -730,8 +720,6 @@ def build_06_us_software(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "reverseCharge",
-            "confidence": 0.85,
-            "reasoning": "US software vendor, digital service to a German business, no VAT shown - §13b reverse charge applies regardless of EU/non-EU origin",
         },
         "lineItems": [
             {"description": "Annual Enterprise License - DevTools Suite", "netAmount": "1000.00", "categoryHint": "software_subscriptions", "assetCandidate": False}
@@ -804,8 +792,6 @@ def build_07_uk_consultancy(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "reverseCharge",
-            "confidence": 0.9,
-            "reasoning": "UK (third country) consultancy service, reverse charge note present, EUR equivalent stated",
         },
         "lineItems": [
             {"description": "Strategy Consulting - Q2 2026 Engagement", "netAmount": "850.00", "categoryHint": "professional_services", "assetCandidate": False}
@@ -877,8 +863,6 @@ def build_08_laptop(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.97,
-            "reasoning": "German hardware retailer, standard German VAT rate",
         },
         "lineItems": [
             {"description": "Notebook ProBook X15 (16GB RAM / 1TB SSD)", "netAmount": "1850.00", "categoryHint": "hardware_equipment", "assetCandidate": True}
@@ -940,8 +924,6 @@ def build_09_monitor(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.97,
-            "reasoning": "German hardware retailer, standard German VAT rate, amount below GWG asset threshold",
         },
         "lineItems": [
             {"description": "Monitor UltraView 27\" 4K", "netAmount": "299.00", "categoryHint": "hardware_small", "assetCandidate": False}
@@ -1010,8 +992,6 @@ def build_10_income_domestic(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.98,
-            "reasoning": "Domestic German B2B service invoice with standard VAT rate",
         },
         "lineItems": [
             {"description": "Softwareentwicklung - Projekt Aurora, August 2026", "netAmount": "4500.00", "categoryHint": "revenue_services", "assetCandidate": False}
@@ -1082,8 +1062,6 @@ def build_11_income_france(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "reverseCharge",
-            "confidence": 0.95,
-            "reasoning": "EU B2B service to French customer with valid VAT ID, reverse charge note on invoice",
         },
         "lineItems": [
             {"description": "Backend-Entwicklung - Projekt Icarus", "netAmount": "3200.00", "categoryHint": "revenue_services", "assetCandidate": False}
@@ -1153,8 +1131,6 @@ def build_12_credit_note(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.96,
-            "reasoning": "Credit note referencing a prior domestic standard-rate VAT invoice (NH-100234)",
         },
         "lineItems": [
             {"description": "Erstattung wegen Serviceausfall (Rechnung NH-100234)", "netAmount": "-40.00", "categoryHint": "hosting_cloud", "assetCandidate": False}
@@ -1226,8 +1202,6 @@ def build_13_telecom(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.9,
-            "reasoning": "German telecom provider, standard-rate usage charge plus a refundable device deposit line",
         },
         "lineItems": [
             {"description": "Mobilfunk-Flatrate Business", "netAmount": "55.00", "categoryHint": "telecom", "assetCandidate": False},
@@ -1341,8 +1315,6 @@ def build_14_cafe_photo(out_dir: Path):
         ],
         "taxTreatmentHint": {
             "treatment": "domesticVAT",
-            "confidence": 0.85,
-            "reasoning": "German cafe till receipt (photographed), mixed standard/reduced rates typical for eat-in vs takeaway",
         },
         "lineItems": [
             {"description": "Cappuccino", "netAmount": "3.53", "categoryHint": "meals_entertainment", "assetCandidate": False},

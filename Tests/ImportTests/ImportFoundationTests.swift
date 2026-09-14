@@ -156,7 +156,6 @@ struct ImportFoundationTests {
         #expect(proposal.summary?.treatment == .nonTaxable)
         let derivationContext = try #require(proposal.summary?.derivationContext)
         #expect(derivationContext.modelTreatmentHint == .nonTaxable)
-        #expect(derivationContext.modelTreatmentHintConfidence == 0.91)
         #expect(derivationContext.reverseChargeNote == false)
         #expect(proposal.summary?.provenance.allSatisfy { $0.entityType != "proposalContext" } == true)
 
@@ -227,7 +226,7 @@ struct ImportFoundationTests {
           "counterparty": {"name": "Test GmbH", "countryCode": "DE", "vatId": null, "street": null, "postalCode": null, "city": null},
           "invoice": {"invoiceNumber": "T-1", "invoiceDate": "2026-01-05", "serviceDate": null, "servicePeriodStart": null, "servicePeriodEnd": null, "currency": "EUR", "netAmount": "100.00", "taxAmount": "\(tax)", "grossAmount": "\(gross)", "statedEurEquivalent": null},
           "taxComponents": [{"rate": "\(rate)", "netAmount": "100.00", "taxAmount": "\(tax)", "kind": "\(componentKind.rawValue)"}],
-          "taxTreatmentHint": {"treatment": "\(treatment.rawValue)", "confidence": 0.91, "reasoning": "fixture"},
+          "taxTreatmentHint": {"treatment": "\(treatment.rawValue)"},
           "lineItems": [{"description": "Testleistung", "netAmount": "100.00", "categoryHint": "uncategorized", "assetCandidate": false}],
           "paymentInfo": {"paymentMethodHint": null, "paidIndicator": "unknown", "paymentDate": null, "iban": null, "reference": null},
           "missingFields": [], "warnings": []

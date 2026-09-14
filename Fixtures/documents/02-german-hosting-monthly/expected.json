@@ -30,9 +30,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.97,
-    "reasoning": "German hosting provider, German standard VAT rate shown on invoice"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

@@ -45,11 +45,9 @@ public struct DocumentTaxFacts: Sendable {
 /// a hint; Swift decides the treatment").
 public struct ModelTreatmentHint: Sendable {
     public var treatment: TaxTreatment
-    public var confidence: Double
 
-    public init(treatment: TaxTreatment, confidence: Double) {
+    public init(treatment: TaxTreatment) {
         self.treatment = treatment
-        self.confidence = confidence
     }
 }
 

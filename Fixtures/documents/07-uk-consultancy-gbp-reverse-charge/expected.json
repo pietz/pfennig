@@ -30,9 +30,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "reverseCharge",
-    "confidence": 0.9,
-    "reasoning": "UK (third country) consultancy service, reverse charge note present, EUR equivalent stated"
+    "treatment": "reverseCharge"
   },
   "lineItems": [
     {

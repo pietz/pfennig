@@ -169,12 +169,7 @@ public struct CommitService: Sendable {
         changedFields: Set<String>
     ) -> DerivationContext {
         let context = summary?.derivationContext
-        let modelHint = context?.modelTreatmentHint.map {
-            ModelTreatmentHint(
-                treatment: $0,
-                confidence: context?.modelTreatmentHintConfidence ?? 0
-            )
-        }
+        let modelHint = context?.modelTreatmentHint.map { ModelTreatmentHint(treatment: $0) }
         let reverseChargeNote: Bool = if changedFields.contains("components") {
             edited.components.contains { $0.kind == .reverseChargeNote }
         } else if let context {

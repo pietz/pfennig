@@ -135,11 +135,8 @@ public enum ExtractionNormalizer {
 
         return NormalizedExtraction(
             draft: draft,
-            provenance: provenance(for: extraction, draft: draft),
-            hint: ModelTreatmentHint(
-                treatment: extraction.taxTreatmentHint.treatment,
-                confidence: extraction.taxTreatmentHint.confidence ?? 0
-            ),
+            provenance: provenance(),
+            hint: ModelTreatmentHint(treatment: extraction.taxTreatmentHint.treatment),
             reverseChargeNote: extraction.taxComponents.contains { $0.kind == .reverseChargeNote }
         )
     }
@@ -210,8 +207,7 @@ public enum ExtractionNormalizer {
 
     /// Fields read off the document get `document` provenance; inferred fields
     /// get `agent` (spec 8.3).
-    static func provenance(for extraction: DocumentExtraction, draft: TransactionDraft) -> [ProvenanceEntry] {
-        let confidence = extraction.taxTreatmentHint.confidence.map { "\($0)" }
+    static func provenance() -> [ProvenanceEntry] {
         var entries: [ProvenanceEntry] = []
         for (_, field) in fieldPaths.sorted(by: { $0.key < $1.key }) {
             entries.append(
@@ -226,8 +222,7 @@ public enum ExtractionNormalizer {
             ProvenanceEntry(
                 entityType: "taxAssessment",
                 fieldName: "treatment",
-                provenance: .calculated,
-                confidence: confidence
+                provenance: .calculated
             )
         )
         return entries

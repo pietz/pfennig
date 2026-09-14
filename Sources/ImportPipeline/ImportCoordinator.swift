@@ -150,7 +150,6 @@ public actor ImportCoordinator {
             )
             let derivationContext = ProposalDerivationContext(
                 modelTreatmentHint: normalized.hint?.treatment,
-                modelTreatmentHintConfidence: normalized.hint?.confidence,
                 reverseChargeNote: normalized.reverseChargeNote
             )
             let summary = ProposalSummary(
@@ -164,7 +163,7 @@ public actor ImportCoordinator {
                 invoiceNumber: derived.draft.invoiceNumber,
                 invoiceDate: derived.draft.invoiceDate,
                 treatment: derived.treatment,
-                treatmentReasoning: derived.draft.assessment?.reasoning ?? derived.reasoning,
+                treatmentReasoning: derived.reasoning,
                 documentRelativePath: stored.relativePath,
                 originalFilename: stored.originalFilename,
                 provenance: normalized.provenance,

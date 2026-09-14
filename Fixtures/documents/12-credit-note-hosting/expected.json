@@ -30,9 +30,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.96,
-    "reasoning": "Credit note referencing a prior domestic standard-rate VAT invoice (NH-100234)"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

@@ -36,9 +36,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.9,
-    "reasoning": "German telecom provider, standard-rate usage charge plus a refundable device deposit line"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

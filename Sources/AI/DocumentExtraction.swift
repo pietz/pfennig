@@ -35,10 +35,10 @@ public struct DocumentExtraction: Codable, Sendable, Hashable {
         public var kind: TaxComponentKind
     }
 
+    /// The model's non-binding treatment suggestion; Swift decides the
+    /// binding treatment (spec 13).
     public struct TreatmentHint: Codable, Sendable, Hashable {
         public var treatment: TaxTreatment
-        public var confidence: Double?
-        public var reasoning: String?
     }
 
     public struct LineItem: Codable, Sendable, Hashable {

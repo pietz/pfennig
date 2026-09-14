@@ -36,9 +36,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.9,
-    "reasoning": "German retail till receipt, gross amount below 250 EUR (Kleinbetragsrechnung)"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

@@ -36,9 +36,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.95,
-    "reasoning": "Domestic long-distance rail ticket, reduced rate on transport plus standard rate on seat reservation"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

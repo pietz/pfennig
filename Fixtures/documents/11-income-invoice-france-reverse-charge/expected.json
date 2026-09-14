@@ -30,9 +30,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "reverseCharge",
-    "confidence": 0.95,
-    "reasoning": "EU B2B service to French customer with valid VAT ID, reverse charge note on invoice"
+    "treatment": "reverseCharge"
   },
   "lineItems": [
     {

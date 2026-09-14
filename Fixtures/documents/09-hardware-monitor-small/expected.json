@@ -30,9 +30,7 @@
     }
   ],
   "taxTreatmentHint": {
-    "treatment": "domesticVAT",
-    "confidence": 0.97,
-    "reasoning": "German hardware retailer, standard German VAT rate, amount below GWG asset threshold"
+    "treatment": "domesticVAT"
   },
   "lineItems": [
     {

@@ -106,7 +106,7 @@ struct TaxTreatmentDeciderTests {
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .service,
             document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"]),
-            modelHint: ModelTreatmentHint(treatment: .smallBusiness, confidence: 0.9)
+            modelHint: ModelTreatmentHint(treatment: .smallBusiness)
         ))
         #expect(decision.treatment == .smallBusiness)
         #expect(!decision.softIssues.contains(.hintDisagreesWithFacts))
@@ -120,7 +120,7 @@ struct TaxTreatmentDeciderTests {
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .service,
             document: DocumentTaxFacts(taxShown: false, rateComponents: ["0"]),
-            modelHint: ModelTreatmentHint(treatment: .smallBusiness, confidence: 0.9)
+            modelHint: ModelTreatmentHint(treatment: .smallBusiness)
         ))
         #expect(decision.treatment == .unknown)
     }
@@ -143,7 +143,7 @@ struct TaxTreatmentDeciderTests {
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .service, document: DocumentTaxFacts(taxShown: false, rateComponents: []),
-            modelHint: ModelTreatmentHint(treatment: .nonTaxable, confidence: 0.8)
+            modelHint: ModelTreatmentHint(treatment: .nonTaxable)
         ))
         #expect(decision.treatment == .nonTaxable)
     }
@@ -154,7 +154,7 @@ struct TaxTreatmentDeciderTests {
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .service, document: DocumentTaxFacts(taxShown: false, rateComponents: []),
-            modelHint: ModelTreatmentHint(treatment: .exempt, confidence: 0.8)
+            modelHint: ModelTreatmentHint(treatment: .exempt)
         ))
         #expect(decision.treatment == .exempt)
     }
@@ -165,7 +165,7 @@ struct TaxTreatmentDeciderTests {
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .service, document: DocumentTaxFacts(taxShown: true, rateComponents: ["19"]),
-            modelHint: ModelTreatmentHint(treatment: .nonTaxable, confidence: 0.8)
+            modelHint: ModelTreatmentHint(treatment: .nonTaxable)
         ))
         // Domestic + tax shown always wins first.
         #expect(decision.treatment == .domesticVAT)
@@ -187,7 +187,7 @@ struct TaxTreatmentDeciderTests {
             profile: Self.profile, direction: .expense,
             counterparty: CounterpartyTaxFacts(countryCode: "DE", hasVATId: false),
             supplyType: .goods, document: DocumentTaxFacts(taxShown: true, rateComponents: ["19"]),
-            modelHint: ModelTreatmentHint(treatment: .reverseCharge, confidence: 0.5)
+            modelHint: ModelTreatmentHint(treatment: .reverseCharge)
         ))
         #expect(decision.treatment == .domesticVAT)
         #expect(decision.softIssues.contains(.hintDisagreesWithFacts))

@@ -9,8 +9,8 @@ schema exactly.
    `null`, and its schema path is listed in `missingFields`.
 2. Distinguish observation from inference. Amounts, numbers, dates, names and
    tax rates must be read off the document. `taxTreatmentHint`,
-   `categoryHint`, `assetCandidate` and `direction` are inferences; say so in
-   `reasoning` where the field offers one.
+   `categoryHint`, `assetCandidate` and `direction` are inferences; base them
+   only on what the document itself supports.
 3. Preserve the document's own currency and its exact decimal strings. Write
    amounts as plain decimals with a dot separator and no thousands separator
    or currency symbol: `"1234.56"`, `"71.39"`, `"0.00"`. Never convert
@@ -33,8 +33,7 @@ schema exactly.
    Deposits and fees use `deposit` and `fee`.
 8. `taxTreatmentHint` is a hint, not a decision. The app decides the binding
    treatment from the business profile, the counterparty country and the VAT
-   IDs. Give your best reading with a short factual `reasoning` and a
-   `confidence` between 0 and 1. Use `smallBusiness` only when this document
+   IDs. Give your best reading. Use `smallBusiness` only when this document
    explicitly indicates the small-business exemption under §19 UStG (for
    example, with an explicit §19 reference or equivalent wording). Never use
    `smallBusiness` merely because the owner's profile above says
