@@ -1,0 +1,162 @@
+import Foundation
+
+/// The values of one Umsatzsteuer-Voranmeldung, computed from the bookings.
+///
+/// Ist-Versteuerung, as decided in `docs/specs/pfennig-neu.md`, section 5:
+///
+/// - **Umsatzsteuer auf Einnahmen** arises per payment, in the period of the
+///   payment date. A partial payment carries its proportional share of the
+///   positions; an unpaid invoice does not count at all.
+/// - **Vorsteuer auf Ausgaben** counts in the period of max(Belegdatum,
+///   Zahlungsdatum), per payment. That is conservative against §15 UStG, where
+///   the invoice alone would already do, and needs no further field.
+/// - **§13b** arises with the service, in practice with the Belegdatum, and in
+///   full; the payment date does not matter. A Kleinunternehmer owes the tax
+///   without the matching Vorsteuer.
+/// - A **Kleinunternehmer** has no Kz 81/86/66 and does not report the §19
+///   income in Kz 48 either: the Voranmeldung exists only because of §13b
+///   (§18 Abs. 4a UStG) and reports only that.
+/// - A **Gutschrift** carries negative positions and a **Erstattung** is a
+///   payment in the opposite direction; both lower the period their money
+///   moved in.
+public struct UStVA: Hashable, Sendable {
+    /// One filled line of the form. Lines that stay at zero are not part of
+    /// the result.
+    public struct Zeile: Hashable, Sendable, Identifiable {
+        public let kennzahl: Kennzahl
+        public let betrag: Cent
+
+        public var id: Int {
+            kennzahl.nummer
+        }
+    }
+
+    public let zeitraum: Zeitraum
+    public let steuernummer: String
+    public let zeilen: [Zeile]
+    /// Kz 83: positive is a Zahllast, negative an Erstattung.
+    public let zahllast: Cent
+
+    // MARK: - Berechnung
+
+    public static func berechnen(_ buchungen: [Buchung], zeitraum: Zeitraum, profil: Profil) -> UStVA {
+        var werte: [Int: Cent] = [:]
+        for buchung in buchungen where zaehlt(buchung) {
+            switch buchung.richtung {
+            case .einnahme: einnahme(buchung, zeitraum: zeitraum, profil: profil, in: &werte)
+            case .ausgabe: ausgabe(buchung, zeitraum: zeitraum, profil: profil, in: &werte)
+            }
+        }
+
+        let zeilen = werte
+            .filter { $0.value != .null }
+            .map { Zeile(kennzahl: Kennzahl.mit($0.key), betrag: $0.value) }
+            .sorted { ($0.kennzahl.formularzeile, $0.kennzahl.nummer) < ($1.kennzahl.formularzeile, $1.kennzahl.nummer)
+            }
+        return UStVA(
+            zeitraum: zeitraum,
+            steuernummer: profil.steuernummer,
+            zeilen: zeilen,
+            zahllast: zahllast(zeilen)
+        )
+    }
+
+    /// A booking marked `ignoriert` is private or an internal transfer, a
+    /// `steuerzahlung` is the settlement of this very tax, and a booking whose
+    /// treatment is `unklar` has nothing the form could take. None of the
+    /// three is an Umsatz.
+    private static func zaehlt(_ buchung: Buchung) -> Bool {
+        buchung.art != .ignoriert && buchung.art != .steuerzahlung && buchung.steuerbehandlung != .unklar
+    }
+
+    /// Income counts per payment in the period of its date, with the
+    /// Bemessungsgrundlage of the share that payment carries.
+    private static func einnahme(
+        _ buchung: Buchung,
+        zeitraum: Zeitraum,
+        profil: Profil,
+        in werte: inout [Int: Cent]
+    ) {
+        let zahlungen = geordnet(buchung)
+        let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
+        for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
+            for anteil in anteile[stelle] {
+                guard let nummer = Kennzahl.einnahme(
+                    behandlung: buchung.steuerbehandlung, steuersatz: anteil.steuersatz
+                ) else { continue }
+                // The §19 income of a Kleinunternehmer stays out of the form.
+                guard profil.kleinunternehmer == false || nummer != 48 else { continue }
+                buchen(nummer, anteil.netto, in: &werte)
+            }
+        }
+    }
+
+    private static func ausgabe(
+        _ buchung: Buchung,
+        zeitraum: Zeitraum,
+        profil: Profil,
+        in werte: inout [Int: Cent]
+    ) {
+        switch buchung.steuerbehandlung {
+        case .inland:
+            // Vorsteuer at max(Belegdatum, Zahlungsdatum), per payment.
+            guard profil.kleinunternehmer == false else { return }
+            let zahlungen = geordnet(buchung)
+            let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
+            for (stelle, zahlung) in zahlungen.enumerated() {
+                guard zeitraum.enthaelt(max(buchung.datum, zahlung.datum)) else { continue }
+                buchen(66, anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }, in: &werte)
+            }
+
+        case .reverseCharge:
+            // The service dates the entry, not the payment.
+            guard zeitraum.enthaelt(buchung.datum) else { return }
+            let bemessung = buchung.netto
+            let steuer = buchung.steuer == .null
+                ? Position.steuer(netto: bemessung, steuersatz: 19)
+                : buchung.steuer
+            let zeilen = Kennzahl.reverseCharge(land: buchung.gegenparteiLand)
+            buchen(zeilen.bemessung, bemessung, in: &werte)
+            buchen(zeilen.steuer, steuer, in: &werte)
+            if profil.kleinunternehmer == false {
+                buchen(67, steuer, in: &werte)
+            }
+
+        case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, .unklar:
+            // The supplier charged no deductible tax; there is nothing to report.
+            return
+        }
+    }
+
+    /// Payments in the order the cumulative split needs, signed by their
+    /// direction: positive with the booking, negative against it.
+    private static func geordnet(_ buchung: Buchung) -> [(datum: Datum, betrag: Cent)] {
+        buchung.zahlungen
+            .sorted { ($0.datum, $0.id ?? 0) < ($1.datum, $1.id ?? 0) }
+            .map { ($0.datum, $0.richtung == buchung.richtung ? $0.betrag : -$0.betrag) }
+    }
+
+    private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {
+        guard betrag != .null else { return }
+        werte[nummer, default: .null] = werte[nummer, default: .null] + betrag
+    }
+
+    /// Kz 83, taken the way ELSTER takes it: a base without a tax column is
+    /// cut to whole euros first and multiplied by its rate, so the Zahllast
+    /// shown here is the one the portal computes from the same values.
+    private static func zahllast(_ zeilen: [Zeile]) -> Cent {
+        zeilen.reduce(Cent.null) { summe, zeile in
+            let nummer = zeile.kennzahl.nummer
+            if Kennzahl.abgeleiteteSaetze[nummer] != nil {
+                return summe + Kennzahl.abgeleiteteSteuer(nummer: nummer, bemessung: zeile.betrag)
+            }
+            if Kennzahl.steuerKennzahlen.contains(nummer) {
+                return summe + zeile.betrag
+            }
+            if Kennzahl.vorsteuerKennzahlen.contains(nummer) {
+                return summe - zeile.betrag
+            }
+            return summe
+        }
+    }
+}

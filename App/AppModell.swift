@@ -16,7 +16,13 @@ final class AppModell {
     var suche = ""
     var sortierung = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspektorSichtbar = true
+    var exportSichtbar = false
     var fehler: String?
+
+    /// The periods the user has already exported, with the day they left the
+    /// app. Read once and after every export; the export sheet and the
+    /// inspector both ask it.
+    private(set) var exportierteZeitraeume: [Zeitraum: Date] = [:]
 
     /// The files still to be processed, what the toolbar shows about them and
     /// the notes the strip over the table carries.
@@ -131,6 +137,7 @@ final class AppModell {
     /// Feeds the table for as long as the window lives.
     func beobachten() async {
         inboxAbarbeiten()
+        exportierteLaden()
         do {
             for try await neue in repository.buchungenBeobachten() {
                 buchungen = neue
@@ -236,6 +243,32 @@ final class AppModell {
         } catch {
             fehler = "\(error)"
         }
+    }
+
+    // MARK: - Export
+
+    private func exportierteLaden() {
+        do {
+            exportierteZeitraeume = try repository.exportierteZeitraeume()
+        } catch {
+            fehler = "\(error)"
+        }
+    }
+
+    /// Notes that the values of the period left the app.
+    func exportVermerken(_ zeitraum: Zeitraum) {
+        do {
+            try repository.exportVermerken(zeitraum)
+            exportierteLaden()
+        } catch {
+            fehler = "\(error)"
+        }
+    }
+
+    /// True when a date of the booking lies in a period that was exported, so
+    /// the inspector can say that an edit comes after the fact.
+    func exportiert(_ buchung: Buchung) -> Bool {
+        exportierteZeitraeume.keys.contains { $0.beruehrt(buchung) }
     }
 
     func profil() -> Profil {

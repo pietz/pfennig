@@ -40,6 +40,12 @@ struct Inspektor: View {
 
     var body: some View {
         Form {
+            // An edit after the values of the period went to the tax office.
+            if modell.exportiert(buchung) {
+                Label("Zeitraum bereits exportiert", systemImage: "exclamationmark.triangle")
+                    .font(.callout)
+                    .foregroundStyle(.orange)
+            }
             if buchung.belege.isEmpty == false {
                 BelegAbschnitt(modell: modell, buchung: buchung)
             }

@@ -207,6 +207,37 @@ public final class Repository: Sendable {
         }
     }
 
+    // MARK: - Zeiträume
+
+    /// Notes that the period was exported. A second export of the same period
+    /// overwrites the date; the table answers one question, when the user last
+    /// took these values out of the app.
+    public func exportVermerken(_ zeitraum: Zeitraum) throws {
+        try datenbank.write { db in
+            try db.execute(
+                sql: """
+                INSERT INTO zeitraeume (jahr, art, idx, exportiert_am) VALUES (?, ?, ?, ?)
+                ON CONFLICT (jahr, art, idx) DO UPDATE SET exportiert_am = excluded.exportiert_am
+                """,
+                arguments: [zeitraum.jahr, zeitraum.art, zeitraum.idx, Date()]
+            )
+        }
+    }
+
+    /// Every exported period with the day it left the app. The export sheet
+    /// shows it for the chosen period, the inspector warns with it.
+    public func exportierteZeitraeume() throws -> [Zeitraum: Date] {
+        try datenbank.read { db in
+            var ergebnis: [Zeitraum: Date] = [:]
+            for zeile in try Row.fetchAll(db, sql: "SELECT jahr, art, idx, exportiert_am FROM zeitraeume") {
+                let art: Zeitraumart = zeile["art"]
+                let zeitraum = Zeitraum(jahr: zeile["jahr"], art: art, idx: zeile["idx"])
+                ergebnis[zeitraum] = zeile["exportiert_am"]
+            }
+            return ergebnis
+        }
+    }
+
     // MARK: - Schema
 
     /// The CREATE statements as SQLite stores them. The agent reads the schema

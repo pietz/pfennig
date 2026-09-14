@@ -69,6 +69,14 @@ public enum Schema {
         schluessel TEXT PRIMARY KEY,
         wert TEXT NOT NULL
     );
+
+    CREATE TABLE zeitraeume (
+        jahr INTEGER NOT NULL,
+        art TEXT NOT NULL CHECK (art IN ('ustva', 'euer')),
+        idx INTEGER NOT NULL,                       -- 1-12 Monat, 41-44 Quartal, 0 bei der EÜR
+        exportiert_am TEXT NOT NULL,
+        PRIMARY KEY (jahr, art, idx)
+    );
     """
 
     /// Creates the tables the first time the database is opened. There is
