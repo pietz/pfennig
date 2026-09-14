@@ -79,7 +79,9 @@ struct RootView: View {
             }
         }
         .background(WindowReader { window in
-            if let window { model.mainWindow = window }
+            if let window {
+                model.mainWindow = window
+            }
         })
         .onChange(of: model.requestedTransactionID) { _, id in
             // Another window asked for a booking; the ledger has to be on
@@ -147,7 +149,10 @@ struct RootView: View {
             }
         case .review:
             if let database = model.database {
-                ReviewView(database: database)
+                ReviewView(database: database) { filter in
+                    transactionFilter = filter
+                    selection = .transactions
+                }
             }
         case nil:
             ContentUnavailableView("Nichts ausgewählt", systemImage: "sidebar.left")

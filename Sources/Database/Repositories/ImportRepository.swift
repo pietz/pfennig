@@ -243,6 +243,15 @@ public struct ImportRepository: Sendable {
         )
     }
 
+    /// When the archive last saw an import, for the quiet empty state of
+    /// "Prüfen". A batch that is still running counts from its start.
+    public static func lastImportAt(_ db: Database) throws -> String? {
+        try String.fetchOne(
+            db,
+            sql: "SELECT MAX(COALESCE(completed_at, started_at)) FROM import_batches"
+        )
+    }
+
     // MARK: - Model runs
 
     public func startModelRun(
