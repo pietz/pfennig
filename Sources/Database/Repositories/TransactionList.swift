@@ -16,7 +16,7 @@ public struct TransactionListItem: FetchableRecord, Decodable, Identifiable, Sen
     public var transactionType: TransactionType
     public var reviewStatus: ReviewStatus
     public var invoiceDate: LocalDate?
-    public var lastPaymentDate: LocalDate?
+    public var firstPaymentDate: LocalDate?
     public var createdAt: String
     public var bookedGrossMinor: Int64?
     public var bookedCurrency: String
@@ -45,16 +45,17 @@ public struct TransactionListItem: FetchableRecord, Decodable, Identifiable, Sen
         return Money(minorUnits: signed, currency: CurrencyCode(originalCurrency))
     }
 
-    /// EÜR date if paid, else invoice date, else import date (spec 5.2).
+    /// Document date, else the earliest payment date, else the import date
+    /// (spec 5.2). Tax periods are dated separately by payment.
     public var relevantDate: LocalDate {
-        lastPaymentDate ?? invoiceDate ?? LocalDate(Timestamp.date(createdAt) ?? Date())
+        invoiceDate ?? firstPaymentDate ?? LocalDate(Timestamp.date(createdAt) ?? Date())
     }
 
     public var relevantDateOrigin: String {
-        if lastPaymentDate != nil {
-            "Zahlung"
-        } else if invoiceDate != nil {
+        if invoiceDate != nil {
             "Rechnung"
+        } else if firstPaymentDate != nil {
+            "Zahlung"
         } else {
             "Import"
         }
@@ -137,7 +138,7 @@ public enum TransactionListQuery {
             t.transaction_type,
             t.review_status,
             t.invoice_date,
-            \(TransactionQueryRules.lastPaymentDateExpression(for: "t")) AS last_payment_date,
+            \(TransactionQueryRules.firstPaymentDateExpression(for: "t")) AS first_payment_date,
             t.created_at,
             t.booked_gross_minor,
             t.booked_currency,

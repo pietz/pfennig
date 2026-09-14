@@ -168,6 +168,7 @@ Pfennig is a compact native macOS utility with a restrained Start overview:
 - the inspector uses native sections
 - the start page reads persisted transactions and pending proposals through live local observations; its year totals and open-item rows link into the existing filtered views
 - Start totals use recorded EUR gross amounts and the ledger's relevant date, not tax-profit or cash-flow calculations; open items span all years
+- the ledger and Start share one date, the "Datum" column: the document date, then the earliest payment date, then the import date; tax periods stay dated by payment, and payment dates remain in the inspector
 - upcoming dates stay hidden until there is a real source; no charts or separate analysis page are added
 - Start drilldown filters have one shared state; returning through the Buchungen sidebar entry opens the unfiltered ledger
 - leaving Buchungen through the sidebar requires confirmation when inspector edits are unsaved; the inspector cannot be hidden while edits are unsaved

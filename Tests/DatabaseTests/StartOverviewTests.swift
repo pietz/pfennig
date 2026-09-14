@@ -20,7 +20,7 @@ struct StartOverviewTests {
         profile: BusinessProfile,
         direction: Direction,
         grossMinor: Int64?,
-        date: LocalDate,
+        date: LocalDate?,
         reviewStatus: ReviewStatus = .confirmed,
         currency: String = "EUR",
         workflowStatus: WorkflowStatus = .active
@@ -38,10 +38,10 @@ struct StartOverviewTests {
         )
     }
 
-    @Test("Jahresgrenzen folgen dem relevanten Datum")
+    @Test("Jahresgrenzen folgen dem Belegdatum, nicht der Zahlung")
     func yearBoundaries() throws {
         let (database, profile) = try database()
-        let paidAcrossYear = transaction(
+        let paidNextYear = transaction(
             profile: profile,
             direction: .income,
             grossMinor: 10000,
@@ -61,7 +61,7 @@ struct StartOverviewTests {
         )
 
         try database.writer.write { db in
-            try paidAcrossYear.insert(db)
+            try paidNextYear.insert(db)
             try inYear.insert(db)
             try nextYear.insert(db)
             let payment = Payment(
@@ -73,7 +73,7 @@ struct StartOverviewTests {
             try payment.insert(db)
             try PaymentAllocation(
                 paymentId: payment.id,
-                transactionId: paidAcrossYear.id,
+                transactionId: paidNextYear.id,
                 allocatedMinor: 10000,
                 matchMethod: .exact
             ).insert(db)
@@ -82,9 +82,9 @@ struct StartOverviewTests {
         let overview = try database.reader.read {
             try StartOverviewQuery.fetch($0, year: 2026, currentYear: 2026)
         }
-        #expect(overview.recordedBookingCount == 2)
-        #expect(overview.incomeMinor == 30000)
-        #expect(overview.availableYears == [2027, 2026])
+        #expect(overview.recordedBookingCount == 1)
+        #expect(overview.incomeMinor == 20000)
+        #expect(overview.availableYears == [2027, 2026, 2025])
 
         let yearAndDirection = try database.reader.read { db in
             try TransactionListQuery.fetch(
@@ -92,13 +92,88 @@ struct StartOverviewTests {
                 listFilter: TransactionListFilter(year: 2026, direction: .income)
             )
         }
-        #expect(yearAndDirection.map(\.id).sorted() == [paidAcrossYear.id, inYear.id].sorted())
+        #expect(yearAndDirection.map(\.id) == [inYear.id])
 
         let previousYear = try database.reader.read {
             try StartOverviewQuery.fetch($0, year: 2025, currentYear: 2026)
         }
-        #expect(previousYear.recordedBookingCount == 0)
-        #expect(previousYear.incomeMinor == 0)
+        #expect(previousYear.recordedBookingCount == 1)
+        #expect(previousYear.incomeMinor == 10000)
+    }
+
+    @Test("Relevantes Datum: Beleg, sonst früheste Zahlung, sonst Import")
+    func relevantDateFallbackOrder() throws {
+        let (database, profile) = try database()
+        let documented = transaction(
+            profile: profile,
+            direction: .income,
+            grossMinor: 10000,
+            date: LocalDate(year: 2026, month: 3, day: 1)
+        )
+        let paidOnly = transaction(
+            profile: profile,
+            direction: .income,
+            grossMinor: 20000,
+            date: nil
+        )
+        let bare = transaction(
+            profile: profile,
+            direction: .income,
+            grossMinor: 30000,
+            date: nil
+        )
+
+        try database.writer.write { db in
+            try documented.insert(db)
+            try paidOnly.insert(db)
+            try bare.insert(db)
+            // The documented transaction is paid later; the document date wins.
+            let latePayment = Payment(
+                direction: .inflow,
+                paymentDate: LocalDate(year: 2026, month: 8, day: 20),
+                originalAmountMinor: 10000,
+                bookedAmountMinor: 10000
+            )
+            try latePayment.insert(db)
+            try PaymentAllocation(
+                paymentId: latePayment.id,
+                transactionId: documented.id,
+                allocatedMinor: 10000,
+                matchMethod: .exact
+            ).insert(db)
+            // Two payments without a document: the earliest one is used.
+            for day in [10, 4] {
+                let payment = Payment(
+                    direction: .inflow,
+                    paymentDate: LocalDate(year: 2026, month: 5, day: day),
+                    originalAmountMinor: 10000,
+                    bookedAmountMinor: 10000
+                )
+                try payment.insert(db)
+                try PaymentAllocation(
+                    paymentId: payment.id,
+                    transactionId: paidOnly.id,
+                    allocatedMinor: 10000,
+                    matchMethod: .exact
+                ).insert(db)
+            }
+        }
+
+        let items = try database.reader.read { db in
+            try TransactionListQuery.fetch(db)
+        }
+        let byID = Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+
+        #expect(byID[documented.id]?.relevantDate == LocalDate(year: 2026, month: 3, day: 1))
+        #expect(byID[documented.id]?.relevantDateOrigin == "Rechnung")
+        #expect(byID[paidOnly.id]?.relevantDate == LocalDate(year: 2026, month: 5, day: 4))
+        #expect(byID[paidOnly.id]?.relevantDateOrigin == "Zahlung")
+        #expect(byID[bare.id]?.relevantDate == LocalDate.today())
+        #expect(byID[bare.id]?.relevantDateOrigin == "Import")
+
+        // Newest relevant date first, so the payment-dated row sorts above the
+        // documented one even though its payment is later.
+        #expect(items.prefix(2).map(\.id) == [bare.id, paidOnly.id])
     }
 
     @Test("Creditnotes und Erstattungen behalten rohe Vorzeichen")

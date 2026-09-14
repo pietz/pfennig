@@ -146,7 +146,7 @@ Current `tax_assessments` store materialized dates with provenance. Reporting mu
 
 ## 5.2 The "Date" column
 
-The main table shows a **relevant date** derived as: latest payment date if any payment exists, otherwise invoice date, otherwise creation date. This is a ledger-navigation convention, not the date to use for every EÜR or UStVA contribution.
+The main table and Start show one **relevant date**, derived as: the document date (`invoice_date`), otherwise the earliest payment date, otherwise the creation date. Ledger and Start are therefore dated by document; tax periods stay dated by payment. This is a ledger-navigation convention, not the date to use for any EÜR or UStVA contribution.
 
 ## 5.3 10-day rule (§11 Abs. 2 S. 2 EStG)
 
@@ -236,7 +236,7 @@ UI language: **German first**. Add localization infrastructure when a second loc
 
 ### Start overview (current implementation)
 
-Start is the default entry point, with the sidebar visible. Three compact cards show recorded income, expenses, and their difference for a selectable year. These are signed booked EUR gross amounts using the ledger's relevant date, not an EÜR profit or cash-flow calculation. Pending import proposals are excluded. Missing amounts or unknown directions remain visible as incomplete totals.
+Start is the default entry point, with the sidebar visible. Three compact cards show recorded income, expenses, and their difference for a selectable year. These are signed booked EUR gross amounts using the ledger's relevant date (document date first, see 5.2), not an EÜR profit or cash-flow calculation. Pending import proposals are excluded. Missing amounts or unknown directions remain visible as incomplete totals.
 
 Below, open review items, missing expected documents, and pending proposals link directly into the existing filtered workspaces. Open items span all years and are not added into a combined count because categories may overlap. Document-exempt categories do not create missing-document work. Upcoming items are reserved for real dates and remain hidden until supported. Keep this overview compact: no separate analysis page, recent-bookings list, or decorative chart is needed.
 

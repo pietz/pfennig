@@ -1,13 +1,14 @@
 /// Shared SQL rules for the recorded transaction scope and Start/list exceptions.
 public enum TransactionQueryRules {
-    /// The latest payment date used by the relevant-date rule.
-    public static func lastPaymentDateExpression(for alias: String) -> String {
-        "(SELECT MAX(p.payment_date) FROM payment_allocations pa JOIN payments p ON p.id = pa.payment_id WHERE pa.transaction_id = \(alias).id)"
+    /// The earliest payment date used by the relevant-date fallback.
+    public static func firstPaymentDateExpression(for alias: String) -> String {
+        "(SELECT MIN(p.payment_date) FROM payment_allocations pa JOIN payments p ON p.id = pa.payment_id WHERE pa.transaction_id = \(alias).id)"
     }
 
-    /// Ledger display date: last payment, then invoice date, then import date.
+    /// Ledger and Start date: document date, then earliest payment, then import
+    /// date. Tax periods are dated by payment and do not use this expression.
     public static func relevantDateExpression(for alias: String) -> String {
-        "COALESCE(\(lastPaymentDateExpression(for: alias)), \(alias).invoice_date, DATE(\(alias).created_at))"
+        "COALESCE(\(alias).invoice_date, \(firstPaymentDateExpression(for: alias)), DATE(\(alias).created_at))"
     }
 
     /// Recorded transactions exclude archived and soft-deleted rows.

@@ -57,8 +57,8 @@ public struct StartOverview: Equatable, Sendable {
 }
 
 /// Deterministic aggregation for the local start page. The relevant date is
-/// intentionally the same expression as the transaction list: last payment,
-/// then invoice date, then import date.
+/// intentionally the same expression as the transaction list: document date,
+/// then earliest payment, then import date.
 public enum StartOverviewQuery {
     private struct TotalsRow: FetchableRecord, Decodable {
         var recordedBookingCount: Int
