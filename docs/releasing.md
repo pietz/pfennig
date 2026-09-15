@@ -43,14 +43,14 @@ scripts/release.sh --notarize
 
 The script:
 
-- creates a Release archive with Hardened Runtime
-- signs it with the Developer ID Application identity
-- verifies the code signature
-- submits a temporary ZIP to Apple and waits for `Accepted`
+- creates a Release archive with Hardened Runtime and the Developer ID Application identity
+- exports that archive with `xcodebuild -exportArchive` using `method = developer-id`; this is the supported Sparkle workflow that signs its helper code for distribution
+- verifies the exported app and the four Sparkle helper executables for the expected Developer ID team and secure timestamps before creating the upload ZIP
+- submits a temporary ZIP to Apple and waits for `Accepted`; on an invalid result, it downloads Apple’s JSON diagnostic to `dist/notary-log.json` using the returned submission ID
 - staples and validates the notarization ticket
 - runs a Gatekeeper assessment
 - creates `dist/Pfennig-<version>-macOS.zip` with the app, GPLv3 license, privacy notice, and its SHA-256 file
-- creates the app-only `dist/Pfennig-<version>-macOS-update.zip`, which is the Sparkle update archive
+- creates the app-only `dist/Pfennig-<version>-macOS-update.zip` from that same exported app, which is the Sparkle update archive
 - runs Sparkle’s official `generate_appcast` using the owner’s Keychain key and writes the signed `dist/appcast.xml` plus checksums; delta updates are disabled
 
 Use `scripts/release.sh --build-only` to test release signing without contacting Apple’s notarization service. This mode does not create a publishable Sparkle feed. `--notarize` requires `SPARKLE_BIN`, the embedded public key, the Developer ID identity, and the existing notarization profile. Override `TEAM_ID`, `SIGNING_IDENTITY`, or `NOTARY_PROFILE` in the environment when another authorized maintainer performs a release.

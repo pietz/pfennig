@@ -22,9 +22,13 @@ SIGNING_IDENTITY="${SIGNING_IDENTITY:-Developer ID Application: Paul-Louis Pröv
 NOTARY_PROFILE="${NOTARY_PROFILE:-ziffer-notary}"
 ARCHIVE_PATH="$DERIVED_DATA/Pfennig.xcarchive"
 ARCHIVED_APP="$ARCHIVE_PATH/Products/Applications/Pfennig.app"
+EXPORT_PATH="$DERIVED_DATA/Pfennig-export"
+EXPORT_OPTIONS="$DERIVED_DATA/Pfennig-ExportOptions.plist"
+EXPORTED_APP="$EXPORT_PATH/Pfennig.app"
 DIST_DIR="$REPO_ROOT/dist"
 SUBMISSION_ZIP="$DIST_DIR/Pfennig-notarization.zip"
 NOTARY_RESULT="$DIST_DIR/notary-result.json"
+NOTARY_LOG="$DIST_DIR/notary-log.json"
 UPDATE_ZIP=""
 UPDATE_CHECKSUM=""
 APPCAST="$DIST_DIR/appcast.xml"
@@ -59,7 +63,7 @@ package_release() {
   local package_dir="$DIST_DIR/Pfennig-$VERSION"
   rm -rf "$package_dir"
   mkdir -p "$package_dir"
-  ditto "$ARCHIVED_APP" "$package_dir/Pfennig.app"
+  ditto "$EXPORTED_APP" "$package_dir/Pfennig.app"
   cp "$REPO_ROOT/LICENSE" "$package_dir/LICENSE.txt"
   cp "$REPO_ROOT/docs/privacy.md" "$package_dir/PRIVACY.md"
   ditto -c -k --keepParent "$package_dir" "$output_zip"
@@ -71,7 +75,53 @@ package_update() {
   rm -f "$output_zip"
   # We intentionally use an app-only update archive following Sparkle’s
   # recommendation. Keep the public distribution archive above unchanged.
-  ditto -c -k --sequesterRsrc --keepParent "$ARCHIVED_APP" "$output_zip"
+  ditto -c -k --sequesterRsrc --keepParent "$EXPORTED_APP" "$output_zip"
+}
+
+has_secure_timestamp() {
+  local details="$1"
+  grep -Eq '^Timestamp=' <<<"$details" \
+    && ! grep -Fq 'Timestamp=Not Set' <<<"$details"
+}
+
+validate_sparkle_helpers() {
+  local app_path="$1"
+  local relative_path helper_path details
+  local helper_paths=(
+    "Sparkle.framework/Versions/B/Updater.app/Contents/MacOS/Updater"
+    "Sparkle.framework/Versions/B/Autoupdate"
+    "Sparkle.framework/Versions/B/XPCServices/Downloader.xpc/Contents/MacOS/Downloader"
+    "Sparkle.framework/Versions/B/XPCServices/Installer.xpc/Contents/MacOS/Installer"
+  )
+
+  for relative_path in "${helper_paths[@]}"; do
+    helper_path="$app_path/Contents/Frameworks/$relative_path"
+    if [[ ! -x "$helper_path" ]]; then
+      echo "error: Sparkle helper is missing or not executable: $relative_path" >&2
+      exit 1
+    fi
+    if ! details="$(codesign --display --verbose=4 "$helper_path" 2>&1)"; then
+      echo "error: cannot inspect Sparkle helper signature: $relative_path" >&2
+      printf '%s\n' "$details" >&2
+      exit 1
+    fi
+    if grep -Fq 'Signature=adhoc' <<<"$details" \
+      || ! grep -Fq 'Authority=Developer ID Application:' <<<"$details" \
+      || ! grep -Fq "TeamIdentifier=$TEAM_ID" <<<"$details"; then
+      echo "error: Sparkle helper is not signed by Developer ID team $TEAM_ID: $relative_path" >&2
+      printf '%s\n' "$details" >&2
+      exit 1
+    fi
+    if ! has_secure_timestamp "$details"; then
+      echo "error: Sparkle helper has no secure timestamp: $relative_path" >&2
+      printf '%s\n' "$details" >&2
+      exit 1
+    fi
+    if ! codesign --verify --strict --verbose=2 "$helper_path"; then
+      echo "error: Sparkle helper signature verification failed: $relative_path" >&2
+      exit 1
+    fi
+  done
 }
 
 generate_update_feed() {
@@ -82,7 +132,7 @@ generate_update_feed() {
 
   require_sparkle_tools
 
-  build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$ARCHIVED_APP/Contents/Info.plist")"
+  build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$EXPORTED_APP/Contents/Info.plist")"
   rm -rf "$input_dir"
   mkdir -p "$input_dir"
   cp "$UPDATE_ZIP" "$input_dir/"
@@ -92,7 +142,7 @@ generate_update_feed() {
     --download-url-prefix "$download_prefix" \
     --link "https://github.com/pietz/pfennig/releases/tag/v$VERSION" \
     --maximum-deltas 0 \
-    --output-path "$APPCAST" \
+    -o "$APPCAST" \
     "$input_dir"
 
   rm -rf "$input_dir"
@@ -131,9 +181,9 @@ if [[ "$MODE" == "--notarize" ]]; then
 fi
 
 xcodegen generate --quiet
-rm -rf "$ARCHIVE_PATH"
+rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
 mkdir -p "$DIST_DIR"
-rm -f "$SUBMISSION_ZIP" "$NOTARY_RESULT"
+rm -f "$SUBMISSION_ZIP" "$NOTARY_RESULT" "$NOTARY_LOG"
 
 xcodebuild \
   -project "$PROJECT" \
@@ -153,10 +203,28 @@ if [[ ! -d "$ARCHIVED_APP" ]]; then
   exit 1
 fi
 
-codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
-VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ARCHIVED_APP/Contents/Info.plist")"
+/usr/bin/plutil -create xml1 "$EXPORT_OPTIONS"
+/usr/bin/plutil -insert method -string developer-id "$EXPORT_OPTIONS"
+/usr/bin/plutil -insert signingStyle -string manual "$EXPORT_OPTIONS"
+/usr/bin/plutil -insert signingCertificate -string "$SIGNING_IDENTITY" "$EXPORT_OPTIONS"
+/usr/bin/plutil -insert teamID -string "$TEAM_ID" "$EXPORT_OPTIONS"
+
+xcodebuild \
+  -exportArchive \
+  -archivePath "$ARCHIVE_PATH" \
+  -exportPath "$EXPORT_PATH" \
+  -exportOptionsPlist "$EXPORT_OPTIONS"
+
+if [[ ! -d "$EXPORTED_APP" ]]; then
+  echo "error: exported app not found at $EXPORTED_APP" >&2
+  exit 1
+fi
+
+codesign --verify --deep --strict --verbose=2 "$EXPORTED_APP"
+validate_sparkle_helpers "$EXPORTED_APP"
+VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$EXPORTED_APP/Contents/Info.plist")"
 if [[ "$MODE" == "--notarize" ]]; then
-  validate_sparkle_configuration "$ARCHIVED_APP/Contents/Info.plist"
+  validate_sparkle_configuration "$EXPORTED_APP/Contents/Info.plist"
 fi
 if [[ "$MODE" == "--build-only" ]]; then
   FINAL_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS-signed-unnotarized.zip"
@@ -166,7 +234,7 @@ fi
 CHECKSUM="$FINAL_ZIP.sha256"
 rm -f "$FINAL_ZIP" "$CHECKSUM"
 
-ditto -c -k --keepParent "$ARCHIVED_APP" "$SUBMISSION_ZIP"
+ditto -c -k --keepParent "$EXPORTED_APP" "$SUBMISSION_ZIP"
 
 if [[ "$MODE" == "--build-only" ]]; then
   rm -f "$SUBMISSION_ZIP"
@@ -184,14 +252,24 @@ xcrun notarytool submit "$SUBMISSION_ZIP" \
 STATUS="$(plutil -extract status raw -o - "$NOTARY_RESULT")"
 if [[ "$STATUS" != "Accepted" ]]; then
   echo "error: Apple notarization status is $STATUS" >&2
+  SUBMISSION_ID="$(plutil -extract id raw -o - "$NOTARY_RESULT" 2>/dev/null || true)"
+  if [[ -z "$SUBMISSION_ID" ]]; then
+    echo "warning: no submission id was returned; cannot download Apple's notarization log" >&2
+  elif xcrun notarytool log "$SUBMISSION_ID" \
+    --keychain-profile "$NOTARY_PROFILE" "$NOTARY_LOG" \
+    && [[ -s "$NOTARY_LOG" ]]; then
+    echo "Apple notarization log: $NOTARY_LOG" >&2
+  else
+    echo "warning: could not download Apple's notarization log to $NOTARY_LOG" >&2
+  fi
   cat "$NOTARY_RESULT" >&2
   exit 1
 fi
 
-xcrun stapler staple "$ARCHIVED_APP"
-xcrun stapler validate "$ARCHIVED_APP"
-codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
-spctl --assess --type execute --verbose=4 "$ARCHIVED_APP"
+xcrun stapler staple "$EXPORTED_APP"
+xcrun stapler validate "$EXPORTED_APP"
+codesign --verify --deep --strict --verbose=2 "$EXPORTED_APP"
+spctl --assess --type execute --verbose=4 "$EXPORTED_APP"
 
 UPDATE_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS-update.zip"
 UPDATE_CHECKSUM="$UPDATE_ZIP.sha256"
