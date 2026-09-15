@@ -60,9 +60,9 @@ Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
 ## 3. Oberfläche
 
-Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit genau „Buchungen“ und der freigegebenen „Designvorschau“ sowie der jeweiligen Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
+Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit genau „Buchungen“, der freigegebenen „Designvorschau“ und „Buchungen · verfeinert“ sowie der jeweiligen Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
 
-**Begrenzte Designvergleich-Ergänzung (Eigentümerfreigabe, 2026-09-15).** Für den lokalen UI-Vergleich erhält das Fenster eine Sidebar mit genau zwei Einträgen: „Buchungen“ öffnet diese bestehende Live-Oberfläche, „Designvorschau“ zeigt eine vorübergehende, native SwiftUI-Tabelle mit ausschließlich fiktiven Beispieldaten. Die Vorschau hat keinen Zugriff auf AppModel, Repository oder Benutzerdaten und schreibt nichts. Das ist keine allgemeine Neugestaltung: Startseite, Chat- und Steuerseiten bleiben nicht gebaut; die ursprüngliche Buchungsoberfläche und ihr Datenfluss bleiben unverändert.
+**Begrenzte Designvergleich-Ergänzung (Eigentümerfreigabe, 2026-09-15).** Für den lokalen UI-Vergleich erhält das Fenster eine Sidebar mit genau drei Einträgen: „Buchungen“ öffnet diese bestehende Live-Oberfläche, „Designvorschau“ zeigt eine vorübergehende, native SwiftUI-Tabelle mit ausschließlich fiktiven Beispieldaten, und „Buchungen · verfeinert“ zeigt eine zweite, davon isolierte native SwiftUI-Variante mit ausschließlich fiktiven Beispieldaten. Beide Vorschauen haben keinen Zugriff auf AppModel, Repository oder Benutzerdaten und schreiben nichts. Das ist keine allgemeine Neugestaltung: Startseite, Chat- und Steuerseiten bleiben nicht gebaut; die ursprüngliche Buchungsoberfläche und ihr Datenfluss bleiben unverändert.
 
 **Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Firma (Gegenpartei mit Titel als Unterzeile, dazu Prüfpunkt und Belegsymbol), Datum, Betrag, Bezahlt (Zahlungsstand als Symbol, abgeleitet aus Zahlungssumme gegen Brutto: offen, teilweise, bezahlt; ein Klick schaltet zwischen vollständig bezahlt heute und unbezahlt um). Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
 
@@ -144,6 +144,6 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 - Stammdaten für Gegenparteien, Kategorien in der Datenbank
 - Weitere Tabellen neben den fünf aus Abschnitt 2, insbesondere für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft
 - Kursgewinn- und Verlustrechnung, Fremdwährungsrevaluierung und sonstige Währungsbuchhaltung
-- Startseite, Prüfen-Seite, eine Sidebar mit weiteren Seiten neben der freigegebenen Designvorschau, Jahresauswahl
+- Startseite, Prüfen-Seite, eine Sidebar mit weiteren Seiten neben den drei freigegebenen Buchungsansichten, Jahresauswahl
 - Migrationen und Abwärtskompatibilität vor dem Release
 - Mehrere Mandanten, mehrere Nutzer, Cloud-Sync

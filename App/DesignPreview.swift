@@ -3,7 +3,13 @@ import SwiftUI
 
 /// A native-only comparison page. These rows are intentionally local and never
 /// cross into AppModel, Repository, or the persisted bookkeeping data.
+enum DesignPreviewVariant: Equatable {
+    case original
+    case refined
+}
+
 struct DesignPreview: View {
+    private let variant: DesignPreviewVariant
     @State private var bookings = PreviewBooking.samples
     @State private var direction = PreviewDirectionFilter.alle
     @State private var review = PreviewReviewFilter.alle
@@ -11,6 +17,10 @@ struct DesignPreview: View {
     @State private var selection: Int?
     @State private var inspectorVisible = true
     @State private var sortOrder = [KeyPathComparator(\PreviewBooking.date, order: .reverse)]
+
+    init(variant: DesignPreviewVariant = .original) {
+        self.variant = variant
+    }
 
     private var visibleBookings: [PreviewBooking] {
         let query = search.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
@@ -46,7 +56,7 @@ struct DesignPreview: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Designvorschau · Beispieldaten")
+                Text(variant == .refined ? "Buchungen · verfeinert · Beispieldaten" : "Designvorschau · Beispieldaten")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 Spacer()
@@ -74,11 +84,18 @@ struct DesignPreview: View {
 
             Table(visibleBookings, selection: $selection, sortOrder: $sortOrder) {
                 TableColumn("Firma", value: \.company) { booking in
-                    HStack(spacing: 10) {
-                        Image(systemName: booking.icon)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 30, height: 30)
-                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 7))
+                    HStack(spacing: variant == .refined ? 8 : 10) {
+                        if variant == .original {
+                            Image(systemName: booking.icon)
+                                .foregroundStyle(.secondary)
+                                .frame(width: 30, height: 30)
+                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 7))
+                        } else {
+                            Image(systemName: booking.icon)
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(.secondary)
+                                .frame(width: 22, height: 22)
+                        }
                         VStack(alignment: .leading, spacing: 1) {
                             Text(booking.company)
                                 .fontWeight(.semibold)
@@ -90,7 +107,7 @@ struct DesignPreview: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .frame(minHeight: 56, alignment: .leading)
+                    .frame(minHeight: variant == .refined ? 40 : 56, alignment: .leading)
                 }
                 .width(min: 190, ideal: 270)
 
@@ -98,32 +115,39 @@ struct DesignPreview: View {
                     Text(booking.date.formatted)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
-                        .frame(minHeight: 56, alignment: .leading)
+                        .frame(minHeight: variant == .refined ? 40 : 56, alignment: .leading)
                 }
                 .width(90)
 
                 TableColumn("Betrag", value: \.signedAmount) { booking in
-                    Text(booking.signedAmount.formatted)
-                        .monospacedDigit()
-                        .foregroundStyle(booking.direction == .income ? .primary : .secondary)
-                        .frame(maxWidth: .infinity, minHeight: 56, alignment: .trailing)
+                    Group {
+                        if variant == .refined {
+                            Text(booking.signedAmount.formatted)
+                                .foregroundStyle(booking.direction == .income ? Color.green : Color.primary)
+                        } else {
+                            Text(booking.signedAmount.formatted)
+                                .foregroundStyle(booking.direction == .income ? .primary : .secondary)
+                        }
+                    }
+                    .monospacedDigit()
+                    .frame(maxWidth: .infinity, minHeight: variant == .refined ? 40 : 56, alignment: .trailing)
                 }
                 .width(min: 100, ideal: 115)
                 .alignment(.trailing)
 
                 TableColumn("Bezahlt") { booking in
                     PreviewPaymentLabel(payment: booking.payment)
-                        .frame(minHeight: 56, alignment: .leading)
+                        .frame(minHeight: variant == .refined ? 40 : 56, alignment: .leading)
                 }
                 .width(min: 100, ideal: 115)
 
                 TableColumn("Status") { booking in
-                    PreviewStatusLabel(status: booking.status)
-                        .frame(minHeight: 56, alignment: .leading)
+                    PreviewStatusLabel(status: booking.status, quiet: variant == .refined)
+                        .frame(minHeight: variant == .refined ? 40 : 56, alignment: .leading)
                 }
                 .width(min: 100, ideal: 115)
             }
-            .padding(.horizontal, 18)
+            .padding(.horizontal, variant == .refined ? 0 : 18)
 
             Divider()
             HStack(spacing: 24) {
@@ -272,14 +296,23 @@ private struct PreviewPaymentLabel: View {
 
 private struct PreviewStatusLabel: View {
     let status: PreviewReviewStatus
+    var quiet = false
 
     var body: some View {
+        if quiet {
+            label
+        } else {
+            label
+                .padding(.horizontal, 7)
+                .padding(.vertical, 4)
+                .background(status.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
+        }
+    }
+
+    private var label: some View {
         Label(status.title, systemImage: status.symbol)
             .foregroundStyle(.primary)
             .labelStyle(StatusLabelStyle(color: status.color))
-            .padding(.horizontal, 7)
-            .padding(.vertical, 4)
-            .background(status.color.opacity(0.12), in: RoundedRectangle(cornerRadius: 6))
             .lineLimit(1)
     }
 }

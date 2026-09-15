@@ -17,7 +17,7 @@ struct PfennigApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WorkspaceView(modell: modell)
+            WorkspaceView(model: modell)
                 .modifier(AppearanceModifier())
         }
         .defaultSize(width: 1300, height: 700)
