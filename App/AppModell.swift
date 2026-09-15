@@ -78,7 +78,7 @@ final class AppModell {
     func verwerfen(_ meldung: Eingangsmeldung) {
         meldungen.removeAll { $0.id == meldung.id }
         if meldung.art == .fehler {
-            try? FileManager.default.removeItem(at: meldung.id)
+            try? eingang.verwerfen(meldung.id)
         }
     }
 

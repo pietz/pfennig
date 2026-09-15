@@ -64,6 +64,13 @@ public struct Eingang: Sendable {
         return (inhalt ?? []).filter(Eingang.erlaubt).sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
+    /// Discard only owns the Inbox copy. A failure before copying may still
+    /// point at the user's original, which must remain untouched.
+    public func verwerfen(_ url: URL) throws {
+        guard liegtInInbox(url) else { return }
+        try FileManager.default.removeItem(at: url)
+    }
+
     /// Hashes the file, copies it into the inbox, runs the agent and archives
     /// it. On failure the file stays in the inbox with the error text.
     public func verarbeiten(_ url: URL) async -> Eingangsergebnis {

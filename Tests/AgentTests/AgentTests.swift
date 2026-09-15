@@ -272,6 +272,60 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     #expect(try FileManager.default.contentsOfDirectory(atPath: pfad.archiv.path).isEmpty)
 }
 
+@Test func verwerfenEntferntNurDieInboxKopie() throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    let kopie = pfad.inbox.appending(path: "rechnung.pdf")
+    let inhalt = Data("Testbeleg".utf8)
+    try inhalt.write(to: quelle)
+    try inhalt.write(to: kopie)
+    let eingang = try Eingang(repository: repository, pfad: pfad, transport: abgewiesen)
+
+    try eingang.verwerfen(kopie)
+
+    #expect(FileManager.default.fileExists(atPath: kopie.path) == false)
+    #expect(try Data(contentsOf: quelle) == inhalt)
+}
+
+@Test func verwerfenLaesstDateienAusserhalbDerInboxUnberuehrt() throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    // A shared path prefix is not Inbox ownership.
+    let andererOrdner = ordner.appending(path: "Inbox-Originale")
+    try FileManager.default.createDirectory(at: andererOrdner, withIntermediateDirectories: true)
+    let quelle = andererOrdner.appending(path: "rechnung.pdf")
+    let inhalt = Data("Testbeleg".utf8)
+    try inhalt.write(to: quelle)
+    let eingang = try Eingang(repository: repository, pfad: pfad, transport: abgewiesen)
+
+    try eingang.verwerfen(quelle)
+
+    #expect(try Data(contentsOf: quelle) == inhalt)
+}
+
+@Test func verwerfenNachInboxFehlerBehaeltDasOriginal() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    let inhalt = Data("Testbeleg".utf8)
+    try inhalt.write(to: quelle)
+    // A file blocks the Inbox directory, so intake fails before copying or
+    // reading the Keychain. The failure must still point at the original.
+    try FileManager.default.removeItem(at: pfad.inbox)
+    try Data().write(to: pfad.inbox)
+    let eingang = try Eingang(repository: repository, pfad: pfad, transport: abgewiesen)
+    guard case let .fehler(datei, _) = await eingang.verarbeiten(quelle) else {
+        Issue.record("Der Eingang hätte vor dem Kopieren scheitern müssen.")
+        return
+    }
+    #expect(datei == quelle)
+
+    try eingang.verwerfen(datei)
+
+    #expect(try Data(contentsOf: quelle) == inhalt)
+}
+
 @Test func eingangLaesstNurDieZugelassenenEndungenDurch() {
     for endung in ["pdf", "PNG", "jpg", "jpeg", "csv"] {
         #expect(Eingang.erlaubt(URL(filePath: "/tmp/beleg.\(endung)")))
