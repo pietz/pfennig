@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// Mein ELSTER or types into the Anlage EÜR. It computes on demand and keeps
 /// no state beyond the chosen period.
 struct ExportSheet: View {
-    let modell: AppModel
+    let model: AppModel
     @Environment(\.dismiss) private var close
 
     private let profile: Profil
@@ -15,9 +15,9 @@ struct ExportSheet: View {
     @State private var jahr: Int
     @State private var nummer: Int
 
-    init(modell: AppModel) {
-        self.modell = modell
-        let profile = modell.profile()
+    init(model: AppModel) {
+        self.model = model
+        let profile = model.profile()
         self.profile = profile
         let defaultSelection = Zeitraum.naechsteUStVA(
             rhythmus: profile.rhythmus,
@@ -40,11 +40,11 @@ struct ExportSheet: View {
     }
 
     private var ustva: UStVA {
-        UStVA.calculate(modell.buchungen, zeitraum: zeitraum, profile: profile)
+        UStVA.calculate(model.buchungen, zeitraum: zeitraum, profile: profile)
     }
 
     private var euer: EUeR {
-        EUeR.calculate(modell.buchungen, jahr: jahr, profile: profile)
+        EUeR.calculate(model.buchungen, jahr: jahr, profile: profile)
     }
 
     var body: some View {
@@ -177,8 +177,8 @@ struct ExportSheet: View {
     // MARK: - Hinweise
 
     @ViewBuilder private var hints: some View {
-        let offen = zeitraum.ungeprueft(modell.buchungen)
-        let exportiert = modell.exportedPeriods[zeitraum]
+        let offen = zeitraum.ungeprueft(model.buchungen)
+        let exportiert = model.exportedPeriods[zeitraum]
         if offen > 0 || exportiert != nil {
             Section {
                 if offen > 0 {
@@ -229,16 +229,16 @@ struct ExportSheet: View {
         panel.nameFieldStringValue = zeitraum.dateiname
         panel.allowedContentTypes = [art == .ustva ? .xml : .commaSeparatedText]
         panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let ziel = panel.url else { return }
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
         do {
             switch art {
-            case .ustva: try UStVAXml.daten(ustva).write(to: ziel)
-            case .euer: try Data(euer.csv.utf8).write(to: ziel)
+            case .ustva: try UStVAXml.daten(ustva).write(to: destination)
+            case .euer: try Data(euer.csv.utf8).write(to: destination)
             }
-            modell.markExported(zeitraum)
+            model.markExported(zeitraum)
             close()
         } catch {
-            modell.fehler = "Die Datei ließ sich nicht schreiben: \(error.localizedDescription)"
+            model.errorMessage = "Die Datei ließ sich nicht schreiben: \(error.localizedDescription)"
         }
     }
 }

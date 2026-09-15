@@ -8,15 +8,15 @@ import SwiftUI
 /// when the booking has no receipt; an empty section is left out, not
 /// collapsed.
 struct ReceiptSection: View {
-    let modell: AppModel
+    let model: AppModel
     let buchung: Buchung
     @State private var files: [Datei] = []
     @State private var gross: Datei?
 
     var body: some View {
         Section("Beleg") {
-            if let erste = files.first {
-                ReceiptPreview(url: modell.path.original(erste))
+            if let first = files.first {
+                ReceiptPreview(url: model.path.original(first))
                     .frame(height: 220)
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
@@ -31,11 +31,11 @@ struct ReceiptSection: View {
                     Spacer()
                     Button("Vorschau", systemImage: "eye") { gross = file }
                     Button("Original öffnen", systemImage: "arrow.up.forward.square") {
-                        NSWorkspace.shared.open(modell.path.original(file))
+                        NSWorkspace.shared.open(model.path.original(file))
                     }
                     Button("Vom Beleg nehmen", systemImage: "xmark") {
                         guard let id = buchung.id else { return }
-                        modell.removeReceipt(file.sha256, von: id)
+                        model.removeReceipt(file.sha256, von: id)
                     }
                 }
                 .labelStyle(.iconOnly)
@@ -46,7 +46,7 @@ struct ReceiptSection: View {
         .onChange(of: buchung.belege) { load() }
         .sheet(item: $gross) { file in
             VStack(spacing: 0) {
-                ReceiptPreview(url: modell.path.original(file))
+                ReceiptPreview(url: model.path.original(file))
                 Divider()
                 HStack {
                     Text(file.dateiname).foregroundStyle(.secondary)
@@ -61,7 +61,7 @@ struct ReceiptSection: View {
     }
 
     private func load() {
-        files = (try? modell.repository.files(zu: buchung.belege)) ?? []
+        files = (try? model.repository.files(zu: buchung.belege)) ?? []
     }
 }
 
@@ -86,16 +86,16 @@ private struct PDFPreview: NSViewRepresentable {
     let url: URL
 
     func makeNSView(context _: Context) -> PDFView {
-        let ansicht = PDFView()
-        ansicht.autoScales = true
-        ansicht.displayMode = .singlePage
-        ansicht.document = PDFDocument(url: url)
-        return ansicht
+        let view = PDFView()
+        view.autoScales = true
+        view.displayMode = .singlePage
+        view.document = PDFDocument(url: url)
+        return view
     }
 
-    func updateNSView(_ ansicht: PDFView, context _: Context) {
-        if ansicht.document?.documentURL != url {
-            ansicht.document = PDFDocument(url: url)
+    func updateNSView(_ view: PDFView, context _: Context) {
+        if view.document?.documentURL != url {
+            view.document = PDFDocument(url: url)
         }
     }
 }

@@ -7,7 +7,7 @@ import SwiftUI
 /// through the repository as soon as the user commits a field; there is no
 /// save and no discard.
 struct Inspector: View {
-    let modell: AppModel
+    let model: AppModel
     let buchung: Buchung
 
     @State private var draft: Buchung
@@ -21,9 +21,9 @@ struct Inspector: View {
     /// A plain text field writes into the draft with every keystroke. The
     /// draft goes to the database when the field is submitted or loses focus,
     /// so the table shows the change right away.
-    @FocusState private var fokus: Feld?
+    @FocusState private var focus: Field?
 
-    private enum Feld {
+    private enum Field {
         case titel
         case gegenpartei
         case land
@@ -33,8 +33,8 @@ struct Inspector: View {
         case notizen
     }
 
-    init(modell: AppModel, buchung: Buchung) {
-        self.modell = modell
+    init(model: AppModel, buchung: Buchung) {
+        self.model = model
         self.buchung = buchung
         _draft = State(initialValue: buchung)
         _savedBaseline = State(initialValue: buchung)
@@ -44,13 +44,13 @@ struct Inspector: View {
     var body: some View {
         Form {
             // An edit after the values of the period went to the tax office.
-            if modell.changedAfterExport(buchung) {
+            if model.changedAfterExport(buchung) {
                 Label("Nach dem Export des Zeitraums geändert", systemImage: "exclamationmark.triangle")
                     .font(.callout)
                     .foregroundStyle(.orange)
             }
             if buchung.belege.isEmpty == false {
-                ReceiptSection(modell: modell, buchung: buchung)
+                ReceiptSection(model: model, buchung: buchung)
             }
             grunddaten
             betraege
@@ -60,13 +60,13 @@ struct Inspector: View {
         }
         .formStyle(.grouped)
         .onSubmit(save)
-        .onChange(of: fokus) { save() }
-        .onChange(of: buchung) { _, neu in
+        .onChange(of: focus) { save() }
+        .onChange(of: buchung) { _, updated in
             // The database is authoritative, even if local typing is unsaved.
             // Keep the draft and baseline in lockstep so this refresh cannot save itself.
-            draft = neu
-            savedBaseline = neu
-            originalAmountText = neu.originalbetrag?.deutschFormatiert ?? ""
+            draft = updated
+            savedBaseline = updated
+            originalAmountText = updated.originalbetrag?.deutschFormatiert ?? ""
         }
         .onDisappear(perform: save)
         // Quitting must not swallow a field the user typed but never committed.
@@ -82,14 +82,14 @@ struct Inspector: View {
         .onChange(of: draft.positionen) { save() }
         .onChange(of: draft.steuerbehandlung) { save() }
         .onChange(of: draft.zahlungen) { save() }
-        .safeAreaInset(edge: .bottom) { bestaetigung }
+        .safeAreaInset(edge: .bottom) { confirmBar }
     }
 
     private func save() {
         applyOriginalAmount()
         guard draft != savedBaseline else { return }
-        guard modell.buchungen.contains(where: { $0.id == draft.id }) else { return }
-        guard let saved = modell.save(draft) else { return }
+        guard model.buchungen.contains(where: { $0.id == draft.id }) else { return }
+        guard let saved = model.save(draft) else { return }
         draft = saved
         savedBaseline = saved
     }
@@ -110,13 +110,13 @@ struct Inspector: View {
 
             TextField("Datum", value: $draft.datum, format: .deutsch)
             TextField("Titel", text: $draft.titel)
-                .focused($fokus, equals: .titel)
+                .focused($focus, equals: .titel)
             TextField("Gegenpartei", text: text(\.gegenparteiName))
-                .focused($fokus, equals: .gegenpartei)
+                .focused($focus, equals: .gegenpartei)
             TextField("Land", text: text(\.gegenparteiLand))
-                .focused($fokus, equals: .land)
+                .focused($focus, equals: .land)
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
-                .focused($fokus, equals: .ustid)
+                .focused($focus, equals: .ustid)
 
             Picker("Kategorie", selection: $draft.kategorie) {
                 Text("Keine").tag(String?.none)
@@ -137,10 +137,10 @@ struct Inspector: View {
     private var directionBinding: Binding<Richtung> {
         Binding(
             get: { draft.richtung },
-            set: { neu in
-                draft.richtung = neu
+            set: { updated in
+                draft.richtung = updated
                 if let bekannt = Kategorie.alle.first(where: { $0.schluessel == draft.kategorie }),
-                   bekannt.richtung != neu
+                   bekannt.richtung != updated
                 {
                     draft.kategorie = nil
                 }
@@ -194,10 +194,10 @@ struct Inspector: View {
                     HStack {
                         TextField("Betrag", text: $originalAmountText)
                             .labelsHidden()
-                            .focused($fokus, equals: .originalbetrag)
+                            .focused($focus, equals: .originalbetrag)
                         TextField("Währung", text: text(\.waehrung))
                             .labelsHidden()
-                            .focused($fokus, equals: .waehrung)
+                            .focused($focus, equals: .waehrung)
                             .frame(width: 60)
                     }
                 }
@@ -213,10 +213,10 @@ struct Inspector: View {
     private func netBinding(_ i: Int) -> Binding<Cent> {
         Binding(
             get: { position(i, \.netto, sonst: .null).wrappedValue },
-            set: { neu in
+            set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
-                draft.positionen[i].netto = neu
-                draft.positionen[i].steuer = Position.steuer(netto: neu, steuersatz: draft.positionen[i].steuersatz)
+                draft.positionen[i].netto = updated
+                draft.positionen[i].steuer = Position.steuer(netto: updated, steuersatz: draft.positionen[i].steuersatz)
             }
         )
     }
@@ -225,9 +225,9 @@ struct Inspector: View {
     private func rateBinding(_ i: Int) -> Binding<Decimal> {
         Binding(
             get: { position(i, \.steuersatz, sonst: 0).wrappedValue },
-            set: { neu in
+            set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
-                let satz = min(max(neu, 0), 100)
+                let satz = min(max(updated, 0), 100)
                 draft.positionen[i].steuersatz = satz
                 draft.positionen[i].steuer = Position.steuer(netto: draft.positionen[i].netto, steuersatz: satz)
             }
@@ -326,20 +326,20 @@ struct Inspector: View {
         Section("Notizen") {
             TextField("Notizen", text: text(\.notizen), axis: .vertical)
                 .labelsHidden()
-                .focused($fokus, equals: .notizen)
+                .focused($focus, equals: .notizen)
                 .lineLimit(3 ... 8)
         }
     }
 
     // MARK: - Bestätigen
 
-    @ViewBuilder private var bestaetigung: some View {
+    @ViewBuilder private var confirmBar: some View {
         if draft.geprueftAm == nil {
             VStack(spacing: 0) {
                 Divider()
                 Button {
                     save()
-                    modell.confirm(draft)
+                    model.confirm(draft)
                 } label: {
                     Text("Bestätigen").frame(maxWidth: .infinity)
                 }
@@ -359,9 +359,9 @@ struct Inspector: View {
     private func position<Wert>(_ i: Int, _ path: WritableKeyPath<Position, Wert>, sonst: Wert) -> Binding<Wert> {
         Binding(
             get: { draft.positionen.indices.contains(i) ? draft.positionen[i][keyPath: path] : sonst },
-            set: { neu in
+            set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
-                draft.positionen[i][keyPath: path] = neu
+                draft.positionen[i][keyPath: path] = updated
             }
         )
     }
@@ -370,9 +370,9 @@ struct Inspector: View {
     private func zahlung<Wert>(_ i: Int, _ path: WritableKeyPath<Zahlung, Wert>, sonst: Wert) -> Binding<Wert> {
         Binding(
             get: { draft.zahlungen.indices.contains(i) ? draft.zahlungen[i][keyPath: path] : sonst },
-            set: { neu in
+            set: { updated in
                 guard draft.zahlungen.indices.contains(i) else { return }
-                draft.zahlungen[i][keyPath: path] = neu
+                draft.zahlungen[i][keyPath: path] = updated
             }
         )
     }

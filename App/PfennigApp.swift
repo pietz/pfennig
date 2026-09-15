@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct PfennigApp: App {
-    @State private var modell = AppModel()
+    @State private var model = AppModel()
     private let updaterController: SPUStandardUpdaterController
 
     init() {
@@ -17,7 +17,7 @@ struct PfennigApp: App {
 
     var body: some Scene {
         WindowGroup {
-            WorkspaceView(model: modell)
+            WorkspaceView(model: model)
                 .modifier(AppearanceModifier())
         }
         .defaultSize(width: 1300, height: 700)
@@ -28,7 +28,7 @@ struct PfennigApp: App {
         }
 
         Settings {
-            SettingsView(modell: modell)
+            SettingsView(model: model)
                 .modifier(AppearanceModifier())
         }
     }
@@ -38,8 +38,8 @@ struct PfennigApp: App {
 /// in the user defaults and not in `einstellungen`.
 enum Appearance: String, CaseIterable, Identifiable {
     case system
-    case hell
-    case dunkel
+    case light
+    case dark
 
     var id: String {
         rawValue
@@ -48,19 +48,19 @@ enum Appearance: String, CaseIterable, Identifiable {
     var name: String {
         switch self {
         case .system: "System"
-        case .hell: "Hell"
-        case .dunkel: "Dunkel"
+        case .light: "Hell"
+        case .dark: "Dunkel"
         }
     }
 
     /// The whole app, window chrome and toolbar included. A
     /// `preferredColorScheme` only reaches the view tree and leaves the
     /// toolbar behind, which is what made "System" look half dark.
-    var aussehen: NSAppearance? {
+    var nsAppearance: NSAppearance? {
         switch self {
         case .system: nil
-        case .hell: NSAppearance(named: .aqua)
-        case .dunkel: NSAppearance(named: .darkAqua)
+        case .light: NSAppearance(named: .aqua)
+        case .dark: NSAppearance(named: .darkAqua)
         }
     }
 }
@@ -68,11 +68,11 @@ enum Appearance: String, CaseIterable, Identifiable {
 /// Puts the chosen appearance on the application, from whichever window is on
 /// screen first.
 struct AppearanceModifier: ViewModifier {
-    @AppStorage("erscheinungsbild") private var erscheinungsbild = Appearance.system
+    @AppStorage("appearance") private var appearance = Appearance.system
 
     func body(content: Content) -> some View {
         content
-            .onAppear { NSApp.appearance = erscheinungsbild.aussehen }
-            .onChange(of: erscheinungsbild) { NSApp.appearance = erscheinungsbild.aussehen }
+            .onAppear { NSApp.appearance = appearance.nsAppearance }
+            .onChange(of: appearance) { NSApp.appearance = appearance.nsAppearance }
     }
 }

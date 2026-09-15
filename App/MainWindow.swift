@@ -5,22 +5,22 @@ import SwiftUI
 /// The ledger: the table of bookings with the intake strip above and the
 /// totals footer below. The inspector beside it belongs to `WorkspaceView`.
 struct MainWindow: View {
-    @Bindable var modell: AppModel
+    @Bindable var model: AppModel
     @State private var toDelete: Buchung?
     /// True while a drag hangs over the window.
-    @State private var zielt = false
-    @SceneStorage("spalten") private var spalten: TableColumnCustomization<Buchung>
+    @State private var isDropTarget = false
+    @SceneStorage("columns") private var columns: TableColumnCustomization<Buchung>
 
     var body: some View {
-        let rows = modell.visible
+        let rows = model.visible
         VStack(spacing: 0) {
-            if modell.messages.isEmpty == false {
-                IntakeMessages(modell: modell)
+            if model.messages.isEmpty == false {
+                IntakeMessages(model: model)
                 Divider()
             }
-            tabelle(rows)
+            ledgerTable(rows)
                 .overlay {
-                    if zielt {
+                    if isDropTarget {
                         RoundedRectangle(cornerRadius: 8)
                             .strokeBorder(Color.accentColor, lineWidth: 3)
                             .padding(3)
@@ -32,36 +32,36 @@ struct MainWindow: View {
         }
         // Drag and drop counts for the whole window.
         .dropDestination(for: URL.self) { urls, _ in
-            modell.acceptFiles(urls)
+            model.acceptFiles(urls)
             return true
-        } isTargeted: { zielt = $0 }
-        .searchable(text: $modell.search, prompt: "Suchen")
-        .toolbar { werkzeuge }
+        } isTargeted: { isDropTarget = $0 }
+        .searchable(text: $model.search, prompt: "Suchen")
+        .toolbar { toolbarItems }
         // The table shrinks with the inspector; only the Firma column gives.
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
-        .onDeleteCommand { toDelete = modell.ausgewaehlt }
+        .onDeleteCommand { toDelete = model.selected }
         .confirmationDialog(
             "Buchung löschen?",
             isPresented: deleteConfirmationPresented,
             presenting: toDelete
         ) { buchung in
-            Button("Löschen", role: .destructive) { modell.delete(buchung) }
+            Button("Löschen", role: .destructive) { model.delete(buchung) }
         } message: { buchung in
             Text("„\(buchung.titel)“ wird endgültig entfernt.")
         }
-        .sheet(isPresented: $modell.exportVisible) {
-            ExportSheet(modell: modell)
+        .sheet(isPresented: $model.exportVisible) {
+            ExportSheet(model: model)
         }
-        .alert("Fehler", isPresented: $modell.showsError, presenting: modell.fehler) { _ in
+        .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
             Button("OK") {}
         } message: { text in
             Text(text)
         }
     }
 
-    private func tabelle(_ rows: [Buchung]) -> some View {
-        Table(rows, selection: selectionBinding, sortOrder: $modell.sortOrder, columnCustomization: $spalten) {
+    private func ledgerTable(_ rows: [Buchung]) -> some View {
+        Table(rows, selection: selectionBinding, sortOrder: $model.sortOrder, columnCustomization: $columns) {
             TableColumn("Firma", value: \.firma) { buchung in
                 HStack(spacing: 8) {
                     Image(systemName: buchung.categorySymbol)
@@ -118,7 +118,7 @@ struct MainWindow: View {
             // one-click payment behavior without taking selection from the row.
             TableColumn("Bezahlt") { buchung in
                 Button {
-                    modell.togglePayment(buchung)
+                    model.togglePayment(buchung)
                 } label: {
                     PaymentLabel(status: buchung.zahlungsstand)
                 }
@@ -156,8 +156,8 @@ struct MainWindow: View {
         .contextMenu(forSelectionType: Buchung.ID.self) { ids in
             if let id = ids.compactMap(\.self).first {
                 Button("Löschen", role: .destructive) {
-                    modell.selection = id
-                    toDelete = modell.buchungen.first { $0.id == id }
+                    model.selection = id
+                    toDelete = model.buchungen.first { $0.id == id }
                 }
             }
         }
@@ -167,8 +167,8 @@ struct MainWindow: View {
     /// therefore one optional deeper than the id the app works with.
     private var selectionBinding: Binding<Buchung.ID?> {
         Binding(
-            get: { modell.selection.map { Optional($0) } },
-            set: { modell.selection = $0 ?? nil }
+            get: { model.selection.map { Optional($0) } },
+            set: { model.selection = $0 ?? nil }
         )
     }
 
@@ -183,13 +183,13 @@ struct MainWindow: View {
         )
     }
 
-    @ToolbarContentBuilder private var werkzeuge: some ToolbarContent {
+    @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         // Visible for as long as there is something in the queue.
-        if modell.fortschritt.visible {
+        if model.progress.visible {
             ToolbarItem(placement: .primaryAction) {
                 HStack(spacing: 8) {
                     ProgressView().controlSize(.small)
-                    Text(modell.fortschritt.text)
+                    Text(model.progress.text)
                         .font(.callout)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
@@ -197,30 +197,30 @@ struct MainWindow: View {
             }
         }
         ToolbarItem(placement: .primaryAction) {
-            Picker("Richtung", selection: $modell.filter) {
+            Picker("Richtung", selection: $model.filter) {
                 ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
             }
             .pickerStyle(.menu)
             .labelsHidden()
         }
         ToolbarItem(placement: .primaryAction) {
-            Picker("Prüfung", selection: $modell.reviewFilter) {
+            Picker("Prüfung", selection: $model.reviewFilter) {
                 ForEach(ReviewFilter.allCases) { Text($0.menuTitle).tag($0) }
             }
             .pickerStyle(.menu)
             .labelsHidden()
         }
         ToolbarItem(placement: .primaryAction) {
-            Button("Neue Buchung", systemImage: "plus") { modell.createBooking() }
+            Button("Neue Buchung", systemImage: "plus") { model.createBooking() }
         }
         ToolbarItem(placement: .primaryAction) {
-            Button("Export", systemImage: "square.and.arrow.up") { modell.exportVisible = true }
+            Button("Export", systemImage: "square.and.arrow.up") { model.exportVisible = true }
         }
         ToolbarItem(placement: .primaryAction) {
             SettingsLink { Label("Einstellungen", systemImage: "gearshape") }
         }
         ToolbarItem(placement: .primaryAction) {
-            Button("Inspector", systemImage: "sidebar.trailing") { modell.inspectorVisible.toggle() }
+            Button("Inspector", systemImage: "sidebar.trailing") { model.inspectorVisible.toggle() }
         }
     }
 }
@@ -236,27 +236,27 @@ private extension View {
 /// about files that were already there. The strip is only there while there is
 /// something in it.
 private struct IntakeMessages: View {
-    let modell: AppModel
+    let model: AppModel
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ForEach(modell.messages) { meldung in
+            ForEach(model.messages) { message in
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Image(systemName: meldung.art == .fehler ? "exclamationmark.triangle.fill" : "info.circle")
-                        .foregroundStyle(meldung.art == .fehler ? Color.orange : .secondary)
+                    Image(systemName: message.kind == .failure ? "exclamationmark.triangle.fill" : "info.circle")
+                        .foregroundStyle(message.kind == .failure ? Color.orange : .secondary)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(meldung.name).fontWeight(.medium)
-                        Text(meldung.text)
+                        Text(message.name).fontWeight(.medium)
+                        Text(message.text)
                             .font(.caption)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                     Spacer()
-                    if meldung.art == .fehler {
-                        Button("Erneut versuchen") { modell.retry(meldung) }
-                        Button("Verwerfen") { modell.discard(meldung) }
+                    if message.kind == .failure {
+                        Button("Erneut versuchen") { model.retry(message) }
+                        Button("Verwerfen") { model.discard(message) }
                     } else {
-                        Button("Schließen", systemImage: "xmark") { modell.discard(meldung) }
+                        Button("Schließen", systemImage: "xmark") { model.discard(message) }
                             .labelStyle(.iconOnly)
                             .buttonStyle(.borderless)
                     }
@@ -376,36 +376,7 @@ extension Buchung {
     }
 
     var categorySymbol: String {
-        switch kategorie {
-        case nil: "doc.text"
-        case "umsatz_dienstleistung": "briefcase"
-        case "umsatz_waren": "shippingbox"
-        case "umsatz_lizenzen": "key"
-        case "sonstige_einnahme": "doc.text"
-        case "ust_erstattung": "building.columns"
-        case "zinsen": "percent"
-        case "software": "app"
-        case "hosting": "cloud"
-        case "telekommunikation": "phone"
-        case "buerobedarf": "pencil.and.ruler"
-        case "miete": "building.2"
-        case "hardware": "desktopcomputer"
-        case "werbung": "megaphone"
-        case "beratung": "person.circle"
-        case "fremdleistung": "person.2"
-        case "reise_fahrt": "suitcase"
-        case "reise_uebernachtung": "bed.double"
-        case "bewirtung": "fork.knife"
-        case "fortbildung": "book"
-        case "versicherung": "shield"
-        case "bankgebuehren": "banknote"
-        case "zahlungsanbieter": "creditcard"
-        case "mitgliedschaft": "person.3"
-        case "porto": "envelope"
-        case "ust_zahlung": "building.columns"
-        case "sonstige_ausgabe": "doc.text"
-        default: "questionmark.circle"
-        }
+        Kategorie.symbol(kategorie)
     }
 
     var highestTaxRate: Decimal {

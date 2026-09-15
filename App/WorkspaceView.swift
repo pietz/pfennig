@@ -1,13 +1,35 @@
 import SwiftUI
 
 /// The window has one native workspace: the live bookings ledger.
+enum Workspace: String, CaseIterable, Identifiable {
+    case buchungen
+
+    var id: String {
+        rawValue
+    }
+
+    var name: String {
+        switch self {
+        case .buchungen: "Buchungen"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .buchungen: "list.bullet"
+        }
+    }
+}
+
 struct WorkspaceView: View {
     @Bindable var model: AppModel
+    /// The one workspace of the window, always the selected sidebar item.
+    @State private var workspace: Workspace = .buchungen
 
     var body: some View {
         NavigationSplitView {
-            List {
-                Label("Buchungen", systemImage: "list.bullet")
+            List(Workspace.allCases, selection: $workspace) { item in
+                Label(item.name, systemImage: item.symbol).tag(item)
             }
             .listStyle(.sidebar)
             .navigationTitle("Pfennig")
@@ -20,7 +42,7 @@ struct WorkspaceView: View {
             // floats over the detail column instead of narrowing it, which
             // hides the right hand table columns.
             HStack(spacing: 0) {
-                MainWindow(modell: model)
+                MainWindow(model: model)
                 if model.inspectorVisible {
                     Divider()
                     inspectorPane.frame(width: WorkspaceView.inspectorWidth)
@@ -46,8 +68,8 @@ struct WorkspaceView: View {
     }
 
     @ViewBuilder private var inspectorPane: some View {
-        if let buchung = model.ausgewaehlt {
-            Inspector(modell: model, buchung: buchung)
+        if let buchung = model.selected {
+            Inspector(model: model, buchung: buchung)
                 .id(buchung.id)
         } else {
             ContentUnavailableView("Keine Buchung ausgewählt", systemImage: "list.bullet.rectangle")

@@ -18,7 +18,7 @@ final class AppModel {
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspectorVisible = true
     var exportVisible = false
-    var fehler: String?
+    var errorMessage: String?
 
     /// The periods the user has already exported, with the day they left the
     /// app. Read once and after every export; the export sheet and the
@@ -29,22 +29,22 @@ final class AppModel {
     /// the notes the strip over the table carries.
     private var queue: [URL] = []
     private var inProgress: Set<URL> = []
-    private(set) var fortschritt = Progress()
+    private(set) var progress = Progress()
     private(set) var messages: [IntakeMessage] = []
     /// The inbox is read on the first look at the window, not on every one.
     private var inboxRead = false
 
     var showsError: Bool {
-        get { fehler != nil }
+        get { errorMessage != nil }
         set {
             if newValue == false {
-                fehler = nil
+                errorMessage = nil
             }
         }
     }
 
     /// How many files the agent works on at the same time.
-    static let gleichzeitig = 10
+    static let maxConcurrent = 10
 
     init() {
         do {
@@ -71,68 +71,68 @@ final class AppModel {
         enqueue(intake.inbox())
     }
 
-    func retry(_ meldung: IntakeMessage) {
-        messages.removeAll { $0.id == meldung.id }
-        enqueue([meldung.id])
+    func retry(_ message: IntakeMessage) {
+        messages.removeAll { $0.id == message.id }
+        enqueue([message.id])
     }
 
-    func discard(_ meldung: IntakeMessage) {
-        messages.removeAll { $0.id == meldung.id }
-        if meldung.art == .fehler {
-            try? intake.discard(meldung.id)
+    func discard(_ message: IntakeMessage) {
+        messages.removeAll { $0.id == message.id }
+        if message.kind == .failure {
+            try? intake.discard(message.id)
         }
     }
 
     /// A file already queued or in the machine does not go in a second time.
     private func enqueue(_ urls: [URL]) {
-        let neue = urls.filter { inProgress.contains($0) == false && queue.contains($0) == false }
-        guard neue.isEmpty == false else { return }
-        queue.append(contentsOf: neue)
-        fortschritt.gesamt += neue.count
+        let incoming = urls.filter { inProgress.contains($0) == false && queue.contains($0) == false }
+        guard incoming.isEmpty == false else { return }
+        queue.append(contentsOf: incoming)
+        progress.total += incoming.count
         process()
     }
 
-    /// Files run side by side, at most `gleichzeitig` of them. A drop that
+    /// Files run side by side, at most `maxConcurrent` of them. A drop that
     /// arrives while they run joins the queue the task is already emptying.
     /// Every statement of every run still goes through the one database queue,
     /// so the rows stay consistent.
     private func process() {
-        guard fortschritt.laeuft == false else { return }
-        fortschritt.laeuft = true
+        guard progress.running == false else { return }
+        progress.running = true
         let intake = intake
         Task {
-            await withTaskGroup(of: (URL, FileIntakeResult).self) { gruppe in
+            await withTaskGroup(of: (URL, FileIntakeResult).self) { group in
                 var offen = 0
                 while true {
-                    while offen < AppModel.gleichzeitig, queue.isEmpty == false {
+                    while offen < AppModel.maxConcurrent, queue.isEmpty == false {
                         let url = queue.removeFirst()
                         inProgress.insert(url)
-                        gruppe.addTask { await (url, intake.process(url)) }
+                        group.addTask { await (url, intake.process(url)) }
                         offen += 1
                     }
-                    guard let (url, result) = await gruppe.next() else { break }
+                    guard let (url, result) = await group.next() else { break }
                     offen -= 1
                     inProgress.remove(url)
                     record(result, fuer: url)
-                    fortschritt.erledigt += 1
+                    progress.done += 1
                 }
             }
-            fortschritt = Progress()
+            progress = Progress()
         }
     }
 
     private func record(_ result: FileIntakeResult, fuer url: URL) {
-        let meldung: IntakeMessage? = switch result {
+        let message: IntakeMessage? = switch result {
         case .verbucht:
             nil
         case .bereitsVorhanden:
-            IntakeMessage(id: url, art: .hinweis, text: "Bereits vorhanden, der Beleg hängt schon an einer Buchung.")
+            IntakeMessage(id: url, kind: .info, text: "Bereits vorhanden, der Beleg hängt schon an einer Buchung.")
         case let .fehler(file, text):
-            IntakeMessage(id: file, art: .fehler, text: text)
+            IntakeMessage(id: file, kind: .failure, text: text)
         }
-        guard let meldung else { return }
-        messages.removeAll { $0.id == meldung.id }
-        messages.append(meldung)
+        guard let message else { return }
+        messages.removeAll { $0.id == message.id }
+        messages.append(message)
     }
 
     /// Feeds the table for as long as the window lives.
@@ -140,11 +140,11 @@ final class AppModel {
         processInbox()
         loadExported()
         do {
-            for try await neue in repository.observeBookings() {
-                buchungen = neue
+            for try await incoming in repository.observeBookings() {
+                buchungen = incoming
             }
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -152,7 +152,7 @@ final class AppModel {
         Overview.visible(buchungen, filter: filter, reviewFilter: reviewFilter, search: search).sorted(using: sortOrder)
     }
 
-    var ausgewaehlt: Buchung? {
+    var selected: Buchung? {
         guard let selection else { return nil }
         return buchungen.first { $0.id == selection }
     }
@@ -164,12 +164,12 @@ final class AppModel {
     func save(_ buchung: Buchung) -> Buchung? {
         do {
             let saved = try repository.save(buchung, akteur: .nutzer)
-            if let stelle = buchungen.firstIndex(where: { $0.id == saved.id }) {
-                buchungen[stelle] = saved
+            if let index = buchungen.firstIndex(where: { $0.id == saved.id }) {
+                buchungen[index] = saved
             }
             return saved
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
             return nil
         }
     }
@@ -200,17 +200,17 @@ final class AppModel {
     /// settled with one payment of the rest, a settled one loses its payments.
     /// Part payments and refunds stay a matter for the inspector.
     func togglePayment(_ buchung: Buchung) {
-        var neu = buchung
+        var updated = buchung
         if buchung.zahlungsstand == .bezahlt {
-            neu.zahlungen = []
+            updated.zahlungen = []
         } else {
             let offen = buchung.brutto - buchung.gezahlt
             guard offen > .null else { return }
-            neu.zahlungen.append(
+            updated.zahlungen.append(
                 Zahlung(datum: .today(), betrag: offen, richtung: buchung.richtung, geprueft: true)
             )
         }
-        save(neu)
+        save(updated)
     }
 
     func confirm(_ buchung: Buchung) {
@@ -218,7 +218,7 @@ final class AppModel {
         do {
             try repository.confirm(id: id)
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -232,7 +232,7 @@ final class AppModel {
             // The last booking of a receipt takes the file with it.
             try path.remove(repository.delete(id: id))
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -242,7 +242,7 @@ final class AppModel {
         do {
             try path.remove(repository.removeReceipt(sha256, von: id))
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -252,7 +252,7 @@ final class AppModel {
         do {
             exportedPeriods = try repository.exportedPeriods()
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -262,7 +262,7 @@ final class AppModel {
             try repository.markExported(zeitraum)
             loadExported()
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -279,7 +279,7 @@ final class AppModel {
         do {
             return try repository.profile()
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
             return Profil()
         }
     }
@@ -288,7 +288,7 @@ final class AppModel {
         do {
             return try repository.aiSettings()
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
             return KiEinstellungen()
         }
     }
@@ -297,7 +297,7 @@ final class AppModel {
         do {
             try repository.saveAISettings(einstellungen)
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 
@@ -305,36 +305,36 @@ final class AppModel {
         do {
             try repository.saveProfile(profile)
         } catch {
-            fehler = "\(error)"
+            errorMessage = "\(error)"
         }
     }
 }
 
 /// What the toolbar shows while the inbox is worked through.
 struct Progress: Equatable {
-    var gesamt = 0
-    var erledigt = 0
-    var laeuft = false
+    var total = 0
+    var done = 0
+    var running = false
 
     var visible: Bool {
-        gesamt > 0
+        total > 0
     }
 
     var text: String {
-        "\(erledigt) von \(gesamt) fertig"
+        "\(done) von \(total) fertig"
     }
 }
 
 /// A note over the table: a file that stayed in the inbox with the text the
 /// run ended on, or a short word that a file was already there.
 struct IntakeMessage: Identifiable, Hashable {
-    enum Art: Hashable {
-        case fehler
-        case hinweis
+    enum Kind: Hashable {
+        case failure
+        case info
     }
 
     let id: URL
-    let art: Art
+    let kind: Kind
     let text: String
 
     var name: String {

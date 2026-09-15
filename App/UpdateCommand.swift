@@ -7,18 +7,18 @@ import SwiftUI
 @MainActor
 struct UpdateCommand: View {
     private let updater: SPUUpdater
-    @State private var kannPruefen: Bool
+    @State private var canCheck: Bool
 
     init(updater: SPUUpdater) {
         self.updater = updater
-        _kannPruefen = State(initialValue: updater.canCheckForUpdates)
+        _canCheck = State(initialValue: updater.canCheckForUpdates)
     }
 
     var body: some View {
         Button("Nach Updates suchen") {
             updater.checkForUpdates()
         }
-        .disabled(!kannPruefen)
-        .onReceive(updater.publisher(for: \.canCheckForUpdates)) { kannPruefen = $0 }
+        .disabled(!canCheck)
+        .onReceive(updater.publisher(for: \.canCheckForUpdates)) { canCheck = $0 }
     }
 }

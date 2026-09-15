@@ -5,15 +5,15 @@ import SwiftUI
 /// The standard settings window. The profile belongs to the bookkeeping and
 /// lives in the database, the appearance is a preference of this Mac.
 struct SettingsView: View {
-    let modell: AppModel
+    let model: AppModel
 
     var body: some View {
         TabView {
             Tab("Profil", systemImage: "person.text.rectangle") {
-                ProfileSettings(modell: modell)
+                ProfileSettings(model: model)
             }
             Tab("KI-Zugang", systemImage: "key") {
-                AISettingsView(modell: modell)
+                AISettingsView(model: model)
             }
             Tab("Erscheinungsbild", systemImage: "paintpalette") {
                 AppearanceSettings()
@@ -24,7 +24,7 @@ struct SettingsView: View {
 }
 
 private struct ProfileSettings: View {
-    let modell: AppModel
+    let model: AppModel
     @State private var profile = Profil()
 
     var body: some View {
@@ -42,8 +42,8 @@ private struct ProfileSettings: View {
             Toggle("Dauerfristverlängerung", isOn: $profile.dauerfristverlaengerung)
         }
         .formStyle(.grouped)
-        .onAppear { profile = modell.profile() }
-        .onChange(of: profile) { modell.saveProfile(profile) }
+        .onAppear { profile = model.profile() }
+        .onChange(of: profile) { model.saveProfile(profile) }
     }
 }
 
@@ -51,13 +51,13 @@ private struct ProfileSettings: View {
 /// exists; reading the secret itself is what makes macOS ask, and that belongs
 /// to the agent run and not to a window that opens.
 private struct AISettingsView: View {
-    let modell: AppModel
+    let model: AppModel
     @State private var ki = KiEinstellungen()
     @State private var eingabe = ""
     @State private var hinterlegt = false
     @State private var pruefung: String?
     @State private var verbunden = false
-    @State private var prueft = false
+    @State private var isChecking = false
 
     var body: some View {
         Form {
@@ -83,15 +83,15 @@ private struct AISettingsView: View {
         .formStyle(.grouped)
         .onAppear {
             hinterlegt = Keychain.exists
-            ki = modell.aiSettings()
+            ki = model.aiSettings()
         }
-        .onChange(of: ki) { modell.saveAISettings(ki) }
+        .onChange(of: ki) { model.saveAISettings(ki) }
     }
 
     /// Whether a key is stored, and what the last check said about it.
     private var state: some View {
         HStack(spacing: 6) {
-            if prueft {
+            if isChecking {
                 ProgressView().controlSize(.small)
                 Text("Verbindung wird geprüft …")
                     .foregroundStyle(.secondary)
@@ -127,7 +127,7 @@ private struct AISettingsView: View {
     /// One tiny request, so a wrong key shows up here and not on the first
     /// document.
     private func test() {
-        prueft = true
+        isChecking = true
         pruefung = nil
         Task {
             do {
@@ -138,17 +138,17 @@ private struct AISettingsView: View {
                 verbunden = false
                 pruefung = error.localizedDescription
             }
-            prueft = false
+            isChecking = false
         }
     }
 }
 
 private struct AppearanceSettings: View {
-    @AppStorage("erscheinungsbild") private var erscheinungsbild = Appearance.system
+    @AppStorage("appearance") private var appearance = Appearance.system
 
     var body: some View {
         Form {
-            Picker("Erscheinungsbild", selection: $erscheinungsbild) {
+            Picker("Erscheinungsbild", selection: $appearance) {
                 ForEach(Appearance.allCases) { Text($0.name).tag($0) }
             }
         }
