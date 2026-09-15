@@ -1,9 +1,19 @@
 import AppKit
+import Sparkle
 import SwiftUI
 
 @main
 struct PfennigApp: App {
     @State private var modell = AppModell()
+    private let updaterController: SPUStandardUpdaterController
+
+    init() {
+        updaterController = SPUStandardUpdaterController(
+            startingUpdater: true,
+            updaterDelegate: nil,
+            userDriverDelegate: nil
+        )
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -11,6 +21,11 @@ struct PfennigApp: App {
                 .modifier(Erscheinung())
         }
         .defaultSize(width: 1100, height: 700)
+        .commands {
+            CommandGroup(after: .appInfo) {
+                AktualisierungsBefehl(updater: updaterController.updater)
+            }
+        }
 
         Settings {
             Einstellungen(modell: modell)

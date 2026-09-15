@@ -22,6 +22,19 @@
 	<string>public.app-category.finance</string>
 	<key>LSMinimumSystemVersion</key>
 	<string>$(MACOSX_DEPLOYMENT_TARGET)</string>
+	<!-- Sparkle 2 uses this stable GitHub Release asset URL. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/pietz/pfennig/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>H1NJdeT/JyceXjpOpUO4h5vOkWiVDCWqS8Wc+dZbwlo=</string>
+	<key>SUAutomaticallyUpdate</key>
+	<false/>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>SURequireSignedFeed</key>
+	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>Copyright © 2026 Paul-Louis Pröve</string>
 	<key>NSSupportsAutomaticTermination</key>

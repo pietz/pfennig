@@ -14,6 +14,22 @@ xcrun notarytool store-credentials "ziffer-notary" \
 
 Use an app-specific Apple Account password when prompted. The resulting Keychain item is referenced only by the local profile name `ziffer-notary`. That name predates the rename and is kept so the existing local credentials keep working; set `NOTARY_PROFILE` to use a differently named profile.
 
+### Sparkle signing key
+
+Pfennig uses Sparkle 2 with Ed25519 archive and appcast signatures. Generate the key once on the owner’s Mac with the official tool from the Sparkle package artifact:
+
+```sh
+/path/to/Sparkle/bin/generate_keys
+```
+
+The tool stores the private key in the macOS Keychain and prints the public key. Only that printed public key belongs in `App/Info.plist` as `SUPublicEDKey`; never commit or pass the private key through a file or environment variable. The current checkout has the owner-provided public key embedded.
+
+The Sparkle tools are in Xcode’s package artifact directory, next to the framework. Set `SPARKLE_BIN` to that directory when creating a release, for example:
+
+```sh
+export SPARKLE_BIN="$HOME/Library/Developer/Xcode/DerivedData/<project>/SourcePackages/artifacts/sparkle/Sparkle/bin"
+```
+
 ## Build and notarize
 
 1. Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`.
@@ -34,8 +50,23 @@ The script:
 - staples and validates the notarization ticket
 - runs a Gatekeeper assessment
 - creates `dist/Pfennig-<version>-macOS.zip` with the app, GPLv3 license, privacy notice, and its SHA-256 file
+- creates the app-only `dist/Pfennig-<version>-macOS-update.zip`, which is the Sparkle update archive
+- runs Sparkle’s official `generate_appcast` using the owner’s Keychain key and writes the signed `dist/appcast.xml` plus checksums; delta updates are disabled
 
-Use `scripts/release.sh --build-only` to test release signing without contacting Apple's notarization service. Override `TEAM_ID`, `SIGNING_IDENTITY`, or `NOTARY_PROFILE` in the environment when another authorized maintainer performs a release.
+Use `scripts/release.sh --build-only` to test release signing without contacting Apple’s notarization service. This mode does not create a publishable Sparkle feed. `--notarize` requires `SPARKLE_BIN`, the embedded public key, the Developer ID identity, and the existing notarization profile. Override `TEAM_ID`, `SIGNING_IDENTITY`, or `NOTARY_PROFILE` in the environment when another authorized maintainer performs a release.
+
+## First Sparkle-enabled release
+
+The already installed `v0.1.0` predates Sparkle and cannot update itself. For the first update-capable installation, the owner runs the notarized release once, publishes its assets, and replaces the app in `/Applications` manually:
+
+```sh
+SPARKLE_BIN="$(find "$HOME/Library/Developer/Xcode/DerivedData" -type d -path '*/SourcePackages/artifacts/sparkle/Sparkle/bin' -print -quit)"
+test -x "$SPARKLE_BIN/generate_appcast"
+export SPARKLE_BIN
+scripts/release.sh --notarize
+```
+
+For this first handoff, the expected outputs are `dist/Pfennig-0.2.0-macOS.zip`, `dist/Pfennig-0.2.0-macOS-update.zip`, and `dist/appcast.xml`, each with its matching checksum. Then publish the `v0.2.0` GitHub Release as described below and replace `/Applications/Pfennig.app` with the notarized distribution ZIP. Do not install the Debug build or the signed-unnotarized archive. From the next version onward, Sparkle handles the standard check, download and consented installation.
 
 ## Publish
 
@@ -43,7 +74,9 @@ Publishing is a separate, deliberate step. After verifying the final ZIP on a cl
 
 1. Tag the exact release commit as `v<version>`.
 2. Create a GitHub Release from that tag.
-3. Attach the notarized ZIP and `.sha256` file from `dist/`.
+3. Attach the notarized distribution ZIP, the app-only `-update.zip`, `appcast.xml`, and all corresponding `.sha256` files from `dist/`.
 4. Include concise release notes and known limitations.
 
-The repository source archive generated for the tag provides the corresponding GPLv3 source for that binary. Never upload the temporary notarization ZIP or `notary-result.json`.
+The app’s feed is `https://github.com/pietz/pfennig/releases/latest/download/appcast.xml`. It remains unavailable until `appcast.xml` is attached to a published latest GitHub Release. Do not publish the feed or release from this script; publishing is an explicit owner action.
+
+The repository source archive generated for the tag provides the corresponding GPLv3 source for that binary. Never upload the temporary notarization ZIP, `notary-result.json`, or the temporary `sparkle-updates/` directory.

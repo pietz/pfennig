@@ -130,6 +130,8 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 
 **Vorgehen.** Der alte Stand wird als Tag `legacy-2026-09-14` archiviert, der Rewrite ersetzt ihn im selben Repository. Reihenfolge: Schema und Repository; Tabelle mit Inspector und manueller Eingabe; Agent mit sql-Werkzeug; Export. Nach jedem Abschnitt läuft die App und der Nutzer testet. Nach jedem Abschnitt prüft ein Review-Agent auf Überbau. Vor dem Release gibt es genau eine Schemadefinition und keine Migrationen.
 
+**Aktualisierungen.** Die App verwendet Sparkle 2 mit der Standardoberfläche und einem Menüpunkt „Nach Updates suchen“. Sparkle prüft nach seiner normalen Einwilligung im Hintergrund und zeigt die Standard-Bestätigung vor der Installation. Updates sind mit Developer ID signierte und von Apple notarisierte ZIPs mit ausschließlich der App; Appcast und ZIP liegen als Assets in den GitHub Releases. Es gibt keine eigene Update-Oberfläche, kein Backend und keine erzwungenen Aktualisierungen. Die Ed25519-Schlüssel bleiben beim Eigentümer; nur der öffentliche Schlüssel steht im App-Bundle.
+
 ## 7. Was bewusst nicht gebaut wird
 
 - Bankanbindung, Rechnungsstellung, Bilanz, Lohn

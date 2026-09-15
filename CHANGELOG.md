@@ -1,5 +1,10 @@
 # Änderungen
 
+## 0.2.0 (2026-09-15)
+
+- Fremdwährungsbelege mit historischem Frankfurter-Referenzkurs, exakter Originalwährung und EUR-Cent-Beträgen
+- Sparkle 2 mit „Nach Updates suchen“, normalem Hintergrundprüfzyklus, Standard-Installationsbestätigung und signiertem Appcast-Release-Werkzeug
+
 ## 0.1.0 (2026-09-15)
 
 Erste Version des Neuaufbaus nach `docs/specs/pfennig-neu.md`.
@@ -17,5 +22,5 @@ Bekannte Grenzen:
 - Kontoauszüge werden noch nicht verarbeitet; Zahlungen kommen aus dem Beleg oder werden manuell erfasst
 - Innergemeinschaftliche Lieferungen und Erwerbe, Ausfuhren und Einfuhrumsatzsteuer sind nicht abgebildet
 - Die EÜR-Zeilennummern stammen aus dem Formular 2023/2024 und sind für 2026 ungeprüft
-- Fremdwährungsbelege werden mit dem vom Agenten gelesenen Eurobetrag gebucht, ohne Kursdienst
+- Fremdwährungsbelege verwenden den historischen Frankfurter-Referenzkurs; dieser ist kein bank- oder steuerlich vorgeschriebener Kurs
 - Auf macOS 26 zeigt das System das Icon in seiner eigenen Kachel

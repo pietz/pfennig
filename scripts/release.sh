@@ -25,6 +25,34 @@ ARCHIVED_APP="$ARCHIVE_PATH/Products/Applications/Pfennig.app"
 DIST_DIR="$REPO_ROOT/dist"
 SUBMISSION_ZIP="$DIST_DIR/Pfennig-notarization.zip"
 NOTARY_RESULT="$DIST_DIR/notary-result.json"
+UPDATE_ZIP=""
+UPDATE_CHECKSUM=""
+APPCAST="$DIST_DIR/appcast.xml"
+APPCAST_CHECKSUM="$APPCAST.sha256"
+SPARKLE_BIN="${SPARKLE_BIN:-}"
+
+validate_sparkle_configuration() {
+  local plist_path="${1:-$REPO_ROOT/App/Info.plist}"
+  local feed_url public_key
+  feed_url="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$plist_path" 2>/dev/null || true)"
+  public_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$plist_path" 2>/dev/null || true)"
+
+  if [[ "$feed_url" != https://* ]]; then
+    echo "error: App/Info.plist must contain an HTTPS SUFeedURL" >&2
+    exit 1
+  fi
+  if [[ -z "$public_key" || "$public_key" == *'$('* ]]; then
+    echo "error: App/Info.plist is missing SUPublicEDKey; owner must run Sparkle generate_keys and embed the public key" >&2
+    exit 1
+  fi
+}
+
+require_sparkle_tools() {
+  if [[ -z "$SPARKLE_BIN" || ! -x "$SPARKLE_BIN/generate_appcast" ]]; then
+    echo "error: Sparkle tools not found; set SPARKLE_BIN to the official Sparkle/bin directory" >&2
+    exit 1
+  fi
+}
 
 package_release() {
   local output_zip="$1"
@@ -38,6 +66,54 @@ package_release() {
   rm -rf "$package_dir"
 }
 
+package_update() {
+  local output_zip="$1"
+  rm -f "$output_zip"
+  # We intentionally use an app-only update archive following Sparkle’s
+  # recommendation. Keep the public distribution archive above unchanged.
+  ditto -c -k --sequesterRsrc --keepParent "$ARCHIVED_APP" "$output_zip"
+}
+
+generate_update_feed() {
+  local generator="$SPARKLE_BIN/generate_appcast"
+  local input_dir="$DIST_DIR/sparkle-updates"
+  local download_prefix="https://github.com/pietz/pfennig/releases/download/v$VERSION/"
+  local build_number
+
+  require_sparkle_tools
+
+  build_number="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$ARCHIVED_APP/Contents/Info.plist")"
+  rm -rf "$input_dir"
+  mkdir -p "$input_dir"
+  cp "$UPDATE_ZIP" "$input_dir/"
+  rm -f "$APPCAST"
+
+  "$generator" \
+    --download-url-prefix "$download_prefix" \
+    --link "https://github.com/pietz/pfennig/releases/tag/v$VERSION" \
+    --maximum-deltas 0 \
+    --output-path "$APPCAST" \
+    "$input_dir"
+
+  rm -rf "$input_dir"
+  if [[ ! -s "$APPCAST" ]]; then
+    echo "error: Sparkle did not create $APPCAST" >&2
+    exit 1
+  fi
+  if ! grep -Fq 'sparkle:edSignature=' "$APPCAST"; then
+    echo "error: generated appcast has no EdDSA update signature" >&2
+    exit 1
+  fi
+  if ! grep -Fq "<sparkle:version>$build_number</sparkle:version>" "$APPCAST"; then
+    echo "error: appcast version does not match CFBundleVersion ($build_number)" >&2
+    exit 1
+  fi
+  if ! grep -Fq "<sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>" "$APPCAST"; then
+    echo "error: appcast version does not match CFBundleShortVersionString ($VERSION)" >&2
+    exit 1
+  fi
+}
+
 if ! security find-identity -v -p codesigning | grep -Fq "\"$SIGNING_IDENTITY\""; then
   echo "error: signing identity not found: $SIGNING_IDENTITY" >&2
   exit 1
@@ -49,6 +125,8 @@ if ! command -v xcodegen >/dev/null 2>&1; then
 fi
 
 if [[ "$MODE" == "--notarize" ]]; then
+  validate_sparkle_configuration
+  require_sparkle_tools
   xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null
 fi
 
@@ -77,6 +155,9 @@ fi
 
 codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
 VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$ARCHIVED_APP/Contents/Info.plist")"
+if [[ "$MODE" == "--notarize" ]]; then
+  validate_sparkle_configuration "$ARCHIVED_APP/Contents/Info.plist"
+fi
 if [[ "$MODE" == "--build-only" ]]; then
   FINAL_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS-signed-unnotarized.zip"
 else
@@ -112,9 +193,18 @@ xcrun stapler validate "$ARCHIVED_APP"
 codesign --verify --deep --strict --verbose=2 "$ARCHIVED_APP"
 spctl --assess --type execute --verbose=4 "$ARCHIVED_APP"
 
+UPDATE_ZIP="$DIST_DIR/Pfennig-$VERSION-macOS-update.zip"
+UPDATE_CHECKSUM="$UPDATE_ZIP.sha256"
+rm -f "$UPDATE_ZIP" "$UPDATE_CHECKSUM" "$APPCAST" "$APPCAST_CHECKSUM"
 package_release "$FINAL_ZIP"
+package_update "$UPDATE_ZIP"
 (cd "$DIST_DIR" && shasum -a 256 "$(basename "$FINAL_ZIP")" > "$(basename "$CHECKSUM")")
+(cd "$DIST_DIR" && shasum -a 256 "$(basename "$UPDATE_ZIP")" > "$(basename "$UPDATE_CHECKSUM")")
+generate_update_feed
+(cd "$DIST_DIR" && shasum -a 256 "$(basename "$APPCAST")" > "$(basename "$APPCAST_CHECKSUM")")
 rm -f "$SUBMISSION_ZIP"
 
 echo "Notarized release: $FINAL_ZIP"
-echo "Checksum: $CHECKSUM"
+echo "Sparkle update: $UPDATE_ZIP"
+echo "Sparkle appcast: $APPCAST"
+echo "Checksums: $CHECKSUM, $UPDATE_CHECKSUM, $APPCAST_CHECKSUM"
