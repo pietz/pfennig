@@ -2,8 +2,8 @@ import Agent
 import Core
 import SwiftUI
 
-/// The one window: the table of bookings, the footer under it and the
-/// inspector on the right.
+/// The ledger: the table of bookings with the intake strip above and the
+/// totals footer below. The inspector beside it belongs to `WorkspaceView`.
 struct MainWindow: View {
     @Bindable var modell: AppModel
     @State private var toDelete: Buchung?
@@ -37,12 +37,8 @@ struct MainWindow: View {
         } isTargeted: { zielt = $0 }
         .searchable(text: $modell.search, prompt: "Suchen")
         .toolbar { werkzeuge }
-        .inspector(isPresented: $modell.inspectorVisible) {
-            inspektor
-                .inspectorColumnWidth(min: 320, ideal: 380, max: 560)
-        }
-        // Room for a table of about 580 points next to the inspector.
-        .frame(minWidth: 900, minHeight: 520)
+        // The table shrinks with the inspector; only the Firma column gives.
+        .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand { toDelete = modell.ausgewaehlt }
         .confirmationDialog(
@@ -92,9 +88,9 @@ struct MainWindow: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(minHeight: 40, alignment: .leading)
+                .ledgerCell()
             }
-            .width(min: 190, ideal: 270)
+            .width(min: 160, ideal: 270)
             .customizationID("firma")
             .disabledCustomizationBehavior(.visibility)
 
@@ -102,9 +98,9 @@ struct MainWindow: View {
                 Text(buchung.datum.formatted)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
-                    .frame(minHeight: 40, alignment: .leading)
+                    .ledgerCell()
             }
-            .width(90)
+            .width(84)
             .customizationID("datum")
 
             TableColumn("Betrag", value: \.signedAmount) { buchung in
@@ -112,9 +108,9 @@ struct MainWindow: View {
                     .monospacedDigit()
                     // Income is green; expenses stay in the primary text color.
                     .foregroundStyle(buchung.richtung == .einnahme ? Color.green : Color.primary)
-                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .trailing)
+                    .ledgerCell(.trailing)
             }
-            .width(min: 100, ideal: 115)
+            .width(84)
             .alignment(.trailing)
             .customizationID("betrag")
 
@@ -128,18 +124,17 @@ struct MainWindow: View {
                 }
                 .buttonStyle(.borderless)
                 .help(buchung.zahlungsstand.name)
-                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                .ledgerCell()
             }
-            .width(min: 100, ideal: 115)
+            .width(84)
             .customizationID("zahlung")
 
             TableColumn("Status") { buchung in
                 ReviewStatusLabel(status: buchung.reviewStatus)
-                    .frame(minHeight: 40, alignment: .leading)
+                    .ledgerCell()
             }
-            .width(min: 100, ideal: 115)
+            .width(84)
             .customizationID("status")
-            .defaultVisibility(.visible)
 
             TableColumn("Kategorie", value: \.categoryName)
                 .width(min: 100, ideal: 150)
@@ -188,15 +183,6 @@ struct MainWindow: View {
         )
     }
 
-    @ViewBuilder private var inspektor: some View {
-        if let buchung = modell.ausgewaehlt {
-            Inspector(modell: modell, buchung: buchung)
-                .id(buchung.id)
-        } else {
-            ContentUnavailableView("Keine Buchung ausgewählt", systemImage: "list.bullet.rectangle")
-        }
-    }
-
     @ToolbarContentBuilder private var werkzeuge: some ToolbarContent {
         // Visible for as long as there is something in the queue.
         if modell.fortschritt.visible {
@@ -236,6 +222,13 @@ struct MainWindow: View {
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { modell.inspectorVisible.toggle() }
         }
+    }
+}
+
+private extension View {
+    /// The table has no row height of its own, every cell carries it.
+    func ledgerCell(_ alignment: Alignment = .leading) -> some View {
+        frame(maxWidth: .infinity, minHeight: 40, alignment: alignment)
     }
 }
 
