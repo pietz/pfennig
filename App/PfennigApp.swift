@@ -20,7 +20,6 @@ struct PfennigApp: App {
             WorkspaceView(model: modell)
                 .modifier(AppearanceModifier())
         }
-        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1300, height: 700)
         .commands {
             CommandGroup(after: .appInfo) {

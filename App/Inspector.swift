@@ -337,15 +337,11 @@ struct Inspector: View {
         if draft.geprueftAm == nil {
             VStack(spacing: 0) {
                 Divider()
-                Button {
+                Button("Bestätigen") {
                     save()
                     modell.confirm(draft)
-                } label: {
-                    Text("Bestätigen")
-                        .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
                 .padding(12)
             }
             .background(.bar)
