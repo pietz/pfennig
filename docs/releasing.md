@@ -32,7 +32,7 @@ export SPARKLE_BIN="$HOME/Library/Developer/Xcode/DerivedData/<project>/SourcePa
 
 ## Build and notarize
 
-1. Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`.
+1. Update `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` in `project.yml`; the marketing version identifies the release and the build number must increase monotonically.
 2. Start from the exact clean commit that will be tagged.
 3. Run the tests and release pipeline:
 
@@ -77,6 +77,22 @@ Publishing is a separate, deliberate step. After verifying the final ZIP on a cl
 3. Attach the notarized distribution ZIP, the app-only `-update.zip`, `appcast.xml`, and all corresponding `.sha256` files from `dist/`.
 4. Include concise release notes and known limitations.
 
-The app’s feed is `https://github.com/pietz/pfennig/releases/latest/download/appcast.xml`. It remains unavailable until `appcast.xml` is attached to a published latest GitHub Release. Do not publish the feed or release from this script; publishing is an explicit owner action.
+The app’s feed is `https://github.com/pietz/pfennig/releases/latest/download/appcast.xml`. It remains unavailable until `appcast.xml` is attached to a published latest GitHub Release. Do not publish the feed or release from this script; publishing is an explicit owner action. A concrete GitHub CLI shape is:
+
+```sh
+VERSION=0.2.0
+RELEASE_NOTES=/path/to/release-notes.md # owner-prepared release notes
+
+gh release create "v$VERSION" \
+  "dist/Pfennig-$VERSION-macOS.zip" \
+  "dist/Pfennig-$VERSION-macOS.zip.sha256" \
+  "dist/Pfennig-$VERSION-macOS-update.zip" \
+  "dist/Pfennig-$VERSION-macOS-update.zip.sha256" \
+  dist/appcast.xml dist/appcast.xml.sha256 \
+  --verify-tag --latest \
+  --title "Pfennig $VERSION" --notes-file "$RELEASE_NOTES"
+```
+
+Do not reset or replace the app’s existing data when installing an update. The update asset is app-only; the distribution ZIP is the owner’s manual first-install/replacement asset.
 
 The repository source archive generated for the tag provides the corresponding GPLv3 source for that binary. Never upload the temporary notarization ZIP, `notary-result.json`, or the temporary `sparkle-updates/` directory.
