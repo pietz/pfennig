@@ -1,6 +1,8 @@
 # Status
 
-**Isoliertes HTML-Mockup (2026-09-15).** `docs/mockups/bookings.html` ist ein selbstständiger Tabellenentwurf mit ausschließlich synthetischen Buchungen für die Designprüfung. SwiftUI, App und Daten bleiben unverändert; die native Implementierung ist noch nicht begonnen.
+**Native Designvergleich (2026-09-15).** Das Fenster hat jetzt eine Sidebar mit genau „Buchungen“ (bestehende Live-Oberfläche) und „Designvorschau“. Die zweite Seite ist eine isolierte native SwiftUI-Tabelle mit lokalen synthetischen Beispieldaten, ohne AppModel, Repository oder Persistenz. Die bestehende Beobachtung läuft einmal auf Fensterebene. 102 Tests und der App-Build waren erfolgreich; die unabhängige Prüfung cd544e90 ist freigegeben. Owner-UI-Test steht aus.
+
+**Isoliertes HTML-Mockup (2026-09-15).** `docs/mockups/bookings.html` bleibt ein selbstständiger Tabellenentwurf mit ausschließlich synthetischen Buchungen und dient als visuelle Referenz für den nativen Vergleich. Es wird nicht in die App eingebettet.
 
 **Naming refactor (2026-09-15).** Infrastructure, agent mechanics, UI plumbing and generic helpers use English names, including the `Core` module and `LocalDate`. German accounting and persistence types, properties, raw values, schema names and JSON keys remain unchanged; naming-only changes preserve rendered prompts, errors and UI strings. Verification: 102 tests pass, the app build and release-contract checks pass, and SwiftFormat is clean. Independent source review f5e49310 approved the naming refactor.
 

@@ -30,7 +30,6 @@ struct MainWindow: View {
             Divider()
             Footer(totals: Overview.totals(rows))
         }
-        .task { await modell.observe() }
         // Drag and drop counts for the whole window.
         .dropDestination(for: URL.self) { urls, _ in
             modell.acceptFiles(urls)

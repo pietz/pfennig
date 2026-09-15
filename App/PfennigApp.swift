@@ -17,10 +17,10 @@ struct PfennigApp: App {
 
     var body: some Scene {
         WindowGroup {
-            MainWindow(modell: modell)
+            WorkspaceView(modell: modell)
                 .modifier(AppearanceModifier())
         }
-        .defaultSize(width: 1100, height: 700)
+        .defaultSize(width: 1300, height: 700)
         .commands {
             CommandGroup(after: .appInfo) {
                 UpdateCommand(updater: updaterController.updater)
