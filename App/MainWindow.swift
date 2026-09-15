@@ -37,7 +37,7 @@ struct MainWindow: View {
         } isTargeted: { isDropTarget = $0 }
         .searchable(text: $model.search, prompt: "Suchen")
         .toolbar { toolbarItems }
-        // The table shrinks with the inspector; only the Firma column gives.
+        // The table shrinks with the inspector; only the Unternehmen column gives.
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand { toDelete = model.selected }
@@ -62,7 +62,7 @@ struct MainWindow: View {
 
     private func ledgerTable(_ rows: [Buchung]) -> some View {
         Table(rows, selection: selectionBinding, sortOrder: $model.sortOrder, columnCustomization: $columns) {
-            TableColumn("Firma", value: \.firma) { buchung in
+            TableColumn("Unternehmen", value: \.unternehmen) { buchung in
                 HStack(spacing: 8) {
                     Image(systemName: buchung.categorySymbol)
                         .font(.system(size: 14, weight: .medium))
@@ -71,7 +71,7 @@ struct MainWindow: View {
                         .help(buchung.categoryName.isEmpty ? "Keine Kategorie" : buchung.categoryName)
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
-                            Text(buchung.firma)
+                            Text(buchung.unternehmen)
                                 .fontWeight(.semibold)
                                 .lineLimit(1)
                             if buchung.belege.isEmpty == false {
@@ -91,7 +91,7 @@ struct MainWindow: View {
                 .ledgerCell()
             }
             .width(min: 160, ideal: 270)
-            .customizationID("firma")
+            .customizationID("unternehmen")
             .disabledCustomizationBehavior(.visibility)
 
             TableColumn("Datum", value: \.datum) { buchung in
@@ -346,9 +346,9 @@ private struct Footer: View {
 }
 
 extension Buchung {
-    /// The first line of the Firma column: the counterparty, or the title when
+    /// The first line of the Unternehmen column: the counterparty, or the title when
     /// there is none.
-    var firma: String {
+    var unternehmen: String {
         if let name = gegenparteiName, name.isEmpty == false {
             return name
         }
