@@ -63,7 +63,9 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
     public var gegenparteiUstid: String?
     public var positionen: [Position]
     public var waehrung: String?
-    public var originalbetrag: Int64?
+    /// The original amount in the foreign currency's exact major units. It is
+    /// stored as decimal text and is never reduced to two decimal places.
+    public var originalbetrag: Decimal?
     public var steuerbehandlung: Steuerbehandlung
     public var zahlungen: [Zahlung]
     public var belege: [String]
@@ -85,7 +87,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         gegenparteiUstid: String? = nil,
         positionen: [Position] = [],
         waehrung: String? = nil,
-        originalbetrag: Int64? = nil,
+        originalbetrag: Decimal? = nil,
         steuerbehandlung: Steuerbehandlung,
         zahlungen: [Zahlung] = [],
         belege: [String] = [],

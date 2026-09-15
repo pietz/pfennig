@@ -64,6 +64,35 @@ private func beispiel(
     #expect(try #require(roh?["belege"] as String?) == "[\"a1b2c3\"]")
 }
 
+@Test func originalbetragBleibtAlsExakteDezimalzahlErhalten() throws {
+    let repository = try Repository.imSpeicher()
+    let original = try #require(Decimal(text: "1234,56789"))
+    let gespeichert = try repository.speichern(
+        Buchung(
+            richtung: .ausgabe,
+            art: .rechnung,
+            datum: Datum(jahr: 2026, monat: 9, tag: 14),
+            titel: "Kurs",
+            kategorie: "software",
+            gegenparteiName: "Overseas",
+            gegenparteiLand: "US",
+            positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+            waehrung: "KWD",
+            originalbetrag: original,
+            steuerbehandlung: .steuerfrei
+        ),
+        akteur: .agent
+    )
+    let id = try #require(gespeichert.id)
+    let geladen = try #require(try repository.alleBuchungen().first)
+    #expect(geladen.originalbetrag == original)
+
+    let roh = try repository.datenbank.read { db in
+        try String.fetchOne(db, sql: "SELECT originalbetrag FROM buchungen WHERE id = ?", arguments: [id])
+    }
+    #expect(roh == "1234.56789")
+}
+
 @Test func jederSchreibvorgangHinterlaesstEineAktivitaet() throws {
     let repository = try Repository.imSpeicher()
     var buchung = try repository.speichern(beispiel(), akteur: .agent)

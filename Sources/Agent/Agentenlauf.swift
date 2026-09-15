@@ -83,7 +83,7 @@ public struct Agentenlauf: Sendable {
         self.transport = transport
     }
 
-    /// The tool the agent gets, in the shape the Responses API expects.
+    /// The SQL tool the agent gets, in the shape the Responses API expects.
     static var werkzeugbeschreibung: [String: Any] {
         [
             "type": "function",
@@ -97,6 +97,34 @@ public struct Agentenlauf: Sendable {
                 "type": "object",
                 "properties": ["sql": ["type": "string", "description": "Eine einzelne SQL-Anweisung."]],
                 "required": ["sql"],
+                "additionalProperties": false
+            ],
+            "strict": true
+        ]
+    }
+
+    /// The sole additional tool: it receives original major-unit amounts and
+    /// returns their EUR cents plus the reference-rate provenance.
+    static var umrechnenbeschreibung: [String: Any] {
+        [
+            "type": "function",
+            "name": "umrechnen",
+            "description": "Holt einmal den historischen Frankfurter-Referenzkurs für eine Währung und ein Datum und rechnet alle gelieferten Originalbeträge in EUR-Cent um. Die API bekommt nur Währung und Datum; die Beträge werden lokal mit Decimal gerechnet.",
+            "parameters": [
+                "type": "object",
+                "properties": [
+                    "waehrung": [
+                        "type": "string",
+                        "description": "Dreistelliger ISO-Währungscode, zum Beispiel USD oder JPY."
+                    ],
+                    "datum": ["type": "string", "description": "Kursdatum als JJJJ-MM-TT."],
+                    "betraege": [
+                        "type": "array",
+                        "description": "Originalbeträge in exakten Haupteinheiten als Dezimaltexte, ohne Währungssymbol.",
+                        "items": ["type": "string"]
+                    ]
+                ],
+                "required": ["waehrung", "datum", "betraege"],
                 "additionalProperties": false
             ],
             "strict": true
@@ -152,7 +180,7 @@ public struct Agentenlauf: Sendable {
             var koerper: [String: Any] = [
                 "model": ki.modell.rawValue,
                 "reasoning": ["effort": ki.aufwand.rawValue],
-                "tools": [Agentenlauf.werkzeugbeschreibung],
+                "tools": [Agentenlauf.werkzeugbeschreibung, Agentenlauf.umrechnenbeschreibung],
                 "input": eingabe
             ]
             if ki.schnell {
@@ -180,15 +208,29 @@ public struct Agentenlauf: Sendable {
 
             eingabe = []
             for aufruf in aufrufeDerRunde {
-                let sql = Agentenlauf.sql(aufruf.arguments)
-                let werkzeugergebnis = werkzeug.ausfuehren(sql)
-                ergebnis.beruehrt = Array(Set(ergebnis.beruehrt).union(werkzeugergebnis.beruehrt)).sorted()
-                ergebnis.angelegt = Array(Set(ergebnis.angelegt).union(werkzeugergebnis.angelegt)).sorted()
-                protokoll.schritte.append(["sql": sql, "ergebnis": werkzeugergebnis.text])
+                let text: String
+                switch aufruf.name {
+                case "sql":
+                    let sql = Agentenlauf.sql(aufruf.arguments)
+                    let werkzeugergebnis = werkzeug.ausfuehren(sql)
+                    ergebnis.beruehrt = Array(Set(ergebnis.beruehrt).union(werkzeugergebnis.beruehrt)).sorted()
+                    ergebnis.angelegt = Array(Set(ergebnis.angelegt).union(werkzeugergebnis.angelegt)).sorted()
+                    text = werkzeugergebnis.text
+                case "umrechnen":
+                    text = await Umrechnen.ausfuehren(aufruf.arguments, transport: transport)
+                default:
+                    text = "Fehler: Unbekanntes Werkzeug \(aufruf.name). Verwende sql oder umrechnen."
+                }
+                let schritt = [
+                    "werkzeug": aufruf.name,
+                    "argumente": aufruf.arguments,
+                    "ergebnis": text
+                ]
+                protokoll.schritte.append(schritt)
                 eingabe.append([
                     "type": "function_call_output",
                     "call_id": aufruf.callId,
-                    "output": werkzeugergebnis.text
+                    "output": text
                 ])
             }
         }
@@ -197,6 +239,7 @@ public struct Agentenlauf: Sendable {
     // MARK: - Antwort lesen
 
     struct Werkzeugaufruf {
+        var name: String
         var callId: String
         var arguments: String
     }
@@ -208,7 +251,11 @@ public struct Agentenlauf: Sendable {
             guard teil["type"] as? String == "function_call",
                   let callId = teil["call_id"] as? String
             else { return nil }
-            return Werkzeugaufruf(callId: callId, arguments: teil["arguments"] as? String ?? "{}")
+            return Werkzeugaufruf(
+                name: teil["name"] as? String ?? "",
+                callId: callId,
+                arguments: teil["arguments"] as? String ?? "{}"
+            )
         }
     }
 

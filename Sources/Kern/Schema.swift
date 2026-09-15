@@ -22,7 +22,7 @@ public enum Schema {
         -- [{"netto": 10000, "steuersatz": 19, "steuer": 1900}]
         positionen TEXT NOT NULL DEFAULT '[]',
         waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
-        originalbetrag INTEGER,                     -- nur bei Fremdwährung, in Cent dieser Währung
+        originalbetrag TEXT,                        -- nur bei Fremdwährung, exakte Dezimalzahl in Haupteinheiten
         steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
         -- JSON-Liste, Beträge in EUR-Cent, richtung wie oben, eine Erstattung hat die Gegenrichtung:
         -- [{"id": 1, "datum": "2026-09-14", "betrag": 11900, "richtung": "ausgabe", "geprueft": true}]

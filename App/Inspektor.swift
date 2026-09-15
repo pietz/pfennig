@@ -17,6 +17,7 @@ struct Inspektor: View {
     /// True once the user asked for the foreign currency line on a booking
     /// that does not carry one yet.
     @State private var fremdwaehrung = false
+    @State private var originalbetragText: String
     /// A plain text field writes into the draft with every keystroke. The
     /// draft goes to the database when the field is submitted or loses focus,
     /// so the table shows the change right away.
@@ -28,6 +29,7 @@ struct Inspektor: View {
         case land
         case ustid
         case waehrung
+        case originalbetrag
         case notizen
     }
 
@@ -36,6 +38,7 @@ struct Inspektor: View {
         self.buchung = buchung
         _entwurf = State(initialValue: buchung)
         _gesichert = State(initialValue: buchung)
+        _originalbetragText = State(initialValue: buchung.originalbetrag?.deutschFormatiert ?? "")
     }
 
     var body: some View {
@@ -63,6 +66,7 @@ struct Inspektor: View {
             // Keep the draft and baseline in lockstep so this refresh cannot save itself.
             entwurf = neu
             gesichert = neu
+            originalbetragText = neu.originalbetrag?.deutschFormatiert ?? ""
         }
         .onDisappear(perform: sichern)
         // Quitting must not swallow a field the user typed but never committed.
@@ -76,13 +80,13 @@ struct Inspektor: View {
         .onChange(of: entwurf.kategorie) { sichern() }
         .onChange(of: entwurf.privatanteilProzent) { sichern() }
         .onChange(of: entwurf.positionen) { sichern() }
-        .onChange(of: entwurf.originalbetrag) { sichern() }
         .onChange(of: entwurf.steuerbehandlung) { sichern() }
         .onChange(of: entwurf.zahlungen) { sichern() }
         .safeAreaInset(edge: .bottom) { bestaetigung }
     }
 
     private func sichern() {
+        originalbetragUebernehmen()
         guard entwurf != gesichert else { return }
         guard modell.buchungen.contains(where: { $0.id == entwurf.id }) else { return }
         guard let gespeichert = modell.speichern(entwurf) else { return }
@@ -185,11 +189,12 @@ struct Inspektor: View {
                 entwurf.positionen.append(Position(netto: .null, steuersatz: 19, steuer: .null))
             }
 
-            if entwurf.waehrung != nil || fremdwaehrung {
+            if entwurf.waehrung != nil || entwurf.originalbetrag != nil || fremdwaehrung {
                 LabeledContent("Original") {
                     HStack {
-                        TextField("Betrag", value: originalbetragBindung, format: .number.precision(.fractionLength(2)))
+                        TextField("Betrag", text: $originalbetragText)
                             .labelsHidden()
+                            .focused($fokus, equals: .originalbetrag)
                         TextField("Währung", text: text(\.waehrung))
                             .labelsHidden()
                             .focused($fokus, equals: .waehrung)
@@ -234,11 +239,17 @@ struct Inspektor: View {
         entwurf.positionen.remove(at: i)
     }
 
-    private var originalbetragBindung: Binding<Decimal> {
-        Binding(
-            get: { Decimal(entwurf.originalbetrag ?? 0) / 100 },
-            set: { entwurf.originalbetrag = NSDecimalNumber(decimal: $0 * 100).int64Value }
-        )
+    private func originalbetragUebernehmen() {
+        let text = originalbetragText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.isEmpty == false else {
+            entwurf.originalbetrag = nil
+            return
+        }
+        guard let wert = Decimal(text: text) else {
+            originalbetragText = entwurf.originalbetrag?.deutschFormatiert ?? ""
+            return
+        }
+        entwurf.originalbetrag = wert
     }
 
     // MARK: - Steuer

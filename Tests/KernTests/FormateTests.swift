@@ -26,6 +26,12 @@ import Testing
     #expect(Datum(deutsch: "2026-09-14") == nil)
 }
 
+@Test func originalbetragBleibtImInspectorFormatUnbegrenzt() throws {
+    let wert = try #require(Decimal(text: "1234,56789"))
+    #expect(wert.deutschFormatiert == "1234,56789")
+    #expect(Decimal(text: "") == nil)
+}
+
 @Test func formatstileFormatierenUndLesenZurueck() throws {
     #expect(Euroformat().format(Cent(123_456)).hasPrefix("1.234,56"))
     #expect(try Euroeingabe().parse("1.234,56 €") == Cent(123_456))

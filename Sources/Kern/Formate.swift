@@ -6,6 +6,41 @@ public enum Eingabefehler: Error {
     case datum
 }
 
+public extension Decimal {
+    /// Reads an exact decimal amount in major units. A comma is the German
+    /// decimal separator; a dot is accepted for pasted/API-style input.
+    init?(text: String) {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.isEmpty == false else { return nil }
+        let minus = text.first == "-"
+        let ohneVorzeichen = minus ? String(text.dropFirst()) : text
+        guard ohneVorzeichen.isEmpty == false,
+              ohneVorzeichen.allSatisfy({ $0.isNumber || $0 == "," || $0 == "." }),
+              ohneVorzeichen.contains(where: \.isNumber),
+              ohneVorzeichen.filter({ $0 == "," }).count <= 1
+        else { return nil }
+
+        let normalisiert: String = if ohneVorzeichen.contains(",") {
+            // Dots are grouping separators when the comma is decimal.
+            ohneVorzeichen.replacingOccurrences(of: ".", with: "").replacingOccurrences(
+                of: ",", with: "."
+            )
+        } else {
+            ohneVorzeichen
+        }
+        guard normalisiert.filter({ $0 == "." }).count <= 1,
+              let zahl = Decimal(string: normalisiert, locale: Locale(identifier: "en_US_POSIX"))
+        else { return nil }
+        self = minus ? -zahl : zahl
+    }
+
+    /// Exact decimal text suitable for the German inspector field, without
+    /// forcing a currency-specific number of fraction digits.
+    var deutschFormatiert: String {
+        NSDecimalNumber(decimal: self).description(withLocale: Locale(identifier: "de_DE"))
+    }
+}
+
 public extension Cent {
     /// Reads an amount the user typed: `1.234,56`, `1234.56`, `-12,5`, with or
     /// without the euro sign. The last separator is the decimal one when one or

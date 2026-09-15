@@ -2,6 +2,8 @@
 
 **Status:** bestätigt (2026-09-14). Alle sieben Abschnitte sind gemeinsam entschieden und gelten als Grundlage für den Neuaufbau.
 
+**Ergänzung Fremdwährung (2026-09-15):** Fremdwährungen und ein zweites Agentenwerkzeug sind freigegeben. Die Buchhaltung und alle Summen bleiben in EUR. Es gibt keine währungsspezifische Präzision, keine Kursgewinn- und Verlustrechnung und keinen Revaluierungsmechanismus.
+
 Gliederung:
 
 1. Zweck und Grenzen
@@ -32,7 +34,7 @@ Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit
 - `id` (hochzählende Ganzzahl), `richtung` (einnahme/ausgabe), `art` (rechnung, beleg, gutschrift, steuerzahlung, nur_zahlung, ignoriert, sonstiges), `datum` (Belegdatum), `titel`, `kategorie` (feste EÜR-Kategorienliste im Code, Schlüssel unwiderruflich), `privatanteil_prozent`, `notizen`
 - Gegenpartei als Text: `gegenpartei_name`, `gegenpartei_land`, `gegenpartei_ustid`. Die USt-IdNr. gehört zum Beleg, nicht zu einem Stammsatz.
 - `positionen`, JSON-Liste von {netto, steuersatz, steuer} in EUR-Cent. Meist ein Element, bei Mischbelegen (Hotel mit Frühstück, Bewirtung) mehrere. Beliebige Sätze, auch ausländische. Keine Summenspalten; Brutto, Netto und Steuer rechnet Swift.
-- `waehrung` und `originalbetrag`: nur bei Fremdwährungsbelegen gefüllt, leer heißt Euro. Die Positionen stehen immer in Euro, am besten zum tatsächlich gezahlten Betrag vom Konto, sonst zum Kurs am Belegdatum. Swift rechnet keine Kurse.
+- `waehrung` und `originalbetrag`: nur bei Fremdwährungsbelegen gefüllt, leer heißt Euro. `originalbetrag` ist eine exakte Dezimalzahl in den Haupteinheiten der Originalwährung, ohne Rundung auf zwei Stellen. Die Positionen stehen immer in Euro. Ein tatsächlich gezahlter EUR-Betrag geht vor einer Referenzumrechnung; sonst trägt der Agent das Ergebnis des Umrechnungswerkzeugs ein.
 - `steuerbehandlung` (inland, reverse_charge, kleinunternehmer, steuerfrei, nicht_steuerbar, unklar). Beantwortet, warum ein Beleg keine oder eine besondere Umsatzsteuer hat.
 - `zahlungen`, JSON-Liste von {id, datum, betrag, richtung, geprueft}. Die id zählt innerhalb des Eintrags hoch (1, 2, 3). Teilzahlungen sind mehrere Elemente, eine Erstattung hat die Gegenrichtung, eine unsichere Zuordnung ist `geprueft = false`. Eine Zahlung gehört zu genau einem Eintrag; eine Überweisung für zwei Rechnungen sind zwei Zahlungselemente.
 - `belege`, JSON-Liste von SHA-256-Hashes der zugehörigen Dateien (keine Kontoauszüge).
@@ -86,7 +88,7 @@ Ein Fenster. Es besteht aus der Tabelle, dem Inspector rechts und einer Toolbar.
 
 Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind PDF, Bilder und CSV; die Datei geht so, wie sie ist, an den Agenten.
 
-**Ein Agent, ein Werkzeug.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein Werkzeug ist `sql`: er liest und schreibt die Datenbank direkt mit SELECT, INSERT und UPDATE. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus. Am Anfang schreibt er nur in `buchungen`.
+**Ein Agent, zwei Werkzeuge.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein erstes Werkzeug ist `sql`: er liest und schreibt die Datenbank direkt mit SELECT, INSERT und UPDATE. Das zweite Werkzeug ist `umrechnen(waehrung, datum, betraege)`. Es fragt genau einmal den historischen Frankfurter-v2-Kurs für das Währungspaar und Datum ab und rechnet alle gelieferten Originalbeträge mit Swift `Decimal` in EUR-Cent um. Die öffentliche API erhält nur Währung und Datum, nicht Beträge oder Dokumente. Die Standardrate ist Frankfurters gemischte Referenzrate, ausdrücklich kein Bank- oder steuerlich vorgeschriebener Kurs. Rate, tatsächliches Kursdatum und Quelle stehen in der bestehenden Anfragekonversation und als kurze Notiz in der Buchung. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus. Am Anfang schreibt er nur in `buchungen`.
 
 Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anweisungen aus `sqlite_master`), damit es immer aktuell ist. Aufzählungen wie richtung, art und steuerbehandlung sind als CHECK-Bedingungen im Schema hinterlegt und dadurch im Schematext sichtbar. Für JSON-Spalten steht die Struktur als Kommentar im Schema.
 
@@ -97,7 +99,7 @@ Der Agent erhält das Schema dynamisch aus der Datenbank selbst (die CREATE-Anwe
 
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API mit der Datei selbst (PDF oder Bild direkt, CSV als Text), dem Profil (eigener Name und USt-ID, Kleinunternehmer, heutiges Datum), der Kategorienliste mit je einem Satz Beschreibung, den bekannten Gegenparteien mit Land aus den vorhandenen Buchungen und der Anleitung. Nicht im Kontext: die Buchungstabelle. Modell (gpt-5.6-sol, -terra, -luna), Reasoning-Aufwand und schnellere Verarbeitung (OpenAI Priority Processing, etwa doppelter Preis) wählt der Nutzer im Tab „KI-Zugang“ der Einstellungen.
 
-**Was der Agent füllt.** Alles, was aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; Gegenpartei; positionen; waehrung und originalbetrag bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Zweifel schreibt er in die Notizen. Felder, die ein Dokument nicht hergibt, bleiben leer. Nicht vom Agenten: id, belege, geprueft_am, Zeitstempel, zahlungen.id; die setzt Swift. Pro sql-Aufruf entsteht oder ändert sich eine vollständige Buchung (mindestens eine Position), weil die Prüfregeln nach jedem Aufruf laufen. Die Anleitung enthält je ein JSON-Beispiel für positionen und zahlungen mit dem Hinweis, dass Beträge in Cent stehen.
+**Was der Agent füllt.** Alles, was aus dem Dokument hervorgeht: richtung, art, datum, titel, kategorie, privatanteil_prozent, notizen; Gegenpartei; positionen; waehrung und der exakte originalbetrag in Haupteinheiten bei Fremdwährung; steuerbehandlung; zahlungen nur, wenn der Beleg selbst eine Zahlung belegt (Kassenbon, Kartenbeleg, „bezahlt am“). Bei einer Zahlung gilt der tatsächlich gezahlte EUR-Betrag vor einer Referenzumrechnung. Sonst verwendet er für eine bezahlte Buchung ein ausdrücklich genanntes Zahlungsdatum, sonst das Belegdatum; ein belegtes „bezahlt“ ohne Datum verwendet das Belegdatum und wird notiert. Positionen und enthaltene Zahlungen derselben Buchung verwenden eine gemeinsame Umrechnungsbasis. Scheitert der Kursabruf, erhält der Agent einen einfachen Werkzeugfehler; es gibt keinen Ersatzanbieter und keinen Kurs-Cache. Zweifel schreibt er in die Notizen. Felder, die ein Dokument nicht hergibt, bleiben leer. Nicht vom Agenten: id, belege, geprueft_am, Zeitstempel, zahlungen.id; die setzt Swift. Pro sql-Aufruf entsteht oder ändert sich eine vollständige Buchung (mindestens eine Position), weil die Prüfregeln nach jedem Aufruf laufen. Die Anleitung enthält je ein JSON-Beispiel für positionen und zahlungen mit dem Hinweis, dass Beträge in Cent stehen.
 
 **Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
@@ -120,7 +122,7 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 
 ## 6. Technik und Vorgehen
 
-**Struktur.** Ein Swift-Package mit drei Zielen: `Kern` (Schema, Geld, Datum, Repository, Prüfregeln, Steuerrechnung, Export), `Agent` (Responses-Client, Werkzeugschleife, sql-Werkzeug, Aktivitätsvergleich), `App` (SwiftUI). Tests je Ziel. Werkzeuge wie bisher: XcodeGen, `scripts/build.sh`, swiftformat, GRDB für SQLite.
+**Struktur.** Ein Swift-Package mit drei Zielen: `Kern` (Schema, Geld, Datum, Repository, Prüfregeln, Steuerrechnung, Export), `Agent` (Responses-Client, Werkzeugschleife, sql- und umrechnen-Werkzeug, Aktivitätsvergleich), `App` (SwiftUI). Tests je Ziel. Werkzeuge wie bisher: XcodeGen, `scripts/build.sh`, swiftformat, GRDB für SQLite.
 
 **Übernommen aus dem alten Code**, kopiert und angepasst, nicht importiert: Money, LocalDate, UStVA-Berechnung mit den geprüften Kennzahlen 2026, EÜR-Zeilen, XML-Exporter, Kategorienliste, Responses-Client, Keychain-Zugriff, PDF-Vorschau. Alles andere wird nicht angesehen.
 
@@ -137,7 +139,7 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 - Automatisierungsstufen, Schutzregeln für bearbeitete Buchungen, Versionsprüfung
 - Stammdaten für Gegenparteien, Kategorien in der Datenbank
 - Weitere Tabellen neben den fünf aus Abschnitt 2, insbesondere für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft
-- Kursumrechnung, Kursdienste
+- Kursgewinn- und Verlustrechnung, Fremdwährungsrevaluierung und sonstige Währungsbuchhaltung
 - Startseite, Prüfen-Seite, Sidebar, Jahresauswahl
 - Migrationen und Abwärtskompatibilität vor dem Release
 - Mehrere Mandanten, mehrere Nutzer, Cloud-Sync

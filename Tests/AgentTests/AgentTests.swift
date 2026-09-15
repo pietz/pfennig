@@ -9,16 +9,23 @@ import Testing
 private actor Skript {
     var antworten: [String]
     var gesehen: [Data] = []
+    var urls: [URL] = []
+    let rateAntwort: String?
+    let rateStatus: Int
 
-    init(_ antworten: [String]) {
+    init(_ antworten: [String], rateAntwort: String? = nil, rateStatus: Int = 200) {
         self.antworten = antworten
+        self.rateAntwort = rateAntwort
+        self.rateStatus = rateStatus
     }
 
     func antworten(auf anfrage: URLRequest) -> (Data, HTTPURLResponse) {
         gesehen.append(anfrage.httpBody ?? Data())
-        let text = antworten.isEmpty ? "{}" : antworten.removeFirst()
+        urls.append(anfrage.url!)
+        let istKurs = anfrage.url?.host == "api.frankfurter.dev"
+        let text = istKurs ? (rateAntwort ?? "{}") : (antworten.isEmpty ? "{}" : antworten.removeFirst())
         let http = HTTPURLResponse(
-            url: Responses.adresse, statusCode: 200, httpVersion: nil, headerFields: nil
+            url: anfrage.url!, statusCode: istKurs ? rateStatus : 200, httpVersion: nil, headerFields: nil
         )!
         return (Data(text.utf8), http)
     }
@@ -62,27 +69,36 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
     '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
 """
 
-/// An answer that asks for the tool, in the shape of the Responses API: an
-/// `output` array with a reasoning item before the `function_call`.
-private func werkzeugantwort(_ sql: String) -> String {
-    let argumente = String(
-        decoding: try! JSONSerialization.data(withJSONObject: ["sql": sql]), as: UTF8.self
+/// An answer that asks for a function tool, in the shape the Responses API
+/// uses: an `output` array with reasoning before the `function_call`.
+private func funktionsantwort(
+    _ name: String,
+    argumente: [String: Any],
+    responseID: String,
+    callID: String
+) -> String {
+    let argumenttext = String(
+        decoding: try! JSONSerialization.data(withJSONObject: argumente), as: UTF8.self
     )
     return objekt([
-        "id": "resp_1",
+        "id": responseID,
         "status": "completed",
         "output": [
-            ["type": "reasoning", "id": "rs_1", "summary": []],
+            ["type": "reasoning", "id": "rs_\(responseID)", "summary": []],
             [
-                "id": "fc_1",
-                "call_id": "call_1",
+                "id": "fc_\(callID)",
+                "call_id": callID,
                 "type": "function_call",
-                "name": "sql",
-                "arguments": argumente
+                "name": name,
+                "arguments": argumenttext
             ]
         ],
         "usage": ["input_tokens": 100, "output_tokens": 20]
     ])
+}
+
+private func werkzeugantwort(_ sql: String) -> String {
+    funktionsantwort("sql", argumente: ["sql": sql], responseID: "resp_1", callID: "call_1")
 }
 
 private let schlussantwort = objekt([
@@ -98,6 +114,10 @@ private let schlussantwort = objekt([
 
 private func objekt(_ inhalt: [String: Any]) -> String {
     String(decoding: try! JSONSerialization.data(withJSONObject: inhalt), as: UTF8.self)
+}
+
+private func kursantwort(datum: String, waehrung: String, kurs: String) -> String {
+    "{\"date\":\"\(datum)\",\"base\":\"\(waehrung)\",\"quote\":\"EUR\",\"rate\":\(kurs)}"
 }
 
 private func eingabe() -> Dateieingabe {
@@ -161,10 +181,13 @@ private func eingabe() -> Dateieingabe {
     // Priority processing is off unless the user asks for it.
     #expect(erste["service_tier"] as? String == nil)
     let werkzeuge = try #require(erste["tools"] as? [[String: Any]])
-    #expect(werkzeuge.count == 1)
+    #expect(werkzeuge.count == 2)
     #expect(werkzeuge[0]["type"] as? String == "function")
     #expect(werkzeuge[0]["name"] as? String == "sql")
     #expect(werkzeuge[0]["strict"] as? Bool == true)
+    #expect(werkzeuge[1]["type"] as? String == "function")
+    #expect(werkzeuge[1]["name"] as? String == "umrechnen")
+    #expect(werkzeuge[1]["strict"] as? Bool == true)
     let eingabeteile = try #require(erste["input"] as? [[String: Any]])
     let inhalt = try #require(eingabeteile[1]["content"] as? [[String: Any]])
     #expect(inhalt[0]["type"] as? String == "input_file")
@@ -197,6 +220,154 @@ private func eingabe() -> Dateieingabe {
     // OpenAI's priority processing, verified in docs/openai-responses-api.md.
     #expect(koerper["service_tier"] as? String == "priority")
     #expect(try repository.alleAnfragen().first?.modell == "gpt-5.6-sol")
+}
+
+@Test func umrechnenNutztNurWaehrungUndDatumUndRundetMitDecimal() async throws {
+    func ergebnis(_ waehrung: String, _ kurs: String, _ betraege: [Decimal]) async throws -> Umrechnungsergebnis {
+        let skript = Skript(
+            [],
+            rateAntwort: kursantwort(datum: "2024-01-12", waehrung: waehrung, kurs: kurs)
+        )
+        let transport = await skript.transport
+        let ergebnis = try await Umrechnen.berechnen(
+            waehrung: waehrung,
+            datum: Datum(jahr: 2024, monat: 1, tag: 15),
+            betraege: betraege,
+            transport: transport
+        )
+        let kursURL = try #require(await skript.urls.first)
+        #expect(kursURL.path == "/v2/rate/\(waehrung)/EUR")
+        #expect(kursURL.query == "date=2024-01-15")
+        #expect(await skript.gesehen.first == Data())
+        return ergebnis
+    }
+
+    let usd = try await ergebnis(
+        "USD",
+        "0.9",
+        [#require(Decimal(string: "10.00")), #require(Decimal(string: "3.33"))]
+    )
+    #expect(usd.eurCent == [900, 300])
+    #expect(usd.angefordertesDatum == Datum(jahr: 2024, monat: 1, tag: 15))
+    #expect(usd.kursdatum == Datum(jahr: 2024, monat: 1, tag: 12))
+    #expect(usd.quelle == Umrechnen.quelle)
+    #expect(usd.kurs == Decimal(string: "0.9"))
+
+    let zar = try await ergebnis("ZAR", "0.05", [#require(Decimal(string: "100.01"))])
+    #expect(zar.eurCent == [500])
+    let jpy = try await ergebnis("JPY", "0.0061", [#require(Decimal(string: "1234"))])
+    #expect(jpy.eurCent == [753])
+    let kwd = try await ergebnis("KWD", "2.5", [#require(Decimal(string: "1.234"))])
+    #expect(kwd.eurCent == [309])
+}
+
+@Test func umrechnungsNotizMitKursWirdInBuchungsnotizUebernommen() async throws {
+    let skript = Skript(
+        [],
+        rateAntwort: kursantwort(datum: "2024-01-12", waehrung: "USD", kurs: "0.9")
+    )
+    let ergebnis = try await Umrechnen.berechnen(
+        waehrung: "USD",
+        datum: Datum(jahr: 2024, monat: 1, tag: 15),
+        betraege: [#require(Decimal(string: "10.00"))],
+        transport: skript.transport
+    )
+    let repository = try Repository.imSpeicher()
+    let buchung = try repository.speichern(
+        Buchung(
+            richtung: .ausgabe,
+            art: .beleg,
+            datum: Datum(jahr: 2024, monat: 1, tag: 15),
+            titel: "Cloud",
+            kategorie: "software",
+            notizen: ergebnis.notiz,
+            gegenparteiName: "Cloud",
+            gegenparteiLand: "US",
+            positionen: [Position(netto: Cent(900), steuersatz: 0, steuer: .null)],
+            waehrung: "USD",
+            originalbetrag: Decimal(text: "10.00"),
+            steuerbehandlung: .steuerfrei
+        ),
+        akteur: .agent
+    )
+    let notiz = try #require(buchung.notizen)
+    #expect(notiz == ergebnis.notiz)
+    #expect(notiz.contains("Kurs 0.9"))
+}
+
+@Test func umrechnenGibtEinenEinfachenFehlerZurueck() async {
+    let skript = Skript([], rateAntwort: #"{"message":"Could not find currency ABC"}"#, rateStatus: 404)
+    let transport = await skript.transport
+    let text = await Umrechnen.ausfuehren(
+        #"{"waehrung":"ABC","datum":"2024-01-15","betraege":["10.123"]}"#,
+        transport: transport
+    )
+    #expect(text.contains("Fehler"))
+    #expect(text.contains("404"))
+
+    let numerisch = Skript([])
+    let numerischerText = await Umrechnen.ausfuehren(
+        #"{"waehrung":"USD","datum":"2024-01-15","betraege":[10]}"#,
+        transport: numerisch.transport
+    )
+    #expect(numerischerText.hasPrefix("Fehler:"))
+    #expect(await numerisch.urls.isEmpty)
+}
+
+@Test func laufMischtSqlUndUmrechnenUndLoggtBeideWerkzeuge() async throws {
+    let repository = try Repository.imSpeicher()
+    let fxSQL = """
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, gegenpartei_name, gegenpartei_land,
+        notizen, waehrung, originalbetrag, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2026-09-01', 'Cloud', 'software', 'Cloud', 'DE',
+        'Frankfurter reference rate (default blended), USD/EUR, Kurs 0.9, Kursdatum 2026-09-01.', 'USD', '10.00',
+        '[{"netto": 756, "steuersatz": 19, "steuer": 144}]', 'inland')
+    """
+    let skript = Skript(
+        [
+            funktionsantwort(
+                "umrechnen",
+                argumente: ["waehrung": "USD", "datum": "2026-09-01", "betraege": ["10.00"]],
+                responseID: "resp_fx",
+                callID: "call_fx"
+            ),
+            funktionsantwort("sql", argumente: ["sql": fxSQL], responseID: "resp_sql", callID: "call_sql"),
+            schlussantwort
+        ],
+        rateAntwort: kursantwort(datum: "2026-09-01", waehrung: "USD", kurs: "0.9")
+    )
+    let lauf = try await Agentenlauf(
+        repository: repository,
+        werkzeug: Werkzeug(repository),
+        schluessel: "test",
+        transport: skript.transport
+    )
+
+    let ergebnis = try await lauf.starten(eingabe())
+    #expect(ergebnis.beruehrt == [1])
+    let buchung = try #require(try repository.alleBuchungen().first)
+    #expect(buchung.originalbetrag == Decimal(string: "10.00"))
+    #expect(buchung.positionen.first?.netto == Cent(756))
+    let buchungsnotiz = try #require(buchung.notizen)
+    #expect(buchungsnotiz.contains("Kurs 0.9"))
+    let anfrage = try #require(try repository.alleAnfragen().first)
+    let konversation = try #require(anfrage.konversation)
+    #expect(konversation.contains("\"werkzeug\":\"umrechnen\""))
+    #expect(konversation.contains(Umrechnen.quelle))
+    #expect(konversation.contains("eur_cent"))
+    #expect(konversation.contains("Kurs 0.9"))
+    #expect(konversation.contains("kursdatum"))
+    #expect(konversation.contains("\"werkzeug\":\"sql\""))
+    #expect(konversation.contains("INSERT INTO buchungen"))
+    let protokoll = try #require(
+        JSONSerialization.jsonObject(with: Data(konversation.utf8)) as? [[String: String]]
+    )
+    let werkzeugschritte = protokoll.filter { $0["werkzeug"] != nil }
+    #expect(werkzeugschritte.allSatisfy { $0["sql"] == nil })
+    #expect(werkzeugschritte.allSatisfy { Set($0.keys) == ["werkzeug", "argumente", "ergebnis"] })
+    let urls = await skript.urls
+    #expect(urls.contains { $0.host == "api.frankfurter.dev" })
+    #expect(urls.filter { $0.host == "api.openai.com" }.count == 3)
 }
 
 @Test func laufMeldetEinenFehlerUndSchreibtIhnInDieAnfrage() async throws {
@@ -513,6 +684,10 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     #expect(text.contains("titel sagt in höchstens fünf Wörtern"))
     #expect(text.contains("Keine Rechnungsnummer, kein Datum, kein Firmenname"))
     #expect(text.contains("übernimm die Schreibweise von hier Zeichen für Zeichen"))
+    #expect(text.contains("Deine Werkzeuge heißen sql und umrechnen"))
+    #expect(text.contains("tatsächlich gezahlte EUR-Betrag bekannt"))
+    #expect(text.contains("Nicht auf zwei Nachkommastellen runden"))
+    #expect(text.contains("erfinde keinen Wert"))
 
     // The examples and the cents rule stay.
     #expect(text.contains(#"[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]"#))
