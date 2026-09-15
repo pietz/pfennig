@@ -1,3 +1,5 @@
+<img src="App/Resources/Assets.xcassets/AppIcon.appiconset/icon_128x128@2x.png" alt="Pfennig" width="128">
+
 # Pfennig
 
 Lokale macOS-Buchhaltung für deutsche Freiberufler und Einzelunternehmer mit EÜR und Ist-Versteuerung, regelbesteuert oder Kleinunternehmer.
