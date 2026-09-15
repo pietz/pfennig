@@ -32,6 +32,8 @@ Offen und bewusst nicht gebaut: das Datenmodell kennt keine innergemeinschaftlic
 
 Nächster Schritt: Anleitung des Agenten schärfen: Privatanteil nur bei eindeutigem Hinweis, einheitliche Gegenparteinamen, kürzere Titel und Firmennamen.
 
+**Entwicklungsdatenbank neu aufgebaut (2026-09-15).** Auf Eigentümerfreigabe wurde `pfennig.sqlite` aus der aktuellen einzigen Definition in `Sources/Kern/Schema.swift` neu erstellt. Die bisherigen Datenbankhistorien und die 11 Archivoriginale liegen im privaten, zeitgestempelten Backup unter `~/Library/Application Support/Pfennig/Backups/pfennig-development-rebuild-20260915-141953/`; die Einstellungen wurden erhalten. Buchungen, Dateien, Aktivitäten, Anfragen und Exportzeiträume sind für den kontrollierten Neueinlauf geleert. Die vorbereiteten Reimportkopien liegen dort in `Zum erneuten Importieren`; der Eigentümerimport steht aus. Kein automatischer Reimport. Die unabhängige Prüfung `17385272` bestätigte Integrität, Schema, Einstellungserhalt und Dateihashes ohne Beanstandung.
+
 **Release 0.1.0 (2026-09-15).** Tag `v0.1.0`, Developer-ID-signiert, von Apple notarisiert und gestapelt, `dist/Pfennig-0.1.0-macOS.zip` mit SHA-256. GitHub-Release als Entwurf angelegt, Veröffentlichung ist der Schritt des Eigentümers. Siehe `CHANGELOG.md`.
 
 **Sicherheitsfix 2026-09-15.** „Verwerfen“ löscht ausschließlich Dateien, deren aufgelöster übergeordneter Pfad die Inbox ist. Fehler vor dem Kopieren behalten den Originalpfad und lassen das Original unberührt; Tests decken Inbox-Kopie, Geschwisterpfad und ein blockiertes Inbox-Verzeichnis ab. Die unabhängige Prüfung `67787b65` bestätigte den Fix ohne Beanstandungen.
