@@ -8,18 +8,18 @@ public enum AgentInstructions {
         let profile = try repository.profile()
         let buchungen = try repository.allBookings()
         return try [
-            auftrag,
+            task,
             "## Schema\n\n```sql\n" + (repository.schemaText()) + "\n```",
-            "## Profil\n\n" + profiltext(profile),
-            "## Kategorien\n\n" + kategorientext(),
-            gegenparteientext(buchungen),
-            regeln
+            "## Profil\n\n" + profileText(profile),
+            "## Kategorien\n\n" + categoryText(),
+            counterpartyText(buchungen),
+            rules
         ]
         .compactMap(\.self)
         .joined(separator: "\n\n")
     }
 
-    private static var auftrag: String {
+    private static var task: String {
         """
         Du bist der Buchhalter einer deutschen Einzelunternehmerin. Du bekommst genau ein Dokument, \
         eine Rechnung, einen Beleg oder eine Gutschrift, und trägst es in die SQLite-Datenbank ein.
@@ -31,7 +31,7 @@ public enum AgentInstructions {
         """
     }
 
-    private static func profiltext(_ profile: Profil) -> String {
+    private static func profileText(_ profile: Profil) -> String {
         var rows = ["Heute ist der \(LocalDate.today())."]
         if profile.name.isEmpty == false {
             rows.append(
@@ -54,7 +54,7 @@ public enum AgentInstructions {
         return rows.joined(separator: " ")
     }
 
-    private static func kategorientext() -> String {
+    private static func categoryText() -> String {
         Kategorie.alle
             .map { "- `\($0.schluessel)` (\($0.richtung.rawValue)): \($0.beschreibung)" }
             .joined(separator: "\n")
@@ -62,16 +62,16 @@ public enum AgentInstructions {
 
     /// The known counterparties are grouped in Swift out of the bookings; there
     /// is no master record for them.
-    private static func gegenparteientext(_ buchungen: [Buchung]) -> String? {
-        var laender: [String: String] = [:]
+    private static func counterpartyText(_ buchungen: [Buchung]) -> String? {
+        var countries: [String: String] = [:]
         for buchung in buchungen {
             guard let name = buchung.gegenparteiName, name.isEmpty == false else { continue }
-            laender[name] = buchung.gegenparteiLand ?? laender[name] ?? ""
+            countries[name] = buchung.gegenparteiLand ?? countries[name] ?? ""
         }
-        guard laender.isEmpty == false else { return nil }
-        let rows = laender.keys.sorted().map { name in
-            let land = laender[name] ?? ""
-            return land.isEmpty ? "- \(name)" : "- \(name) (\(land))"
+        guard countries.isEmpty == false else { return nil }
+        let rows = countries.keys.sorted().map { name in
+            let country = countries[name] ?? ""
+            return country.isEmpty ? "- \(name)" : "- \(name) (\(country))"
         }
         return """
         ## Bekannte Gegenparteien
@@ -83,7 +83,7 @@ public enum AgentInstructions {
         """
     }
 
-    private static let regeln = """
+    private static let rules = """
     ## So arbeitest du
 
     - Eine Buchung ist ein Dokument. Ein Beleg ist immer genau eine Zeile in buchungen, auch wenn er \

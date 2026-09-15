@@ -10,11 +10,11 @@ public enum CoreError: Error {
 /// The single way into the database. Every write of a booking goes through
 /// `save` and leaves one row in `aktivitaeten`.
 public final class Repository: Sendable {
-    let datenbank: DatabaseQueue
+    let database: DatabaseQueue
 
-    private init(_ datenbank: DatabaseQueue) throws {
-        self.datenbank = datenbank
-        try datenbank.write(Schema.anlegen)
+    private init(_ database: DatabaseQueue) throws {
+        self.database = database
+        try database.write(Schema.create)
     }
 
     public convenience init(path: URL) throws {
@@ -31,12 +31,12 @@ public final class Repository: Sendable {
     /// booking, with its id, payment ids and timestamps filled in.
     @discardableResult
     public func save(_ buchung: Buchung, akteur: Akteur) throws -> Buchung {
-        try datenbank.write { try Repository.save(buchung, akteur: akteur, in: $0) }
+        try database.write { try Repository.save(buchung, akteur: akteur, in: $0) }
     }
 
     /// Marks a booking as reviewed by the user.
     public func confirm(id: Int64) throws {
-        try datenbank.write { db in
+        try database.write { db in
             guard var buchung = try Buchung.fetchOne(db, key: id) else {
                 throw CoreError.buchungNichtGefunden(id)
             }
@@ -51,7 +51,7 @@ public final class Repository: Sendable {
     /// caller can take their originals out of the archive.
     @discardableResult
     public func delete(id: Int64) throws -> [Datei] {
-        try datenbank.write { db in
+        try database.write { db in
             let hashes = try Buchung.fetchOne(db, key: id)?.belege ?? []
             try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
             return try Repository.cleanupOrphanedFiles(hashes, in: db)
@@ -62,40 +62,40 @@ public final class Repository: Sendable {
     /// uses it for the rows the agent touched, so agent and user leave the
     /// same kind of trail in `aktivitaeten`.
     static func save(_ buchung: Buchung, akteur: Akteur, in db: Database) throws -> Buchung {
-        let vorher = try buchung.id.flatMap { try Buchung.fetchOne(db, key: $0) }
-        return try save(buchung, akteur: akteur, vorher: vorher, in: db)
+        let before = try buchung.id.flatMap { try Buchung.fetchOne(db, key: $0) }
+        return try save(buchung, akteur: akteur, before: before, in: db)
     }
 
     /// The same with a state the caller read earlier. The agent writes its row
     /// with its own INSERT, so only the caller still knows whether the row
     /// existed before the statement ran.
-    static func save(_ buchung: Buchung, akteur: Akteur, vorher: Buchung?, in db: Database) throws -> Buchung {
-        let jetzt = Date()
-        var neu = buchung
+    static func save(_ buchung: Buchung, akteur: Akteur, before: Buchung?, in db: Database) throws -> Buchung {
+        let now = Date()
+        var updated = buchung
         if akteur == .agent {
             // Agent writes require fresh user confirmation; no-op tool calls never save here.
-            neu.geprueftAm = nil
+            updated.geprueftAm = nil
         }
-        neu.zahlungen = numberedPayments(buchung.zahlungen)
-        neu.geaendertAm = jetzt
-        neu.erstelltAm = vorher?.erstelltAm ?? jetzt
-        try neu.save(db)
-        guard let id = neu.id else { preconditionFailure("save() assigns the row id") }
+        updated.zahlungen = numberedPayments(buchung.zahlungen)
+        updated.geaendertAm = now
+        updated.erstelltAm = before?.erstelltAm ?? now
+        try updated.save(db)
+        guard let id = updated.id else { preconditionFailure("save() assigns the row id") }
 
-        let eintrag = Aktivitaet(buchungId: id, zeitpunkt: jetzt, akteur: akteur, vorher: vorher, nachher: neu)
-        try eintrag.insert(db)
-        return neu
+        let entry = Aktivitaet(buchungId: id, zeitpunkt: now, akteur: akteur, vorher: before, nachher: updated)
+        try entry.insert(db)
+        return updated
     }
 
     public func allBookings() throws -> [Buchung] {
-        try datenbank.read { try Repository.allBookings($0) }
+        try database.read { try Repository.allBookings($0) }
     }
 
     /// Feeds the table: a fresh list after every change of `buchungen`.
     public func observeBookings() -> AsyncValueObservation<[Buchung]> {
         ValueObservation
             .tracking { try Repository.allBookings($0) }
-            .values(in: datenbank)
+            .values(in: database)
     }
 
     private static func allBookings(_ db: Database) throws -> [Buchung] {
@@ -104,13 +104,13 @@ public final class Repository: Sendable {
 
     /// Existing payment ids stay, new ones continue after the highest in use.
     static func numberedPayments(_ zahlungen: [Zahlung]) -> [Zahlung] {
-        var naechste = (zahlungen.compactMap(\.id).max() ?? 0) + 1
+        var next = (zahlungen.compactMap(\.id).max() ?? 0) + 1
         return zahlungen.map { zahlung in
             guard zahlung.id == nil else { return zahlung }
-            var neu = zahlung
-            neu.id = naechste
-            naechste += 1
-            return neu
+            var updated = zahlung
+            updated.id = next
+            next += 1
+            return updated
         }
     }
 
@@ -119,45 +119,45 @@ public final class Repository: Sendable {
     /// The file may already be in the table: its booking was deleted and the
     /// same original came back. The row is written either way.
     public func saveFile(_ file: Datei) throws {
-        try datenbank.write { try file.upsert($0) }
+        try database.write { try file.upsert($0) }
     }
 
     /// Saves the file row and attaches its hash in one transaction. A file is
     /// not complete unless at least one booking from the agent run still exists.
-    public func saveFileAndAttachReceipt(_ file: Datei, an ids: [Int64]) throws {
-        try datenbank.write { db in
+    public func saveFileAndAttachReceipt(_ file: Datei, to ids: [Int64]) throws {
+        try database.write { db in
             try file.upsert(db)
-            var vorhandeneBuchung = false
+            var matched = false
             for id in ids {
                 guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
-                vorhandeneBuchung = true
+                matched = true
                 guard buchung.belege.contains(file.sha256) == false else { continue }
                 buchung.belege.append(file.sha256)
                 _ = try Repository.save(buchung, akteur: .agent, in: db)
             }
-            guard vorhandeneBuchung else { throw CoreError.keineBuchungAngehaengt }
+            guard matched else { throw CoreError.keineBuchungAngehaengt }
         }
     }
 
     /// Dedupe is not "the file was seen once" but "a booking still carries it".
     /// A file whose booking the user deleted goes to the agent again.
     public func receiptIsUsed(_ sha256: String) throws -> Bool {
-        try datenbank.read { db in
+        try database.read { db in
             try Repository.receiptIsUsed(sha256, in: db)
         }
     }
 
     private static func receiptIsUsed(_ sha256: String, in db: Database) throws -> Bool {
-        let anzahl = try Int.fetchOne(
+        let count = try Int.fetchOne(
             db, sql: "SELECT COUNT(*) FROM buchungen WHERE instr(belege, ?) > 0", arguments: [sha256]
         )
-        return (anzahl ?? 0) > 0
+        return (count ?? 0) > 0
     }
 
     /// Takes a receipt off a booking and cleans up if it was the last one.
     @discardableResult
-    public func removeReceipt(_ sha256: String, von id: Int64) throws -> [Datei] {
-        try datenbank.write { db in
+    public func removeReceipt(_ sha256: String, from id: Int64) throws -> [Datei] {
+        try database.write { db in
             guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
             buchung.belege.removeAll { $0 == sha256 }
             _ = try Repository.save(buchung, akteur: .nutzer, in: db)
@@ -168,25 +168,25 @@ public final class Repository: Sendable {
     /// Drops the rows in `files` no booking points at any more and answers
     /// with them, so their originals can leave the archive too.
     private static func cleanupOrphanedFiles(_ hashes: [String], in db: Database) throws -> [Datei] {
-        var verwaist: [Datei] = []
+        var orphans: [Datei] = []
         for hash in hashes where try receiptIsUsed(hash, in: db) == false {
             guard let file = try Datei.fetchOne(db, key: hash) else { continue }
             try file.delete(db)
-            verwaist.append(file)
+            orphans.append(file)
         }
-        return verwaist
+        return orphans
     }
 
     /// The rows behind the hashes in `buchungen.belege`, in the order asked for.
-    public func files(zu hashes: [String]) throws -> [Datei] {
-        let gefunden = try datenbank.read { try Datei.fetchAll($0, keys: hashes) }
-        return hashes.compactMap { hash in gefunden.first { $0.sha256 == hash } }
+    public func files(for hashes: [String]) throws -> [Datei] {
+        let found = try database.read { try Datei.fetchAll($0, keys: hashes) }
+        return hashes.compactMap { hash in found.first { $0.sha256 == hash } }
     }
 
     /// Hangs the file on the bookings the agent run touched. The list of
     /// receipts belongs to Swift, not to the agent.
-    public func attachReceipt(_ sha256: String, an ids: [Int64]) throws {
-        try datenbank.write { db in
+    public func attachReceipt(_ sha256: String, to ids: [Int64]) throws {
+        try database.write { db in
             for id in ids {
                 guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
                 guard buchung.belege.contains(sha256) == false else { continue }
@@ -199,7 +199,7 @@ public final class Repository: Sendable {
     // MARK: - Anfragen
 
     public func startRequest(dateiSha256: String, modell: String) throws -> Int64 {
-        try datenbank.write { db in
+        try database.write { db in
             let request = Anfrage(dateiSha256: dateiSha256, modell: modell)
             try request.insert(db)
             return db.lastInsertedRowID
@@ -207,7 +207,7 @@ public final class Repository: Sendable {
     }
 
     public func allRequests() throws -> [Anfrage] {
-        try datenbank.read { try Anfrage.fetchAll($0, sql: "SELECT * FROM anfragen ORDER BY id") }
+        try database.read { try Anfrage.fetchAll($0, sql: "SELECT * FROM anfragen ORDER BY id") }
     }
 
     public func finishRequest(
@@ -217,7 +217,7 @@ public final class Repository: Sendable {
         ausgabeTokens: Int,
         konversation: String
     ) throws {
-        try datenbank.write { db in
+        try database.write { db in
             try db.execute(
                 sql: """
                 UPDATE anfragen
@@ -235,7 +235,7 @@ public final class Repository: Sendable {
     /// overwrites the date; the table answers one question, when the user last
     /// took these values out of the app.
     public func markExported(_ zeitraum: Zeitraum) throws {
-        try datenbank.write { db in
+        try database.write { db in
             try db.execute(
                 sql: """
                 INSERT INTO zeitraeume (jahr, art, idx, exportiert_am) VALUES (?, ?, ?, ?)
@@ -249,12 +249,12 @@ public final class Repository: Sendable {
     /// Every exported period with the day it left the app. The export sheet
     /// shows it for the chosen period, the inspector warns with it.
     public func exportedPeriods() throws -> [Zeitraum: Date] {
-        try datenbank.read { db in
+        try database.read { db in
             var result: [Zeitraum: Date] = [:]
-            for zeile in try Row.fetchAll(db, sql: "SELECT jahr, art, idx, exportiert_am FROM zeitraeume") {
-                let art: Zeitraumart = zeile["art"]
-                let zeitraum = Zeitraum(jahr: zeile["jahr"], art: art, idx: zeile["idx"])
-                result[zeitraum] = zeile["exportiert_am"]
+            for row in try Row.fetchAll(db, sql: "SELECT jahr, art, idx, exportiert_am FROM zeitraeume") {
+                let art: Zeitraumart = row["art"]
+                let zeitraum = Zeitraum(jahr: row["jahr"], art: art, idx: row["idx"])
+                result[zeitraum] = row["exportiert_am"]
             }
             return result
         }
@@ -265,7 +265,7 @@ public final class Repository: Sendable {
     /// The CREATE statements as SQLite stores them. The agent reads the schema
     /// from the database itself, so it can never drift from what is there.
     public func schemaText() throws -> String {
-        try datenbank.read { db in
+        try database.read { db in
             try String.fetchAll(
                 db,
                 sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
@@ -277,13 +277,13 @@ public final class Repository: Sendable {
     // MARK: - SettingsView
 
     public func setting(_ key: String) throws -> String? {
-        try datenbank.read { db in
+        try database.read { db in
             try String.fetchOne(db, sql: "SELECT wert FROM einstellungen WHERE schluessel = ?", arguments: [key])
         }
     }
 
     public func setSetting(_ key: String, value: String) throws {
-        try datenbank.write { db in
+        try database.write { db in
             try Repository.setSetting(key, value: value, in: db)
         }
     }
@@ -301,45 +301,45 @@ public final class Repository: Sendable {
     /// The profile, with the defaults of a fresh installation for keys that
     /// were never set.
     public func profile() throws -> Profil {
-        try datenbank.read { try Repository.profile($0) }
+        try database.read { try Repository.profile($0) }
     }
 
     static func profile(_ db: Database) throws -> Profil {
-        var werte: [String: String] = [:]
-        for zeile in try Row.fetchAll(db, sql: "SELECT schluessel, wert FROM einstellungen") {
-            let key: String = zeile["schluessel"]
-            let value: String = zeile["wert"]
-            werte[key] = value
+        var values: [String: String] = [:]
+        for row in try Row.fetchAll(db, sql: "SELECT schluessel, wert FROM einstellungen") {
+            let key: String = row["schluessel"]
+            let value: String = row["wert"]
+            values[key] = value
         }
         return Profil(
-            name: werte["name"] ?? "",
-            adresse: werte["adresse"] ?? "",
-            steuernummer: werte["steuernummer"] ?? "",
-            ustid: werte["ustid"] ?? "",
-            kleinunternehmer: werte["kleinunternehmer"] == "true",
-            rhythmus: werte["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
-            dauerfristverlaengerung: werte["dauerfristverlaengerung"] == "true"
+            name: values["name"] ?? "",
+            adresse: values["adresse"] ?? "",
+            steuernummer: values["steuernummer"] ?? "",
+            ustid: values["ustid"] ?? "",
+            kleinunternehmer: values["kleinunternehmer"] == "true",
+            rhythmus: values["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
+            dauerfristverlaengerung: values["dauerfristverlaengerung"] == "true"
         )
     }
 
     /// What the user chose under KI-Zugang, with the defaults of a fresh
     /// installation for keys that were never set.
     public func aiSettings() throws -> KiEinstellungen {
-        try datenbank.read { db in
-            let standard = KiEinstellungen()
+        try database.read { db in
+            let defaults = KiEinstellungen()
             return try KiEinstellungen(
-                modell: Repository.value("ki.modell", in: db).flatMap(Modell.init) ?? standard.modell,
-                aufwand: Repository.value("ki.aufwand", in: db).flatMap(Denkaufwand.init) ?? standard.aufwand,
+                modell: Repository.value("ki.modell", in: db).flatMap(Modell.init) ?? defaults.modell,
+                aufwand: Repository.value("ki.aufwand", in: db).flatMap(Denkaufwand.init) ?? defaults.aufwand,
                 schnell: Repository.value("ki.schnell", in: db) == "true"
             )
         }
     }
 
-    public func saveAISettings(_ einstellungen: KiEinstellungen) throws {
-        try datenbank.write { db in
-            try Repository.setSetting("ki.modell", value: einstellungen.modell.rawValue, in: db)
-            try Repository.setSetting("ki.aufwand", value: einstellungen.aufwand.rawValue, in: db)
-            try Repository.setSetting("ki.schnell", value: String(einstellungen.schnell), in: db)
+    public func saveAISettings(_ settings: KiEinstellungen) throws {
+        try database.write { db in
+            try Repository.setSetting("ki.modell", value: settings.modell.rawValue, in: db)
+            try Repository.setSetting("ki.aufwand", value: settings.aufwand.rawValue, in: db)
+            try Repository.setSetting("ki.schnell", value: String(settings.schnell), in: db)
         }
     }
 
@@ -348,7 +348,7 @@ public final class Repository: Sendable {
     }
 
     public func saveProfile(_ profile: Profil) throws {
-        let werte = [
+        let values = [
             "name": profile.name,
             "adresse": profile.adresse,
             "steuernummer": profile.steuernummer,
@@ -357,8 +357,8 @@ public final class Repository: Sendable {
             "ustva_rhythmus": profile.rhythmus.rawValue,
             "dauerfristverlaengerung": String(profile.dauerfristverlaengerung)
         ]
-        try datenbank.write { db in
-            for (key, value) in werte {
+        try database.write { db in
+            for (key, value) in values {
                 try Repository.setSetting(key, value: value, in: db)
             }
         }

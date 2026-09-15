@@ -48,8 +48,8 @@ final class AppModel {
 
     init() {
         do {
-            try path.anlegen()
-            repository = try Repository(path: path.datenbank)
+            try path.create()
+            repository = try Repository(path: path.databaseFile)
             intake = try FileIntake(repository: repository, path: path)
         } catch {
             fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
@@ -61,7 +61,7 @@ final class AppModel {
     /// The files the user dropped. Everything the agent cannot read is dropped
     /// silently; the window accepts only the allowed types in the first place.
     func acceptFiles(_ urls: [URL]) {
-        enqueue(urls.filter(FileIntake.erlaubt))
+        enqueue(urls.filter(FileIntake.isAllowed))
     }
 
     /// A non-empty inbox is worked through when the app starts, once.
@@ -123,11 +123,11 @@ final class AppModel {
 
     private func record(_ result: FileIntakeResult, fuer url: URL) {
         let message: IntakeMessage? = switch result {
-        case .verbucht:
+        case .booked:
             nil
-        case .bereitsVorhanden:
+        case .alreadyPresent:
             IntakeMessage(id: url, kind: .info, text: "Bereits vorhanden, der Beleg hängt schon an einer Buchung.")
-        case let .fehler(file, text):
+        case let .failed(file, text):
             IntakeMessage(id: file, kind: .failure, text: text)
         }
         guard let message else { return }
@@ -238,9 +238,9 @@ final class AppModel {
 
     /// Takes one receipt off a booking, and its original out of the archive
     /// when no other booking carries it.
-    func removeReceipt(_ sha256: String, von id: Int64) {
+    func removeReceipt(_ sha256: String, from id: Int64) {
         do {
-            try path.remove(repository.removeReceipt(sha256, von: id))
+            try path.remove(repository.removeReceipt(sha256, from: id))
         } catch {
             errorMessage = "\(error)"
         }

@@ -4,26 +4,26 @@ import Foundation
 /// Everything that can go wrong between the app and OpenAI, in German,
 /// because the text ends up in the inbox next to the file.
 public enum AgentError: Error, LocalizedError {
-    case keinSchluessel
-    case netzwerk(String)
+    case missingKey
+    case network(String)
     case api(status: Int, text: String)
     case response(String)
-    case keineBuchung
-    case zuVieleWerkzeugaufrufe
+    case noBooking
+    case tooManyToolCalls
 
     public var errorDescription: String? {
         switch self {
-        case .keinSchluessel:
+        case .missingKey:
             "Kein API-Schlüssel hinterlegt. Der Schlüssel steht in den Einstellungen unter KI-Zugang."
-        case let .netzwerk(text):
+        case let .network(text):
             "Die Verbindung zu OpenAI kam nicht zustande: \(text)"
         case let .api(status, text):
             "OpenAI hat mit \(status) geantwortet: \(text)"
         case let .response(text):
             "Die Antwort war unbrauchbar: \(text)"
-        case .keineBuchung:
+        case .noBooking:
             "Der Agent hat keine Buchung angelegt oder geändert."
-        case .zuVieleWerkzeugaufrufe:
+        case .tooManyToolCalls:
             "Der Agent hat nach \(AgentRun.maxToolCalls) sql-Aufrufen kein Ergebnis geliefert."
         }
     }
@@ -36,25 +36,25 @@ public typealias Transport = @Sendable (URLRequest) async throws -> (Data, HTTPU
 /// `POST /v1/responses` and nothing else: one request, one JSON object back,
 /// a single retry on the transient status codes.
 public struct Responses: Sendable {
-    static let adresse = URL(string: "https://api.openai.com/v1/responses")!
+    static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
 
     let key: String
     let transport: Transport
 
     /// The transport the app uses. Tests never touch it.
-    public static let netz: Transport = { request in
+    public static let network: Transport = { request in
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse else {
-            throw AgentError.netzwerk("Keine HTTP-Antwort.")
+            throw AgentError.network("Keine HTTP-Antwort.")
         }
         return (data, http)
     }
 
     /// The smallest request that proves key and connection: no tools, no file,
     /// a handful of tokens. It throws what the settings window shows.
-    public static func testConnection(transport: @escaping Transport = netz) async throws {
+    public static func testConnection(transport: @escaping Transport = network) async throws {
         guard let key = Keychain.read(), key.isEmpty == false else {
-            throw AgentError.keinSchluessel
+            throw AgentError.missingKey
         }
         _ = try await Responses(key: key, transport: transport).send([
             // The cheapest model at the lowest effort; this asks the key, not the choice.
@@ -66,13 +66,13 @@ public struct Responses: Sendable {
     }
 
     /// One failed attempt, with the wait OpenAI asked for.
-    private struct Absage: Error {
+    private struct Rejection: Error {
         var status: Int
         var text: String
-        var wartezeit: Double?
+        var retryAfter: Double?
 
         /// Rate limits and server errors pass; a bad key or a bad request does not.
-        var voruebergehend: Bool {
+        var isTransient: Bool {
             status == 429 || status >= 500
         }
     }
@@ -82,20 +82,20 @@ public struct Responses: Sendable {
     func send(_ body: [String: Any]) async throws -> [String: Any] {
         do {
             return try await sendOnce(body)
-        } catch let absage as Absage where absage.voruebergehend {
-            try await Task.sleep(for: .seconds(absage.wartezeit ?? 2))
+        } catch let rejection as Rejection where rejection.isTransient {
+            try await Task.sleep(for: .seconds(rejection.retryAfter ?? 2))
             do {
                 return try await sendOnce(body)
-            } catch let zweite as Absage {
-                throw AgentError.api(status: zweite.status, text: zweite.text)
+            } catch let second as Rejection {
+                throw AgentError.api(status: second.status, text: second.text)
             }
-        } catch let absage as Absage {
-            throw AgentError.api(status: absage.status, text: absage.text)
+        } catch let rejection as Rejection {
+            throw AgentError.api(status: rejection.status, text: rejection.text)
         }
     }
 
     private func sendOnce(_ body: [String: Any]) async throws -> [String: Any] {
-        var request = URLRequest(url: Responses.adresse)
+        var request = URLRequest(url: Responses.endpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -106,16 +106,16 @@ public struct Responses: Sendable {
         let http: HTTPURLResponse
         do {
             (data, http) = try await transport(request)
-        } catch let fehler as AgentError {
-            throw fehler
+        } catch let error as AgentError {
+            throw error
         } catch {
-            throw AgentError.netzwerk(error.localizedDescription)
+            throw AgentError.network(error.localizedDescription)
         }
         guard http.statusCode == 200 else {
-            throw Absage(
+            throw Rejection(
                 status: http.statusCode,
-                text: Responses.meldung(data) ?? String(decoding: data.prefix(400), as: UTF8.self),
-                wartezeit: http.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init)
+                text: Responses.errorMessage(data) ?? String(decoding: data.prefix(400), as: UTF8.self),
+                retryAfter: http.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init)
             )
         }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
@@ -124,10 +124,10 @@ public struct Responses: Sendable {
         return object
     }
 
-    static func meldung(_ data: Data) -> String? {
+    static func errorMessage(_ data: Data) -> String? {
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let fehler = object["error"] as? [String: Any]
+              let error = object["error"] as? [String: Any]
         else { return nil }
-        return fehler["message"] as? String
+        return error["message"] as? String
     }
 }

@@ -81,7 +81,7 @@ public enum Schema {
 
     /// Creates the tables the first time the database is opened. There is
     /// exactly one schema definition and no migrations before the release.
-    static func anlegen(_ db: Database) throws {
+    static func create(_ db: Database) throws {
         guard try db.tableExists("buchungen") == false else { return }
         try db.execute(sql: sql)
     }

@@ -35,7 +35,7 @@ struct ReceiptSection: View {
                     }
                     Button("Vom Beleg nehmen", systemImage: "xmark") {
                         guard let id = buchung.id else { return }
-                        model.removeReceipt(file.sha256, von: id)
+                        model.removeReceipt(file.sha256, from: id)
                     }
                 }
                 .labelStyle(.iconOnly)
@@ -61,7 +61,7 @@ struct ReceiptSection: View {
     }
 
     private func load() {
-        files = (try? model.repository.files(zu: buchung.belege)) ?? []
+        files = (try? model.repository.files(for: buchung.belege)) ?? []
     }
 }
 

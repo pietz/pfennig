@@ -5,22 +5,22 @@ import Foundation
 /// as plain text. Nothing is prepared or converted, the file goes as it is.
 public struct FileInput: Sendable {
     public var name: String
-    public var endung: String
+    public var fileExtension: String
     public var sha256: String
     public var data: Data
 
-    public init(name: String, endung: String, sha256: String, data: Data) {
+    public init(name: String, fileExtension: String, sha256: String, data: Data) {
         self.name = name
-        self.endung = endung
+        self.fileExtension = fileExtension
         self.sha256 = sha256
         self.data = data
     }
 
     /// No HEIC: the API does not take it, and Pfennig converts nothing.
-    static let erlaubteEndungen = ["pdf", "png", "jpg", "jpeg", "csv"]
+    static let allowedExtensions = ["pdf", "png", "jpg", "jpeg", "csv"]
 
     var mediaType: String {
-        switch endung.lowercased() {
+        switch fileExtension.lowercased() {
         case "pdf": "application/pdf"
         case "png": "image/png"
         case "csv": "text/csv"
@@ -31,7 +31,7 @@ public struct FileInput: Sendable {
     /// One content item of the user message.
     var content: [String: Any] {
         let dataURL = "data:\(mediaType);base64,\(data.base64EncodedString())"
-        switch endung.lowercased() {
+        switch fileExtension.lowercased() {
         case "pdf":
             return ["type": "input_file", "filename": name, "file_data": dataURL]
         case "csv":
@@ -44,19 +44,19 @@ public struct FileInput: Sendable {
 
 /// What one run left behind.
 public struct RunResult: Sendable {
-    public var beruehrt: [Int64] = []
-    public var angelegt: [Int64] = []
+    public var touched: [Int64] = []
+    public var created: [Int64] = []
     public var summary = ""
 }
 
 /// A run that gave up, with the bookings it had already written. Swift removes
 /// them before the file is tried again, so nothing doubles.
 public struct RunAbort: Error, LocalizedError {
-    public var angelegt: [Int64]
-    public var grund: any Error
+    public var created: [Int64]
+    public var reason: any Error
 
     public var errorDescription: String? {
-        grund.localizedDescription
+        reason.localizedDescription
     }
 }
 
@@ -75,7 +75,7 @@ public struct AgentRun: Sendable {
         repository: Repository,
         tool: SQLTool,
         key: String,
-        transport: @escaping Transport = Responses.netz
+        transport: @escaping Transport = Responses.network
     ) {
         self.repository = repository
         self.tool = tool
@@ -133,43 +133,43 @@ public struct AgentRun: Sendable {
 
     /// Runs the loop and records it in `anfragen`, whatever the outcome.
     public func start(_ file: FileInput) async throws -> RunResult {
-        let anleitung = try AgentInstructions.build(repository)
-        let ki = try repository.aiSettings()
-        let request = try repository.startRequest(dateiSha256: file.sha256, modell: ki.modell.rawValue)
-        var protokoll = Trace()
+        let instructions = try AgentInstructions.build(repository)
+        let ai = try repository.aiSettings()
+        let request = try repository.startRequest(dateiSha256: file.sha256, modell: ai.modell.rawValue)
+        var trace = Trace()
         var result = RunResult()
         do {
-            try await schleife(file, ki: ki, anleitung: anleitung, result: &result, protokoll: &protokoll)
-            guard result.beruehrt.isEmpty == false else {
-                throw AgentError.keineBuchung
+            try await loop(file, ai: ai, instructions: instructions, result: &result, trace: &trace)
+            guard result.touched.isEmpty == false else {
+                throw AgentError.noBooking
             }
             try repository.finishRequest(
-                id: request, status: .erfolg, eingabeTokens: protokoll.eingabeTokens,
-                ausgabeTokens: protokoll.ausgabeTokens, konversation: protokoll.asJSON()
+                id: request, status: .erfolg, eingabeTokens: trace.inputTokens,
+                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
             )
             return result
         } catch {
-            protokoll.steps.append(["fehler": error.localizedDescription])
+            trace.steps.append(["fehler": error.localizedDescription])
             try? repository.finishRequest(
-                id: request, status: .fehler, eingabeTokens: protokoll.eingabeTokens,
-                ausgabeTokens: protokoll.ausgabeTokens, konversation: protokoll.asJSON()
+                id: request, status: .fehler, eingabeTokens: trace.inputTokens,
+                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
             )
-            throw RunAbort(angelegt: result.angelegt, grund: error)
+            throw RunAbort(created: result.created, reason: error)
         }
     }
 
-    private func schleife(
+    private func loop(
         _ file: FileInput,
-        ki: KiEinstellungen,
-        anleitung: String,
+        ai: KiEinstellungen,
+        instructions: String,
         result: inout RunResult,
-        protokoll: inout Trace
+        trace: inout Trace
     ) async throws {
         let client = Responses(key: key, transport: transport)
         var calls = 0
         var previousResponse: String?
-        var eingabe: [[String: Any]] = [
-            ["role": "system", "content": anleitung],
+        var input: [[String: Any]] = [
+            ["role": "system", "content": instructions],
             ["role": "user", "content": [
                 file.content,
                 ["type": "input_text", "text": "Verbuche dieses Dokument."]
@@ -178,12 +178,12 @@ public struct AgentRun: Sendable {
 
         while true {
             var body: [String: Any] = [
-                "model": ki.modell.rawValue,
-                "reasoning": ["effort": ki.aufwand.rawValue],
+                "model": ai.modell.rawValue,
+                "reasoning": ["effort": ai.aufwand.rawValue],
                 "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription],
-                "input": eingabe
+                "input": input
             ]
-            if ki.schnell {
+            if ai.schnell {
                 // OpenAI's priority processing, about twice the price.
                 body["service_tier"] = "priority"
             }
@@ -191,45 +191,45 @@ public struct AgentRun: Sendable {
                 body["previous_response_id"] = previousResponse
             }
             let response = try await client.send(body)
-            protokoll.zaehle(response)
+            trace.count(response)
             previousResponse = response["id"] as? String
             try AgentRun.validateStatus(response)
 
             let callsThisRound = AgentRun.toolCalls(response)
             guard callsThisRound.isEmpty == false else {
                 result.summary = AgentRun.text(response)
-                protokoll.steps.append(["agent": result.summary])
+                trace.steps.append(["agent": result.summary])
                 return
             }
             calls += callsThisRound.count
             guard calls <= AgentRun.maxToolCalls else {
-                throw AgentError.zuVieleWerkzeugaufrufe
+                throw AgentError.tooManyToolCalls
             }
 
-            eingabe = []
-            for aufruf in callsThisRound {
+            input = []
+            for call in callsThisRound {
                 let text: String
-                switch aufruf.name {
+                switch call.name {
                 case "sql":
-                    let sql = AgentRun.sql(aufruf.arguments)
+                    let sql = AgentRun.sql(call.arguments)
                     let toolResult = tool.execute(sql)
-                    result.beruehrt = Array(Set(result.beruehrt).union(toolResult.beruehrt)).sorted()
-                    result.angelegt = Array(Set(result.angelegt).union(toolResult.angelegt)).sorted()
+                    result.touched = Array(Set(result.touched).union(toolResult.touched)).sorted()
+                    result.created = Array(Set(result.created).union(toolResult.created)).sorted()
                     text = toolResult.text
                 case "umrechnen":
-                    text = await CurrencyConverter.execute(aufruf.arguments, transport: transport)
+                    text = await CurrencyConverter.execute(call.arguments, transport: transport)
                 default:
-                    text = "Fehler: Unbekanntes Werkzeug \(aufruf.name). Verwende sql oder umrechnen."
+                    text = "Fehler: Unbekanntes Werkzeug \(call.name). Verwende sql oder umrechnen."
                 }
-                let schritt = [
-                    "werkzeug": aufruf.name,
-                    "argumente": aufruf.arguments,
+                let step = [
+                    "werkzeug": call.name,
+                    "argumente": call.arguments,
                     "ergebnis": text
                 ]
-                protokoll.steps.append(schritt)
-                eingabe.append([
+                trace.steps.append(step)
+                input.append([
                     "type": "function_call_output",
-                    "call_id": aufruf.callId,
+                    "call_id": call.callId,
                     "output": text
                 ])
             }
@@ -247,22 +247,22 @@ public struct AgentRun: Sendable {
     /// `output` is an array of items, not a single message: a run answers with
     /// reasoning items, `function_call` items and at most one `message`.
     static func toolCalls(_ response: [String: Any]) -> [ToolCall] {
-        ausgabe(response).compactMap { teil in
-            guard teil["type"] as? String == "function_call",
-                  let callId = teil["call_id"] as? String
+        outputItems(response).compactMap { item in
+            guard item["type"] as? String == "function_call",
+                  let callId = item["call_id"] as? String
             else { return nil }
             return ToolCall(
-                name: teil["name"] as? String ?? "",
+                name: item["name"] as? String ?? "",
                 callId: callId,
-                arguments: teil["arguments"] as? String ?? "{}"
+                arguments: item["arguments"] as? String ?? "{}"
             )
         }
     }
 
     static func text(_ response: [String: Any]) -> String {
-        for teil in ausgabe(response) where teil["type"] as? String == "message" {
-            for stueck in (teil["content"] as? [[String: Any]]) ?? [] {
-                if let text = stueck["text"] as? String, stueck["type"] as? String == "output_text" {
+        for item in outputItems(response) where item["type"] as? String == "message" {
+            for piece in (item["content"] as? [[String: Any]]) ?? [] {
+                if let text = piece["text"] as? String, piece["type"] as? String == "output_text" {
                     return text
                 }
             }
@@ -273,8 +273,8 @@ public struct AgentRun: Sendable {
     static func validateStatus(_ response: [String: Any]) throws {
         let status = response["status"] as? String ?? "completed"
         guard status != "completed" else { return }
-        let grund = (response["incomplete_details"] as? [String: Any])?["reason"] as? String
-        throw AgentError.response("Der Lauf endete mit Status \(status)\(grund.map { ", Grund \($0)" } ?? ".")")
+        let reason = (response["incomplete_details"] as? [String: Any])?["reason"] as? String
+        throw AgentError.response("Der Lauf endete mit Status \(status)\(reason.map { ", Grund \($0)" } ?? ".")")
     }
 
     /// The model hands the arguments over as a JSON string.
@@ -286,7 +286,7 @@ public struct AgentRun: Sendable {
         return sql
     }
 
-    private static func ausgabe(_ response: [String: Any]) -> [[String: Any]] {
+    private static func outputItems(_ response: [String: Any]) -> [[String: Any]] {
         response["output"] as? [[String: Any]] ?? []
     }
 }
@@ -295,13 +295,13 @@ public struct AgentRun: Sendable {
 /// never the bytes of the file.
 struct Trace {
     var steps: [[String: String]] = []
-    var eingabeTokens = 0
-    var ausgabeTokens = 0
+    var inputTokens = 0
+    var outputTokens = 0
 
-    mutating func zaehle(_ response: [String: Any]) {
-        guard let verbrauch = response["usage"] as? [String: Any] else { return }
-        eingabeTokens += verbrauch["input_tokens"] as? Int ?? 0
-        ausgabeTokens += verbrauch["output_tokens"] as? Int ?? 0
+    mutating func count(_ response: [String: Any]) {
+        guard let usage = response["usage"] as? [String: Any] else { return }
+        inputTokens += usage["input_tokens"] as? Int ?? 0
+        outputTokens += usage["output_tokens"] as? Int ?? 0
     }
 
     func asJSON() -> String {

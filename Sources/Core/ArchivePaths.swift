@@ -4,38 +4,38 @@ import Foundation
 /// `<sha256>.<endung>` and the files still to be processed in `Inbox/`. The
 /// app uses `standard`; a test hands in a folder of its own.
 public struct ArchivePaths: Hashable, Sendable {
-    public var ordner: URL
+    public var folder: URL
 
-    public init(ordner: URL) {
-        self.ordner = ordner
+    public init(folder: URL) {
+        self.folder = folder
     }
 
     public static let standard = ArchivePaths(
-        ordner: URL.applicationSupportDirectory.appending(path: "Pfennig", directoryHint: .isDirectory)
+        folder: URL.applicationSupportDirectory.appending(path: "Pfennig", directoryHint: .isDirectory)
     )
 
-    public var archiv: URL {
-        ordner.appending(path: "Archiv", directoryHint: .isDirectory)
+    public var archive: URL {
+        folder.appending(path: "Archiv", directoryHint: .isDirectory)
     }
 
     public var inbox: URL {
-        ordner.appending(path: "Inbox", directoryHint: .isDirectory)
+        folder.appending(path: "Inbox", directoryHint: .isDirectory)
     }
 
-    public var datenbank: URL {
-        ordner.appending(path: "pfennig.sqlite")
+    public var databaseFile: URL {
+        folder.appending(path: "pfennig.sqlite")
     }
 
     /// Creates the folders if they are missing.
-    public func anlegen() throws {
-        for path in [archiv, inbox] {
+    public func create() throws {
+        for path in [archive, inbox] {
             try FileManager.default.createDirectory(at: path, withIntermediateDirectories: true)
         }
     }
 
     /// The original of a receipt in the archive.
     public func original(_ file: Datei) -> URL {
-        archiv.appending(path: "\(file.sha256).\(file.endung)")
+        archive.appending(path: "\(file.sha256).\(file.endung)")
     }
 
     /// Removes the originals of receipts no booking carries any more.

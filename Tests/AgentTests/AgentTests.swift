@@ -52,7 +52,7 @@ private actor BuchungLoeschendesSkript {
             _ = try? repository.delete(id: 1)
         }
         let http = HTTPURLResponse(
-            url: Responses.adresse, statusCode: 200, httpVersion: nil, headerFields: nil
+            url: Responses.endpoint, statusCode: 200, httpVersion: nil, headerFields: nil
         )!
         return (Data(text.utf8), http)
     }
@@ -120,10 +120,10 @@ private func kursantwort(datum: String, waehrung: String, kurs: String) -> Strin
     "{\"date\":\"\(datum)\",\"base\":\"\(waehrung)\",\"quote\":\"EUR\",\"rate\":\(kurs)}"
 }
 
-private func eingabe() -> FileInput {
+private func input() -> FileInput {
     FileInput(
         name: "rechnung.pdf",
-        endung: "pdf",
+        fileExtension: "pdf",
         sha256: String(repeating: "a", count: 64),
         data: Data("%PDF".utf8)
     )
@@ -132,16 +132,16 @@ private func eingabe() -> FileInput {
 @Test func laufFuehrtDasWerkzeugAusUndHaeltDieAnfrageFest() async throws {
     let repository = try Repository.inMemory()
     let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
-    let lauf = try await AgentRun(
+    let run = try await AgentRun(
         repository: repository,
         tool: SQLTool(repository),
         key: "test",
         transport: skript.transport
     )
 
-    let result = try await lauf.start(eingabe())
-    #expect(result.beruehrt == [1])
-    #expect(result.angelegt == [1])
+    let result = try await run.start(input())
+    #expect(result.touched == [1])
+    #expect(result.created == [1])
     #expect(result.summary.hasPrefix("Ausgabe Stadtwerke"))
 
     // The tool really wrote, and it wrote the way the agent must not: unreviewed.
@@ -164,13 +164,13 @@ private func eingabe() -> FileInput {
 @Test func laufSchicktWerkzeugUndErgebnisInDerGeformtenGestalt() async throws {
     let repository = try Repository.inMemory()
     let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
-    let lauf = try await AgentRun(
+    let run = try await AgentRun(
         repository: repository,
         tool: SQLTool(repository),
         key: "test",
         transport: skript.transport
     )
-    _ = try await lauf.start(eingabe())
+    _ = try await run.start(input())
     let gesehen = await skript.gesehen.map { (try? JSONSerialization.jsonObject(with: $0)) as? [String: Any] ?? [:] }
     #expect(gesehen.count == 2)
 
@@ -204,13 +204,13 @@ private func eingabe() -> FileInput {
     let repository = try Repository.inMemory()
     try repository.saveAISettings(KiEinstellungen(modell: .sol, aufwand: .hoch, schnell: true))
     let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
-    let lauf = try await AgentRun(
+    let run = try await AgentRun(
         repository: repository,
         tool: SQLTool(repository),
         key: "test",
         transport: skript.transport
     )
-    _ = try await lauf.start(eingabe())
+    _ = try await run.start(input())
 
     let body = try #require(
         await skript.gesehen.first.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
@@ -336,15 +336,15 @@ private func eingabe() -> FileInput {
         ],
         rateAntwort: kursantwort(datum: "2026-09-01", waehrung: "USD", kurs: "0.9")
     )
-    let lauf = try await AgentRun(
+    let run = try await AgentRun(
         repository: repository,
         tool: SQLTool(repository),
         key: "test",
         transport: skript.transport
     )
 
-    let result = try await lauf.start(eingabe())
-    #expect(result.beruehrt == [1])
+    let result = try await run.start(input())
+    #expect(result.touched == [1])
     let buchung = try #require(try repository.allBookings().first)
     #expect(buchung.originalbetrag == Decimal(string: "10.00"))
     #expect(buchung.positionen.first?.netto == Cent(756))
@@ -375,13 +375,13 @@ private func eingabe() -> FileInput {
     let skript = Skript([object([
         "id": "resp_1", "status": "incomplete", "incomplete_details": ["reason": "max_output_tokens"]
     ])])
-    let lauf = try await AgentRun(
+    let run = try await AgentRun(
         repository: repository,
         tool: SQLTool(repository),
         key: "test",
         transport: skript.transport
     )
-    await #expect(throws: RunAbort.self) { try await lauf.start(eingabe()) }
+    await #expect(throws: RunAbort.self) { try await run.start(input()) }
     let request = try #require(try repository.allRequests().first)
     #expect(request.status == .fehler)
     #expect(request.konversation?.contains("max_output_tokens") == true)
@@ -397,17 +397,17 @@ private let abgewiesen: Transport = { request in
 }
 
 /// An intake on a folder of its own, so no test ever touches the real archive.
-private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
-    let ordner = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
-    let path = ArchivePaths(ordner: ordner)
-    try path.anlegen()
-    return try (Repository.inMemory(), path, ordner)
+private func setUp() throws -> (Repository, ArchivePaths, URL) {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    let path = ArchivePaths(folder: folder)
+    try path.create()
+    return try (Repository.inMemory(), path, folder)
 }
 
 @Test func eingangUeberspringtNurEinenBelegDerNochAnEinerBuchungHaengt() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let file = ordner.appending(path: "beleg.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "beleg.pdf")
     let content = Data("%PDF-1.4 Beleg".utf8)
     try content.write(to: file)
     let hash = FileIntake.hash(content)
@@ -421,7 +421,7 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 
     // The row in `files` alone is not enough: without a booking the file is
     // new work again, and the run starts (and fails here on the missing key).
-    guard case .fehler = await intake.process(file) else {
+    guard case .failed = await intake.process(file) else {
         Issue.record("Ohne Buchung muss der Beleg erneut zum Agenten.")
         return
     }
@@ -435,7 +435,7 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
         akteur: .nutzer
     )
     let vorher = try repository.allRequests().count
-    guard case .bereitsVorhanden = await intake.process(file) else {
+    guard case .alreadyPresent = await intake.process(file) else {
         Issue.record("Der belegte Hash wurde nicht erkannt.")
         return
     }
@@ -444,22 +444,22 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 
     // And once the booking is gone, the same file is work again.
     try path.remove(repository.delete(id: #require(buchung.id)))
-    guard case .fehler = await intake.process(file) else {
+    guard case .failed = await intake.process(file) else {
         Issue.record("Nach dem Löschen muss der Beleg erneut zum Agenten.")
         return
     }
 }
 
 @Test func eingangLegtDieDateiInDieInboxUndLaesstSieDortLiegen() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     try Data("%PDF-1.4 Rechnung".utf8).write(to: source)
 
     // No key, so the run ends before the network; the file still has to have
     // travelled into the inbox and to stay there with the error text.
     let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
-    guard case let .fehler(file, text) = await intake.process(source) else {
+    guard case let .failed(file, text) = await intake.process(source) else {
         Issue.record("Der Lauf hätte scheitern müssen.")
         return
     }
@@ -467,13 +467,13 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: file.path))
     #expect(intake.inbox().map(\.lastPathComponent) == ["rechnung.pdf"])
-    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archiv.path).isEmpty)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).isEmpty)
 }
 
 @Test func eingangLaesstDateiNachAgentenAntwortOhneBuchungInDerInbox() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     try Data("%PDF-1.4 Rechnung".utf8).write(to: source)
     let skript = Skript([
         werkzeugantwort("UPDATE buchungen SET ungueltige_spalte = 'Nichts' WHERE id = 999"),
@@ -484,7 +484,7 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
         repository: repository, path: path, transport: transport, key: "test"
     )
 
-    guard case let .fehler(file, text) = await intake.process(source) else {
+    guard case let .failed(file, text) = await intake.process(source) else {
         Issue.record("Eine Antwort ohne Buchung hätte fehlschlagen müssen.")
         return
     }
@@ -493,13 +493,13 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
     #expect(try repository.allBookings().isEmpty)
     #expect(try repository.allRequests().first?.status == .fehler)
     #expect(FileManager.default.fileExists(atPath: file.path))
-    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archiv.path).isEmpty)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).isEmpty)
 }
 
 @Test func eingangSpeichertDateiUndBelegGemeinsam() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     let content = Data("%PDF-1.4 Rechnung".utf8)
     try content.write(to: source)
     let hash = FileIntake.hash(content)
@@ -509,11 +509,11 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
         repository: repository, path: path, transport: transport, key: "test"
     )
 
-    guard case .verbucht = await intake.process(source) else {
+    guard case .booked = await intake.process(source) else {
         Issue.record("Der erfolgreiche Lauf wurde nicht verbucht.")
         return
     }
-    let file = try #require(try repository.files(zu: [hash]).first)
+    let file = try #require(try repository.files(for: [hash]).first)
     let buchung = try #require(try repository.allBookings().first)
     let archiv = path.original(file)
     #expect(file.sha256 == hash)
@@ -523,9 +523,9 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 }
 
 @Test func eingangBehaeltDieInboxBeiFehlerDerDBFinalisierungUndKannArchivRestVerwenden() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     let content = Data("%PDF-1.4 Rechnung".utf8)
     try content.write(to: source)
     let hash = FileIntake.hash(content)
@@ -537,15 +537,15 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
         repository: repository, path: path, transport: transport, key: "test"
     )
 
-    guard case let .fehler(inbox, text) = await intake.process(source) else {
+    guard case let .failed(inbox, text) = await intake.process(source) else {
         Issue.record("Die fehlerhafte Datenbank-Finalisierung hätte fehlschlagen müssen.")
         return
     }
     #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: inbox.path))
-    #expect(try repository.files(zu: [hash]).isEmpty)
+    #expect(try repository.files(for: [hash]).isEmpty)
     #expect(try repository.allBookings().isEmpty)
-    let archiv = path.archiv.appending(path: "\(hash).pdf")
+    let archiv = path.archive.appending(path: "\(hash).pdf")
     #expect(try Data(contentsOf: archiv) == content)
 
     // The retry uses the existing Inbox path. It must not copy a second archive
@@ -555,20 +555,20 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
     let retry = try FileIntake(
         repository: repository, path: path, transport: retryTransport, key: "test"
     )
-    guard case .verbucht = await retry.process(inbox) else {
+    guard case .booked = await retry.process(inbox) else {
         Issue.record("Der Lauf hätte nach dem Datenbankfehler erneut versucht werden können.")
         return
     }
     #expect(FileManager.default.fileExists(atPath: inbox.path) == false)
-    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archiv.path).count == 1)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).count == 1)
     #expect(try repository.allBookings().first?.belege == [hash])
-    #expect(try repository.files(zu: [hash]).count == 1)
+    #expect(try repository.files(for: [hash]).count == 1)
 }
 
 @Test func verwerfenEntferntNurDieInboxKopie() throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     let kopie = path.inbox.appending(path: "rechnung.pdf")
     let content = Data("Testbeleg".utf8)
     try content.write(to: source)
@@ -582,10 +582,10 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 }
 
 @Test func verwerfenLaesstDateienAusserhalbDerInboxUnberuehrt() throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
     // A shared path prefix is not Inbox ownership.
-    let andererOrdner = ordner.appending(path: "Inbox-Originale")
+    let andererOrdner = folder.appending(path: "Inbox-Originale")
     try FileManager.default.createDirectory(at: andererOrdner, withIntermediateDirectories: true)
     let source = andererOrdner.appending(path: "rechnung.pdf")
     let content = Data("Testbeleg".utf8)
@@ -598,9 +598,9 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 }
 
 @Test func verwerfenNachInboxFehlerBehaeltDasOriginal() async throws {
-    let (repository, path, ordner) = try stelleAuf()
-    defer { try? FileManager.default.removeItem(at: ordner) }
-    let source = ordner.appending(path: "rechnung.pdf")
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
     let content = Data("Testbeleg".utf8)
     try content.write(to: source)
     // A file blocks the Inbox directory, so intake fails before copying or
@@ -608,7 +608,7 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
     try FileManager.default.removeItem(at: path.inbox)
     try Data().write(to: path.inbox)
     let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
-    guard case let .fehler(file, _) = await intake.process(source) else {
+    guard case let .failed(file, _) = await intake.process(source) else {
         Issue.record("Der Eingang hätte vor dem Kopieren scheitern müssen.")
         return
     }
@@ -621,11 +621,11 @@ private func stelleAuf() throws -> (Repository, ArchivePaths, URL) {
 
 @Test func eingangLaesstNurDieZugelassenenEndungenDurch() {
     for endung in ["pdf", "PNG", "jpg", "jpeg", "csv"] {
-        #expect(FileIntake.erlaubt(URL(filePath: "/tmp/beleg.\(endung)")))
+        #expect(FileIntake.isAllowed(URL(filePath: "/tmp/beleg.\(endung)")))
     }
     // HEIC is not among them: the API does not take it and Swift converts nothing.
     for endung in ["heic", "txt", "docx", "zip", "sqlite"] {
-        #expect(FileIntake.erlaubt(URL(filePath: "/tmp/beleg.\(endung)")) == false)
+        #expect(FileIntake.isAllowed(URL(filePath: "/tmp/beleg.\(endung)")) == false)
     }
 }
 

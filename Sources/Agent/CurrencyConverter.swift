@@ -22,7 +22,7 @@ public struct ConversionResult: Codable, Hashable, Sendable {
 /// supplies rates only; this type performs the Decimal conversion in Swift.
 public enum CurrencyConverter {
     public static let source = "Frankfurter reference rate (default blended)"
-    static let adresse = URL(string: "https://api.frankfurter.dev/v2")!
+    static let endpoint = URL(string: "https://api.frankfurter.dev/v2")!
 
     private struct Rate: Decodable {
         let date: LocalDate
@@ -31,24 +31,24 @@ public enum CurrencyConverter {
         let rate: Decimal
     }
 
-    public enum Fehler: Error, LocalizedError {
-        case ungueltigeArgumente
-        case netzwerk(String)
+    public enum ConversionError: Error, LocalizedError {
+        case invalidArguments
+        case network(String)
         case api(status: Int, text: String)
-        case unbrauchbareAntwort
-        case betragZuGross
+        case unreadableResponse
+        case amountTooLarge
 
         public var errorDescription: String? {
             switch self {
-            case .ungueltigeArgumente:
+            case .invalidArguments:
                 "waehrung, datum und betraege müssen gültig sein."
-            case let .netzwerk(text):
+            case let .network(text):
                 "Die Frankfurter-Verbindung kam nicht zustande: \(text)"
             case let .api(status, text):
                 "Frankfurter hat mit \(status) geantwortet: \(text)"
-            case .unbrauchbareAntwort:
+            case .unreadableResponse:
                 "Frankfurter hat keine lesbare Kursantwort geliefert."
-            case .betragZuGross:
+            case .amountTooLarge:
                 "Ein Betrag passt nicht in EUR-Cent."
             }
         }
@@ -64,14 +64,14 @@ public enum CurrencyConverter {
         let code = waehrung.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
         guard code.count == 3,
               code.unicodeScalars.allSatisfy({ ("A" ... "Z").contains($0) })
-        else { throw Fehler.ungueltigeArgumente }
+        else { throw ConversionError.invalidArguments }
 
         var components = URLComponents(
-            url: adresse.appending(path: "rate/\(code)/EUR"),
+            url: endpoint.appending(path: "rate/\(code)/EUR"),
             resolvingAgainstBaseURL: false
         )
         components?.queryItems = [URLQueryItem(name: "date", value: datum.description)]
-        guard let url = components?.url else { throw Fehler.ungueltigeArgumente }
+        guard let url = components?.url else { throw ConversionError.invalidArguments }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
@@ -81,13 +81,13 @@ public enum CurrencyConverter {
         let response: HTTPURLResponse
         do {
             (data, response) = try await transport(request)
-        } catch let fehler as Fehler {
-            throw fehler
+        } catch let failure as ConversionError {
+            throw failure
         } catch {
-            throw Fehler.netzwerk(error.localizedDescription)
+            throw ConversionError.network(error.localizedDescription)
         }
         guard response.statusCode == 200 else {
-            throw Fehler.api(
+            throw ConversionError.api(
                 status: response.statusCode,
                 text: Self.errorText(data) ?? String(decoding: data.prefix(400), as: UTF8.self)
             )
@@ -96,18 +96,18 @@ public enum CurrencyConverter {
               rate.base.uppercased() == code,
               rate.quote.uppercased() == "EUR",
               rate.rate > 0
-        else { throw Fehler.unbrauchbareAntwort }
+        else { throw ConversionError.unreadableResponse }
 
         let hundred = Decimal(100)
-        let eurCent = try betraege.map { betrag in
-            var raw = betrag * rate.rate * hundred
+        let eurCent = try betraege.map { amount in
+            var raw = amount * rate.rate * hundred
             var rounded = Decimal()
             NSDecimalRound(&rounded, &raw, 0, .plain)
-            let zahl = NSDecimalNumber(decimal: rounded)
-            guard zahl.compare(NSDecimalNumber(value: Int64.min)) != .orderedAscending,
-                  zahl.compare(NSDecimalNumber(value: Int64.max)) != .orderedDescending
-            else { throw Fehler.betragZuGross }
-            return zahl.int64Value
+            let number = NSDecimalNumber(decimal: rounded)
+            guard number.compare(NSDecimalNumber(value: Int64.min)) != .orderedAscending,
+                  number.compare(NSDecimalNumber(value: Int64.max)) != .orderedDescending
+            else { throw ConversionError.amountTooLarge }
+            return number.int64Value
         }
 
         return ConversionResult(
@@ -128,24 +128,24 @@ public enum CurrencyConverter {
             guard let data = arguments.data(using: .utf8),
                   let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let waehrung = object["waehrung"] as? String,
-                  let datumtext = object["datum"] as? String,
-                  let datum = LocalDate(datumtext),
+                  let dateText = object["datum"] as? String,
+                  let datum = LocalDate(dateText),
                   let rawAmounts = object["betraege"] as? [Any],
                   rawAmounts.isEmpty == false
-            else { throw Fehler.ungueltigeArgumente }
+            else { throw ConversionError.invalidArguments }
 
             let betraege = try rawAmounts.map { value -> Decimal in
-                guard let text = value as? String, let betrag = Decimal(text: text) else {
-                    throw Fehler.ungueltigeArgumente
+                guard let text = value as? String, let amount = Decimal(text: text) else {
+                    throw ConversionError.invalidArguments
                 }
-                return betrag
+                return amount
             }
             let result = try await calculate(
                 waehrung: waehrung, datum: datum, betraege: betraege, transport: transport
             )
             return try Self.text(result)
-        } catch let fehler as Fehler {
-            return "Fehler: \(fehler.localizedDescription)"
+        } catch let failure as ConversionError {
+            return "Fehler: \(failure.localizedDescription)"
         } catch {
             return "Fehler: Die Umrechnung konnte nicht ausgeführt werden: \(error.localizedDescription)"
         }

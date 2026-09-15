@@ -5,7 +5,7 @@ import Testing
 
 @Test func schemaLegtDieFuenfTabellenAn() throws {
     let repository = try Repository.inMemory()
-    let tabellen = try repository.datenbank.read { db in
+    let tabellen = try repository.database.read { db in
         try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
     }
     #expect(tabellen.contains("buchungen"))
@@ -17,7 +17,7 @@ import Testing
 
 @Test func schemaBleibtDemAgentenLesbar() throws {
     let repository = try Repository.inMemory()
-    let text = try repository.datenbank.read { db in
+    let text = try repository.database.read { db in
         try String.fetchAll(db, sql: "SELECT sql FROM sqlite_master WHERE name = 'buchungen'").joined()
     }
     // The agent reads the schema back from sqlite_master, so the comments that
@@ -31,7 +31,7 @@ import Testing
 @Test func checkBedingungenWeisenUnbekannteWerteAb() throws {
     let repository = try Repository.inMemory()
     #expect(throws: DatabaseError.self) {
-        try repository.datenbank.write { db in
+        try repository.database.write { db in
             try db.execute(
                 sql: """
                 INSERT INTO buchungen (richtung, art, datum, titel, steuerbehandlung)

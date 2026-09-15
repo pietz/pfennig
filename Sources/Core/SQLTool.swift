@@ -6,8 +6,8 @@ import GRDB
 /// the touched bookings and removes the created ones when the run fails.
 public struct SQLResult: Sendable {
     public var text: String
-    public var beruehrt: [Int64] = []
-    public var angelegt: [Int64] = []
+    public var touched: [Int64] = []
+    public var created: [Int64] = []
 }
 
 /// The agent's one tool. It runs a single SQL statement against the app
@@ -32,12 +32,12 @@ public final class SQLTool: Sendable {
     /// check, so a schema that does not build leaves no tool behind.
     private let validationDatabase: DatabaseQueue
     /// Whether the authorizer was asked anything during the last compile.
-    private let trace = SQLAuthorizer.Mitschrift()
+    private let trace = SQLAuthorizer.Probe()
 
     public init(_ repository: Repository) throws {
         self.repository = repository
         validationDatabase = try DatabaseQueue()
-        try validationDatabase.write(Schema.anlegen)
+        try validationDatabase.write(Schema.create)
         // From here on the connection answers nothing but the agent's compile.
         validationDatabase.writeWithoutTransaction { SQLAuthorizer.install($0.sqliteConnection, trace) }
     }
@@ -50,8 +50,8 @@ public final class SQLTool: Sendable {
             return try perform(sql)
         } catch let SQLToolError.text(text) {
             return SQLResult(text: text)
-        } catch let fehler as DatabaseError {
-            return SQLResult(text: "Fehler: \(fehler.message ?? "\(fehler)")")
+        } catch let error as DatabaseError {
+            return SQLResult(text: "Fehler: \(error.message ?? "\(error)")")
         } catch {
             return SQLResult(text: "Fehler: \(error.localizedDescription)")
         }
@@ -68,8 +68,8 @@ public final class SQLTool: Sendable {
                 // statement nobody was asked about is not an allowed one.
                 guard trace.asked else { throw SQLTool.notAllowed("diese Anweisung") }
             }
-        } catch let fehler as DatabaseError where fehler.resultCode == .SQLITE_AUTH {
-            throw SQLTool.notAllowed(fehler.message ?? "diese Anweisung")
+        } catch let error as DatabaseError where error.resultCode == .SQLITE_AUTH {
+            throw SQLTool.notAllowed(error.message ?? "diese Anweisung")
         }
     }
 
@@ -79,47 +79,47 @@ public final class SQLTool: Sendable {
 
     private func perform(_ sql: String) throws -> SQLResult {
         var result = SQLResult(text: "")
-        try repository.datenbank.writeWithoutTransaction { db in
+        try repository.database.writeWithoutTransaction { db in
             try db.inTransaction {
-                let anweisung = try db.makeStatement(sql: sql)
-                if anweisung.isReadonly {
-                    result.text = try SQLTool.asJSON(Row.fetchAll(anweisung))
+                let statement = try db.makeStatement(sql: sql)
+                if statement.isReadonly {
+                    result.text = try SQLTool.asJSON(Row.fetchAll(statement))
                     return .commit
                 }
 
-                let vorher = try SQLTool.rows(db)
-                try anweisung.execute()
-                let nachher = try SQLTool.rows(db)
-                let beruehrt = nachher.filter { vorher[$0.key] != $0.value }.keys.sorted()
+                let before = try SQLTool.rows(db)
+                try statement.execute()
+                let after = try SQLTool.rows(db)
+                let touched = after.filter { before[$0.key] != $0.value }.keys.sorted()
 
                 // A booking may change, it may not go. An UPDATE on the id
                 // would take one away without a DELETE and without a trace.
-                let verschwunden = vorher.keys.filter { nachher[$0] == nil }.sorted()
-                guard verschwunden.isEmpty else {
+                let removed = before.keys.filter { after[$0] == nil }.sorted()
+                guard removed.isEmpty else {
                     result.text = """
-                    Die Anweisung hätte die \(verschwunden.count == 1 ? "Buchung" : "Buchungen") \
-                    \(verschwunden.map(String.init).joined(separator: ", ")) entfernt. Die id einer \
+                    Die Anweisung hätte die \(removed.count == 1 ? "Buchung" : "Buchungen") \
+                    \(removed.map(String.init).joined(separator: ", ")) entfernt. Die id einer \
                     Buchung bleibt, wie sie ist.
                     """
                     return .rollback
                 }
-                guard beruehrt.isEmpty == false else {
+                guard touched.isEmpty == false else {
                     result.text = "Die Anweisung hat keine Buchung verändert."
                     return .commit
                 }
 
                 let profile = try Repository.profile(db)
                 var messages: [String] = []
-                for id in beruehrt {
-                    messages += try SQLTool.finalize(id: id, vorher: vorher[id], profile: profile, in: db)
+                for id in touched {
+                    messages += try SQLTool.finalize(id: id, before: before[id], profile: profile, in: db)
                 }
                 guard messages.isEmpty else {
                     result.text = "Die Buchung wurde nicht gespeichert:\n" + messages.joined(separator: "\n")
                     return .rollback
                 }
-                result.beruehrt = beruehrt
-                result.angelegt = beruehrt.filter { vorher[$0] == nil }
-                result.text = "ok, berührte Buchungen: \(beruehrt.map(String.init).joined(separator: ", "))"
+                result.touched = touched
+                result.created = touched.filter { before[$0] == nil }
+                result.text = "ok, berührte Buchungen: \(touched.map(String.init).joined(separator: ", "))"
                 return .commit
             }
         }
@@ -130,17 +130,17 @@ public final class SQLTool: Sendable {
     /// the agent, logs the change and checks the result against the rules.
     private static func finalize(
         id: Int64,
-        vorher zeile: Row?,
+        before row: Row?,
         profile: Profil,
         in db: Database
     ) throws -> [String] {
         do {
             guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
-            let alt = try zeile.map(Buchung.init(row:))
+            let previous = try row.map(Buchung.init(row:))
             // id, belege, geprueft_am, Zeitstempel und zahlungen.id setzt Swift.
             // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
-            buchung.belege = alt?.belege ?? []
-            let saved = try Repository.save(buchung, akteur: .agent, vorher: alt, in: db)
+            buchung.belege = previous?.belege ?? []
+            let saved = try Repository.save(buchung, akteur: .agent, before: previous, in: db)
             return ValidationRules.validate(saved, profile: profile).map { "Buchung \(id): \($0)" }
         } catch {
             return ["""
@@ -152,21 +152,21 @@ public final class SQLTool: Sendable {
 
     private static func rows(_ db: Database) throws -> [Int64: Row] {
         var rows: [Int64: Row] = [:]
-        for zeile in try Row.fetchAll(db, sql: "SELECT * FROM buchungen") {
-            rows[zeile["id"]] = zeile
+        for row in try Row.fetchAll(db, sql: "SELECT * FROM buchungen") {
+            rows[row["id"]] = row
         }
         return rows
     }
 
     /// The rows of a SELECT as JSON, capped and with a word about the cap.
     static func asJSON(_ rows: [Row]) -> String {
-        let objects = rows.prefix(rowLimit).map { zeile in
+        let objects = rows.prefix(rowLimit).map { row in
             var object: [String: Any] = [:]
-            for (name, value) in zeile {
+            for (name, value) in row {
                 object[name] = switch value.storage {
                 case .null: NSNull()
-                case let .int64(zahl): zahl
-                case let .double(zahl): zahl
+                case let .int64(number): number
+                case let .double(number): number
                 case let .string(text): text
                 case .blob: "<binär>"
                 }

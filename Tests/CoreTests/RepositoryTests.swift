@@ -56,7 +56,7 @@ private func beispiel(
     #expect(geladen.brutto == Cent(14040))
 
     // The lists really live in TEXT columns as JSON.
-    let raw = try repository.datenbank.read { db in
+    let raw = try repository.database.read { db in
         try Row.fetchOne(db, sql: "SELECT positionen, belege FROM buchungen WHERE id = ?", arguments: [id])
     }
     let positionen: String = try #require(raw?["positionen"])
@@ -87,7 +87,7 @@ private func beispiel(
     let geladen = try #require(try repository.allBookings().first)
     #expect(geladen.originalbetrag == original)
 
-    let raw = try repository.datenbank.read { db in
+    let raw = try repository.database.read { db in
         try String.fetchOne(db, sql: "SELECT originalbetrag FROM buchungen WHERE id = ?", arguments: [id])
     }
     #expect(raw == "1234.56789")
@@ -99,7 +99,7 @@ private func beispiel(
     buchung.titel = "Schreibtisch"
     _ = try repository.save(buchung, akteur: .nutzer)
 
-    let aktivitaeten = try repository.datenbank.read { db in
+    let aktivitaeten = try repository.database.read { db in
         try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten ORDER BY id")
     }
     #expect(aktivitaeten.count == 2)
@@ -126,7 +126,7 @@ private func beispiel(
     let geladen = try #require(try repository.allBookings().first)
     #expect(geladen.geprueftAm != nil)
 
-    let letzte = try repository.datenbank.read { db in
+    let letzte = try repository.database.read { db in
         try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten ORDER BY id").last
     }
     #expect(letzte?.akteur == .nutzer)
@@ -157,7 +157,7 @@ private func beispiel(
 
     try repository.saveFileAndAttachReceipt(
         Datei(sha256: "neu", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg),
-        an: [id]
+        to: [id]
     )
 
     let geladen = try #require(try repository.allBookings().first)
@@ -239,7 +239,7 @@ private func beispiel(
     let verwaist = try repository.delete(id: #require(buchung.id))
     #expect(verwaist.map(\.sha256) == ["abc"])
     #expect(try repository.receiptIsUsed("abc") == false)
-    #expect(try repository.files(zu: ["abc"]).isEmpty)
+    #expect(try repository.files(for: ["abc"]).isEmpty)
 }
 
 @Test func belegLaesstSichVonEinerBuchungNehmen() throws {
@@ -261,10 +261,10 @@ private func beispiel(
     let andere = try anlegen("Andere")
 
     // As long as the other booking carries it, the file stays.
-    #expect(try repository.removeReceipt("abc", von: eine).isEmpty)
-    #expect(try repository.files(zu: ["abc"]).count == 1)
-    #expect(try repository.removeReceipt("abc", von: andere).map(\.sha256) == ["abc"])
-    #expect(try repository.files(zu: ["abc"]).isEmpty)
+    #expect(try repository.removeReceipt("abc", from: eine).isEmpty)
+    #expect(try repository.files(for: ["abc"]).count == 1)
+    #expect(try repository.removeReceipt("abc", from: andere).map(\.sha256) == ["abc"])
+    #expect(try repository.files(for: ["abc"]).isEmpty)
 }
 
 @Test func kiEinstellungenUeberstehenDenRundlauf() throws {
@@ -290,7 +290,7 @@ private func beispiel(
         ausgabeTokens: 300,
         konversation: "[{\"rolle\":\"agent\"}]"
     )
-    let request = try #require(try repository.datenbank.read { try Anfrage.fetchOne($0, key: id) })
+    let request = try #require(try repository.database.read { try Anfrage.fetchOne($0, key: id) })
     #expect(request.status == .erfolg)
     #expect(request.eingabeTokens == 1200)
     #expect(request.beendetAm != nil)
@@ -305,7 +305,7 @@ private func beispiel(
     try repository.delete(id: id)
     #expect(try repository.allBookings().isEmpty)
     // The log keeps what happened, it is not a copy of the table.
-    let eintraege = try repository.datenbank.read { try Aktivitaet.fetchCount($0) }
+    let eintraege = try repository.database.read { try Aktivitaet.fetchCount($0) }
     #expect(eintraege == 1)
 }
 

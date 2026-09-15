@@ -5,9 +5,9 @@ import PDFKit
 
 /// How one file ended.
 public enum FileIntakeResult: Sendable {
-    case verbucht
-    case bereitsVorhanden
-    case fehler(file: URL, text: String)
+    case booked
+    case alreadyPresent
+    case failed(file: URL, text: String)
 }
 
 /// The way of a file from the drop to the archive, one file at a time. The
@@ -16,14 +16,14 @@ public struct FileIntake: Sendable {
     /// Two copies of the same file in one drop must not both start a run.
     /// Files are processed side by side, so the claim cannot live in the
     /// database check alone.
-    actor Laufende {
+    actor InFlight {
         private var hashes: Set<String> = []
 
-        func belegen(_ hash: String) -> Bool {
+        func claim(_ hash: String) -> Bool {
             hashes.insert(hash).inserted
         }
 
-        func freigeben(_ hash: String) {
+        func release(_ hash: String) {
             hashes.remove(hash)
         }
     }
@@ -33,12 +33,12 @@ public struct FileIntake: Sendable {
     let path: ArchivePaths
     let transport: Transport
     private let key: String?
-    private let laufende = Laufende()
+    private let inFlight = InFlight()
 
     public init(
         repository: Repository,
         path: ArchivePaths = .standard,
-        transport: @escaping Transport = Responses.netz
+        transport: @escaping Transport = Responses.network
     ) throws {
         try self.init(repository: repository, path: path, transport: transport, key: nil)
     }
@@ -64,8 +64,8 @@ public struct FileIntake: Sendable {
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
     }
 
-    public static func erlaubt(_ url: URL) -> Bool {
-        FileInput.erlaubteEndungen.contains(url.pathExtension.lowercased())
+    public static func isAllowed(_ url: URL) -> Bool {
+        FileInput.allowedExtensions.contains(url.pathExtension.lowercased())
     }
 
     /// What is still waiting in the inbox, oldest name first. The app works
@@ -74,7 +74,7 @@ public struct FileIntake: Sendable {
         let content = try? FileManager.default.contentsOfDirectory(
             at: path.inbox, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]
         )
-        return (content ?? []).filter(FileIntake.erlaubt).sorted { $0.lastPathComponent < $1.lastPathComponent }
+        return (content ?? []).filter(FileIntake.isAllowed).sorted { $0.lastPathComponent < $1.lastPathComponent }
     }
 
     /// Discard only owns the Inbox copy. A failure before copying may still
@@ -91,59 +91,59 @@ public struct FileIntake: Sendable {
         do {
             data = try Data(contentsOf: url)
         } catch {
-            return .fehler(file: url, text: error.localizedDescription)
+            return .failed(file: url, text: error.localizedDescription)
         }
         let hash = FileIntake.hash(data)
-        guard await laufende.belegen(hash) else { return .bereitsVorhanden }
+        guard await inFlight.claim(hash) else { return .alreadyPresent }
         let result = await process(url, data: data, hash: hash)
-        await laufende.freigeben(hash)
+        await inFlight.release(hash)
         return result
     }
 
     private func process(_ url: URL, data: Data, hash: String) async -> FileIntakeResult {
         // Where the file lies when something goes wrong: in the inbox from the
         // moment it got there, at its origin before that.
-        var liegt = url
+        var location = url
         do {
             if try repository.receiptIsUsed(hash) {
                 if isInInbox(url) {
                     try? FileManager.default.removeItem(at: url)
                 }
-                return .bereitsVorhanden
+                return .alreadyPresent
             }
 
             let inbox = try inInbox(url, data: data, hash: hash)
-            liegt = inbox
+            location = inbox
             guard let key = key ?? Keychain.read(), key.isEmpty == false else {
-                throw AgentError.keinSchluessel
+                throw AgentError.missingKey
             }
 
-            let eingabe = FileInput(
+            let input = FileInput(
                 name: inbox.lastPathComponent,
-                endung: inbox.pathExtension.lowercased(),
+                fileExtension: inbox.pathExtension.lowercased(),
                 sha256: hash,
                 data: data
             )
-            let lauf = AgentRun(
+            let run = AgentRun(
                 repository: repository, tool: tool, key: key, transport: transport
             )
-            let result = try await lauf.start(eingabe)
+            let result = try await run.start(input)
             do {
                 try archive(inbox, hash: hash, data: data, result: result)
             } catch {
                 // A file that did not reach the archive must be able to run
                 // again, so its bookings go the same way a broken run's do.
-                throw RunAbort(angelegt: result.angelegt, grund: error)
+                throw RunAbort(created: result.created, reason: error)
             }
-            return .verbucht
-        } catch let abbruch as RunAbort {
+            return .booked
+        } catch let abort as RunAbort {
             // Rows of the broken run go, so a second attempt cannot double them.
-            for id in abbruch.angelegt {
+            for id in abort.created {
                 _ = try? repository.delete(id: id)
             }
-            return .fehler(file: liegt, text: abbruch.localizedDescription)
+            return .failed(file: location, text: abort.localizedDescription)
         } catch {
-            return .fehler(file: liegt, text: error.localizedDescription)
+            return .failed(file: location, text: error.localizedDescription)
         }
     }
 
@@ -151,24 +151,24 @@ public struct FileIntake: Sendable {
     /// and the next start picks it up again.
     private func inInbox(_ url: URL, data: Data, hash: String) throws -> URL {
         guard isInInbox(url) == false else { return url }
-        try path.anlegen()
-        var ziel = path.inbox.appending(path: url.lastPathComponent)
-        if FileManager.default.fileExists(atPath: ziel.path) {
+        try path.create()
+        var destination = path.inbox.appending(path: url.lastPathComponent)
+        if FileManager.default.fileExists(atPath: destination.path) {
             // Another file of that name is still waiting; it keeps its place.
             let name = url.deletingPathExtension().lastPathComponent
-            ziel = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
+            destination = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
         }
-        try data.write(to: ziel)
-        return ziel
+        try data.write(to: destination)
+        return destination
     }
 
     private func archive(_ inbox: URL, hash: String, data: Data, result: RunResult) throws {
         let endung = inbox.pathExtension.lowercased()
-        let ziel = path.archiv.appending(path: "\(hash).\(endung)")
+        let destination = path.archive.appending(path: "\(hash).\(endung)")
         // Copy first. A leftover archive copy is safe when a later database
         // write fails, and the Inbox remains the retryable source.
-        if FileManager.default.fileExists(atPath: ziel.path) == false {
-            try FileManager.default.copyItem(at: inbox, to: ziel)
+        if FileManager.default.fileExists(atPath: destination.path) == false {
+            try FileManager.default.copyItem(at: inbox, to: destination)
         }
         try repository.saveFileAndAttachReceipt(Datei(
             sha256: hash,
@@ -177,7 +177,7 @@ public struct FileIntake: Sendable {
             groesse: Int64(data.count),
             art: .beleg,
             seiten: endung == "pdf" ? PDFDocument(data: data)?.pageCount : nil
-        ), an: result.beruehrt)
+        ), to: result.touched)
         // The booking and file row are committed above. A cleanup failure must
         // not turn a successful import back into a failed run.
         try? FileManager.default.removeItem(at: inbox)

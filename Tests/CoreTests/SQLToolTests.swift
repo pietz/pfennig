@@ -79,7 +79,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
 @Test func werkzeugHaeltBelegeAuchGegenReplace() throws {
     let (repository, tool) = try tool()
     _ = tool.execute(gueltigeBuchung)
-    try repository.attachReceipt("abc", an: [1])
+    try repository.attachReceipt("abc", to: [1])
     try repository.confirm(id: 1)
 
     let result = tool.execute("""
@@ -87,7 +87,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     VALUES (1, 'ausgabe', 'beleg', '2026-09-02', 'Ersetzt', 'software',
         '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
     """)
-    #expect(result.beruehrt == [1])
+    #expect(result.touched == [1])
     let buchung = try #require(try repository.allBookings().first)
     #expect(buchung.titel == "Ersetzt")
     #expect(buchung.belege == ["abc"])
@@ -101,7 +101,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     _ = tool.execute(gueltigeBuchung)
     let result = tool.execute("UPDATE buchungen SET id = 99 WHERE id = 1")
     #expect(result.text.contains("entfernt"))
-    #expect(result.beruehrt.isEmpty)
+    #expect(result.touched.isEmpty)
     #expect(try repository.allBookings().map(\.id) == [1])
 }
 
@@ -122,8 +122,8 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     try repository.confirm(id: 1)
     let result = tool.execute("UPDATE buchungen SET titel = titel WHERE id = 1")
     #expect(result.text == "Die Anweisung hat keine Buchung verändert.")
-    #expect(result.beruehrt.isEmpty)
-    #expect(try repository.datenbank.read { try Aktivitaet.fetchAll($0) }.count == 2)
+    #expect(result.touched.isEmpty)
+    #expect(try repository.database.read { try Aktivitaet.fetchAll($0) }.count == 2)
     #expect(try repository.allBookings().first?.geprueftAm != nil)
 }
 
@@ -131,7 +131,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     let (_, tool) = try tool()
     let result = tool.execute("SELECT id FROM buchungen; DELETE FROM buchungen")
     #expect(result.text.contains("Multiple statements"))
-    #expect(result.beruehrt.isEmpty)
+    #expect(result.touched.isEmpty)
 }
 
 // MARK: - Transaktion, Log und Zeitstempel
@@ -144,7 +144,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         '[{"netto": 10000, "steuersatz": 19, "steuer": 500}]', 'inland')
     """)
     #expect(steuerErgebnis.text.contains("passt nicht zu netto"))
-    #expect(steuerErgebnis.beruehrt.isEmpty)
+    #expect(steuerErgebnis.touched.isEmpty)
 
     let richtungErgebnis = tool.execute("""
     INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
@@ -152,21 +152,21 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
     """)
     #expect(richtungErgebnis.text.contains("Kategorie passt nicht zur Richtung."))
-    #expect(richtungErgebnis.beruehrt.isEmpty)
+    #expect(richtungErgebnis.touched.isEmpty)
     #expect(try repository.allBookings().isEmpty)
 }
 
 @Test func werkzeugSchreibtEineAktivitaetUndLaesstGeprueftAmLeer() throws {
     let (repository, tool) = try tool()
     let result = tool.execute(gueltigeBuchung)
-    #expect(result.beruehrt == [1])
-    #expect(result.angelegt == [1])
+    #expect(result.touched == [1])
+    #expect(result.created == [1])
 
     let buchung = try #require(try repository.allBookings().first)
     #expect(buchung.geprueftAm == nil)
     #expect(buchung.brutto == Cent(11900))
 
-    let aktivitaeten = try repository.datenbank.read { try Aktivitaet.fetchAll($0) }
+    let aktivitaeten = try repository.database.read { try Aktivitaet.fetchAll($0) }
     #expect(aktivitaeten.count == 1)
     #expect(aktivitaeten[0].akteur == .agent)
     #expect(aktivitaeten[0].vorher == nil)
@@ -180,7 +180,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         geprueft_am, belege)
     VALUES ('ausgabe', 'beleg', '2026-09-01', 'Frech', 'software',
         '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland', '2026-09-01 10:00:00', '["abc"]')
-    """).beruehrt == [1])
+    """).touched == [1])
 
     let buchung = try #require(try repository.allBookings().first)
     #expect(buchung.geprueftAm == nil)
@@ -189,7 +189,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     // An agent change makes a previously confirmed booking unreviewed again.
     try repository.confirm(id: 1)
     #expect(try repository.allBookings().first?.geprueftAm != nil)
-    #expect(tool.execute("UPDATE buchungen SET titel = 'Frech 2' WHERE id = 1").beruehrt == [1])
+    #expect(tool.execute("UPDATE buchungen SET titel = 'Frech 2' WHERE id = 1").touched == [1])
     #expect(try repository.allBookings().first?.geprueftAm == nil)
 }
 
@@ -197,8 +197,8 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     let (_, tool) = try tool()
     _ = tool.execute(gueltigeBuchung)
     let result = tool.execute("UPDATE buchungen SET notizen = 'geprüft am Beleg' WHERE id = 1")
-    #expect(result.beruehrt == [1])
-    #expect(result.angelegt.isEmpty)
+    #expect(result.touched == [1])
+    #expect(result.created.isEmpty)
 }
 
 @Test func selectLiefertZeilenAlsJsonUndDeckeltBei50() throws {
