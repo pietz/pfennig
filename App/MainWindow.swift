@@ -37,12 +37,13 @@ struct MainWindow: View {
         } isTargeted: { zielt = $0 }
         .searchable(text: $modell.search, prompt: "Suchen")
         .toolbar { werkzeuge }
+        // Keep the table content wide enough for its five default columns before
+        // the ancestor-hosted inspector takes its own native column.
+        .frame(minWidth: 580, minHeight: 520)
         .inspector(isPresented: $modell.inspectorVisible) {
             inspektor
                 .inspectorColumnWidth(min: 320, ideal: 380, max: 560)
         }
-        // Room for a table of about 580 points next to the inspector.
-        .frame(minWidth: 900, minHeight: 520)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand { toDelete = modell.ausgewaehlt }
         .confirmationDialog(
@@ -104,7 +105,7 @@ struct MainWindow: View {
                     .foregroundStyle(.secondary)
                     .frame(minHeight: 40, alignment: .leading)
             }
-            .width(90)
+            .width(min: 80, ideal: 90, max: 110)
             .customizationID("datum")
 
             TableColumn("Betrag", value: \.signedAmount) { buchung in
@@ -114,7 +115,7 @@ struct MainWindow: View {
                     .foregroundStyle(buchung.richtung == .einnahme ? Color.green : Color.primary)
                     .frame(maxWidth: .infinity, minHeight: 40, alignment: .trailing)
             }
-            .width(min: 100, ideal: 115)
+            .width(min: 90, ideal: 105, max: 160)
             .alignment(.trailing)
             .customizationID("betrag")
 
@@ -130,14 +131,14 @@ struct MainWindow: View {
                 .help(buchung.zahlungsstand.name)
                 .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
             }
-            .width(min: 100, ideal: 115)
+            .width(min: 90, ideal: 105, max: 140)
             .customizationID("zahlung")
 
             TableColumn("Status") { buchung in
                 ReviewStatusLabel(status: buchung.reviewStatus)
                     .frame(minHeight: 40, alignment: .leading)
             }
-            .width(min: 100, ideal: 115)
+            .width(min: 95, ideal: 110, max: 150)
             .customizationID("status")
             .defaultVisibility(.visible)
 
@@ -385,7 +386,7 @@ extension Buchung {
     var categorySymbol: String {
         switch kategorie {
         case nil: "doc.text"
-        case "umsatz_dienstleistung": "briefcase"
+        case "umsatz_dienstleistung": "banknote"
         case "umsatz_waren": "shippingbox"
         case "umsatz_lizenzen": "key"
         case "sonstige_einnahme": "doc.text"
@@ -411,7 +412,7 @@ extension Buchung {
         case "porto": "envelope"
         case "ust_zahlung": "building.columns"
         case "sonstige_ausgabe": "doc.text"
-        default: "questionmark.circle"
+        default: "doc.text"
         }
     }
 

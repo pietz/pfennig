@@ -6,12 +6,18 @@ struct WorkspaceView: View {
 
     var body: some View {
         NavigationSplitView {
-            List {
-                Label("Buchungen", systemImage: "list.bullet")
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Pfennig")
+                    .font(.headline)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 10)
+                    .padding(.bottom, 8)
+                List {
+                    Label("Buchungen", systemImage: "list.bullet")
+                }
+                .listStyle(.sidebar)
             }
-            .listStyle(.sidebar)
-            .navigationTitle("Pfennig")
-            .navigationSplitViewColumnWidth(min: 180, ideal: 200, max: 220)
+            .navigationSplitViewColumnWidth(min: 160, ideal: 160, max: 160)
         } detail: {
             MainWindow(modell: model)
         }
