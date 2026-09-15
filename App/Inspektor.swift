@@ -59,10 +59,9 @@ struct Inspektor: View {
         .onSubmit(sichern)
         .onChange(of: fokus) { sichern() }
         .onChange(of: buchung) { _, neu in
-            // Follow the database unless the user has an unsaved edit in flight.
-            if entwurf == gesichert {
-                entwurf = neu
-            }
+            // The database is authoritative, even if local typing is unsaved.
+            // Keep the draft and baseline in lockstep so this refresh cannot save itself.
+            entwurf = neu
             gesichert = neu
         }
         .onDisappear(perform: sichern)
