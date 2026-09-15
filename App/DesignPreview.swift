@@ -55,32 +55,34 @@ struct DesignPreview: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .firstTextBaseline) {
-                Text(variant == .refined ? "Buchungen · verfeinert · Beispieldaten" : "Designvorschau · Beispieldaten")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Text(countLabel)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
-            }
-            .padding(.horizontal, 18)
-            .padding(.top, 16)
-            .padding(.bottom, 8)
-
-            HStack(spacing: 12) {
-                Picker("Prüfung", selection: $review) {
-                    ForEach(PreviewReviewFilter.allCases, id: \.self) { filter in
-                        Text(filter.title).tag(filter)
-                    }
+            if variant == .original {
+                HStack(alignment: .firstTextBaseline) {
+                    Text("Designvorschau · Beispieldaten")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Text(countLabel)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
                 }
-                .pickerStyle(.segmented)
-                .fixedSize()
-                Spacer()
+                .padding(.horizontal, 18)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+
+                HStack(spacing: 12) {
+                    Picker("Prüfung", selection: $review) {
+                        ForEach(PreviewReviewFilter.allCases, id: \.self) { filter in
+                            Text(filter.title).tag(filter)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .fixedSize()
+                    Spacer()
+                }
+                .padding(.horizontal, 18)
+                .padding(.bottom, 8)
             }
-            .padding(.horizontal, 18)
-            .padding(.bottom, 8)
 
             Table(visibleBookings, selection: $selection, sortOrder: $sortOrder) {
                 TableColumn("Firma", value: \.company) { booking in
@@ -189,14 +191,35 @@ struct DesignPreview: View {
     }
 
     @ToolbarContentBuilder private var toolbar: some ToolbarContent {
-        ToolbarItem(placement: .primaryAction) {
-            Picker("Richtung", selection: $direction) {
-                ForEach(PreviewDirectionFilter.allCases, id: \.self) { filter in
-                    Text(filter.title).tag(filter)
+        if variant == .refined {
+            ToolbarItem(placement: .primaryAction) {
+                Picker("Richtung", selection: $direction) {
+                    ForEach(PreviewDirectionFilter.allCases, id: \.self) { filter in
+                        Text(filter.title).tag(filter)
+                    }
                 }
+                .pickerStyle(.menu)
+                .labelsHidden()
             }
-            .pickerStyle(.segmented)
-            .fixedSize()
+            ToolbarItem(placement: .primaryAction) {
+                Picker("Prüfung", selection: $review) {
+                    ForEach(PreviewReviewFilter.allCases, id: \.self) { filter in
+                        Text(filter.menuTitle).tag(filter)
+                    }
+                }
+                .pickerStyle(.menu)
+                .labelsHidden()
+            }
+        } else {
+            ToolbarItem(placement: .primaryAction) {
+                Picker("Richtung", selection: $direction) {
+                    ForEach(PreviewDirectionFilter.allCases, id: \.self) { filter in
+                        Text(filter.title).tag(filter)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .fixedSize()
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") {
@@ -454,6 +477,14 @@ private enum PreviewReviewFilter: CaseIterable, Hashable {
     var title: String {
         switch self {
         case .alle: "Alle"
+        case .zuPruefen: "Zu prüfen"
+        case .ohneBeleg: "Ohne Beleg"
+        }
+    }
+
+    var menuTitle: String {
+        switch self {
+        case .alle: "Alle Status"
         case .zuPruefen: "Zu prüfen"
         case .ohneBeleg: "Ohne Beleg"
         }
