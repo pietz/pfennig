@@ -135,7 +135,7 @@ public struct AgentRun: Sendable {
     public func start(_ file: FileInput) async throws -> RunResult {
         let instructions = try AgentInstructions.build(repository)
         let ai = try repository.aiSettings()
-        let request = try repository.startRequest(dateiSha256: file.sha256, modell: ai.modell.rawValue)
+        let request = try repository.startRequest(dateiSha256: file.sha256, modell: ai.model.rawValue)
         var trace = Trace()
         var result = RunResult()
         do {
@@ -160,7 +160,7 @@ public struct AgentRun: Sendable {
 
     private func loop(
         _ file: FileInput,
-        ai: KiEinstellungen,
+        ai: AISettings,
         instructions: String,
         result: inout RunResult,
         trace: inout Trace
@@ -178,12 +178,12 @@ public struct AgentRun: Sendable {
 
         while true {
             var body: [String: Any] = [
-                "model": ai.modell.rawValue,
-                "reasoning": ["effort": ai.aufwand.rawValue],
+                "model": ai.model.rawValue,
+                "reasoning": ["effort": ai.effort.rawValue],
                 "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription],
                 "input": input
             ]
-            if ai.schnell {
+            if ai.fast {
                 // OpenAI's priority processing, about twice the price.
                 body["service_tier"] = "priority"
             }

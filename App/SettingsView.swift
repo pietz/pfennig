@@ -52,7 +52,7 @@ private struct ProfileSettings: View {
 /// to the agent run and not to a window that opens.
 private struct AISettingsView: View {
     let model: AppModel
-    @State private var ki = KiEinstellungen()
+    @State private var ki = AISettings()
     @State private var input = ""
     @State private var hasKey = false
     @State private var checkResult: String?
@@ -72,13 +72,13 @@ private struct AISettingsView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Picker("Modell", selection: $ki.modell) {
-                ForEach(Modell.allCases) { Text($0.name).tag($0) }
+            Picker("Modell", selection: $ki.model) {
+                ForEach(Model.allCases) { Text($0.name).tag($0) }
             }
-            Picker("Denkaufwand", selection: $ki.aufwand) {
-                ForEach(Denkaufwand.allCases) { Text($0.name).tag($0) }
+            Picker("Denkaufwand", selection: $ki.effort) {
+                ForEach(ReasoningEffort.allCases) { Text($0.name).tag($0) }
             }
-            Toggle("Fast Mode", isOn: $ki.schnell)
+            Toggle("Fast Mode", isOn: $ki.fast)
         }
         .formStyle(.grouped)
         .onAppear {

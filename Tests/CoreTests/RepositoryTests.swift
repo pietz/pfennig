@@ -270,9 +270,9 @@ private func beispiel(
 @Test func kiEinstellungenUeberstehenDenRundlauf() throws {
     let repository = try Repository.inMemory()
     // A fresh installation asks the cheap model with the documented default.
-    #expect(try repository.aiSettings() == KiEinstellungen(modell: .luna, aufwand: .mittel, schnell: false))
+    #expect(try repository.aiSettings() == AISettings(model: .luna, effort: .medium, fast: false))
 
-    let gewaehlt = KiEinstellungen(modell: .terra, aufwand: .sehrHoch, schnell: true)
+    let gewaehlt = AISettings(model: .terra, effort: .xhigh, fast: true)
     try repository.saveAISettings(gewaehlt)
     #expect(try repository.aiSettings() == gewaehlt)
     #expect(try repository.setting("ki.modell") == "gpt-5.6-terra")

@@ -284,18 +284,18 @@ final class AppModel {
         }
     }
 
-    func aiSettings() -> KiEinstellungen {
+    func aiSettings() -> AISettings {
         do {
             return try repository.aiSettings()
         } catch {
             errorMessage = "\(error)"
-            return KiEinstellungen()
+            return AISettings()
         }
     }
 
-    func saveAISettings(_ einstellungen: KiEinstellungen) {
+    func saveAISettings(_ settings: AISettings) {
         do {
-            try repository.saveAISettings(einstellungen)
+            try repository.saveAISettings(settings)
         } catch {
             errorMessage = "\(error)"
         }

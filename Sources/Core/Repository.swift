@@ -324,22 +324,22 @@ public final class Repository: Sendable {
 
     /// What the user chose under KI-Zugang, with the defaults of a fresh
     /// installation for keys that were never set.
-    public func aiSettings() throws -> KiEinstellungen {
+    public func aiSettings() throws -> AISettings {
         try database.read { db in
-            let defaults = KiEinstellungen()
-            return try KiEinstellungen(
-                modell: Repository.value("ki.modell", in: db).flatMap(Modell.init) ?? defaults.modell,
-                aufwand: Repository.value("ki.aufwand", in: db).flatMap(Denkaufwand.init) ?? defaults.aufwand,
-                schnell: Repository.value("ki.schnell", in: db) == "true"
+            let defaults = AISettings()
+            return try AISettings(
+                model: Repository.value("ki.modell", in: db).flatMap(Model.init) ?? defaults.model,
+                effort: Repository.value("ki.aufwand", in: db).flatMap(ReasoningEffort.init) ?? defaults.effort,
+                fast: Repository.value("ki.schnell", in: db) == "true"
             )
         }
     }
 
-    public func saveAISettings(_ settings: KiEinstellungen) throws {
+    public func saveAISettings(_ settings: AISettings) throws {
         try database.write { db in
-            try Repository.setSetting("ki.modell", value: settings.modell.rawValue, in: db)
-            try Repository.setSetting("ki.aufwand", value: settings.aufwand.rawValue, in: db)
-            try Repository.setSetting("ki.schnell", value: String(settings.schnell), in: db)
+            try Repository.setSetting("ki.modell", value: settings.model.rawValue, in: db)
+            try Repository.setSetting("ki.aufwand", value: settings.effort.rawValue, in: db)
+            try Repository.setSetting("ki.schnell", value: String(settings.fast), in: db)
         }
     }
 

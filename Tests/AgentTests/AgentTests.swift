@@ -150,7 +150,7 @@ private func input() -> FileInput {
     #expect(buchung.geprueftAm == nil)
 
     let request = try #require(try repository.allRequests().first)
-    #expect(request.modell == Modell.luna.rawValue)
+    #expect(request.modell == Model.luna.rawValue)
     #expect(request.status == .erfolg)
     #expect(request.eingabeTokens == 250)
     #expect(request.ausgabeTokens == 50)
@@ -202,7 +202,7 @@ private func input() -> FileInput {
 
 @Test func laufNimmtModellAufwandUndSchnellAusDenEinstellungen() async throws {
     let repository = try Repository.inMemory()
-    try repository.saveAISettings(KiEinstellungen(modell: .sol, aufwand: .hoch, schnell: true))
+    try repository.saveAISettings(AISettings(model: .sol, effort: .high, fast: true))
     let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
     let run = try await AgentRun(
         repository: repository,
