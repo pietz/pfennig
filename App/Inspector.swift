@@ -139,8 +139,8 @@ struct Inspector: View {
             get: { draft.richtung },
             set: { updated in
                 draft.richtung = updated
-                if let bekannt = Kategorie.alle.first(where: { $0.schluessel == draft.kategorie }),
-                   bekannt.richtung != updated
+                if let known = Kategorie.alle.first(where: { $0.schluessel == draft.kategorie }),
+                   known.richtung != updated
                 {
                     draft.kategorie = nil
                 }
@@ -176,7 +176,7 @@ struct Inspector: View {
                         Text("%").foregroundStyle(.secondary)
                     }
                     .frame(width: 70)
-                    TextField("Steuer", value: position(i, \.steuer, sonst: .null), format: .euro)
+                    TextField("Steuer", value: position(i, \.steuer, fallback: .null), format: .euro)
                         .labelsHidden()
                     Button("Position entfernen", systemImage: "minus.circle") { removePosition(i) }
                         .labelStyle(.iconOnly)
@@ -212,7 +212,7 @@ struct Inspector: View {
     /// The tax follows the net amount and the rate, until the user overwrites it.
     private func netBinding(_ i: Int) -> Binding<Cent> {
         Binding(
-            get: { position(i, \.netto, sonst: .null).wrappedValue },
+            get: { position(i, \.netto, fallback: .null).wrappedValue },
             set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
                 draft.positionen[i].netto = updated
@@ -224,7 +224,7 @@ struct Inspector: View {
     /// A percentage, any rate the document shows, foreign ones included.
     private func rateBinding(_ i: Int) -> Binding<Decimal> {
         Binding(
-            get: { position(i, \.steuersatz, sonst: 0).wrappedValue },
+            get: { position(i, \.steuersatz, fallback: 0).wrappedValue },
             set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
                 let satz = min(max(updated, 0), 100)
@@ -269,18 +269,18 @@ struct Inspector: View {
         Section("Zahlungen") {
             ForEach(Array(draft.zahlungen.indices), id: \.self) { i in
                 HStack {
-                    TextField("Datum", value: zahlung(i, \.datum, sonst: .today()), format: .deutsch)
+                    TextField("Datum", value: zahlung(i, \.datum, fallback: .today()), format: .deutsch)
                         .labelsHidden()
                         .frame(width: 90)
-                    TextField("Betrag", value: zahlung(i, \.betrag, sonst: .null), format: .euro)
+                    TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
                         .labelsHidden()
-                    Picker("Richtung", selection: zahlung(i, \.richtung, sonst: draft.richtung)) {
+                    Picker("Richtung", selection: zahlung(i, \.richtung, fallback: draft.richtung)) {
                         Text("Zahlung").tag(draft.richtung)
                         Text("Erstattung").tag(oppositeDirection)
                     }
                     .labelsHidden()
                     .frame(width: 110)
-                    Toggle("Geprüft", isOn: zahlung(i, \.geprueft, sonst: false))
+                    Toggle("Geprüft", isOn: zahlung(i, \.geprueft, fallback: false))
                         .toggleStyle(.checkbox)
                         .labelsHidden()
                         .help("Geprüft")
@@ -351,14 +351,18 @@ struct Inspector: View {
         }
     }
 
-    // MARK: - Bindungen
+    // MARK: - Bindings
 
     /// A binding into one position of the draft. It answers with a fallback
     /// once the row is gone, so removing a row cannot read past the end of the
     /// list while the form is still showing it.
-    private func position<Wert>(_ i: Int, _ path: WritableKeyPath<Position, Wert>, sonst: Wert) -> Binding<Wert> {
+    private func position<Value>(
+        _ i: Int,
+        _ path: WritableKeyPath<Position, Value>,
+        fallback: Value
+    ) -> Binding<Value> {
         Binding(
-            get: { draft.positionen.indices.contains(i) ? draft.positionen[i][keyPath: path] : sonst },
+            get: { draft.positionen.indices.contains(i) ? draft.positionen[i][keyPath: path] : fallback },
             set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
                 draft.positionen[i][keyPath: path] = updated
@@ -367,9 +371,9 @@ struct Inspector: View {
     }
 
     /// The same for one payment.
-    private func zahlung<Wert>(_ i: Int, _ path: WritableKeyPath<Zahlung, Wert>, sonst: Wert) -> Binding<Wert> {
+    private func zahlung<Value>(_ i: Int, _ path: WritableKeyPath<Zahlung, Value>, fallback: Value) -> Binding<Value> {
         Binding(
-            get: { draft.zahlungen.indices.contains(i) ? draft.zahlungen[i][keyPath: path] : sonst },
+            get: { draft.zahlungen.indices.contains(i) ? draft.zahlungen[i][keyPath: path] : fallback },
             set: { updated in
                 guard draft.zahlungen.indices.contains(i) else { return }
                 draft.zahlungen[i][keyPath: path] = updated

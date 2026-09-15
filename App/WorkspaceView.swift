@@ -54,7 +54,7 @@ struct WorkspaceView: View {
         .task { await model.observe() }
         // The window is never narrower than its parts: sidebar, table and,
         // while it is shown, the inspector.
-        .frame(minWidth: minimumWindowWidth, minHeight: 520)
+        .frame(minWidth: minimumWindowWidth, minHeight: 416)
     }
 
     /// The fixed sidebar width, the fixed inspector width and the smallest

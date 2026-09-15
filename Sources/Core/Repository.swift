@@ -274,7 +274,7 @@ public final class Repository: Sendable {
         }
     }
 
-    // MARK: - SettingsView
+    // MARK: - Einstellungen
 
     public func setting(_ key: String) throws -> String? {
         try database.read { db in

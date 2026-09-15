@@ -53,18 +53,18 @@ private struct ProfileSettings: View {
 private struct AISettingsView: View {
     let model: AppModel
     @State private var ki = KiEinstellungen()
-    @State private var eingabe = ""
-    @State private var hinterlegt = false
-    @State private var pruefung: String?
-    @State private var verbunden = false
+    @State private var input = ""
+    @State private var hasKey = false
+    @State private var checkResult: String?
+    @State private var isConnected = false
     @State private var isChecking = false
 
     var body: some View {
         Form {
             SecureField(
                 "API-Schlüssel",
-                text: $eingabe,
-                prompt: Text(hinterlegt ? "Hinterlegt" : "sk-...")
+                text: $input,
+                prompt: Text(hasKey ? "Hinterlegt" : "sk-...")
             )
             .onSubmit(apply)
             state
@@ -82,7 +82,7 @@ private struct AISettingsView: View {
         }
         .formStyle(.grouped)
         .onAppear {
-            hinterlegt = Keychain.exists
+            hasKey = Keychain.exists
             ki = model.aiSettings()
         }
         .onChange(of: ki) { model.saveAISettings(ki) }
@@ -95,12 +95,12 @@ private struct AISettingsView: View {
                 ProgressView().controlSize(.small)
                 Text("Verbindung wird geprüft …")
                     .foregroundStyle(.secondary)
-            } else if let pruefung {
-                Label(pruefung, systemImage: verbunden ? "checkmark.circle.fill" : "xmark.circle.fill")
-                    .foregroundStyle(verbunden ? Color.green : Color.red)
+            } else if let checkResult {
+                Label(checkResult, systemImage: isConnected ? "checkmark.circle.fill" : "xmark.circle.fill")
+                    .foregroundStyle(isConnected ? Color.green : Color.red)
                     .lineLimit(3)
             } else {
-                Text(hinterlegt ? "Schlüssel hinterlegt" : "Kein Schlüssel")
+                Text(hasKey ? "Schlüssel hasKey" : "Kein Schlüssel")
                     .foregroundStyle(.secondary)
             }
         }
@@ -110,17 +110,17 @@ private struct AISettingsView: View {
     /// Committing the field is the whole interaction: a key is stored and
     /// checked at once, an empty field removes the one that is there.
     private func apply() {
-        let key = eingabe.trimmingCharacters(in: .whitespacesAndNewlines)
-        eingabe = ""
-        pruefung = nil
+        let key = input.trimmingCharacters(in: .whitespacesAndNewlines)
+        input = ""
+        checkResult = nil
         guard key.isEmpty == false else {
-            guard hinterlegt else { return }
+            guard hasKey else { return }
             Keychain.remove()
-            hinterlegt = false
+            hasKey = false
             return
         }
         Keychain.write(key)
-        hinterlegt = true
+        hasKey = true
         test()
     }
 
@@ -128,15 +128,15 @@ private struct AISettingsView: View {
     /// document.
     private func test() {
         isChecking = true
-        pruefung = nil
+        checkResult = nil
         Task {
             do {
                 try await Responses.testConnection()
-                verbunden = true
-                pruefung = "Verbindung funktioniert"
+                isConnected = true
+                checkResult = "Verbindung funktioniert"
             } catch {
-                verbunden = false
-                pruefung = error.localizedDescription
+                isConnected = false
+                checkResult = error.localizedDescription
             }
             isChecking = false
         }

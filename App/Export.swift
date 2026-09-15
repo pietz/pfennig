@@ -122,11 +122,11 @@ struct ExportSheet: View {
     // MARK: - Werte
 
     @ViewBuilder private var taxNumbers: some View {
-        let werte = ustva
-        if werte.zeilen.isEmpty {
+        let values = ustva
+        if values.zeilen.isEmpty {
             Text("Keine Werte in diesem Zeitraum.").foregroundStyle(.secondary)
         }
-        ForEach(werte.zeilen) { zeile in
+        ForEach(values.zeilen) { zeile in
             value(
                 "Kz \(zeile.kennzahl.nummer)",
                 zeile.kennzahl.titel,
@@ -139,23 +139,23 @@ struct ExportSheet: View {
         }
         value(
             "Kz 83",
-            werte.zahllast < .null ? "Verbleibender Überschuss" : "Verbleibende Vorauszahlung",
-            werte.zahllast,
+            values.zahllast < .null ? "Verbleibender Überschuss" : "Verbleibende Vorauszahlung",
+            values.zahllast,
             highlighted: true
         )
     }
 
     @ViewBuilder private var euerLines: some View {
-        let werte = euer
-        if werte.zeilen.isEmpty {
+        let values = euer
+        if values.zeilen.isEmpty {
             Text("Keine Werte in diesem Jahr.").foregroundStyle(.secondary)
         }
-        ForEach(werte.zeilen) { zeile in
+        ForEach(values.zeilen) { zeile in
             value("Zeile \(zeile.zeile)", zeile.bezeichnung, zeile.betrag)
         }
-        value("Summe", "Einnahmen", werte.einnahmen)
-        value("Summe", "Ausgaben", werte.ausgaben)
-        value("Summe", "Gewinn", werte.ergebnis, highlighted: true)
+        value("Summe", "Einnahmen", values.einnahmen)
+        value("Summe", "Ausgaben", values.ausgaben)
+        value("Summe", "Gewinn", values.ergebnis, highlighted: true)
     }
 
     private func value(_ label: String, _ titel: String, _ betrag: Cent, highlighted: Bool = false) -> some View {

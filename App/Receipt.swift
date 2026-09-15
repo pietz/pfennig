@@ -11,7 +11,7 @@ struct ReceiptSection: View {
     let model: AppModel
     let buchung: Buchung
     @State private var files: [Datei] = []
-    @State private var gross: Datei?
+    @State private var enlarged: Datei?
 
     var body: some View {
         Section("Beleg") {
@@ -29,7 +29,7 @@ struct ReceiptSection: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                     Spacer()
-                    Button("Vorschau", systemImage: "eye") { gross = file }
+                    Button("Vorschau", systemImage: "eye") { enlarged = file }
                     Button("Original öffnen", systemImage: "arrow.up.forward.square") {
                         NSWorkspace.shared.open(model.path.original(file))
                     }
@@ -44,14 +44,14 @@ struct ReceiptSection: View {
         }
         .onAppear(perform: load)
         .onChange(of: buchung.belege) { load() }
-        .sheet(item: $gross) { file in
+        .sheet(item: $enlarged) { file in
             VStack(spacing: 0) {
                 ReceiptPreview(url: model.path.original(file))
                 Divider()
                 HStack {
                     Text(file.dateiname).foregroundStyle(.secondary)
                     Spacer()
-                    Button("Fertig") { gross = nil }
+                    Button("Fertig") { enlarged = nil }
                         .keyboardShortcut(.defaultAction)
                 }
                 .padding(12)
@@ -72,8 +72,8 @@ private struct ReceiptPreview: View {
     var body: some View {
         if url.pathExtension == "pdf" {
             PDFPreview(url: url)
-        } else if let bild = NSImage(contentsOf: url) {
-            Image(nsImage: bild)
+        } else if let image = NSImage(contentsOf: url) {
+            Image(nsImage: image)
                 .resizable()
                 .scaledToFit()
         } else {

@@ -67,24 +67,24 @@ public enum Overview {
         reviewFilter: ReviewFilter = .alle,
         search: String
     ) -> [Buchung] {
-        let begriff = search.trimmingCharacters(in: .whitespaces).lowercased()
+        let term = search.trimmingCharacters(in: .whitespaces).lowercased()
         return buchungen.filter { buchung in
             guard buchung.art != .ignoriert else { return false }
             guard reviewFilter.includes(buchung) else { return false }
-            let passt = switch filter {
+            let matches = switch filter {
             case .alle: true
             case .einnahmen: buchung.richtung == .einnahme
             case .ausgaben: buchung.richtung == .ausgabe
             }
-            guard passt else { return false }
-            guard begriff.isEmpty == false else { return true }
-            let felder = [
+            guard matches else { return false }
+            guard term.isEmpty == false else { return true }
+            let fields = [
                 buchung.titel,
                 buchung.gegenparteiName ?? "",
                 buchung.notizen ?? "",
                 buchung.brutto.formatted
             ]
-            return felder.contains { $0.lowercased().contains(begriff) }
+            return fields.contains { $0.lowercased().contains(term) }
         }
     }
 
