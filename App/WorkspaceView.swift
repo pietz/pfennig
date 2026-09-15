@@ -37,6 +37,7 @@ struct WorkspaceView: View {
             .navigationSplitViewColumnWidth(WorkspaceView.sidebarWidth)
             // The sidebar always stays: there is nothing to reveal by hiding it.
             .toolbar(removing: .sidebarToggle)
+            .safeAreaInset(edge: .bottom, spacing: 0) { settingsLink }
         } detail: {
             // A plain trailing pane, not the native inspector. The native one
             // floats over the detail column instead of narrowing it, which
@@ -67,12 +68,34 @@ struct WorkspaceView: View {
         return Self.sidebarWidth + Self.tableMinimumWidth + inspector
     }
 
+    /// Settings sit at the foot of the sidebar, not in the toolbar.
+    private var settingsLink: some View {
+        SettingsLink {
+            Label("Einstellungen", systemImage: "gearshape")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
     @ViewBuilder private var inspectorPane: some View {
         if let buchung = model.selected {
             Inspector(model: model, buchung: buchung)
                 .id(buchung.id)
         } else {
-            ContentUnavailableView("Keine Buchung ausgewählt", systemImage: "list.bullet.rectangle")
+            VStack(spacing: 14) {
+                Image("PfennigMark")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 120, height: 120)
+                    .opacity(0.4)
+                Text("Keine Buchung ausgewählt")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 }

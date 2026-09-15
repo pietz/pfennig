@@ -217,9 +217,6 @@ struct MainWindow: View {
             Button("Export", systemImage: "square.and.arrow.up") { model.exportVisible = true }
         }
         ToolbarItem(placement: .primaryAction) {
-            SettingsLink { Label("Einstellungen", systemImage: "gearshape") }
-        }
-        ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { model.inspectorVisible.toggle() }
         }
     }
