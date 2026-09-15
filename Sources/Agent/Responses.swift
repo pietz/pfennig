@@ -1,13 +1,13 @@
+import Core
 import Foundation
-import Kern
 
 /// Everything that can go wrong between the app and OpenAI, in German,
 /// because the text ends up in the inbox next to the file.
-public enum Agentenfehler: Error, LocalizedError {
+public enum AgentError: Error, LocalizedError {
     case keinSchluessel
     case netzwerk(String)
     case api(status: Int, text: String)
-    case antwort(String)
+    case response(String)
     case keineBuchung
     case zuVieleWerkzeugaufrufe
 
@@ -19,12 +19,12 @@ public enum Agentenfehler: Error, LocalizedError {
             "Die Verbindung zu OpenAI kam nicht zustande: \(text)"
         case let .api(status, text):
             "OpenAI hat mit \(status) geantwortet: \(text)"
-        case let .antwort(text):
+        case let .response(text):
             "Die Antwort war unbrauchbar: \(text)"
         case .keineBuchung:
             "Der Agent hat keine Buchung angelegt oder geändert."
         case .zuVieleWerkzeugaufrufe:
-            "Der Agent hat nach \(Agentenlauf.hoechstzahlWerkzeugaufrufe) sql-Aufrufen kein Ergebnis geliefert."
+            "Der Agent hat nach \(AgentRun.maxToolCalls) sql-Aufrufen kein Ergebnis geliefert."
         }
     }
 }
@@ -38,25 +38,25 @@ public typealias Transport = @Sendable (URLRequest) async throws -> (Data, HTTPU
 public struct Responses: Sendable {
     static let adresse = URL(string: "https://api.openai.com/v1/responses")!
 
-    let schluessel: String
+    let key: String
     let transport: Transport
 
     /// The transport the app uses. Tests never touch it.
-    public static let netz: Transport = { anfrage in
-        let (daten, antwort) = try await URLSession.shared.data(for: anfrage)
-        guard let http = antwort as? HTTPURLResponse else {
-            throw Agentenfehler.netzwerk("Keine HTTP-Antwort.")
+    public static let netz: Transport = { request in
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let http = response as? HTTPURLResponse else {
+            throw AgentError.netzwerk("Keine HTTP-Antwort.")
         }
-        return (daten, http)
+        return (data, http)
     }
 
     /// The smallest request that proves key and connection: no tools, no file,
     /// a handful of tokens. It throws what the settings window shows.
-    public static func verbindungPruefen(transport: @escaping Transport = netz) async throws {
-        guard let schluessel = Schluesselbund.lesen(), schluessel.isEmpty == false else {
-            throw Agentenfehler.keinSchluessel
+    public static func testConnection(transport: @escaping Transport = netz) async throws {
+        guard let key = Keychain.read(), key.isEmpty == false else {
+            throw AgentError.keinSchluessel
         }
-        _ = try await Responses(schluessel: schluessel, transport: transport).senden([
+        _ = try await Responses(key: key, transport: transport).send([
             // The cheapest model at the lowest effort; this asks the key, not the choice.
             "model": Modell.luna.rawValue,
             "reasoning": ["effort": Denkaufwand.keiner.rawValue],
@@ -79,54 +79,54 @@ public struct Responses: Sendable {
 
     /// Sends the body and answers with the parsed response object. A rate limit
     /// or a server error is tried once more, after `Retry-After` when it is there.
-    func senden(_ koerper: [String: Any]) async throws -> [String: Any] {
+    func send(_ body: [String: Any]) async throws -> [String: Any] {
         do {
-            return try await einmalSenden(koerper)
+            return try await sendOnce(body)
         } catch let absage as Absage where absage.voruebergehend {
             try await Task.sleep(for: .seconds(absage.wartezeit ?? 2))
             do {
-                return try await einmalSenden(koerper)
+                return try await sendOnce(body)
             } catch let zweite as Absage {
-                throw Agentenfehler.api(status: zweite.status, text: zweite.text)
+                throw AgentError.api(status: zweite.status, text: zweite.text)
             }
         } catch let absage as Absage {
-            throw Agentenfehler.api(status: absage.status, text: absage.text)
+            throw AgentError.api(status: absage.status, text: absage.text)
         }
     }
 
-    private func einmalSenden(_ koerper: [String: Any]) async throws -> [String: Any] {
-        var anfrage = URLRequest(url: Responses.adresse)
-        anfrage.httpMethod = "POST"
-        anfrage.setValue("Bearer \(schluessel)", forHTTPHeaderField: "Authorization")
-        anfrage.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        anfrage.httpBody = try JSONSerialization.data(withJSONObject: koerper)
-        anfrage.timeoutInterval = 300
+    private func sendOnce(_ body: [String: Any]) async throws -> [String: Any] {
+        var request = URLRequest(url: Responses.adresse)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        request.timeoutInterval = 300
 
-        let daten: Data
+        let data: Data
         let http: HTTPURLResponse
         do {
-            (daten, http) = try await transport(anfrage)
-        } catch let fehler as Agentenfehler {
+            (data, http) = try await transport(request)
+        } catch let fehler as AgentError {
             throw fehler
         } catch {
-            throw Agentenfehler.netzwerk(error.localizedDescription)
+            throw AgentError.netzwerk(error.localizedDescription)
         }
         guard http.statusCode == 200 else {
             throw Absage(
                 status: http.statusCode,
-                text: Responses.meldung(daten) ?? String(decoding: daten.prefix(400), as: UTF8.self),
+                text: Responses.meldung(data) ?? String(decoding: data.prefix(400), as: UTF8.self),
                 wartezeit: http.value(forHTTPHeaderField: "Retry-After").flatMap(Double.init)
             )
         }
-        guard let objekt = try? JSONSerialization.jsonObject(with: daten) as? [String: Any] else {
-            throw Agentenfehler.antwort("Die Antwort war kein JSON-Objekt.")
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            throw AgentError.response("Die Antwort war kein JSON-Objekt.")
         }
-        return objekt
+        return object
     }
 
-    static func meldung(_ daten: Data) -> String? {
-        guard let objekt = try? JSONSerialization.jsonObject(with: daten) as? [String: Any],
-              let fehler = objekt["error"] as? [String: Any]
+    static func meldung(_ data: Data) -> String? {
+        guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let fehler = object["error"] as? [String: Any]
         else { return nil }
         return fehler["message"] as? String
     }

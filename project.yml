@@ -46,7 +46,7 @@ targets:
       - path: App
     dependencies:
       - package: PfennigPackages
-        product: Kern
+        product: Core
       - package: PfennigPackages
         product: Agent
       - package: Sparkle

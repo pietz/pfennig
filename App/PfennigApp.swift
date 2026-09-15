@@ -4,7 +4,7 @@ import SwiftUI
 
 @main
 struct PfennigApp: App {
-    @State private var modell = AppModell()
+    @State private var modell = AppModel()
     private let updaterController: SPUStandardUpdaterController
 
     init() {
@@ -17,26 +17,26 @@ struct PfennigApp: App {
 
     var body: some Scene {
         WindowGroup {
-            Fenster(modell: modell)
-                .modifier(Erscheinung())
+            MainWindow(modell: modell)
+                .modifier(AppearanceModifier())
         }
         .defaultSize(width: 1100, height: 700)
         .commands {
             CommandGroup(after: .appInfo) {
-                AktualisierungsBefehl(updater: updaterController.updater)
+                UpdateCommand(updater: updaterController.updater)
             }
         }
 
         Settings {
-            Einstellungen(modell: modell)
-                .modifier(Erscheinung())
+            SettingsView(modell: modell)
+                .modifier(AppearanceModifier())
         }
     }
 }
 
 /// The appearance is a preference of the window, not bookkeeping, so it lives
 /// in the user defaults and not in `einstellungen`.
-enum Erscheinungsbild: String, CaseIterable, Identifiable {
+enum Appearance: String, CaseIterable, Identifiable {
     case system
     case hell
     case dunkel
@@ -67,8 +67,8 @@ enum Erscheinungsbild: String, CaseIterable, Identifiable {
 
 /// Puts the chosen appearance on the application, from whichever window is on
 /// screen first.
-struct Erscheinung: ViewModifier {
-    @AppStorage("erscheinungsbild") private var erscheinungsbild = Erscheinungsbild.system
+struct AppearanceModifier: ViewModifier {
+    @AppStorage("erscheinungsbild") private var erscheinungsbild = Appearance.system
 
     func body(content: Content) -> some View {
         content

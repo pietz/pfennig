@@ -1,30 +1,30 @@
 import AppKit
-import Kern
+import Core
 import SwiftUI
 import UniformTypeIdentifiers
 
 /// The export sheet: the values of one period, and the file the user takes to
 /// Mein ELSTER or types into the Anlage EÜR. It computes on demand and keeps
 /// no state beyond the chosen period.
-struct Exportblatt: View {
-    let modell: AppModell
-    @Environment(\.dismiss) private var schliessen
+struct ExportSheet: View {
+    let modell: AppModel
+    @Environment(\.dismiss) private var close
 
-    private let profil: Profil
+    private let profile: Profil
     @State private var art: Zeitraumart = .ustva
     @State private var jahr: Int
     @State private var nummer: Int
 
-    init(modell: AppModell) {
+    init(modell: AppModel) {
         self.modell = modell
-        let profil = modell.profil()
-        self.profil = profil
-        let vorgabe = Zeitraum.naechsteUStVA(
-            rhythmus: profil.rhythmus,
-            dauerfristverlaengerung: profil.dauerfristverlaengerung
+        let profile = modell.profile()
+        self.profile = profile
+        let defaultSelection = Zeitraum.naechsteUStVA(
+            rhythmus: profile.rhythmus,
+            dauerfristverlaengerung: profile.dauerfristverlaengerung
         )
-        _jahr = State(initialValue: vorgabe.jahr)
-        _nummer = State(initialValue: vorgabe.nummer)
+        _jahr = State(initialValue: defaultSelection.jahr)
+        _nummer = State(initialValue: defaultSelection.nummer)
     }
 
     private var zeitraum: Zeitraum {
@@ -32,7 +32,7 @@ struct Exportblatt: View {
         case .ustva:
             Zeitraum(
                 jahr: jahr,
-                einteilung: profil.rhythmus == .monatlich ? .monat(nummer) : .quartal(nummer)
+                einteilung: profile.rhythmus == .monatlich ? .monat(nummer) : .quartal(nummer)
             )
         case .euer:
             Zeitraum(jahr: jahr, einteilung: .jahr)
@@ -40,36 +40,36 @@ struct Exportblatt: View {
     }
 
     private var ustva: UStVA {
-        UStVA.berechnen(modell.buchungen, zeitraum: zeitraum, profil: profil)
+        UStVA.calculate(modell.buchungen, zeitraum: zeitraum, profile: profile)
     }
 
     private var euer: EUeR {
-        EUeR.berechnen(modell.buchungen, jahr: jahr, profil: profil)
+        EUeR.calculate(modell.buchungen, jahr: jahr, profile: profile)
     }
 
     var body: some View {
         VStack(spacing: 0) {
             Form {
-                auswahl
+                selection
                 Section(art == .ustva ? "UStVA \(zeitraum.name)" : "Anlage EÜR \(zeitraum.name)") {
                     if art == .ustva {
-                        kennzahlen
+                        taxNumbers
                     } else {
-                        euerzeilen
+                        euerLines
                     }
                 }
-                hinweise
+                hints
             }
             .formStyle(.grouped)
             Divider()
-            fusszeile
+            footer
         }
         .frame(width: 560, height: 600)
     }
 
     // MARK: - Auswahl
 
-    private var auswahl: some View {
+    private var selection: some View {
         Section {
             Picker("Art", selection: $art) {
                 Text("UStVA").tag(Zeitraumart.ustva)
@@ -79,11 +79,11 @@ struct Exportblatt: View {
             .labelsHidden()
 
             Picker("Jahr", selection: $jahr) {
-                ForEach(jahre, id: \.self) { Text(String($0)).tag($0) }
+                ForEach(years, id: \.self) { Text(String($0)).tag($0) }
             }
 
             if art == .ustva {
-                if profil.rhythmus == .monatlich {
+                if profile.rhythmus == .monatlich {
                     Picker("Monat", selection: $nummer) {
                         ForEach(1 ... 12, id: \.self) { Text(Zeitraum.monatsname($0)).tag($0) }
                     }
@@ -94,26 +94,26 @@ struct Exportblatt: View {
                 }
             }
         }
-        .onChange(of: art) { vorgabe() }
+        .onChange(of: art) { defaultSelection() }
     }
 
     /// The current year and the three before it; older periods are not what an
     /// export is for.
-    private var jahre: [Int] {
-        let heute = Datum.heute().jahr
-        return Array((heute - 3 ... heute).reversed())
+    private var years: [Int] {
+        let today = LocalDate.today().jahr
+        return Array((today - 3 ... today).reversed())
     }
 
     /// Switching between the two forms picks the period each of them opens on.
-    private func vorgabe() {
+    private func defaultSelection() {
         switch art {
         case .ustva:
-            let naechster = Zeitraum.naechsteUStVA(
-                rhythmus: profil.rhythmus,
-                dauerfristverlaengerung: profil.dauerfristverlaengerung
+            let next = Zeitraum.naechsteUStVA(
+                rhythmus: profile.rhythmus,
+                dauerfristverlaengerung: profile.dauerfristverlaengerung
             )
-            jahr = naechster.jahr
-            nummer = naechster.nummer
+            jahr = next.jahr
+            nummer = next.nummer
         case .euer:
             jahr = Zeitraum.naechsteEUeR().jahr
         }
@@ -121,13 +121,13 @@ struct Exportblatt: View {
 
     // MARK: - Werte
 
-    @ViewBuilder private var kennzahlen: some View {
+    @ViewBuilder private var taxNumbers: some View {
         let werte = ustva
         if werte.zeilen.isEmpty {
             Text("Keine Werte in diesem Zeitraum.").foregroundStyle(.secondary)
         }
         ForEach(werte.zeilen) { zeile in
-            wert(
+            value(
                 "Kz \(zeile.kennzahl.nummer)",
                 zeile.kennzahl.titel,
                 // A Bemessungsgrundlage goes into the form in whole euros, and
@@ -137,30 +137,30 @@ struct Exportblatt: View {
                     : zeile.betrag
             )
         }
-        wert(
+        value(
             "Kz 83",
             werte.zahllast < .null ? "Verbleibender Überschuss" : "Verbleibende Vorauszahlung",
             werte.zahllast,
-            hervorgehoben: true
+            highlighted: true
         )
     }
 
-    @ViewBuilder private var euerzeilen: some View {
+    @ViewBuilder private var euerLines: some View {
         let werte = euer
         if werte.zeilen.isEmpty {
             Text("Keine Werte in diesem Jahr.").foregroundStyle(.secondary)
         }
         ForEach(werte.zeilen) { zeile in
-            wert("Zeile \(zeile.zeile)", zeile.bezeichnung, zeile.betrag)
+            value("Zeile \(zeile.zeile)", zeile.bezeichnung, zeile.betrag)
         }
-        wert("Summe", "Einnahmen", werte.einnahmen)
-        wert("Summe", "Ausgaben", werte.ausgaben)
-        wert("Summe", "Gewinn", werte.ergebnis, hervorgehoben: true)
+        value("Summe", "Einnahmen", werte.einnahmen)
+        value("Summe", "Ausgaben", werte.ausgaben)
+        value("Summe", "Gewinn", werte.ergebnis, highlighted: true)
     }
 
-    private func wert(_ marke: String, _ titel: String, _ betrag: Cent, hervorgehoben: Bool = false) -> some View {
+    private func value(_ label: String, _ titel: String, _ betrag: Cent, highlighted: Bool = false) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 12) {
-            Text(marke)
+            Text(label)
                 .monospacedDigit()
                 .frame(width: 70, alignment: .leading)
                 .foregroundStyle(.secondary)
@@ -168,17 +168,17 @@ struct Exportblatt: View {
                 .font(.callout)
                 .lineLimit(2)
             Spacer(minLength: 12)
-            Text(betrag.formatiert)
+            Text(betrag.formatted)
                 .monospacedDigit()
-                .fontWeight(hervorgehoben ? .semibold : .regular)
+                .fontWeight(highlighted ? .semibold : .regular)
         }
     }
 
     // MARK: - Hinweise
 
-    @ViewBuilder private var hinweise: some View {
+    @ViewBuilder private var hints: some View {
         let offen = zeitraum.ungeprueft(modell.buchungen)
-        let exportiert = modell.exportierteZeitraeume[zeitraum]
+        let exportiert = modell.exportedPeriods[zeitraum]
         if offen > 0 || exportiert != nil {
             Section {
                 if offen > 0 {
@@ -192,7 +192,7 @@ struct Exportblatt: View {
                 }
                 if let exportiert {
                     Label(
-                        "Bereits exportiert am \(Datum(exportiert).formatiert).",
+                        "Bereits exportiert am \(LocalDate(exportiert).formatted).",
                         systemImage: "clock.arrow.circlepath"
                     )
                     .foregroundStyle(.secondary)
@@ -203,7 +203,7 @@ struct Exportblatt: View {
 
     // MARK: - Fußzeile
 
-    private var fusszeile: some View {
+    private var footer: some View {
         HStack {
             if art == .ustva {
                 Link(
@@ -214,9 +214,9 @@ struct Exportblatt: View {
                 )
             }
             Spacer()
-            Button("Schließen") { schliessen() }
+            Button("Schließen") { close() }
                 .keyboardShortcut(.cancelAction)
-            Button(art == .ustva ? "XML speichern…" : "CSV speichern…", action: sichern)
+            Button(art == .ustva ? "XML speichern…" : "CSV speichern…", action: save)
                 .keyboardShortcut(.defaultAction)
         }
         .padding(12)
@@ -224,7 +224,7 @@ struct Exportblatt: View {
 
     /// Writes the file where the user wants it and notes the period as
     /// exported. Pfennig does not transmit; the upload happens in Mein ELSTER.
-    private func sichern() {
+    private func save() {
         let panel = NSSavePanel()
         panel.nameFieldStringValue = zeitraum.dateiname
         panel.allowedContentTypes = [art == .ustva ? .xml : .commaSeparatedText]
@@ -235,8 +235,8 @@ struct Exportblatt: View {
             case .ustva: try UStVAXml.daten(ustva).write(to: ziel)
             case .euer: try Data(euer.csv.utf8).write(to: ziel)
             }
-            modell.exportVermerken(zeitraum)
-            schliessen()
+            modell.markExported(zeitraum)
+            close()
         } catch {
             modell.fehler = "Die Datei ließ sich nicht schreiben: \(error.localizedDescription)"
         }

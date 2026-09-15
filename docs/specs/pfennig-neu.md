@@ -122,7 +122,7 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 
 ## 6. Technik und Vorgehen
 
-**Struktur.** Ein Swift-Package mit drei Zielen: `Kern` (Schema, Geld, Datum, Repository, Prüfregeln, Steuerrechnung, Export), `Agent` (Responses-Client, Werkzeugschleife, sql- und umrechnen-Werkzeug, Aktivitätsvergleich), `App` (SwiftUI). Tests je Ziel. Werkzeuge wie bisher: XcodeGen, `scripts/build.sh`, swiftformat, GRDB für SQLite.
+**Struktur.** Ein Swift-Package mit drei Zielen: `Core` (Schema, Geld, Datum, Repository, Prüfregeln, Steuerrechnung, Export), `Agent` (Responses-Client, Werkzeugschleife, sql- und umrechnen-Werkzeug, Aktivitätsvergleich), `App` (SwiftUI). Tests je Ziel. Werkzeuge wie bisher: XcodeGen, `scripts/build.sh`, swiftformat, GRDB für SQLite.
 
 **Übernommen aus dem alten Code**, kopiert und angepasst, nicht importiert: Money, LocalDate, UStVA-Berechnung mit den geprüften Kennzahlen 2026, EÜR-Zeilen, XML-Exporter, Kategorienliste, Responses-Client, Keychain-Zugriff, PDF-Vorschau. Alles andere wird nicht angesehen.
 

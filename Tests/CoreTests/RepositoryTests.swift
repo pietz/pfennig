@@ -1,0 +1,348 @@
+@testable import Core
+import Foundation
+import GRDB
+import Testing
+
+private func beispiel(
+    id: Int64? = nil,
+    positionen: [Position] = [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
+    zahlungen: [Zahlung] = []
+) -> Buchung {
+    Buchung(
+        id: id,
+        richtung: .ausgabe,
+        art: .rechnung,
+        datum: LocalDate(jahr: 2026, monat: 9, tag: 14),
+        titel: "Bürostuhl",
+        kategorie: "buerobedarf",
+        privatanteilProzent: 20,
+        notizen: "Mischnutzung",
+        gegenparteiName: "Möbel GmbH",
+        gegenparteiLand: "DE",
+        gegenparteiUstid: "DE123456789",
+        positionen: positionen,
+        steuerbehandlung: .inland,
+        zahlungen: zahlungen,
+        belege: ["a1b2c3"]
+    )
+}
+
+@Test func buchungUeberstehtDenRundlauf() throws {
+    let repository = try Repository.inMemory()
+    let saved = try repository.save(
+        beispiel(positionen: [
+            Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900)),
+            Position(netto: Cent(2000), steuersatz: 7, steuer: Cent(140))
+        ]),
+        akteur: .agent
+    )
+    let id = try #require(saved.id)
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.id == id)
+    #expect(geladen.titel == "Bürostuhl")
+    #expect(geladen.art == .rechnung)
+    #expect(geladen.richtung == .ausgabe)
+    #expect(geladen.datum == LocalDate(jahr: 2026, monat: 9, tag: 14))
+    #expect(geladen.privatanteilProzent == 20)
+    #expect(geladen.gegenparteiUstid == "DE123456789")
+    #expect(geladen.steuerbehandlung == .inland)
+    #expect(geladen.positionen.count == 2)
+    #expect(geladen.positionen[1].steuersatz == 7)
+    #expect(geladen.belege == ["a1b2c3"])
+    #expect(geladen.geprueftAm == nil)
+    #expect(geladen.netto == Cent(12000))
+    #expect(geladen.steuer == Cent(2040))
+    #expect(geladen.brutto == Cent(14040))
+
+    // The lists really live in TEXT columns as JSON.
+    let raw = try repository.datenbank.read { db in
+        try Row.fetchOne(db, sql: "SELECT positionen, belege FROM buchungen WHERE id = ?", arguments: [id])
+    }
+    let positionen: String = try #require(raw?["positionen"])
+    #expect(positionen.contains("\"steuersatz\""))
+    #expect(try #require(raw?["belege"] as String?) == "[\"a1b2c3\"]")
+}
+
+@Test func originalbetragBleibtAlsExakteDezimalzahlErhalten() throws {
+    let repository = try Repository.inMemory()
+    let original = try #require(Decimal(text: "1234,56789"))
+    let saved = try repository.save(
+        Buchung(
+            richtung: .ausgabe,
+            art: .rechnung,
+            datum: LocalDate(jahr: 2026, monat: 9, tag: 14),
+            titel: "Kurs",
+            kategorie: "software",
+            gegenparteiName: "Overseas",
+            gegenparteiLand: "US",
+            positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+            waehrung: "KWD",
+            originalbetrag: original,
+            steuerbehandlung: .steuerfrei
+        ),
+        akteur: .agent
+    )
+    let id = try #require(saved.id)
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.originalbetrag == original)
+
+    let raw = try repository.datenbank.read { db in
+        try String.fetchOne(db, sql: "SELECT originalbetrag FROM buchungen WHERE id = ?", arguments: [id])
+    }
+    #expect(raw == "1234.56789")
+}
+
+@Test func jederSchreibvorgangHinterlaesstEineAktivitaet() throws {
+    let repository = try Repository.inMemory()
+    var buchung = try repository.save(beispiel(), akteur: .agent)
+    buchung.titel = "Schreibtisch"
+    _ = try repository.save(buchung, akteur: .nutzer)
+
+    let aktivitaeten = try repository.datenbank.read { db in
+        try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten ORDER BY id")
+    }
+    #expect(aktivitaeten.count == 2)
+
+    #expect(aktivitaeten[0].akteur == .agent)
+    #expect(aktivitaeten[0].vorher == nil)
+    #expect(aktivitaeten[0].nachher.titel == "Bürostuhl")
+    #expect(aktivitaeten[0].buchungId == buchung.id)
+
+    #expect(aktivitaeten[1].akteur == .nutzer)
+    #expect(aktivitaeten[1].vorher?.titel == "Bürostuhl")
+    #expect(aktivitaeten[1].nachher.titel == "Schreibtisch")
+
+    // Updating must not add a second booking.
+    #expect(try repository.allBookings().count == 1)
+}
+
+@Test func bestaetigenSetztGeprueftAmUndWirdProtokolliert() throws {
+    let repository = try Repository.inMemory()
+    let saved = try repository.save(beispiel(), akteur: .agent)
+    let id = try #require(saved.id)
+    try repository.confirm(id: id)
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.geprueftAm != nil)
+
+    let letzte = try repository.datenbank.read { db in
+        try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten ORDER BY id").last
+    }
+    #expect(letzte?.akteur == .nutzer)
+    #expect(letzte?.vorher?.geprueftAm == nil)
+    #expect(letzte?.nachher.geprueftAm != nil)
+
+    #expect(throws: CoreError.self) { try repository.confirm(id: 999) }
+}
+
+@Test func nutzerAenderungErhaeltBestaetigung() throws {
+    let repository = try Repository.inMemory()
+    var buchung = try repository.save(beispiel(), akteur: .nutzer)
+    let id = try #require(buchung.id)
+    try repository.confirm(id: id)
+
+    buchung = try #require(try repository.allBookings().first)
+    buchung.titel = "Schreibtisch"
+    let geaendert = try repository.save(buchung, akteur: .nutzer)
+    #expect(geaendert.geprueftAm != nil)
+}
+
+@Test func agentenBeleganhaengenSetztBestaetigungZurueck() throws {
+    let repository = try Repository.inMemory()
+    let buchung = try repository.save(beispiel(), akteur: .nutzer)
+    let id = try #require(buchung.id)
+    try repository.confirm(id: id)
+    #expect(try repository.allBookings().first?.geprueftAm != nil)
+
+    try repository.saveFileAndAttachReceipt(
+        Datei(sha256: "neu", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg),
+        an: [id]
+    )
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.geprueftAm == nil)
+    #expect(geladen.belege.contains("neu"))
+}
+
+@Test func zahlungenBekommenFortlaufendeIds() throws {
+    let repository = try Repository.inMemory()
+    let datum = LocalDate(jahr: 2026, monat: 9, tag: 20)
+    var buchung = try repository.save(
+        beispiel(zahlungen: [
+            Zahlung(datum: datum, betrag: Cent(5000), richtung: .ausgabe),
+            Zahlung(datum: datum, betrag: Cent(3000), richtung: .ausgabe)
+        ]),
+        akteur: .agent
+    )
+    #expect(buchung.zahlungen.map(\.id) == [1, 2])
+
+    buchung.zahlungen.append(Zahlung(datum: datum, betrag: Cent(1000), richtung: .ausgabe))
+    buchung = try repository.save(buchung, akteur: .nutzer)
+    #expect(buchung.zahlungen.map(\.id) == [1, 2, 3])
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.zahlungen.map(\.id) == [1, 2, 3])
+    #expect(geladen.zahlungen[0].betrag == Cent(5000))
+    #expect(geladen.zahlungen[2].geprueft)
+}
+
+@Test func zahlungsstandFolgtDerZahlungssumme() {
+    let datum = LocalDate(jahr: 2026, monat: 9, tag: 20)
+    #expect(beispiel().zahlungsstand == .offen)
+    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(5000), richtung: .ausgabe)])
+        .zahlungsstand == .teilweise)
+    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(11900), richtung: .ausgabe)])
+        .zahlungsstand == .bezahlt)
+    #expect(beispiel(zahlungen: [
+        Zahlung(datum: datum, betrag: Cent(6000), richtung: .ausgabe),
+        Zahlung(datum: datum, betrag: Cent(5900), richtung: .ausgabe)
+    ]).zahlungsstand == .bezahlt)
+
+    // A refund carries the opposite direction and counts against the payments.
+    let erstattet = beispiel(zahlungen: [
+        Zahlung(datum: datum, betrag: Cent(11900), richtung: .ausgabe),
+        Zahlung(datum: datum, betrag: Cent(11900), richtung: .einnahme)
+    ])
+    #expect(erstattet.gezahlt == Cent(0))
+    #expect(erstattet.zahlungsstand == .offen)
+}
+
+@Test func einstellungenUeberstehenDenRundlauf() throws {
+    let repository = try Repository.inMemory()
+    #expect(try repository.setting("kleinunternehmer") == nil)
+    try repository.setSetting("kleinunternehmer", value: "nein")
+    #expect(try repository.setting("kleinunternehmer") == "nein")
+    try repository.setSetting("kleinunternehmer", value: "ja")
+    #expect(try repository.setting("kleinunternehmer") == "ja")
+}
+
+@Test func belegGiltNurAlsBekanntSolangeEineBuchungIhnTraegt() throws {
+    let repository = try Repository.inMemory()
+    try repository.saveFile(
+        Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 4096, art: .beleg, seiten: 2)
+    )
+    // The row alone is not the answer; a booking has to point at it.
+    #expect(try repository.receiptIsUsed("abc") == false)
+
+    let buchung = try repository.save(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
+            positionen: [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
+            steuerbehandlung: .inland, belege: ["abc"]
+        ),
+        akteur: .nutzer
+    )
+    #expect(try repository.receiptIsUsed("abc"))
+
+    // Deleting the booking takes the file row with it and names the original.
+    let verwaist = try repository.delete(id: #require(buchung.id))
+    #expect(verwaist.map(\.sha256) == ["abc"])
+    #expect(try repository.receiptIsUsed("abc") == false)
+    #expect(try repository.files(zu: ["abc"]).isEmpty)
+}
+
+@Test func belegLaesstSichVonEinerBuchungNehmen() throws {
+    let repository = try Repository.inMemory()
+    try repository.saveFile(
+        Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg)
+    )
+    func anlegen(_ titel: String) throws -> Int64 {
+        try #require(repository.save(
+            Buchung(
+                richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: titel,
+                positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+                steuerbehandlung: .steuerfrei, belege: ["abc"]
+            ),
+            akteur: .nutzer
+        ).id)
+    }
+    let eine = try anlegen("Eine")
+    let andere = try anlegen("Andere")
+
+    // As long as the other booking carries it, the file stays.
+    #expect(try repository.removeReceipt("abc", von: eine).isEmpty)
+    #expect(try repository.files(zu: ["abc"]).count == 1)
+    #expect(try repository.removeReceipt("abc", von: andere).map(\.sha256) == ["abc"])
+    #expect(try repository.files(zu: ["abc"]).isEmpty)
+}
+
+@Test func kiEinstellungenUeberstehenDenRundlauf() throws {
+    let repository = try Repository.inMemory()
+    // A fresh installation asks the cheap model with the documented default.
+    #expect(try repository.aiSettings() == KiEinstellungen(modell: .luna, aufwand: .mittel, schnell: false))
+
+    let gewaehlt = KiEinstellungen(modell: .terra, aufwand: .sehrHoch, schnell: true)
+    try repository.saveAISettings(gewaehlt)
+    #expect(try repository.aiSettings() == gewaehlt)
+    #expect(try repository.setting("ki.modell") == "gpt-5.6-terra")
+    #expect(try repository.setting("ki.aufwand") == "xhigh")
+    #expect(try repository.setting("ki.schnell") == "true")
+}
+
+@Test func anfragenWerdenGestartetUndBeendet() throws {
+    let repository = try Repository.inMemory()
+    let id = try repository.startRequest(dateiSha256: "abc", modell: "gpt-5")
+    try repository.finishRequest(
+        id: id,
+        status: .erfolg,
+        eingabeTokens: 1200,
+        ausgabeTokens: 300,
+        konversation: "[{\"rolle\":\"agent\"}]"
+    )
+    let request = try #require(try repository.datenbank.read { try Anfrage.fetchOne($0, key: id) })
+    #expect(request.status == .erfolg)
+    #expect(request.eingabeTokens == 1200)
+    #expect(request.beendetAm != nil)
+    #expect(request.konversation == "[{\"rolle\":\"agent\"}]")
+}
+
+@Test func buchungLaesstSichLoeschen() throws {
+    let repository = try Repository.inMemory()
+    let saved = try repository.save(beispiel(), akteur: .nutzer)
+    let id = try #require(saved.id)
+
+    try repository.delete(id: id)
+    #expect(try repository.allBookings().isEmpty)
+    // The log keeps what happened, it is not a copy of the table.
+    let eintraege = try repository.datenbank.read { try Aktivitaet.fetchCount($0) }
+    #expect(eintraege == 1)
+}
+
+@Test func profilUeberstehtDenRundlauf() throws {
+    let repository = try Repository.inMemory()
+    #expect(try repository.profile() == Profil())
+
+    let profile = Profil(
+        name: "Nordlicht Studio",
+        adresse: "Musterweg 3\n20095 Hamburg",
+        steuernummer: "21/815/08150",
+        ustid: "DE123456789",
+        kleinunternehmer: true,
+        rhythmus: .monatlich,
+        dauerfristverlaengerung: true
+    )
+    try repository.saveProfile(profile)
+    #expect(try repository.profile() == profile)
+
+    try repository.saveProfile(Profil(steuernummer: "neu"))
+    #expect(try repository.profile().steuernummer == "neu")
+    #expect(try repository.profile().kleinunternehmer == false)
+    #expect(try repository.profile().name.isEmpty)
+    #expect(try repository.profile().adresse.isEmpty)
+}
+
+@Test(.timeLimit(.minutes(1)))
+func beobachtungLiefertJedeAenderung() async throws {
+    let repository = try Repository.inMemory()
+    var werte = repository.observeBookings().makeAsyncIterator()
+    #expect(try await werte.next()?.isEmpty == true)
+
+    let saved = try repository.save(beispiel(), akteur: .nutzer)
+    #expect(try await werte.next()?.count == 1)
+
+    var geaendert = saved
+    geaendert.titel = "Stehpult"
+    _ = try repository.save(geaendert, akteur: .nutzer)
+    #expect(try await werte.next()?.first?.titel == "Stehpult")
+}

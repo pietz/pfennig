@@ -1,0 +1,194 @@
+import Foundation
+import GRDB
+
+/// What one call of the sql tool did: the answer the agent reads, the bookings
+/// the statement touched and the ones it created. Swift hangs the receipt on
+/// the touched bookings and removes the created ones when the run fails.
+public struct SQLResult: Sendable {
+    public var text: String
+    public var beruehrt: [Int64] = []
+    public var angelegt: [Int64] = []
+}
+
+/// The agent's one tool. It runs a single SQL statement against the app
+/// database inside the three limits of spec section 4: the authorizer decides
+/// what may be compiled, the statement runs in a transaction whose commit
+/// depends on the validation rules, and every touched booking leaves a row in
+/// `aktivitaeten`.
+public final class SQLTool: Sendable {
+    /// A SELECT never hands the agent more than this many rows.
+    public static let rowLimit = 50
+
+    /// What the authorizer lets through, in one sentence. The tool says it in
+    /// its refusals, the instructions and the tool description repeat it.
+    public static let allowed = """
+    Erlaubt sind SELECT auf buchungen, dateien, aktivitaeten und anfragen sowie INSERT und UPDATE \
+    auf buchungen.
+    """
+
+    private let repository: Repository
+    /// An empty copy of the schema with the authorizer on it. It compiles the
+    /// agent's statement and nothing else. Without the schema there is no
+    /// check, so a schema that does not build leaves no tool behind.
+    private let validationDatabase: DatabaseQueue
+    /// Whether the authorizer was asked anything during the last compile.
+    private let trace = SQLAuthorizer.Mitschrift()
+
+    public init(_ repository: Repository) throws {
+        self.repository = repository
+        validationDatabase = try DatabaseQueue()
+        try validationDatabase.write(Schema.anlegen)
+        // From here on the connection answers nothing but the agent's compile.
+        validationDatabase.writeWithoutTransaction { SQLAuthorizer.install($0.sqliteConnection, trace) }
+    }
+
+    /// Runs one statement and always answers in German, errors included: the
+    /// answer is what the agent reads and corrects from.
+    public func execute(_ sql: String) -> SQLResult {
+        do {
+            try authorize(sql)
+            return try perform(sql)
+        } catch let SQLToolError.text(text) {
+            return SQLResult(text: text)
+        } catch let fehler as DatabaseError {
+            return SQLResult(text: "Fehler: \(fehler.message ?? "\(fehler)")")
+        } catch {
+            return SQLResult(text: "Fehler: \(error.localizedDescription)")
+        }
+    }
+
+    /// Compiles the statement on the guarded connection. A denied action makes
+    /// SQLite refuse the compile, and more than one statement is refused too.
+    private func authorize(_ sql: String) throws {
+        do {
+            try validationDatabase.writeWithoutTransaction { db in
+                trace.asked = false
+                _ = try db.makeStatement(sql: sql)
+                // `VACUUM` compiles without asking the authorizer once; a
+                // statement nobody was asked about is not an allowed one.
+                guard trace.asked else { throw SQLTool.notAllowed("diese Anweisung") }
+            }
+        } catch let fehler as DatabaseError where fehler.resultCode == .SQLITE_AUTH {
+            throw SQLTool.notAllowed(fehler.message ?? "diese Anweisung")
+        }
+    }
+
+    static func notAllowed(_ reason: String) -> SQLToolError {
+        .text("Nicht erlaubt: \(reason). \(allowed)")
+    }
+
+    private func perform(_ sql: String) throws -> SQLResult {
+        var result = SQLResult(text: "")
+        try repository.datenbank.writeWithoutTransaction { db in
+            try db.inTransaction {
+                let anweisung = try db.makeStatement(sql: sql)
+                if anweisung.isReadonly {
+                    result.text = try SQLTool.asJSON(Row.fetchAll(anweisung))
+                    return .commit
+                }
+
+                let vorher = try SQLTool.rows(db)
+                try anweisung.execute()
+                let nachher = try SQLTool.rows(db)
+                let beruehrt = nachher.filter { vorher[$0.key] != $0.value }.keys.sorted()
+
+                // A booking may change, it may not go. An UPDATE on the id
+                // would take one away without a DELETE and without a trace.
+                let verschwunden = vorher.keys.filter { nachher[$0] == nil }.sorted()
+                guard verschwunden.isEmpty else {
+                    result.text = """
+                    Die Anweisung hätte die \(verschwunden.count == 1 ? "Buchung" : "Buchungen") \
+                    \(verschwunden.map(String.init).joined(separator: ", ")) entfernt. Die id einer \
+                    Buchung bleibt, wie sie ist.
+                    """
+                    return .rollback
+                }
+                guard beruehrt.isEmpty == false else {
+                    result.text = "Die Anweisung hat keine Buchung verändert."
+                    return .commit
+                }
+
+                let profile = try Repository.profile(db)
+                var messages: [String] = []
+                for id in beruehrt {
+                    messages += try SQLTool.finalize(id: id, vorher: vorher[id], profile: profile, in: db)
+                }
+                guard messages.isEmpty else {
+                    result.text = "Die Buchung wurde nicht gespeichert:\n" + messages.joined(separator: "\n")
+                    return .rollback
+                }
+                result.beruehrt = beruehrt
+                result.angelegt = beruehrt.filter { vorher[$0] == nil }
+                result.text = "ok, berührte Buchungen: \(beruehrt.map(String.init).joined(separator: ", "))"
+                return .commit
+            }
+        }
+        return result
+    }
+
+    /// Writes back everything on a touched row that belongs to Swift and not to
+    /// the agent, logs the change and checks the result against the rules.
+    private static func finalize(
+        id: Int64,
+        vorher zeile: Row?,
+        profile: Profil,
+        in db: Database
+    ) throws -> [String] {
+        do {
+            guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
+            let alt = try zeile.map(Buchung.init(row:))
+            // id, belege, geprueft_am, Zeitstempel und zahlungen.id setzt Swift.
+            // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
+            buchung.belege = alt?.belege ?? []
+            let saved = try Repository.save(buchung, akteur: .agent, vorher: alt, in: db)
+            return ValidationRules.validate(saved, profile: profile).map { "Buchung \(id): \($0)" }
+        } catch {
+            return ["""
+            Buchung \(id) ließ sich nicht lesen: \(error.localizedDescription) positionen, zahlungen \
+            und belege brauchen JSON in der Form aus dem Schema.
+            """]
+        }
+    }
+
+    private static func rows(_ db: Database) throws -> [Int64: Row] {
+        var rows: [Int64: Row] = [:]
+        for zeile in try Row.fetchAll(db, sql: "SELECT * FROM buchungen") {
+            rows[zeile["id"]] = zeile
+        }
+        return rows
+    }
+
+    /// The rows of a SELECT as JSON, capped and with a word about the cap.
+    static func asJSON(_ rows: [Row]) -> String {
+        let objects = rows.prefix(rowLimit).map { zeile in
+            var object: [String: Any] = [:]
+            for (name, value) in zeile {
+                object[name] = switch value.storage {
+                case .null: NSNull()
+                case let .int64(zahl): zahl
+                case let .double(zahl): zahl
+                case let .string(text): text
+                case .blob: "<binär>"
+                }
+            }
+            return object
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: objects, options: [.withoutEscapingSlashes])
+        else {
+            return "Fehler: Die Zeilen ließen sich nicht als JSON schreiben."
+        }
+        let text = String(decoding: data, as: UTF8.self)
+        guard rows.count > rowLimit else { return text }
+        return text + "\n(\(rows.count) Zeilen gefunden, die ersten \(rowLimit) stehen oben.)"
+    }
+}
+
+enum SQLToolError: Error, LocalizedError {
+    case text(String)
+
+    var errorDescription: String? {
+        switch self {
+        case let .text(text): text
+        }
+    }
+}
