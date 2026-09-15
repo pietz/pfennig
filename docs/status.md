@@ -1,5 +1,7 @@
 # Status
 
+**Isoliertes HTML-Mockup (2026-09-15).** `docs/mockups/bookings.html` ist ein selbstständiger Tabellenentwurf mit ausschließlich synthetischen Buchungen für die Designprüfung. SwiftUI, App und Daten bleiben unverändert; die native Implementierung ist noch nicht begonnen.
+
 **Naming refactor (2026-09-15).** Infrastructure, agent mechanics, UI plumbing and generic helpers use English names, including the `Core` module and `LocalDate`. German accounting and persistence types, properties, raw values, schema names and JSON keys remain unchanged; naming-only changes preserve rendered prompts, errors and UI strings. Verification: 102 tests pass, the app build and release-contract checks pass, and SwiftFormat is clean. Independent source review f5e49310 approved the naming refactor.
 
 **2026-09-14.** Der Neuaufbau nach `docs/specs/pfennig-neu.md` beginnt. Der alte Code ist als Tag `legacy-2026-09-14` archiviert und aus dem Arbeitsbaum entfernt. Erhalten: Spec, AGENTS.md, Skripte, `project.yml`, Info.plist, Entitlements, Assets, die Recherche zum UStVA-XML (Upload am 2026-09-14 erfolgreich getestet) und die Notizen zur Responses API.
