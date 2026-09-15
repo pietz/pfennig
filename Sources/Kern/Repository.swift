@@ -72,6 +72,10 @@ public final class Repository: Sendable {
     static func speichern(_ buchung: Buchung, akteur: Akteur, vorher: Buchung?, in db: Database) throws -> Buchung {
         let jetzt = Date()
         var neu = buchung
+        if akteur == .agent {
+            // Agent writes require fresh user confirmation; no-op tool calls never save here.
+            neu.geprueftAm = nil
+        }
         neu.zahlungen = nummeriert(buchung.zahlungen)
         neu.geaendertAm = jetzt
         neu.erstelltAm = vorher?.erstelltAm ?? jetzt

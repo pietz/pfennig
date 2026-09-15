@@ -41,3 +41,5 @@ Nächster Schritt: Anleitung des Agenten schärfen: Privatanteil nur bei eindeut
 **Review 94713037.** Die Import-Finalisierung wurde unabhängig geprüft und ohne Beanstandungen freigegeben.
 
 **Inspector-Stale-Draft-Fix.** Bei einer Datenbankänderung der ausgewählten Buchung ersetzt der Inspector jetzt Entwurf und gespeicherten Ausgangszustand durch die neueste vollständige Zeile, auch bei ungespeicherter Eingabe. Das akzeptiert seltenen Verlust laufender Eingabe, verhindert aber, dass ein veralteter kompletter Entwurf neuere Zahlungen oder Belege überschreibt. Es gibt bewusst keine Feldzusammenführung oder Versionssperre. Die unabhängige Prüfung `820f48dd` gab den Fix ohne Beanstandungen frei.
+
+**Reviewstatus-Agentenänderung.** Jede tatsächliche Agentenänderung setzt `geprueft_am` auf leer; auch das Anhängen eines Belegs zählt. Nutzerbestätigung und Nutzeränderungen erhalten den Prüfstatus, reine SELECT- und No-op-Anweisungen ändern ihn nicht. Die unabhängige Prüfung `6240ca66` gab den Fix ohne Beanstandungen frei.

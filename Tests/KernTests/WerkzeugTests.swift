@@ -91,7 +91,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     let buchung = try #require(try repository.alleBuchungen().first)
     #expect(buchung.titel == "Ersetzt")
     #expect(buchung.belege == ["abc"])
-    #expect(buchung.geprueftAm != nil)
+    #expect(buchung.geprueftAm == nil)
 }
 
 /// A new id is a removal with another name: the old row would be gone without a
@@ -119,10 +119,12 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
 @Test func werkzeugSagtWennNichtsGeschahUndSchreibtKeineAktivitaet() throws {
     let (repository, werkzeug) = try werkzeug()
     _ = werkzeug.ausfuehren(gueltigeBuchung)
+    try repository.bestaetigen(id: 1)
     let ergebnis = werkzeug.ausfuehren("UPDATE buchungen SET titel = titel WHERE id = 1")
     #expect(ergebnis.text == "Die Anweisung hat keine Buchung verändert.")
     #expect(ergebnis.beruehrt.isEmpty)
-    #expect(try repository.datenbank.read { try Aktivitaet.fetchAll($0) }.count == 1)
+    #expect(try repository.datenbank.read { try Aktivitaet.fetchAll($0) }.count == 2)
+    #expect(try repository.alleBuchungen().first?.geprueftAm != nil)
 }
 
 @Test func werkzeugNimmtNurEineAnweisung() throws {
@@ -163,7 +165,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(aktivitaeten[0].nachher.titel == "Strom")
 }
 
-@Test func werkzeugZwingtGeprueftAmAufLeerUndHaeltDieBelegeFest() throws {
+@Test func werkzeugSetztGeprueftAmBeiAenderungZurueckUndHaeltDieBelegeFest() throws {
     let (repository, werkzeug) = try werkzeug()
     #expect(werkzeug.ausfuehren("""
     INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung,
@@ -176,10 +178,11 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(buchung.geprueftAm == nil)
     #expect(buchung.belege.isEmpty)
 
-    // A booking the user confirmed keeps its review when the agent updates it.
+    // An agent change makes a previously confirmed booking unreviewed again.
     try repository.bestaetigen(id: 1)
-    #expect(werkzeug.ausfuehren("UPDATE buchungen SET titel = 'Frech 2' WHERE id = 1").beruehrt == [1])
     #expect(try repository.alleBuchungen().first?.geprueftAm != nil)
+    #expect(werkzeug.ausfuehren("UPDATE buchungen SET titel = 'Frech 2' WHERE id = 1").beruehrt == [1])
+    #expect(try repository.alleBuchungen().first?.geprueftAm == nil)
 }
 
 @Test func werkzeugMeldetBerhrteUndAngelegteGetrennt() throws {

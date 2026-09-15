@@ -138,9 +138,8 @@ public final class Werkzeug: Sendable {
             guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
             let alt = try zeile.map(Buchung.init(row:))
             // id, belege, geprueft_am, Zeitstempel und zahlungen.id setzt Swift.
-            // Eine neue Zeile des Agenten bleibt damit immer ungeprüft.
+            // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
             buchung.belege = alt?.belege ?? []
-            buchung.geprueftAm = alt?.geprueftAm
             let gespeichert = try Repository.speichern(buchung, akteur: .agent, vorher: alt, in: db)
             return Pruefregeln.pruefen(gespeichert, profil: profil).map { "Buchung \(id): \($0)" }
         } catch {

@@ -107,6 +107,35 @@ private func beispiel(
     #expect(throws: KernFehler.self) { try repository.bestaetigen(id: 999) }
 }
 
+@Test func nutzerAenderungErhaeltBestaetigung() throws {
+    let repository = try Repository.imSpeicher()
+    var buchung = try repository.speichern(beispiel(), akteur: .nutzer)
+    let id = try #require(buchung.id)
+    try repository.bestaetigen(id: id)
+
+    buchung = try #require(try repository.alleBuchungen().first)
+    buchung.titel = "Schreibtisch"
+    let geaendert = try repository.speichern(buchung, akteur: .nutzer)
+    #expect(geaendert.geprueftAm != nil)
+}
+
+@Test func agentenBeleganhaengenSetztBestaetigungZurueck() throws {
+    let repository = try Repository.imSpeicher()
+    let buchung = try repository.speichern(beispiel(), akteur: .nutzer)
+    let id = try #require(buchung.id)
+    try repository.bestaetigen(id: id)
+    #expect(try repository.alleBuchungen().first?.geprueftAm != nil)
+
+    try repository.dateiUndBelegAnhaengen(
+        Datei(sha256: "neu", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg),
+        an: [id]
+    )
+
+    let geladen = try #require(try repository.alleBuchungen().first)
+    #expect(geladen.geprueftAm == nil)
+    #expect(geladen.belege.contains("neu"))
+}
+
 @Test func zahlungenBekommenFortlaufendeIds() throws {
     let repository = try Repository.imSpeicher()
     let datum = Datum(jahr: 2026, monat: 9, tag: 20)
