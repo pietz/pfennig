@@ -4,6 +4,7 @@ import GRDB
 /// The only error Kern raises by itself; everything else comes from GRDB.
 public enum KernFehler: Error {
     case buchungNichtGefunden(Int64)
+    case keineBuchungAngehaengt
 }
 
 /// The single way into the database. Every write of a booking goes through
@@ -115,6 +116,23 @@ public final class Repository: Sendable {
     /// same original came back. The row is written either way.
     public func dateiSpeichern(_ datei: Datei) throws {
         try datenbank.write { try datei.upsert($0) }
+    }
+
+    /// Saves the file row and attaches its hash in one transaction. A file is
+    /// not complete unless at least one booking from the agent run still exists.
+    public func dateiUndBelegAnhaengen(_ datei: Datei, an ids: [Int64]) throws {
+        try datenbank.write { db in
+            try datei.upsert(db)
+            var vorhandeneBuchung = false
+            for id in ids {
+                guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
+                vorhandeneBuchung = true
+                guard buchung.belege.contains(datei.sha256) == false else { continue }
+                buchung.belege.append(datei.sha256)
+                _ = try Repository.speichern(buchung, akteur: .agent, in: db)
+            }
+            guard vorhandeneBuchung else { throw KernFehler.keineBuchungAngehaengt }
+        }
     }
 
     /// Dedupe is not "the file was seen once" but "a booking still carries it".

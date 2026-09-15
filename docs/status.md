@@ -35,3 +35,7 @@ Nächster Schritt: Anleitung des Agenten schärfen: Privatanteil nur bei eindeut
 **Release 0.1.0 (2026-09-15).** Tag `v0.1.0`, Developer-ID-signiert, von Apple notarisiert und gestapelt, `dist/Pfennig-0.1.0-macOS.zip` mit SHA-256. GitHub-Release als Entwurf angelegt, Veröffentlichung ist der Schritt des Eigentümers. Siehe `CHANGELOG.md`.
 
 **Sicherheitsfix 2026-09-15.** „Verwerfen“ löscht ausschließlich Dateien, deren aufgelöster übergeordneter Pfad die Inbox ist. Fehler vor dem Kopieren behalten den Originalpfad und lassen das Original unberührt; Tests decken Inbox-Kopie, Geschwisterpfad und ein blockiertes Inbox-Verzeichnis ab. Die unabhängige Prüfung `67787b65` bestätigte den Fix ohne Beanstandungen.
+
+**Import-Finalisierung.** Eine abgeschlossene Agentenantwort ohne angelegte oder geänderte Buchung ist ein Fehler und lässt die Inbox-Datei für den bestehenden Wiederholungs- und Verwerfen-Ablauf liegen. Das Dokument wird zuerst ins Archiv kopiert; Dateizeile und Beleganhänge werden in einer Transaktion gespeichert. Erst nach deren Commit wird die Inbox-Kopie entfernt. Schlägt die Datenbank-Finalisierung fehl, bleibt die Inbox erhalten; eine übrig gebliebene Archivkopie wird beim Wiederholen verwendet.
+
+**Review 94713037.** Die Import-Finalisierung wurde unabhängig geprüft und ohne Beanstandungen freigegeben.

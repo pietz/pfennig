@@ -112,6 +112,9 @@ public struct Agentenlauf: Sendable {
         var ergebnis = Laufergebnis()
         do {
             try await schleife(datei, ki: ki, anleitung: anleitung, ergebnis: &ergebnis, protokoll: &protokoll)
+            guard ergebnis.beruehrt.isEmpty == false else {
+                throw Agentenfehler.keineBuchung
+            }
             try repository.anfrageBeenden(
                 id: anfrage, status: .erfolg, eingabeTokens: protokoll.eingabeTokens,
                 ausgabeTokens: protokoll.ausgabeTokens, konversation: protokoll.alsJSON()

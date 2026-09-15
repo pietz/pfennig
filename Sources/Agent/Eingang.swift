@@ -32,6 +32,7 @@ public struct Eingang: Sendable {
     let werkzeug: Werkzeug
     let pfad: Archivpfad
     let transport: Transport
+    private let schluessel: String?
     private let laufende = Laufende()
 
     public init(
@@ -39,10 +40,22 @@ public struct Eingang: Sendable {
         pfad: Archivpfad = .standard,
         transport: @escaping Transport = Responses.netz
     ) throws {
+        try self.init(repository: repository, pfad: pfad, transport: transport, schluessel: nil)
+    }
+
+    /// Internal key override for tests. Production intake reads the key from
+    /// the Keychain when it starts a run.
+    init(
+        repository: Repository,
+        pfad: Archivpfad,
+        transport: @escaping Transport,
+        schluessel: String?
+    ) throws {
         self.repository = repository
         werkzeug = try Werkzeug(repository)
         self.pfad = pfad
         self.transport = transport
+        self.schluessel = schluessel
     }
 
     /// The SHA-256 of a file, lowercase hex. It is the key of `dateien` and
@@ -101,7 +114,7 @@ public struct Eingang: Sendable {
 
             let inbox = try inInbox(url, daten: daten, hash: hash)
             liegt = inbox
-            guard let schluessel = Schluesselbund.lesen(), schluessel.isEmpty == false else {
+            guard let schluessel = schluessel ?? Schluesselbund.lesen(), schluessel.isEmpty == false else {
                 throw Agentenfehler.keinSchluessel
             }
 
@@ -126,7 +139,7 @@ public struct Eingang: Sendable {
         } catch let abbruch as Laufabbruch {
             // Rows of the broken run go, so a second attempt cannot double them.
             for id in abbruch.angelegt {
-                try? repository.loeschen(id: id)
+                _ = try? repository.loeschen(id: id)
             }
             return .fehler(datei: liegt, text: abbruch.localizedDescription)
         } catch {
@@ -152,22 +165,22 @@ public struct Eingang: Sendable {
     private func archivieren(_ inbox: URL, hash: String, daten: Data, ergebnis: Laufergebnis) throws {
         let endung = inbox.pathExtension.lowercased()
         let ziel = pfad.archiv.appending(path: "\(hash).\(endung)")
-        // The original may already be there: its booking was deleted and the
-        // same file came back. One copy is enough.
-        if FileManager.default.fileExists(atPath: ziel.path) {
-            try FileManager.default.removeItem(at: inbox)
-        } else {
-            try FileManager.default.moveItem(at: inbox, to: ziel)
+        // Copy first. A leftover archive copy is safe when a later database
+        // write fails, and the Inbox remains the retryable source.
+        if FileManager.default.fileExists(atPath: ziel.path) == false {
+            try FileManager.default.copyItem(at: inbox, to: ziel)
         }
-        try repository.dateiSpeichern(Datei(
+        try repository.dateiUndBelegAnhaengen(Datei(
             sha256: hash,
             dateiname: inbox.lastPathComponent,
             endung: endung,
             groesse: Int64(daten.count),
             art: .beleg,
             seiten: endung == "pdf" ? PDFDocument(data: daten)?.pageCount : nil
-        ))
-        try repository.belegAnhaengen(hash, an: ergebnis.beruehrt)
+        ), an: ergebnis.beruehrt)
+        // The booking and file row are committed above. A cleanup failure must
+        // not turn a successful import back into a failed run.
+        try? FileManager.default.removeItem(at: inbox)
     }
 
     /// Symlinks are resolved on both sides: a directory listing answers with

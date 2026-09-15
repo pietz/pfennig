@@ -8,6 +8,7 @@ public enum Agentenfehler: Error, LocalizedError {
     case netzwerk(String)
     case api(status: Int, text: String)
     case antwort(String)
+    case keineBuchung
     case zuVieleWerkzeugaufrufe
 
     public var errorDescription: String? {
@@ -20,6 +21,8 @@ public enum Agentenfehler: Error, LocalizedError {
             "OpenAI hat mit \(status) geantwortet: \(text)"
         case let .antwort(text):
             "Die Antwort war unbrauchbar: \(text)"
+        case .keineBuchung:
+            "Der Agent hat keine Buchung angelegt oder geändert."
         case .zuVieleWerkzeugaufrufe:
             "Der Agent hat nach \(Agentenlauf.hoechstzahlWerkzeugaufrufe) sql-Aufrufen kein Ergebnis geliefert."
         }

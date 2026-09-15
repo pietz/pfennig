@@ -28,6 +28,33 @@ private actor Skript {
     }
 }
 
+/// Deletes the booking between the completed model response and import
+/// finalization, making the database transaction fail without private hooks.
+private actor BuchungLoeschendesSkript {
+    let repository: Repository
+    var antworten: [String]
+
+    init(repository: Repository, antworten: [String]) {
+        self.repository = repository
+        self.antworten = antworten
+    }
+
+    func antworten(auf anfrage: URLRequest) -> (Data, HTTPURLResponse) {
+        let text = antworten.isEmpty ? "{}" : antworten.removeFirst()
+        if antworten.isEmpty {
+            _ = try? repository.loeschen(id: 1)
+        }
+        let http = HTTPURLResponse(
+            url: Responses.adresse, statusCode: 200, httpVersion: nil, headerFields: nil
+        )!
+        return (Data(text.utf8), http)
+    }
+
+    var transport: Transport {
+        { [self] anfrage in await antworten(auf: anfrage) }
+    }
+}
+
 private let einfuegen = """
 INSERT INTO buchungen (richtung, art, datum, titel, kategorie, gegenpartei_name, gegenpartei_land,
     positionen, steuerbehandlung)
@@ -153,7 +180,7 @@ private func eingabe() -> Dateieingabe {
 @Test func laufNimmtModellAufwandUndSchnellAusDenEinstellungen() async throws {
     let repository = try Repository.imSpeicher()
     try repository.kiEinstellungenSpeichern(KiEinstellungen(modell: .sol, aufwand: .hoch, schnell: true))
-    let skript = Skript([schlussantwort])
+    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
     let lauf = try await Agentenlauf(
         repository: repository,
         werkzeug: Werkzeug(repository),
@@ -270,6 +297,101 @@ private func stelleAuf() throws -> (Repository, Archivpfad, URL) {
     #expect(FileManager.default.fileExists(atPath: datei.path))
     #expect(eingang.inbox().map(\.lastPathComponent) == ["rechnung.pdf"])
     #expect(try FileManager.default.contentsOfDirectory(atPath: pfad.archiv.path).isEmpty)
+}
+
+@Test func eingangLaesstDateiNachAgentenAntwortOhneBuchungInDerInbox() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    try Data("%PDF-1.4 Rechnung".utf8).write(to: quelle)
+    let skript = Skript([
+        werkzeugantwort("UPDATE buchungen SET ungueltige_spalte = 'Nichts' WHERE id = 999"),
+        schlussantwort
+    ])
+    let transport = await skript.transport
+    let eingang = try Eingang(
+        repository: repository, pfad: pfad, transport: transport, schluessel: "test"
+    )
+
+    guard case let .fehler(datei, text) = await eingang.verarbeiten(quelle) else {
+        Issue.record("Eine Antwort ohne Buchung hätte fehlschlagen müssen.")
+        return
+    }
+    #expect(datei.lastPathComponent == "rechnung.pdf")
+    #expect(text.contains("keine Buchung"))
+    #expect(try repository.alleBuchungen().isEmpty)
+    #expect(try repository.alleAnfragen().first?.status == .fehler)
+    #expect(FileManager.default.fileExists(atPath: datei.path))
+    #expect(try FileManager.default.contentsOfDirectory(atPath: pfad.archiv.path).isEmpty)
+}
+
+@Test func eingangSpeichertDateiUndBelegGemeinsam() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    let inhalt = Data("%PDF-1.4 Rechnung".utf8)
+    try inhalt.write(to: quelle)
+    let hash = Eingang.hash(inhalt)
+    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    let transport = await skript.transport
+    let eingang = try Eingang(
+        repository: repository, pfad: pfad, transport: transport, schluessel: "test"
+    )
+
+    guard case .verbucht = await eingang.verarbeiten(quelle) else {
+        Issue.record("Der erfolgreiche Lauf wurde nicht verbucht.")
+        return
+    }
+    let datei = try #require(try repository.dateien(zu: [hash]).first)
+    let buchung = try #require(try repository.alleBuchungen().first)
+    let archiv = pfad.original(datei)
+    #expect(datei.sha256 == hash)
+    #expect(buchung.belege == [hash])
+    #expect(try Data(contentsOf: archiv) == inhalt)
+    #expect(FileManager.default.fileExists(atPath: pfad.inbox.appending(path: "rechnung.pdf").path) == false)
+}
+
+@Test func eingangBehaeltDieInboxBeiFehlerDerDBFinalisierungUndKannArchivRestVerwenden() async throws {
+    let (repository, pfad, ordner) = try stelleAuf()
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let quelle = ordner.appending(path: "rechnung.pdf")
+    let inhalt = Data("%PDF-1.4 Rechnung".utf8)
+    try inhalt.write(to: quelle)
+    let hash = Eingang.hash(inhalt)
+    let skript = BuchungLoeschendesSkript(
+        repository: repository, antworten: [werkzeugantwort(einfuegen), schlussantwort]
+    )
+    let transport = await skript.transport
+    let eingang = try Eingang(
+        repository: repository, pfad: pfad, transport: transport, schluessel: "test"
+    )
+
+    guard case let .fehler(inbox, text) = await eingang.verarbeiten(quelle) else {
+        Issue.record("Die fehlerhafte Datenbank-Finalisierung hätte fehlschlagen müssen.")
+        return
+    }
+    #expect(text.isEmpty == false)
+    #expect(FileManager.default.fileExists(atPath: inbox.path))
+    #expect(try repository.dateien(zu: [hash]).isEmpty)
+    #expect(try repository.alleBuchungen().isEmpty)
+    let archiv = pfad.archiv.appending(path: "\(hash).pdf")
+    #expect(try Data(contentsOf: archiv) == inhalt)
+
+    // The retry uses the existing Inbox path. It must not copy a second archive
+    // file and must attach the document only after the new run writes a booking.
+    let retrySkript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    let retryTransport = await retrySkript.transport
+    let retry = try Eingang(
+        repository: repository, pfad: pfad, transport: retryTransport, schluessel: "test"
+    )
+    guard case .verbucht = await retry.verarbeiten(inbox) else {
+        Issue.record("Der Lauf hätte nach dem Datenbankfehler erneut versucht werden können.")
+        return
+    }
+    #expect(FileManager.default.fileExists(atPath: inbox.path) == false)
+    #expect(try FileManager.default.contentsOfDirectory(atPath: pfad.archiv.path).count == 1)
+    #expect(try repository.alleBuchungen().first?.belege == [hash])
+    #expect(try repository.dateien(zu: [hash]).count == 1)
 }
 
 @Test func verwerfenEntferntNurDieInboxKopie() throws {
