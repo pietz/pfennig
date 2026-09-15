@@ -43,3 +43,5 @@ Nächster Schritt: Anleitung des Agenten schärfen: Privatanteil nur bei eindeut
 **Inspector-Stale-Draft-Fix.** Bei einer Datenbankänderung der ausgewählten Buchung ersetzt der Inspector jetzt Entwurf und gespeicherten Ausgangszustand durch die neueste vollständige Zeile, auch bei ungespeicherter Eingabe. Das akzeptiert seltenen Verlust laufender Eingabe, verhindert aber, dass ein veralteter kompletter Entwurf neuere Zahlungen oder Belege überschreibt. Es gibt bewusst keine Feldzusammenführung oder Versionssperre. Die unabhängige Prüfung `820f48dd` gab den Fix ohne Beanstandungen frei.
 
 **Reviewstatus-Agentenänderung.** Jede tatsächliche Agentenänderung setzt `geprueft_am` auf leer; auch das Anhängen eines Belegs zählt. Nutzerbestätigung und Nutzeränderungen erhalten den Prüfstatus, reine SELECT- und No-op-Anweisungen ändern ihn nicht. Die unabhängige Prüfung `6240ca66` gab den Fix ohne Beanstandungen frei.
+
+**Kategorie-Richtungsprüfung.** Bekannte Kategorien müssen jetzt zur Richtung der Buchung passen; bei Abweichung antwortet die bestehende Prüfregel mit „Kategorie passt nicht zur Richtung.“ und rollt den Schreibvorgang zurück.

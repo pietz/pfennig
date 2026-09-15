@@ -138,13 +138,21 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
 
 @Test func werkzeugMachtEineVerletzteRegelRueckgaengig() throws {
     let (repository, werkzeug) = try werkzeug()
-    let ergebnis = werkzeug.ausfuehren("""
+    let steuerErgebnis = werkzeug.ausfuehren("""
     INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
     VALUES ('ausgabe', 'beleg', '2026-09-01', 'Falsch', 'software',
         '[{"netto": 10000, "steuersatz": 19, "steuer": 500}]', 'inland')
     """)
-    #expect(ergebnis.text.contains("passt nicht zu netto"))
-    #expect(ergebnis.beruehrt.isEmpty)
+    #expect(steuerErgebnis.text.contains("passt nicht zu netto"))
+    #expect(steuerErgebnis.beruehrt.isEmpty)
+
+    let richtungErgebnis = werkzeug.ausfuehren("""
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('einnahme', 'beleg', '2026-09-01', 'Falsch', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(richtungErgebnis.text.contains("Kategorie passt nicht zur Richtung."))
+    #expect(richtungErgebnis.beruehrt.isEmpty)
     #expect(try repository.alleBuchungen().isEmpty)
 }
 
@@ -237,6 +245,12 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(Pruefregeln.kategorieIstBekannt(basis(kategorie: "erfunden"), profil) != nil)
     #expect(Pruefregeln.kategorieIstBekannt(basis(kategorie: nil), profil) != nil)
     #expect(Pruefregeln.kategorieIstBekannt(basis(), profil) == nil)
+    #expect(Pruefregeln.kategorieIstBekannt(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren"), profil
+    ) == nil)
+    #expect(Pruefregeln.kategorieIstBekannt(
+        basis(richtung: .einnahme, kategorie: "software"), profil
+    ) == "Kategorie passt nicht zur Richtung.")
 
     #expect(Pruefregeln.datumLiegtNichtWeitInDerZukunft(basis(datum: spaeter), profil) != nil)
     #expect(Pruefregeln.datumLiegtNichtWeitInDerZukunft(basis(datum: morgen), profil) == nil)

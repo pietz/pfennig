@@ -54,8 +54,11 @@ public enum Pruefregeln {
         guard let kategorie = buchung.kategorie, kategorie.isEmpty == false else {
             return "kategorie fehlt; sie muss ein Schlüssel aus der Kategorienliste sein."
         }
-        guard Kategorie.bekannt(kategorie) else {
+        guard let bekannt = Kategorie.alle.first(where: { $0.schluessel == kategorie }) else {
             return "kategorie \"\(kategorie)\" steht nicht in der Kategorienliste."
+        }
+        guard bekannt.richtung == buchung.richtung else {
+            return "Kategorie passt nicht zur Richtung."
         }
         return nil
     }
