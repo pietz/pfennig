@@ -67,3 +67,89 @@ private let bestand = [
     #expect(totals.saldo == Cent(95200))
     #expect(Overview.totals([]).saldo == Cent.null)
 }
+
+@Test func reviewStatusSeparatesAttachmentsAndReview() {
+    var unreviewedAttached = zeile(id: 10, richtung: .ausgabe, art: .rechnung, titel: "Rechnung", netto: 1000)
+    unreviewedAttached.belege = ["hash"]
+    unreviewedAttached.zahlungen = [
+        Zahlung(datum: .today(), betrag: unreviewedAttached.brutto, richtung: .ausgabe)
+    ]
+    #expect(unreviewedAttached.zahlungsstand == .bezahlt)
+    #expect(unreviewedAttached.reviewStatus == .zuPruefen)
+
+    var reviewedMissing = zeile(id: 11, richtung: .ausgabe, art: .beleg, titel: "Beleg", netto: 1000)
+    reviewedMissing.geprueftAm = Date(timeIntervalSince1970: 1)
+    #expect(reviewedMissing.reviewStatus == .belegFehlt)
+
+    let steuerzahlung = zeile(id: 12, richtung: .ausgabe, art: .steuerzahlung, titel: "USt", netto: 1000)
+    #expect(steuerzahlung.reviewStatus == .zuPruefen)
+
+    var nurZahlung = zeile(id: 13, richtung: .ausgabe, art: .nurZahlung, titel: "Konto", netto: 1000)
+    nurZahlung.geprueftAm = Date(timeIntervalSince1970: 1)
+    #expect(nurZahlung.reviewStatus == .geprueft)
+}
+
+@Test func reviewFilterSeparatesUnreviewedAndMissingReceipts() {
+    let unreviewedMissing = zeile(id: 20, richtung: .ausgabe, art: .rechnung, titel: "Fehlt", netto: 1000)
+    var reviewedMissing = zeile(id: 21, richtung: .ausgabe, art: .gutschrift, titel: "Fehlt geprüft", netto: 2000)
+    reviewedMissing.geprueftAm = Date(timeIntervalSince1970: 1)
+    let unreviewedOther = zeile(id: 22, richtung: .ausgabe, art: .steuerzahlung, titel: "Steuer", netto: 3000)
+    var unreviewedAttached = zeile(id: 23, richtung: .einnahme, art: .rechnung, titel: "Anhang", netto: 4000)
+    unreviewedAttached.belege = ["hash"]
+    let buchungen = [unreviewedMissing, reviewedMissing, unreviewedOther, unreviewedAttached]
+
+    #expect(
+        Overview.visible(buchungen, filter: .alle, reviewFilter: .zuPruefen, search: "").map(\.id) == [20, 22, 23]
+    )
+    #expect(
+        Overview.visible(buchungen, filter: .alle, reviewFilter: .ohneBeleg, search: "").map(\.id) == [20, 21]
+    )
+
+    let totals = Overview.totals(
+        Overview.visible(buchungen, filter: .alle, reviewFilter: .ohneBeleg, search: "")
+    )
+    #expect(totals.ausgaben == Cent(3570))
+    #expect(totals.einnahmen == .null)
+}
+
+@Test func overviewCombinesDirectionSearchAndReviewFilters() {
+    let sonstiges = zeile(
+        id: 30,
+        richtung: .einnahme,
+        art: .sonstiges,
+        titel: "Ziel sonstiges",
+        netto: 1000
+    )
+    let ausgabe = zeile(
+        id: 31,
+        richtung: .ausgabe,
+        art: .rechnung,
+        titel: "Ziel Ausgabe",
+        netto: 1000
+    )
+    let ignoriert = zeile(
+        id: 32,
+        richtung: .einnahme,
+        art: .ignoriert,
+        titel: "Ziel ignoriert",
+        netto: 1000
+    )
+    let anderesSuchergebnis = zeile(
+        id: 33,
+        richtung: .einnahme,
+        art: .rechnung,
+        titel: "Anderer Titel",
+        netto: 1000
+    )
+
+    #expect(sonstiges.reviewStatus == .zuPruefen)
+    #expect(ignoriert.reviewStatus == .zuPruefen)
+    #expect(
+        Overview.visible(
+            [sonstiges, ausgabe, ignoriert, anderesSuchergebnis],
+            filter: .einnahmen,
+            reviewFilter: .zuPruefen,
+            search: "ziel"
+        ).map(\.id) == [30]
+    )
+}

@@ -60,21 +60,23 @@ Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
 ## 3. Oberfläche
 
-Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit genau „Buchungen“, der freigegebenen „Designvorschau“ und „Buchungen · verfeinert“ sowie der jeweiligen Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
+Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit genau „Buchungen“ sowie der Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
 
-**Begrenzte Designvergleich-Ergänzung (Eigentümerfreigabe, 2026-09-15).** Für den lokalen UI-Vergleich erhält das Fenster eine Sidebar mit genau drei Einträgen: „Buchungen“ öffnet diese bestehende Live-Oberfläche, „Designvorschau“ zeigt eine vorübergehende, native SwiftUI-Tabelle mit ausschließlich fiktiven Beispieldaten, und „Buchungen · verfeinert“ zeigt eine zweite, davon isolierte native SwiftUI-Variante mit ausschließlich fiktiven Beispieldaten. Beide Vorschauen haben keinen Zugriff auf AppModel, Repository oder Benutzerdaten und schreiben nichts. Das ist keine allgemeine Neugestaltung: Startseite, Chat- und Steuerseiten bleiben nicht gebaut; die ursprüngliche Buchungsoberfläche und ihr Datenfluss bleiben unverändert.
+Die Buchungsansicht verwendet dauerhaft die freigegebene verfeinerte native Gestaltung: randlose 40-Punkt-Zeilen, kleine neutrale Kategorie-Symbole, ruhige abgeleitete Prüfstatus und grüne Einnahmen bei primären Ausgaben. Die Ansicht arbeitet mit den echten Buchungen aus AppModel und Repository; es gibt keine Vergleichsseiten oder Beispieldaten.
 
-**Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Firma (Gegenpartei mit Titel als Unterzeile, dazu Prüfpunkt und Belegsymbol), Datum, Betrag, Bezahlt (Zahlungsstand als Symbol, abgeleitet aus Zahlungssumme gegen Brutto: offen, teilweise, bezahlt; ein Klick schaltet zwischen vollständig bezahlt heute und unbezahlt um). Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
+**Tabelle.** Eine Zeile pro Eintrag. Standardspalten sind wenige: Firma (Gegenpartei mit Titel als Unterzeile, Kategorie-Symbol und Belegsymbol), Datum, Betrag, Bezahlt (Zahlungsstand als Symbol und Text, abgeleitet aus Zahlungssumme gegen Brutto: offen, teilweise, bezahlt; ein Klick schaltet zwischen vollständig bezahlt heute und unbezahlt um) und Status (Geprüft, Zu prüfen oder Beleg fehlt, aus den vorhandenen Buchungsdaten abgeleitet). Weitere Spalten (etwa Kategorie, Steuersatz, Art) kann der Nutzer über die Spaltenauswahl der Tabelle einblenden. Die Fußzeile zeigt Einnahmen, Ausgaben und Saldo der aktuell sichtbaren Zeilen.
+
+Der Status ist abgeleitet: Fehlt bei `art = rechnung`, `beleg` oder `gutschrift` der Anhang (`belege` ist leer), hat Beleg fehlt Vorrang; ansonsten entscheidet der Zeitstempel `geprueft_am` zwischen Geprüft und Zu prüfen. Der Filter Zu prüfen meint `geprueft_am` leer und umfasst damit auch Buchungen mit fehlendem Anhang; dies ist keine rechtliche Vollständigkeitsprüfung.
 
 **Inspector.** Rechts, standardmäßig sichtbar. Er zeigt alle Informationen eines Eintrags, die nicht in eine Tabelle gehören: Beleg mit Vorschau, Grunddaten, Beträge, Steuer, Zahlungen, Notizen, bei ungeprüften Einträgen eine Bestätigen-Aktion. Umsetzung als `.inspector` mit einem Formular im Stil `.grouped`. Alle Abschnitte sind flach und immer sichtbar, keine Akkordeons; ein leerer Abschnitt wird weggelassen, nicht eingeklappt.
 
-**Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge. Keine Jahresauswahl im ersten Schritt.
+**Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Dropdown Alle Status / Zu prüfen / Ohne Beleg, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge sowie Export, Einstellungen und Inspector. Keine Jahresauswahl im ersten Schritt.
 
 **Drag-and-drop** gilt für das ganze Fenster.
 
 **Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, Zahnrad in der Toolbar): Profil, KI-Zugang (Schlüssel, Verbindungstest, Modell, Aufwand, schnellere Verarbeitung), Erscheinungsbild.
 
-**Wegfall:** Startseite, Prüfen-Seite und UStVA-Aufgabenfenster; der Hauptraum bleibt auf die zwei oben genannten Hauptseiten begrenzt. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
+**Wegfall:** Startseite, Prüfen-Seite, Vergleichsseiten und UStVA-Aufgabenfenster; der Hauptraum bleibt auf die Buchungsansicht begrenzt. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
 
 ## 4. Eingang: Dateien und Agent
 

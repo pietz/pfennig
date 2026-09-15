@@ -48,3 +48,10 @@ public enum Zahlungsstand: String, Hashable, Sendable {
     case teilweise
     case bezahlt
 }
+
+/// Derived from the review timestamp and the receipt attachments, never stored.
+public enum ReviewStatus: String, Hashable, Sendable {
+    case geprueft
+    case zuPruefen
+    case belegFehlt
+}

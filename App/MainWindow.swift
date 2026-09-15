@@ -67,32 +67,42 @@ struct MainWindow: View {
     private func tabelle(_ rows: [Buchung]) -> some View {
         Table(rows, selection: selectionBinding, sortOrder: $modell.sortOrder, columnCustomization: $spalten) {
             TableColumn("Firma", value: \.firma) { buchung in
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(buchung.firma)
-                        // An unreviewed booking carries a dot until the user confirms it.
-                        if buchung.geprueftAm == nil {
-                            Image(systemName: "circle.fill")
-                                .font(.system(size: 6))
-                                .foregroundStyle(Color.orange)
-                                .help("Ungeprüft")
+                HStack(spacing: 8) {
+                    Image(systemName: buchung.categorySymbol)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                        .frame(width: 22, height: 22)
+                        .help(buchung.categoryName.isEmpty ? "Keine Kategorie" : buchung.categoryName)
+                    VStack(alignment: .leading, spacing: 1) {
+                        HStack(alignment: .firstTextBaseline, spacing: 6) {
+                            Text(buchung.firma)
+                                .fontWeight(.semibold)
+                                .lineLimit(1)
+                            if buchung.belege.isEmpty == false {
+                                Image(systemName: "paperclip")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .help("Beleg vorhanden")
+                            }
                         }
-                        if buchung.belege.isEmpty == false {
-                            Image(systemName: "paperclip")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .help("Beleg vorhanden")
-                        }
+                        Text(buchung.secondaryLine)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
-                    Text(buchung.secondaryLine).font(.caption).foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .frame(minHeight: 40, alignment: .leading)
             }
-            .width(min: 150, ideal: 220)
+            .width(min: 190, ideal: 270)
             .customizationID("firma")
             .disabledCustomizationBehavior(.visibility)
 
             TableColumn("Datum", value: \.datum) { buchung in
-                Text(buchung.datum.formatted).monospacedDigit()
+                Text(buchung.datum.formatted)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .frame(minHeight: 40, alignment: .leading)
             }
             .width(90)
             .customizationID("datum")
@@ -100,29 +110,36 @@ struct MainWindow: View {
             TableColumn("Betrag", value: \.signedAmount) { buchung in
                 Text(buchung.signedAmount.formatted)
                     .monospacedDigit()
-                    // Coloured by direction, not by sign.
+                    // Income is green; expenses stay in the primary text color.
                     .foregroundStyle(buchung.richtung == .einnahme ? Color.green : Color.primary)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(maxWidth: .infinity, minHeight: 40, alignment: .trailing)
             }
-            .width(min: 90, ideal: 100)
+            .width(min: 100, ideal: 115)
             .alignment(.trailing)
             .customizationID("betrag")
 
-            // The symbol is a button, the rest of the cell is not, so a click
-            // next to it still selects the row.
+            // The label remains a button so clicking it keeps the existing
+            // one-click payment behavior without taking selection from the row.
             TableColumn("Bezahlt") { buchung in
                 Button {
                     modell.togglePayment(buchung)
                 } label: {
-                    Image(systemName: buchung.zahlungsstand.symbol)
-                        .foregroundStyle(buchung.zahlungsstand == .bezahlt ? Color.green : .secondary)
+                    PaymentLabel(status: buchung.zahlungsstand)
                 }
                 .buttonStyle(.borderless)
                 .help(buchung.zahlungsstand.name)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
             }
-            .width(70)
+            .width(min: 100, ideal: 115)
             .customizationID("zahlung")
+
+            TableColumn("Status") { buchung in
+                ReviewStatusLabel(status: buchung.reviewStatus)
+                    .frame(minHeight: 40, alignment: .leading)
+            }
+            .width(min: 100, ideal: 115)
+            .customizationID("status")
+            .defaultVisibility(.visible)
 
             TableColumn("Kategorie", value: \.categoryName)
                 .width(min: 100, ideal: 150)
@@ -194,8 +211,15 @@ struct MainWindow: View {
             }
         }
         ToolbarItem(placement: .primaryAction) {
-            Picker("Filter", selection: $modell.filter) {
+            Picker("Richtung", selection: $modell.filter) {
                 ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+        }
+        ToolbarItem(placement: .primaryAction) {
+            Picker("Prüfung", selection: $modell.reviewFilter) {
+                ForEach(ReviewFilter.allCases) { Text($0.menuTitle).tag($0) }
             }
             .pickerStyle(.menu)
             .labelsHidden()
@@ -252,6 +276,61 @@ private struct IntakeMessages: View {
     }
 }
 
+private struct PaymentLabel: View {
+    let status: Zahlungsstand
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: status.symbol)
+                .foregroundStyle(status == .bezahlt ? Color.green : Color.secondary)
+            Text(status.name)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+        }
+    }
+}
+
+private struct ReviewStatusLabel: View {
+    let status: ReviewStatus
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: status.symbol)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(status.color)
+            Text(status.name)
+                .foregroundStyle(.primary)
+                .lineLimit(1)
+        }
+    }
+}
+
+private extension ReviewStatus {
+    var symbol: String {
+        switch self {
+        case .geprueft: "checkmark.circle.fill"
+        case .zuPruefen: "exclamationmark.circle.fill"
+        case .belegFehlt: "xmark.circle.fill"
+        }
+    }
+
+    var name: String {
+        switch self {
+        case .geprueft: "Geprüft"
+        case .zuPruefen: "Zu prüfen"
+        case .belegFehlt: "Beleg fehlt"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .geprueft: .green
+        case .zuPruefen: .yellow
+        case .belegFehlt: .red
+        }
+    }
+}
+
 /// Income, expenses and balance of the rows the table currently shows.
 private struct Footer: View {
     let totals: Totals
@@ -301,6 +380,39 @@ extension Buchung {
 
     var categoryName: String {
         kategorie.map(Kategorie.name) ?? ""
+    }
+
+    var categorySymbol: String {
+        switch kategorie {
+        case nil: "doc.text"
+        case "umsatz_dienstleistung": "briefcase"
+        case "umsatz_waren": "shippingbox"
+        case "umsatz_lizenzen": "key"
+        case "sonstige_einnahme": "doc.text"
+        case "ust_erstattung": "building.columns"
+        case "zinsen": "percent"
+        case "software": "app"
+        case "hosting": "cloud"
+        case "telekommunikation": "phone"
+        case "buerobedarf": "pencil.and.ruler"
+        case "miete": "building.2"
+        case "hardware": "desktopcomputer"
+        case "werbung": "megaphone"
+        case "beratung": "person.circle"
+        case "fremdleistung": "person.2"
+        case "reise_fahrt": "suitcase"
+        case "reise_uebernachtung": "bed.double"
+        case "bewirtung": "fork.knife"
+        case "fortbildung": "book"
+        case "versicherung": "shield"
+        case "bankgebuehren": "banknote"
+        case "zahlungsanbieter": "creditcard"
+        case "mitgliedschaft": "person.3"
+        case "porto": "envelope"
+        case "ust_zahlung": "building.columns"
+        case "sonstige_ausgabe": "doc.text"
+        default: "questionmark.circle"
+        }
     }
 
     var highestTaxRate: Decimal {

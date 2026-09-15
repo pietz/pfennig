@@ -150,4 +150,13 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
             .teilweise
         }
     }
+
+    /// A receipt is required only for document bookings whose art carries one.
+    /// This is an attachment signal, not a legal completeness judgement.
+    public var reviewStatus: ReviewStatus {
+        if [.rechnung, .beleg, .gutschrift].contains(art), belege.isEmpty {
+            return .belegFehlt
+        }
+        return geprueftAm == nil ? .zuPruefen : .geprueft
+    }
 }

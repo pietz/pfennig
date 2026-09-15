@@ -13,6 +13,7 @@ final class AppModel {
     var buchungen: [Buchung] = []
     var selection: Int64?
     var filter: BookingFilter = .alle
+    var reviewFilter: ReviewFilter = .alle
     var search = ""
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspectorVisible = true
@@ -148,7 +149,7 @@ final class AppModel {
     }
 
     var visible: [Buchung] {
-        Overview.visible(buchungen, filter: filter, search: search).sorted(using: sortOrder)
+        Overview.visible(buchungen, filter: filter, reviewFilter: reviewFilter, search: search).sorted(using: sortOrder)
     }
 
     var ausgewaehlt: Buchung? {

@@ -17,6 +17,35 @@ public enum BookingFilter: String, CaseIterable, Hashable, Sendable, Identifiabl
     }
 }
 
+/// The review filters shown in the bookings toolbar.
+public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable {
+    case alle
+    case zuPruefen
+    case ohneBeleg
+
+    public var id: String {
+        rawValue
+    }
+
+    public var menuTitle: String {
+        switch self {
+        case .alle: "Alle Status"
+        case .zuPruefen: "Zu prüfen"
+        case .ohneBeleg: "Ohne Beleg"
+        }
+    }
+
+    public func includes(_ buchung: Buchung) -> Bool {
+        switch self {
+        case .alle: true
+        // This deliberately uses the timestamp, so an unreviewed missing
+        // receipt appears in both review queues.
+        case .zuPruefen: buchung.geprueftAm == nil
+        case .ohneBeleg: buchung.reviewStatus == .belegFehlt
+        }
+    }
+}
+
 /// What the footer under the table shows for the rows it can see.
 public struct Totals: Hashable, Sendable {
     public var einnahmen: Cent
@@ -32,10 +61,16 @@ public struct Totals: Hashable, Sendable {
 public enum Overview {
     /// Bookings marked `ignoriert` never appear. The filter picks a direction,
     /// the search text matches title, counterparty, notes and the gross amount.
-    public static func visible(_ buchungen: [Buchung], filter: BookingFilter, search: String) -> [Buchung] {
+    public static func visible(
+        _ buchungen: [Buchung],
+        filter: BookingFilter,
+        reviewFilter: ReviewFilter = .alle,
+        search: String
+    ) -> [Buchung] {
         let begriff = search.trimmingCharacters(in: .whitespaces).lowercased()
         return buchungen.filter { buchung in
             guard buchung.art != .ignoriert else { return false }
+            guard reviewFilter.includes(buchung) else { return false }
             let passt = switch filter {
             case .alle: true
             case .einnahmen: buchung.richtung == .einnahme
