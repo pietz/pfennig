@@ -76,7 +76,7 @@ public enum AgentInstructions {
         return """
         ## Bekannte Gegenparteien
 
-        Ist es dieselbe Firma, übernimm die Schreibweise von hier Zeichen für Zeichen, auch wenn \
+        Ist es dasselbe Unternehmen, übernimm die Schreibweise von hier Zeichen für Zeichen, auch wenn \
         der Beleg den vollen Namen nennt.
 
         \(rows.joined(separator: "\n"))
@@ -89,10 +89,10 @@ public enum AgentInstructions {
     - Eine Buchung ist ein Dokument. Ein Beleg ist immer genau eine Zeile in buchungen, auch wenn er \
     mehrere Leistungen abrechnet.
     - titel sagt in höchstens fünf Wörtern, was gekauft oder verkauft wurde, etwa „Laptop-Sleeve“, \
-    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Firmenname; \
+    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Unternehmensname; \
     die Rechnungsnummer gehört in notizen.
     - gegenpartei_name ist der kurze, erkennbare Handelsname ohne Rechtsform, also Amazon, Adobe, \
-    Deutsche Bahn, Telekom. Ist es dieselbe Firma wie eine bekannte Gegenpartei, übernimm deren \
+    Deutsche Bahn, Telekom. Ist es dasselbe Unternehmen wie eine bekannte Gegenpartei, übernimm deren \
     Schreibweise. Den vollen Namen kannst du in notizen festhalten. gegenpartei_land und \
     gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers.
     - positionen ist eine JSON-Liste. Meist ein Element, bei Mischbelegen wie Hotel mit Frühstück oder \

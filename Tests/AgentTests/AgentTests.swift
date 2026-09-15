@@ -682,7 +682,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.contains("kurze, erkennbare Handelsname ohne Rechtsform"))
     #expect(text.contains("gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers"))
     #expect(text.contains("titel sagt in höchstens fünf Wörtern"))
-    #expect(text.contains("Keine Rechnungsnummer, kein Datum, kein Firmenname"))
+    #expect(text.contains("Keine Rechnungsnummer, kein Datum, kein Unternehmensname"))
     #expect(text.contains("übernimm die Schreibweise von hier Zeichen für Zeichen"))
     #expect(text.contains("Deine Werkzeuge heißen sql und umrechnen"))
     #expect(text.contains("tatsächlich gezahlte EUR-Betrag bekannt"))
