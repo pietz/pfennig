@@ -2,6 +2,7 @@
 
 ## Unveröffentlicht
 
+- Der Eingang nimmt neben PDF und Bildern jetzt auch WebP sowie Textdateien an (XML, CSV, TXT, JSON, HTML); Textdateien gehen bis 1 MB als Klartext an den Agenten, damit liest er auch XRechnungen. Windows-1252-kodierte Bank-Exporte kommen mit Umlauten an
 - UStVA: Reverse-Charge-Einnahmen an Kunden außerhalb der EU stehen in Kz 45 statt in Kz 21; Kz 21 bleibt für Leistungen an EU-Unternehmer
 - Ein fehlgeschlagener Eintrag ins Anfragenprotokoll bricht einen erfolgreichen Import nicht mehr ab und löscht keine Buchungen mehr
 - Drag-and-drop funktioniert auch auf der Startseite

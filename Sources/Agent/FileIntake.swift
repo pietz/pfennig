@@ -65,7 +65,7 @@ public struct FileIntake: Sendable {
     }
 
     public static func isAllowed(_ url: URL) -> Bool {
-        FileInput.allowedExtensions.contains(url.pathExtension.lowercased())
+        FileInput.isAllowed(extension: url.pathExtension)
     }
 
     /// What is still waiting in the inbox, oldest name first. The app works
@@ -114,16 +114,19 @@ public struct FileIntake: Sendable {
 
             let inbox = try inInbox(url, data: data, hash: hash)
             location = inbox
-            guard let key = key ?? Keychain.read(), key.isEmpty == false else {
-                throw AgentError.missingKey
-            }
-
             let input = FileInput(
                 name: inbox.lastPathComponent,
                 fileExtension: inbox.pathExtension.lowercased(),
                 sha256: hash,
                 data: data
             )
+            guard input.isText == false || data.count <= FileInput.maxTextBytes else {
+                throw AgentError.textTooLarge
+            }
+            guard let key = key ?? Keychain.read(), key.isEmpty == false else {
+                throw AgentError.missingKey
+            }
+
             let run = AgentRun(
                 repository: repository, tool: tool, key: key, transport: transport
             )

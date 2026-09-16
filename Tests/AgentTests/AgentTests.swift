@@ -625,13 +625,56 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 }
 
 @Test func eingangLaesstNurDieZugelassenenEndungenDurch() {
-    for endung in ["pdf", "PNG", "jpg", "jpeg", "csv"] {
+    // Binary formats the model reads natively, and text formats that go as plain text.
+    for endung in ["pdf", "PNG", "jpg", "jpeg", "webp", "xml", "csv", "txt", "json", "html"] {
         #expect(FileIntake.isAllowed(URL(filePath: "/tmp/beleg.\(endung)")))
     }
     // HEIC is not among them: the API does not take it and Swift converts nothing.
-    for endung in ["heic", "txt", "docx", "zip", "sqlite"] {
+    for endung in ["heic", "docx", "zip", "sqlite", ""] {
         #expect(FileIntake.isAllowed(URL(filePath: "/tmp/beleg.\(endung)")) == false)
     }
+}
+
+@Test func textdateienGehenAlsKlartextInDieNachricht() throws {
+    // A real XRechnung from the KoSIT test suite, once in UBL and once in CII.
+    for name in ["xrechnung_01.01a_ubl", "xrechnung_01.01a_cii"] {
+        let url = try #require(Bundle.module.url(forResource: name, withExtension: "xml", subdirectory: "Fixtures"))
+        let data = try Data(contentsOf: url)
+        let input = FileInput(name: "\(name).xml", fileExtension: "xml", sha256: FileIntake.hash(data), data: data)
+        let content = input.content
+        #expect(content["type"] as? String == "input_text")
+        let text = try #require(content["text"] as? String)
+        #expect(text.hasPrefix("<?xml"))
+        #expect(text.contains("123456XX"))
+        #expect(text.contains("base64") == false)
+    }
+}
+
+@Test func textdateienInWindows1252KommenMitUmlautenAn() throws {
+    let csv = try #require("Datum;Verwendungszweck;Betrag\n01.09.2026;Kontoführungsgebühren Müller;-9,90\n"
+        .data(using: .windowsCP1252))
+    let input = FileInput(name: "umsaetze.csv", fileExtension: "csv", sha256: FileIntake.hash(csv), data: csv)
+    #expect((input.content["text"] as? String)?.contains("Kontoführungsgebühren Müller") == true)
+
+    let utf8 = Data("Gebühren\n".utf8)
+    let utf8Input = FileInput(name: "u.csv", fileExtension: "csv", sha256: FileIntake.hash(utf8), data: utf8)
+    #expect(utf8Input.content["text"] as? String == "Gebühren\n")
+}
+
+@Test func eingangLehntZuGrosseTextdateienAbUndLaesstSieInDerInbox() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "umsaetze.csv")
+    try Data(repeating: UInt8(ascii: "x"), count: FileInput.maxTextBytes + 1).write(to: source)
+
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "test")
+    guard case let .failed(file, text) = await intake.process(source) else {
+        Issue.record("Die zu große Textdatei hätte abgelehnt werden müssen.")
+        return
+    }
+    #expect(text.contains("größer als 1 MB"))
+    #expect(intake.inbox().map(\.lastPathComponent) == [file.lastPathComponent])
+    #expect(try repository.allRequests().isEmpty)
 }
 
 @Test func anleitungTraegtNurBuchungsschemaNeutralesProfilUndKategorieschluessel() throws {

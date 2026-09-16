@@ -23,7 +23,7 @@ let package = Package(
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
         // Responses client, agent instructions, tool loop and file intake.
         .target(name: "Agent", dependencies: ["Core"]),
-        .testTarget(name: "AgentTests", dependencies: ["Agent"]),
+        .testTarget(name: "AgentTests", dependencies: ["Agent"], resources: [.copy("Fixtures")]),
     ],
     swiftLanguageModes: [.v6]
 )

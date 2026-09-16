@@ -10,9 +10,12 @@ public enum AgentError: Error, LocalizedError {
     case response(String)
     case noBooking
     case tooManyToolCalls
+    case textTooLarge
 
     public var errorDescription: String? {
         switch self {
+        case .textTooLarge:
+            "Die Textdatei ist größer als \(FileInput.maxTextBytes / 1_000_000) MB und geht nicht an den Agenten."
         case .missingKey:
             "Kein API-Schlüssel hinterlegt. Der Schlüssel steht in den Einstellungen unter KI-Zugang."
         case let .network(text):

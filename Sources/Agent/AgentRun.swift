@@ -1,8 +1,9 @@
 import Core
 import Foundation
 
-/// The file as it goes to the model: PDF and images as base64 data URLs, CSV
-/// as plain text. Nothing is prepared or converted, the file goes as it is.
+/// The file as it goes to the model: PDF and images as base64 data URLs, text
+/// formats as plain text. Nothing is prepared or converted, the file goes as
+/// it is; there is no parser for any format.
 public struct FileInput: Sendable {
     public var name: String
     public var fileExtension: String
@@ -16,29 +17,55 @@ public struct FileInput: Sendable {
         self.data = data
     }
 
+    /// The binary formats the model reads natively, sent as an attachment.
     /// No HEIC: the API does not take it, and Pfennig converts nothing.
-    static let allowedExtensions = ["pdf", "png", "jpg", "jpeg", "csv"]
+    static let binaryExtensions: Set<String> = ["pdf", "png", "jpg", "jpeg", "webp"]
+    /// The text formats, sent as plain text in the message.
+    static let textExtensions: Set<String> = ["xml", "csv", "txt", "json", "html"]
+    /// A text file larger than this does not go into the message.
+    public static let maxTextBytes = 1_000_000
+
+    public static func isAllowed(extension fileExtension: String) -> Bool {
+        let lowered = fileExtension.lowercased()
+        return binaryExtensions.contains(lowered) || textExtensions.contains(lowered)
+    }
+
+    var isText: Bool {
+        FileInput.textExtensions.contains(fileExtension.lowercased())
+    }
 
     var mediaType: String {
         switch fileExtension.lowercased() {
         case "pdf": "application/pdf"
         case "png": "image/png"
-        case "csv": "text/csv"
+        case "webp": "image/webp"
         default: "image/jpeg"
         }
     }
 
     /// One content item of the user message.
     var content: [String: Any] {
+        if isText {
+            return ["type": "input_text", "text": FileInput.text(data)]
+        }
         let dataURL = "data:\(mediaType);base64,\(data.base64EncodedString())"
         switch fileExtension.lowercased() {
         case "pdf":
             return ["type": "input_file", "filename": name, "file_data": dataURL]
-        case "csv":
-            return ["type": "input_text", "text": String(decoding: data, as: UTF8.self)]
         default:
             return ["type": "input_image", "image_url": dataURL, "detail": "high"]
         }
+    }
+
+    /// UTF-8 when the bytes are UTF-8, otherwise Windows-1252: German bank
+    /// exports still come that way, and a lossy decode would hand the agent
+    /// „Geb�hren“ as the name of a booking. Five bytes are undefined in
+    /// Windows-1252; Latin-1 reads every byte and differs only in those.
+    static func text(_ data: Data) -> String {
+        String(data: data, encoding: .utf8)
+            ?? String(data: data, encoding: .windowsCP1252)
+            ?? String(data: data, encoding: .isoLatin1)
+            ?? ""
     }
 }
 
