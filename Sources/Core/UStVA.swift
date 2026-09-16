@@ -128,12 +128,10 @@ public struct UStVA: Hashable, Sendable {
         }
     }
 
-    /// Payments in the order the cumulative split needs, signed by their
-    /// direction: positive with the booking, negative against it.
-    private static func geordnet(_ buchung: Buchung) -> [(datum: LocalDate, betrag: Cent)] {
-        buchung.zahlungen
-            .sorted { ($0.datum, $0.id ?? 0) < ($1.datum, $1.id ?? 0) }
-            .map { ($0.datum, $0.richtung == buchung.richtung ? $0.betrag : -$0.betrag) }
+    /// Payments in date order for the cumulative split. Stable sorting keeps
+    /// their array order when several payments have the same date.
+    private static func geordnet(_ buchung: Buchung) -> [Zahlung] {
+        buchung.zahlungen.sorted { $0.datum < $1.datum }
     }
 
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {

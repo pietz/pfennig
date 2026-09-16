@@ -661,8 +661,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.contains("CREATE TABLE zeitraeume") == false)
     #expect(text.contains("steuerbehandlung TEXT NOT NULL CHECK"))
     #expect(text.contains(
-        "Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am, "
-            + "geaendert_am sowie zahlungen[].id."
+        "Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am und geaendert_am."
     ))
     #expect(text.contains("Einnahmen:\n"))
     #expect(text.contains("Ausgaben:\n"))

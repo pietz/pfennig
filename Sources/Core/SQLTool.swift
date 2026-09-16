@@ -134,7 +134,7 @@ public final class SQLTool: Sendable {
         do {
             guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
             let previous = try row.map(Buchung.init(row:))
-            // id, belege, geprueft_am, Zeitstempel und zahlungen.id setzt Swift.
+            // id, belege, geprueft_am und Zeitstempel setzt Swift.
             // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
             buchung.belege = previous?.belege ?? []
             let saved = try Repository.save(buchung, akteur: .agent, before: previous, in: db)

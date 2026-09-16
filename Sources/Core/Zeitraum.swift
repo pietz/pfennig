@@ -193,12 +193,10 @@ public struct Zeitraum: Hashable, Sendable {
         enthaelt(buchung.datum) || buchung.zahlungen.contains { enthaelt($0.datum) }
     }
 
-    /// How many bookings of the period the user has not confirmed yet, an
-    /// unchecked payment counted as unchecked too.
+    /// How many bookings of the period the user has not confirmed yet.
     public func ungeprueft(_ buchungen: [Buchung]) -> Int {
         buchungen.filter { buchung in
-            guard buchung.art != .ignoriert, beruehrt(buchung) else { return false }
-            return buchung.geprueftAm == nil || buchung.zahlungen.contains { $0.geprueft == false }
+            buchung.art != .ignoriert && beruehrt(buchung) && buchung.geprueftAm == nil
         }
         .count
     }

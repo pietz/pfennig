@@ -72,7 +72,7 @@ private let bestand = [
     var unreviewedAttached = zeile(id: 10, richtung: .ausgabe, art: .rechnung, titel: "Rechnung", netto: 1000)
     unreviewedAttached.belege = ["hash"]
     unreviewedAttached.zahlungen = [
-        Zahlung(datum: .today(), betrag: unreviewedAttached.brutto, richtung: .ausgabe)
+        Zahlung(datum: .today(), betrag: unreviewedAttached.brutto)
     ]
     #expect(unreviewedAttached.zahlungsstand == .bezahlt)
     #expect(unreviewedAttached.reviewStatus == .zuPruefen)

@@ -24,22 +24,15 @@ public struct Position: Codable, Hashable, Sendable {
     }
 }
 
-/// One payment of a booking. `id` counts up inside the booking and is assigned
-/// by the repository. A refund carries the opposite direction of the booking,
-/// an uncertain match is `geprueft = false`.
+/// One payment of a booking. Its amount is signed in relation to the booking:
+/// positive for a payment and negative for a refund.
 public struct Zahlung: Codable, Hashable, Sendable {
-    public var id: Int?
     public var datum: LocalDate
     public var betrag: Cent
-    public var richtung: Richtung
-    public var geprueft: Bool
 
-    public init(id: Int? = nil, datum: LocalDate, betrag: Cent, richtung: Richtung, geprueft: Bool = true) {
-        self.id = id
+    public init(datum: LocalDate, betrag: Cent) {
         self.datum = datum
         self.betrag = betrag
-        self.richtung = richtung
-        self.geprueft = geprueft
     }
 }
 
@@ -141,20 +134,16 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         netto + steuer
     }
 
-    /// Payments in the direction of the booking, minus the ones against it.
-    /// A refund of an expense is an income and reduces what was paid.
+    /// Signed payments and refunds added together.
     public var gezahlt: Cent {
-        zahlungen.reduce(Cent.null) { $0 + ($1.richtung == richtung ? $1.betrag : -$1.betrag) }
+        zahlungen.reduce(Cent.null) { $0 + $1.betrag }
     }
 
     public var zahlungsstand: Zahlungsstand {
-        if gezahlt == .null {
-            .offen
-        } else if gezahlt >= brutto {
-            .bezahlt
-        } else {
-            .teilweise
-        }
+        guard gezahlt != .null, brutto != .null else { return .offen }
+        return brutto > .null
+            ? (gezahlt >= brutto ? .bezahlt : .offen)
+            : (gezahlt <= brutto ? .bezahlt : .offen)
     }
 
     /// A booking is overdue only after its optional due date has passed and it

@@ -28,7 +28,7 @@ public final class Repository: Sendable {
     // MARK: - Buchungen
 
     /// Inserts or updates the booking and logs the change. Returns the stored
-    /// booking, with its id, payment ids and timestamps filled in.
+    /// booking with its id and timestamps filled in.
     @discardableResult
     public func save(_ buchung: Buchung, akteur: Akteur) throws -> Buchung {
         try database.write { try Repository.save(buchung, akteur: akteur, in: $0) }
@@ -76,7 +76,6 @@ public final class Repository: Sendable {
             // Agent writes require fresh user confirmation; no-op tool calls never save here.
             updated.geprueftAm = nil
         }
-        updated.zahlungen = numberedPayments(buchung.zahlungen)
         updated.geaendertAm = now
         updated.erstelltAm = before?.erstelltAm ?? now
         try updated.save(db)
@@ -100,18 +99,6 @@ public final class Repository: Sendable {
 
     private static func allBookings(_ db: Database) throws -> [Buchung] {
         try Buchung.fetchAll(db, sql: "SELECT * FROM buchungen ORDER BY datum DESC, id DESC")
-    }
-
-    /// Existing payment ids stay, new ones continue after the highest in use.
-    static func numberedPayments(_ zahlungen: [Zahlung]) -> [Zahlung] {
-        var next = (zahlungen.compactMap(\.id).max() ?? 0) + 1
-        return zahlungen.map { zahlung in
-            guard zahlung.id == nil else { return zahlung }
-            var updated = zahlung
-            updated.id = next
-            next += 1
-            return updated
-        }
     }
 
     // MARK: - Dateien

@@ -41,9 +41,9 @@ import Testing
     #expect(buchung(heute).istUeberfaellig == false)
     #expect(buchung(gestern).istUeberfaellig)
     #expect(
-        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(500), richtung: .ausgabe)]).istUeberfaellig
+        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(500))]).istUeberfaellig
     )
     #expect(
-        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(1000), richtung: .ausgabe)]).istUeberfaellig == false
+        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(1000))]).istUeberfaellig == false
     )
 }

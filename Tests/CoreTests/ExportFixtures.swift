@@ -34,16 +34,12 @@ func buchung(
         gegenparteiLand: land,
         positionen: positionen,
         steuerbehandlung: behandlung,
-        zahlungen: zahlungen.enumerated().map { stelle, zahlung in
-            var numberedPayments = zahlung
-            numberedPayments.id = stelle + 1
-            return numberedPayments
-        }
+        zahlungen: zahlungen
     )
 }
 
-func zahlung(_ jahr: Int, _ monat: Int, _ tag: Int, _ betrag: Int64, _ richtung: Richtung) -> Zahlung {
-    Zahlung(datum: datum(jahr, monat, tag), betrag: Cent(betrag), richtung: richtung)
+func zahlung(_ jahr: Int, _ monat: Int, _ tag: Int, _ betrag: Int64) -> Zahlung {
+    Zahlung(datum: datum(jahr, monat, tag), betrag: Cent(betrag))
 }
 
 let q3 = Zeitraum(jahr: 2026, einteilung: .quartal(3))

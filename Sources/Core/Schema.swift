@@ -32,8 +32,8 @@ public enum Schema {
         waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
         originalbetrag TEXT,                        -- nur bei Fremdwährung, exakte Dezimalzahl in Haupteinheiten
         steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
-        -- JSON-Liste, Beträge in EUR-Cent, richtung wie oben, eine Erstattung hat die Gegenrichtung:
-        -- [{"id": 1, "datum": "2026-09-14", "betrag": 11900, "richtung": "ausgabe", "geprueft": true}]
+        -- JSON-Liste, vorzeichenbehaftete Beträge in EUR-Cent (negativ = Erstattung):
+        -- [{"datum": "2026-09-14", "betrag": 11900}]
         zahlungen TEXT NOT NULL DEFAULT '[]',
         -- JSON-Liste der SHA-256-Hashes der zugehörigen Dateien: ["a1b2c3..."]
         belege TEXT NOT NULL DEFAULT '[]',

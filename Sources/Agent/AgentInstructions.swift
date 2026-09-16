@@ -32,7 +32,7 @@ public enum AgentInstructions {
     """
 
     private static let appManagedFields = """
-    Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am, geaendert_am sowie zahlungen[].id.
+    Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am und geaendert_am.
     """
 
     private static func profileText(_ profile: Profil) -> String {

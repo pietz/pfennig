@@ -8,7 +8,7 @@ private let jahresbestand = [
         datum: datum(2026, 2, 1),
         kategorie: "umsatz_dienstleistung",
         positionen: [position(100_000, 19)],
-        zahlungen: [zahlung(2026, 3, 1, 119_000, .einnahme)]
+        zahlungen: [zahlung(2026, 3, 1, 119_000)]
     ),
     buchung(
         id: 2,
@@ -17,7 +17,7 @@ private let jahresbestand = [
         kategorie: "software",
         privatanteil: 30,
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 5, 1, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 5, 1, 11900)]
     ),
     buchung(
         id: 3,
@@ -25,7 +25,7 @@ private let jahresbestand = [
         datum: datum(2026, 6, 1),
         kategorie: "hosting",
         positionen: [position(5000, 19)],
-        zahlungen: [zahlung(2026, 6, 1, 5950, .ausgabe)]
+        zahlungen: [zahlung(2026, 6, 1, 5950)]
     )
 ]
 
@@ -49,7 +49,7 @@ private let jahresbestand = [
             datum: datum(2026, 2, 1),
             kategorie: "umsatz_dienstleistung",
             positionen: [position(200_000, 19)],
-            zahlungen: [zahlung(2026, 3, 1, 238_000, .einnahme)]
+            zahlungen: [zahlung(2026, 3, 1, 238_000)]
         ),
         buchung(
             id: 2,
@@ -58,7 +58,7 @@ private let jahresbestand = [
             kategorie: "hardware",
             privatanteil: 40,
             positionen: [position(100_000, 19)],
-            zahlungen: [zahlung(2026, 5, 2, 119_000, .ausgabe)]
+            zahlungen: [zahlung(2026, 5, 2, 119_000)]
         )
     ]
     let euer = EUeR.calculate(bestand, jahr: 2026, profile: regel)
@@ -90,7 +90,7 @@ private let jahresbestand = [
         datum: datum(2026, 12, 20),
         kategorie: "umsatz_dienstleistung",
         positionen: [position(50000, 19)],
-        zahlungen: [zahlung(2027, 1, 10, 59500, .einnahme)]
+        zahlungen: [zahlung(2027, 1, 10, 59500)]
     )
     #expect(EUeR.calculate([offen], jahr: 2026, profile: regel).zeilen.isEmpty)
     #expect(EUeR.calculate([offen], jahr: 2027, profile: regel).zeilen[0].betrag.value == 50000)
@@ -108,7 +108,7 @@ private let jahresbestand = [
         richtung: .ausgabe,
         datum: datum(2026, 4, 1),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 4, 1, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 4, 1, 11900)]
     )
     let privat = buchung(
         id: 6,
@@ -117,7 +117,7 @@ private let jahresbestand = [
         datum: datum(2026, 4, 2),
         kategorie: "sonstige_ausgabe",
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 4, 2, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 4, 2, 11900)]
     )
     #expect(EUeR.calculate([ohne, privat], jahr: 2026, profile: regel).zeilen.isEmpty)
 }

@@ -205,10 +205,8 @@ final class AppModel {
             updated.zahlungen = []
         } else {
             let offen = buchung.brutto - buchung.gezahlt
-            guard offen > .null else { return }
-            updated.zahlungen.append(
-                Zahlung(datum: .today(), betrag: offen, richtung: buchung.richtung, geprueft: true)
-            )
+            guard offen != .null else { return }
+            updated.zahlungen.append(Zahlung(datum: .today(), betrag: offen))
         }
         save(updated)
     }

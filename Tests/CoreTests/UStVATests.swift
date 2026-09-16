@@ -8,14 +8,14 @@ import Testing
         richtung: .einnahme,
         datum: datum(2026, 7, 1),
         positionen: [position(100_000, 19)],
-        zahlungen: [zahlung(2026, 8, 15, 119_000, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 15, 119_000)]
     )
     let sieben = buchung(
         id: 2,
         richtung: .einnahme,
         datum: datum(2026, 7, 2),
         positionen: [position(20000, 7)],
-        zahlungen: [zahlung(2026, 9, 1, 21400, .einnahme)]
+        zahlungen: [zahlung(2026, 9, 1, 21400)]
     )
     let ustva = UStVA.calculate([neunzehn, sieben], zeitraum: q3, profile: regel)
     #expect(ustva.betrag(81) == 100_000)
@@ -42,7 +42,7 @@ import Testing
         richtung: .einnahme,
         datum: datum(2026, 7, 1),
         positionen: [position(100_000, 19)],
-        zahlungen: [zahlung(2026, 8, 1, 59500, .einnahme), zahlung(2026, 10, 1, 59500, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 1, 59500), zahlung(2026, 10, 1, 59500)]
     )
     #expect(UStVA.calculate([rechnung], zeitraum: q3, profile: regel).betrag(81) == 50000)
     #expect(UStVA.calculate([rechnung], zeitraum: q4, profile: regel).betrag(81) == 50000)
@@ -54,7 +54,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 9, 30),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 10, 5, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 10, 5, 11900)]
     )
     #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: regel).zeilen.isEmpty)
     let spaeter = UStVA.calculate([ausgabe], zeitraum: q4, profile: regel)
@@ -69,7 +69,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 10, 2),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 7, 20, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 7, 20, 11900)]
     )
     #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: regel).zeilen.isEmpty)
     #expect(UStVA.calculate([ausgabe], zeitraum: q4, profile: regel).betrag(66) == 1900)
@@ -117,7 +117,7 @@ import Testing
         land: "IE",
         positionen: [position(10000, 0)],
         behandlung: .reverseCharge,
-        zahlungen: [zahlung(2026, 11, 2, 10000, .ausgabe)]
+        zahlungen: [zahlung(2026, 11, 2, 10000)]
     )
     #expect(UStVA.calculate([saas], zeitraum: q3, profile: regel).betrag(46) == 10000)
     #expect(UStVA.calculate([saas], zeitraum: q4, profile: regel).zeilen.isEmpty)
@@ -130,7 +130,7 @@ import Testing
         datum: datum(2026, 7, 1),
         positionen: [position(100_000, 0)],
         behandlung: .kleinunternehmer,
-        zahlungen: [zahlung(2026, 8, 1, 100_000, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 1, 100_000)]
     )
     let saas = buchung(
         id: 2,
@@ -152,9 +152,24 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 8, 1),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 8, 2, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 8, 2, 11900)]
     )
     #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: klein).zeilen.isEmpty)
+}
+
+@Test func negativeGutschriftMitNegativerZahlungZaehltInUStVAUndEUeR() {
+    let gutschrift = buchung(
+        richtung: .einnahme,
+        art: .gutschrift,
+        datum: datum(2026, 8, 1),
+        kategorie: "umsatz_dienstleistung",
+        positionen: [position(-10000, 19)],
+        zahlungen: [zahlung(2026, 8, 2, -11900)]
+    )
+    #expect(UStVA.calculate([gutschrift], zeitraum: q3, profile: regel).betrag(81) == -10000)
+    let euer = EUeR.calculate([gutschrift], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.first { $0.zeile == 11 }?.betrag == Cent(-10000))
+    #expect(euer.zeilen.first { $0.zeile == EUeR.zeileVereinnahmteUmsatzsteuer }?.betrag == Cent(-1900))
 }
 
 @Test func eineErstattungMindertDenZeitraumIhresGeldflusses() {
@@ -163,7 +178,8 @@ import Testing
         richtung: .einnahme,
         datum: datum(2026, 7, 1),
         positionen: [position(100_000, 19)],
-        zahlungen: [zahlung(2026, 8, 1, 119_000, .einnahme), zahlung(2026, 9, 1, 119_000, .ausgabe)]
+        // Same-date entries keep their list order through the cumulative allocation.
+        zahlungen: [zahlung(2026, 8, 1, 119_000), zahlung(2026, 8, 1, -119_000)]
     )
     let ustva = UStVA.calculate([rechnung], zeitraum: q3, profile: regel)
     #expect(ustva.zeilen.isEmpty)
@@ -177,7 +193,7 @@ import Testing
         art: .ignoriert,
         datum: datum(2026, 8, 1),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 8, 1, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 8, 1, 11900)]
     )
     // Ohne die Ausnahme stünde die Erstattung des Finanzamts in Kz 45.
     let finanzamt = buchung(
@@ -187,7 +203,7 @@ import Testing
         datum: datum(2026, 8, 10),
         positionen: [position(50000, 0)],
         behandlung: .nichtSteuerbar,
-        zahlungen: [zahlung(2026, 8, 10, 50000, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 10, 50000)]
     )
     #expect(UStVA.calculate([privat, finanzamt], zeitraum: q3, profile: regel).zeilen.isEmpty)
 }
@@ -198,7 +214,7 @@ import Testing
         richtung: .einnahme,
         datum: datum(2026, 7, 1),
         positionen: [position(100_000, 19)],
-        zahlungen: [zahlung(2026, 8, 15, 119_000, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 15, 119_000)]
     )
     let ustva = UStVA.calculate([rechnung], zeitraum: q3, profile: regel)
     let xml = UStVAXml.xml(ustva)
@@ -254,7 +270,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 8, 1),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 8, 2, 11900, .ausgabe)]
+        zahlungen: [zahlung(2026, 8, 2, 11900)]
     )
     let ustva = UStVA.calculate([ausgabe], zeitraum: q3, profile: regel)
     #expect(UStVAXml.xml(ustva).contains("<Kz83>-19.00</Kz83>"))

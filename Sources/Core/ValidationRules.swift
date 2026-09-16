@@ -94,8 +94,8 @@ public enum ValidationRules {
     }
 
     static let zahlungenSindPlausibel: Regel = { buchung, _ in
-        for zahlung in buchung.zahlungen where zahlung.betrag <= .null {
-            return "Eine Zahlung hat den Betrag \(zahlung.betrag.value); Zahlungen brauchen einen Betrag über null."
+        for zahlung in buchung.zahlungen where zahlung.betrag == .null {
+            return "Eine Zahlung hat den Betrag 0; Zahlungen brauchen einen Betrag ungleich null."
         }
         return nil
     }

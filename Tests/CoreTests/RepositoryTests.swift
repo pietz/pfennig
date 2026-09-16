@@ -5,12 +5,13 @@ import Testing
 
 private func beispiel(
     id: Int64? = nil,
+    richtung: Richtung = .ausgabe,
     positionen: [Position] = [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
     zahlungen: [Zahlung] = []
 ) -> Buchung {
     Buchung(
         id: id,
-        richtung: .ausgabe,
+        richtung: richtung,
         art: .rechnung,
         datum: LocalDate(jahr: 2026, monat: 9, tag: 14),
         titel: "Bürostuhl",
@@ -184,47 +185,42 @@ private func beispiel(
     #expect(geladen.belege.contains("neu"))
 }
 
-@Test func zahlungenBekommenFortlaufendeIds() throws {
+@Test func zahlungenUeberstehenDenRundlaufUnveraendert() throws {
     let repository = try Repository.inMemory()
     let datum = LocalDate(jahr: 2026, monat: 9, tag: 20)
-    var buchung = try repository.save(
-        beispiel(zahlungen: [
-            Zahlung(datum: datum, betrag: Cent(5000), richtung: .ausgabe),
-            Zahlung(datum: datum, betrag: Cent(3000), richtung: .ausgabe)
-        ]),
-        akteur: .agent
-    )
-    #expect(buchung.zahlungen.map(\.id) == [1, 2])
-
-    buchung.zahlungen.append(Zahlung(datum: datum, betrag: Cent(1000), richtung: .ausgabe))
-    buchung = try repository.save(buchung, akteur: .nutzer)
-    #expect(buchung.zahlungen.map(\.id) == [1, 2, 3])
-
-    let geladen = try #require(try repository.allBookings().first)
-    #expect(geladen.zahlungen.map(\.id) == [1, 2, 3])
-    #expect(geladen.zahlungen[0].betrag == Cent(5000))
-    #expect(geladen.zahlungen[2].geprueft)
+    let erwartet = [
+        Zahlung(datum: datum, betrag: Cent(5000)),
+        Zahlung(datum: datum, betrag: Cent(-1000))
+    ]
+    let gespeichert = try repository.save(beispiel(zahlungen: erwartet), akteur: .agent)
+    #expect(gespeichert.zahlungen == erwartet)
+    #expect(try repository.allBookings().first?.zahlungen == erwartet)
 }
 
-@Test func zahlungsstandFolgtDerZahlungssumme() {
+@Test func zahlungsstandFolgtDerVorzeichenbehaftetenZahlungssumme() {
     let datum = LocalDate(jahr: 2026, monat: 9, tag: 20)
     #expect(beispiel().zahlungsstand == .offen)
-    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(5000), richtung: .ausgabe)])
-        .zahlungsstand == .teilweise)
-    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(11900), richtung: .ausgabe)])
+    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(5000))]).zahlungsstand == .offen)
+    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(11900))]).zahlungsstand == .bezahlt)
+    #expect(beispiel(richtung: .einnahme, zahlungen: [Zahlung(datum: datum, betrag: Cent(11900))])
         .zahlungsstand == .bezahlt)
-    #expect(beispiel(zahlungen: [
-        Zahlung(datum: datum, betrag: Cent(6000), richtung: .ausgabe),
-        Zahlung(datum: datum, betrag: Cent(5900), richtung: .ausgabe)
-    ]).zahlungsstand == .bezahlt)
+    #expect(beispiel(zahlungen: [Zahlung(datum: datum, betrag: Cent(12000))]).zahlungsstand == .bezahlt)
 
-    // A refund carries the opposite direction and counts against the payments.
     let erstattet = beispiel(zahlungen: [
-        Zahlung(datum: datum, betrag: Cent(11900), richtung: .ausgabe),
-        Zahlung(datum: datum, betrag: Cent(11900), richtung: .einnahme)
+        Zahlung(datum: datum, betrag: Cent(11900)),
+        Zahlung(datum: datum, betrag: Cent(-11900))
     ])
-    #expect(erstattet.gezahlt == Cent(0))
+    #expect(erstattet.gezahlt == .null)
     #expect(erstattet.zahlungsstand == .offen)
+
+    let gutschrift = beispiel(
+        positionen: [Position(netto: Cent(-10000), steuersatz: 19, steuer: Cent(-1900))],
+        zahlungen: [Zahlung(datum: datum, betrag: Cent(-5000))]
+    )
+    #expect(gutschrift.zahlungsstand == .offen)
+    var bezahlt = gutschrift
+    bezahlt.zahlungen.append(Zahlung(datum: datum, betrag: Cent(-6900)))
+    #expect(bezahlt.zahlungsstand == .bezahlt)
 }
 
 @Test func einstellungenUeberstehenDenRundlauf() throws {

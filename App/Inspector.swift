@@ -304,16 +304,9 @@ struct Inspector: View {
                         .frame(width: 90)
                     TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
                         .labelsHidden()
-                    Picker("Richtung", selection: zahlung(i, \.richtung, fallback: draft.richtung)) {
-                        Text("Zahlung").tag(draft.richtung)
-                        Text("Erstattung").tag(oppositeDirection)
-                    }
-                    .labelsHidden()
-                    .frame(width: 110)
-                    Toggle("Geprüft", isOn: zahlung(i, \.geprueft, fallback: false))
-                        .toggleStyle(.checkbox)
-                        .labelsHidden()
-                        .help("Geprüft")
+                    Text(draft.zahlungen[i].betrag < .null ? "Erstattung" : "Zahlung")
+                        .foregroundStyle(.secondary)
+                        .frame(width: 80, alignment: .leading)
                     Button("Zahlung entfernen", systemImage: "minus.circle") { removePayment(i) }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
@@ -321,9 +314,7 @@ struct Inspector: View {
             }
 
             Button("Zahlung hinzufügen", systemImage: "plus") {
-                draft.zahlungen.append(
-                    Zahlung(datum: .today(), betrag: .null, richtung: draft.richtung, geprueft: true)
-                )
+                draft.zahlungen.append(Zahlung(datum: .today(), betrag: .null))
             }
 
             if draft.zahlungsstand != .bezahlt {
@@ -331,9 +322,7 @@ struct Inspector: View {
                     draft.zahlungen.append(
                         Zahlung(
                             datum: .today(),
-                            betrag: draft.brutto - draft.gezahlt,
-                            richtung: draft.richtung,
-                            geprueft: true
+                            betrag: draft.brutto - draft.gezahlt
                         )
                     )
                 }
@@ -344,10 +333,6 @@ struct Inspector: View {
     private func removePayment(_ i: Int) {
         guard draft.zahlungen.indices.contains(i) else { return }
         draft.zahlungen.remove(at: i)
-    }
-
-    private var oppositeDirection: Richtung {
-        draft.richtung == .einnahme ? .ausgabe : .einnahme
     }
 
     // MARK: - Notizen

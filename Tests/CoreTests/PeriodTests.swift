@@ -65,17 +65,14 @@ import Testing
         richtung: .einnahme,
         datum: datum(2026, 8, 1),
         positionen: [position(10000, 19)],
-        zahlungen: [zahlung(2026, 8, 2, 11900, .einnahme)]
+        zahlungen: [zahlung(2026, 8, 2, 11900)]
     )
     offen.geprueftAm = nil
     var geprueft = offen
     geprueft.id = 2
     geprueft.geprueftAm = Date()
-    var unsicher = geprueft
-    unsicher.id = 3
-    unsicher.zahlungen[0].geprueft = false
-    #expect(q3.ungeprueft([offen, geprueft, unsicher]) == 2)
-    #expect(q4.ungeprueft([offen, geprueft, unsicher]) == 0)
+    #expect(q3.ungeprueft([offen, geprueft]) == 1)
+    #expect(q4.ungeprueft([offen, geprueft]) == 0)
 }
 
 @Test func einExportierterZeitraumUeberlebtDenRundweg() throws {

@@ -45,7 +45,6 @@ public enum Anfragestatus: String, Codable, Hashable, Sendable, DatabaseValueCon
 /// Derived from the payments against the gross amount, never stored.
 public enum Zahlungsstand: String, Hashable, Sendable {
     case offen
-    case teilweise
     case bezahlt
 }
 

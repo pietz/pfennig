@@ -390,7 +390,6 @@ extension Zahlungsstand {
     var symbol: String {
         switch self {
         case .offen: "circle"
-        case .teilweise: "circle.lefthalf.filled"
         case .bezahlt: "checkmark.circle.fill"
         }
     }
@@ -398,7 +397,6 @@ extension Zahlungsstand {
     var name: String {
         switch self {
         case .offen: "Offen"
-        case .teilweise: "Teilweise bezahlt"
         case .bezahlt: "Bezahlt"
         }
     }

@@ -116,9 +116,7 @@ public struct EUeR: Hashable, Sendable {
     /// What one booking brings into the year: the net and the tax of the
     /// shares of its payments of the year, both before the Privatanteil.
     private static func summe(_ buchung: Buchung, zeitraum: Zeitraum) -> (netto: Cent, steuer: Cent) {
-        let zahlungen = buchung.zahlungen
-            .sorted { ($0.datum, $0.id ?? 0) < ($1.datum, $1.id ?? 0) }
-            .map { (datum: $0.datum, betrag: $0.richtung == buchung.richtung ? $0.betrag : -$0.betrag) }
+        let zahlungen = buchung.zahlungen.sorted { $0.datum < $1.datum }
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
 
         var netto = Cent.null

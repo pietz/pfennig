@@ -294,8 +294,10 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile
     ) == nil)
 
-    let null = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: .null, richtung: .ausgabe)]
-    let echt = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(11900), richtung: .ausgabe)]
+    let null = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: .null)]
+    let echt = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(11900))]
+    let erstattung = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(-11900))]
     #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: null), profile) != nil)
     #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: echt), profile) == nil)
+    #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: erstattung), profile) == nil)
 }
