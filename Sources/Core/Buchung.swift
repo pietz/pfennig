@@ -139,8 +139,10 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         zahlungen.reduce(Cent.null) { $0 + $1.betrag }
     }
 
+    /// A booking with nothing to pay is settled; otherwise the signed payments
+    /// have to reach the gross amount, in either sign for a credit note.
     public var zahlungsstand: Zahlungsstand {
-        guard gezahlt != .null, brutto != .null else { return .offen }
+        guard brutto != .null else { return .bezahlt }
         return brutto > .null
             ? (gezahlt >= brutto ? .bezahlt : .offen)
             : (gezahlt <= brutto ? .bezahlt : .offen)

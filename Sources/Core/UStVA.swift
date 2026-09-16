@@ -128,10 +128,13 @@ public struct UStVA: Hashable, Sendable {
         }
     }
 
-    /// Payments in date order for the cumulative split. Stable sorting keeps
-    /// their array order when several payments have the same date.
+    /// Payments in date order for the cumulative split. Swift does not promise
+    /// a stable sort, so payments of the same day keep their place in the list
+    /// through their index.
     private static func geordnet(_ buchung: Buchung) -> [Zahlung] {
-        buchung.zahlungen.sorted { $0.datum < $1.datum }
+        buchung.zahlungen.enumerated()
+            .sorted { ($0.element.datum, $0.offset) < ($1.element.datum, $1.offset) }
+            .map(\.element)
     }
 
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {

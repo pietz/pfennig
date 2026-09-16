@@ -15,16 +15,19 @@ struct ExportSheet: View {
     @State private var jahr: Int
     @State private var nummer: Int
 
-    init(model: AppModel) {
+    /// `preselected` is the period the start page asked for, if it came
+    /// from there.
+    init(model: AppModel, preselected: Zeitraum? = nil) {
         self.model = model
         let profile = model.profile()
         self.profile = profile
-        let defaultSelection = Zeitraum.naechsteUStVA(
+        let selection = preselected ?? Zeitraum.naechsteUStVA(
             rhythmus: profile.rhythmus,
             dauerfristverlaengerung: profile.dauerfristverlaengerung
         )
-        _jahr = State(initialValue: defaultSelection.jahr)
-        _nummer = State(initialValue: defaultSelection.nummer)
+        _art = State(initialValue: selection.art)
+        _jahr = State(initialValue: selection.jahr)
+        _nummer = State(initialValue: selection.nummer)
     }
 
     private var zeitraum: Zeitraum {
@@ -98,10 +101,11 @@ struct ExportSheet: View {
     }
 
     /// The current year and the three before it; older periods are not what an
-    /// export is for.
+    /// export is for. A deadline the start page hands over may be older and
+    /// still has to be visible in the picker.
     private var years: [Int] {
         let today = LocalDate.today().jahr
-        return Array((today - 3 ... today).reversed())
+        return Array((min(today - 3, jahr) ... today).reversed())
     }
 
     /// Switching between the two forms picks the period each of them opens on.

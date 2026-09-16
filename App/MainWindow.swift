@@ -50,9 +50,6 @@ struct MainWindow: View {
         } message: { buchung in
             Text("„\(buchung.titel)“ wird endgültig entfernt.")
         }
-        .sheet(isPresented: $model.exportVisible) {
-            ExportSheet(model: model)
-        }
         .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
             Button("OK") {}
         } message: { text in
@@ -214,7 +211,10 @@ struct MainWindow: View {
             Button("Neue Buchung", systemImage: "plus") { model.createBooking() }
         }
         ToolbarItem(placement: .primaryAction) {
-            Button("Export", systemImage: "square.and.arrow.up") { model.exportVisible = true }
+            Button("Export", systemImage: "square.and.arrow.up") {
+                model.exportPeriod = nil
+                model.exportVisible = true
+            }
         }
         ToolbarItem(placement: .primaryAction) {
             Button("Inspector", systemImage: "sidebar.trailing") { model.inspectorVisible.toggle() }

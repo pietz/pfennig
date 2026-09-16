@@ -49,6 +49,16 @@ public struct LocalDate: Hashable, Sendable, Comparable, CustomStringConvertible
         }
     }
 
+    /// Whole days from this day to `other`, negative when `other` is earlier.
+    public func tage(bis other: LocalDate) -> Int {
+        let calendar = Calendar(identifier: .gregorian)
+        guard let from = calendar.date(from: DateComponents(year: jahr, month: monat, day: tag)),
+              let to = calendar.date(from: DateComponents(year: other.jahr, month: other.monat, day: other.tag)),
+              let tage = calendar.dateComponents([.day], from: from, to: to).day
+        else { return 0 }
+        return tage
+    }
+
     /// German display string, for example `14.09.2026`.
     public var formatted: String {
         String(format: "%02d.%02d.%04d", tag, monat, jahr)

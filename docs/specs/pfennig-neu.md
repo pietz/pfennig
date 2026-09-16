@@ -60,7 +60,7 @@ Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
 ## 3. Oberfläche
 
-Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit genau „Buchungen“ sowie der Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
+Ein Fenster. Der Hauptraum besteht aus einer linken Navigation mit „Start“ und „Buchungen“ sowie der Tabelle, dem Inspector und der Toolbar. Weitere Hauptseiten gibt es nicht.
 
 Die Buchungsansicht verwendet dauerhaft die freigegebene verfeinerte native Gestaltung: randlose 40-Punkt-Zeilen, kleine neutrale Kategorie-Symbole, ruhige abgeleitete Prüfstatus und grüne Einnahmen bei primären Ausgaben. Die Ansicht arbeitet mit den echten Buchungen aus AppModel und Repository; es gibt keine Vergleichsseiten oder Beispieldaten.
 
@@ -68,17 +68,25 @@ Die Buchungsansicht verwendet dauerhaft die freigegebene verfeinerte native Gest
 
 Der Status ist abgeleitet: Fehlt bei `art = rechnung`, `beleg` oder `gutschrift` der Anhang (`belege` ist leer), hat Beleg fehlt Vorrang; ansonsten entscheidet der Zeitstempel `geprueft_am` zwischen Geprüft und Zu prüfen. Der Filter Zu prüfen meint `geprueft_am` leer und umfasst damit auch Buchungen mit fehlendem Anhang; dies ist keine rechtliche Vollständigkeitsprüfung.
 
-**Startansicht.** Das Fenster hat eine Standardgröße von 840 × 500 Punkten. Der rechte Inspector ist beim Start ausgeblendet und über den bestehenden Toolbar-Schalter erreichbar.
+**Fenster.** Das Fenster hat eine Standardgröße von 840 × 500 Punkten. Der rechte Inspector ist beim Start ausgeblendet und über den bestehenden Toolbar-Schalter erreichbar.
 
 **Inspector.** Rechts, standardmäßig ausgeblendet. Er zeigt alle Informationen eines Eintrags, die nicht in eine Tabelle gehören: Beleg mit Vorschau, Grunddaten einschließlich der optionalen Belegnummer und Fälligkeit, Beträge, Steuer, Zahlungen, Notizen, bei ungeprüften Einträgen eine Bestätigen-Aktion. Eine Fälligkeit ist als Überfällig markiert, wenn sie vor dem lokalen heutigen Datum liegt und die Buchung nicht vollständig bezahlt ist. Umsetzung als `.inspector` mit einem Formular im Stil `.grouped`. Alle Abschnitte sind flach und immer sichtbar, keine Akkordeons; ein leerer Abschnitt wird weggelassen, nicht eingeklappt.
 
-**Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Dropdown Alle Status / Zu prüfen / Ohne Beleg, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge sowie Export, Einstellungen und Inspector. Keine Jahresauswahl im ersten Schritt.
+**Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Dropdown Alle Status / Zu prüfen / Ohne Beleg / Überfällig, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge sowie Export, Einstellungen und Inspector.
 
 **Drag-and-drop** gilt für das ganze Fenster.
 
 **Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, Zahnrad in der Toolbar): Profil, KI-Zugang (Schlüssel, Verbindungstest, Modell, Aufwand, schnellere Verarbeitung), Erscheinungsbild.
 
-**Wegfall:** Startseite, Prüfen-Seite, Vergleichsseiten und UStVA-Aufgabenfenster; der Hauptraum bleibt auf die Buchungsansicht begrenzt. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
+**Startseite.** Die App öffnet auf „Start“. Die Seite zeigt eine Begrüßung mit dem Profilnamen, darunter das heutige Datum, und oben rechts das Klappmenü für das Jahr; es bietet jedes Jahr mit Zahlungen und das laufende an und beginnt beim laufenden. Darunter stehen Einnahmen, Ausgaben und Saldo des gewählten Jahres, gezählt nach Zahlungsdatum wie die Steuer selbst. To-Dos und Fristen bleiben davon unberührt, sie beschreiben den heutigen Stand. Darunter stehen zwei Karten nebeneinander.
+
+Links „To Dos“ mit genau drei Zeilen, die immer stehen bleiben: Prüfen, Belege nachtragen und Überfällig. Jede trägt eine Anzahl und führt auf den gleichnamigen Filter der Tabelle; die Anzahl wird mit demselben Filter gezählt, damit Zahl und Liste nie auseinanderlaufen. Prüfen und Belege überschneiden sich deshalb, wie die Filter es tun. Eine Zeile ohne Buchungen bleibt stehen und liest sich als erledigt.
+
+Rechts „Fristen“ mit den drei dringendsten Zeiträumen, die der Nutzer noch schuldet. Der nächste UStVA-Zeitraum und das nächste EÜR-Jahr sind immer geschuldet; ein früherer Zeitraum nur, wenn eine Buchung in ihn fällt. Bereits als exportiert vermerkte Zeiträume fehlen, früheste Frist zuerst; die Karte zeigt davon höchstens drei. Jede Zeile trägt einen einzeiligen Namen, das Fälligkeitsdatum und die verbleibende Zeit als Ampel: rot ab überschritten, gelb von drei Tagen bis heute, grün darüber. Ein Klick öffnet das Export-Sheet auf diesem Zeitraum.
+
+Die Toolbar zeigt auf Start nur den Fortschrittsanzeiger, „Neue Buchung“ und „Export“; Filter, Suche und Inspector gehören zur Tabelle. Drag-and-drop gilt auch hier. Die Seite hat keine Ablagefläche, keine Kennzahlen zum Prüffortschritt je Frist und keinen gespeicherten Zustand; sie ist vollständig aus den Buchungen abgeleitet.
+
+**Wegfall:** Prüfen-Seite, Vergleichsseiten und UStVA-Aufgabenfenster; der Hauptraum bleibt auf Start und die Buchungsansicht begrenzt. Erster Schritt ist Eingang, Speicherung und Anzeige sauber, minimal und solide. Wie die Daten danach für Steuerzwecke bereitgestellt werden, folgt in Abschnitt 5 und wird erst gebaut, wenn die Basis steht.
 
 ## 4. Eingang: Dateien und Agent
 
@@ -148,6 +156,6 @@ Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Klei
 - Stammdaten für Gegenparteien, Kategorien in der Datenbank
 - Weitere Tabellen neben den fünf aus Abschnitt 2, insbesondere für Zahlungen, Positionen, Zuordnungen, Vorschläge, Herkunft
 - Kursgewinn- und Verlustrechnung, Fremdwährungsrevaluierung und sonstige Währungsbuchhaltung
-- Startseite, Prüfen-Seite, eine Sidebar mit weiteren Seiten neben den drei freigegebenen Buchungsansichten, Jahresauswahl
+- Prüfen-Seite, eine Sidebar mit weiteren Seiten neben Start und der Buchungsansicht
 - Migrationen und Abwärtskompatibilitätscode vor 1.0
 - Mehrere Mandanten, mehrere Nutzer, Cloud-Sync

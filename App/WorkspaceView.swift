@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The window has one native workspace: the live bookings ledger.
+/// The pages of the window: the overview and the live bookings ledger.
 enum Workspace: String, CaseIterable, Identifiable {
+    case start
     case buchungen
 
     var id: String {
@@ -10,12 +11,14 @@ enum Workspace: String, CaseIterable, Identifiable {
 
     var name: String {
         switch self {
+        case .start: "Start"
         case .buchungen: "Buchungen"
         }
     }
 
     var symbol: String {
         switch self {
+        case .start: "house"
         case .buchungen: "list.bullet"
         }
     }
@@ -23,8 +26,8 @@ enum Workspace: String, CaseIterable, Identifiable {
 
 struct WorkspaceView: View {
     @Bindable var model: AppModel
-    /// The one workspace of the window, always the selected sidebar item.
-    @State private var workspace: Workspace = .buchungen
+    /// The app opens on the overview.
+    @State private var workspace: Workspace = .start
 
     var body: some View {
         NavigationSplitView {
@@ -33,39 +36,53 @@ struct WorkspaceView: View {
             }
             .listStyle(.sidebar)
             .navigationTitle("Pfennig")
-            // A fixed width: the one entry needs no more and no less.
+            // A fixed width: the few entries need no more and no less.
             .navigationSplitViewColumnWidth(WorkspaceView.sidebarWidth)
             // The sidebar always stays: there is nothing to reveal by hiding it.
             .toolbar(removing: .sidebarToggle)
             .safeAreaInset(edge: .bottom, spacing: 0) { settingsLink }
         } detail: {
-            // A plain trailing pane, not the native inspector. The native one
-            // floats over the detail column instead of narrowing it, which
-            // hides the right hand table columns.
-            HStack(spacing: 0) {
-                MainWindow(model: model)
-                if model.inspectorVisible {
-                    Divider()
-                    inspectorPane.frame(width: WorkspaceView.inspectorWidth)
+            switch workspace {
+            case .start:
+                StartView(model: model, workspace: $workspace)
+            case .buchungen:
+                // A plain trailing pane, not the native inspector. The native one
+                // floats over the detail column instead of narrowing it, which
+                // hides the right hand table columns.
+                HStack(spacing: 0) {
+                    MainWindow(model: model)
+                    if model.inspectorVisible {
+                        Divider()
+                        inspectorPane.frame(width: WorkspaceView.inspectorWidth)
+                    }
                 }
             }
         }
+        // Export is reachable from both pages, so the sheet sits at window scope.
+        .sheet(isPresented: $model.exportVisible) {
+            ExportSheet(model: model, preselected: model.exportPeriod)
+        }
         // Keep the single live observation and inbox lifecycle at window scope.
         .task { await model.observe() }
-        // The window is never narrower than its parts: sidebar, table and,
-        // while it is shown, the inspector.
+        // The window is never narrower than the parts the current page shows.
         .frame(minWidth: minimumWindowWidth, minHeight: 416)
     }
 
-    /// The fixed sidebar width, the fixed inspector width and the smallest
-    /// table width the columns need.
+    /// The fixed sidebar width, the fixed inspector width, the smallest table
+    /// width the columns need and the smallest width the two start columns need.
     static let sidebarWidth: CGFloat = 160
     static let inspectorWidth: CGFloat = 320
     static let tableMinimumWidth: CGFloat = 640
+    static let startMinimumWidth: CGFloat = 640
 
     private var minimumWindowWidth: CGFloat {
-        let inspector = model.inspectorVisible ? Self.inspectorWidth + 1 : 0
-        return Self.sidebarWidth + Self.tableMinimumWidth + inspector
+        switch workspace {
+        case .start:
+            Self.sidebarWidth + Self.startMinimumWidth
+        case .buchungen:
+            Self.sidebarWidth + Self.tableMinimumWidth
+                + (model.inspectorVisible ? Self.inspectorWidth + 1 : 0)
+        }
     }
 
     /// Settings sit at the foot of the sidebar, not in the toolbar.

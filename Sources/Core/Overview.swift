@@ -22,6 +22,7 @@ public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable
     case alle
     case zuPruefen
     case ohneBeleg
+    case ueberfaellig
 
     public var id: String {
         rawValue
@@ -32,6 +33,7 @@ public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable
         case .alle: "Alle Status"
         case .zuPruefen: "Zu prüfen"
         case .ohneBeleg: "Ohne Beleg"
+        case .ueberfaellig: "Überfällig"
         }
     }
 
@@ -42,6 +44,7 @@ public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable
         // receipt appears in both review queues.
         case .zuPruefen: buchung.geprueftAm == nil
         case .ohneBeleg: buchung.reviewStatus == .belegFehlt
+        case .ueberfaellig: buchung.istUeberfaellig
         }
     }
 }

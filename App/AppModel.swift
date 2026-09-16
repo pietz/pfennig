@@ -18,6 +18,8 @@ final class AppModel {
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
     var inspectorVisible = false
     var exportVisible = false
+    /// Set by the start page so the export sheet opens on that period.
+    var exportPeriod: Zeitraum?
     var errorMessage: String?
 
     /// The periods the user has already exported, with the day they left the
