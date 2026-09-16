@@ -1,5 +1,19 @@
 # Änderungen
 
+## 0.5.0 (2026-09-16)
+
+- Neue Startseite mit Begrüßung, Jahresauswahl, Einnahmen, Ausgaben und Saldo des Jahres nach Zahlungsdatum, den To-Dos „Prüfen“, „Belege nachtragen“ und „Überfällig“ sowie den drei dringendsten Fristen für UStVA und EÜR; ein Klick führt in die gefilterte Buchungsliste oder in den Export
+- Zahlungen vereinfacht: eine Zahlung ist nur noch Datum und vorzeichenbehafteter Betrag, negativ für eine Erstattung; geprüft wird die ganze Buchung, nicht mehr jede Zahlung
+- Statusfilter „Überfällig“ in der Buchungsansicht
+- Eine Buchung ohne zu zahlenden Betrag gilt als bezahlt; der Klick in der Bezahlt-Spalte war bei ihr vorher wirkungslos
+- Der Agent nimmt beim Import vollständig betriebliche Nutzung an, sofern Dokument oder Nutzer keinen privaten Anteil angeben
+- Kompaktere Standardfenstergröße, der Inspector startet ausgeblendet
+
+Hinweise:
+
+- Vorabversion ohne Schemamigration. Das Zahlungsformat in der Datenbank hat sich geändert; das Entwicklungsarchiv des Eigentümers wurde mit Backup umgestellt. Andere Archive aus 0.4.0 benötigen vor Nutzung einen abgestimmten Neuaufbau; das App-Update selbst löscht oder ersetzt keine Daten.
+- Die bekannte falsche Zuordnung ausländischer Umsatzsteuer als Vorsteuer in der EÜR ist noch nicht behoben. Entsprechende EÜR-Werte nicht ungeprüft übernehmen.
+
 ## 0.4.0 (2026-09-16)
 
 - Optional Belegnummer und Fälligkeit im Inspector; überfällige Buchungen werden gekennzeichnet
