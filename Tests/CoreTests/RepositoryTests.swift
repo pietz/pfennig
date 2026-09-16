@@ -64,6 +64,25 @@ private func beispiel(
     #expect(try #require(raw?["belege"] as String?) == "[\"a1b2c3\"]")
 }
 
+@Test func belegnummerUndFaelligkeitUeberstehenDenRundlauf() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.belegnummer = "RG-2026-14"
+    buchung.faelligkeit = LocalDate(jahr: 2026, monat: 10, tag: 14)
+    let saved = try repository.save(buchung, akteur: .nutzer)
+    let id = try #require(saved.id)
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.belegnummer == "RG-2026-14")
+    #expect(geladen.faelligkeit == LocalDate(jahr: 2026, monat: 10, tag: 14))
+
+    let raw = try repository.database.read { db in
+        try Row.fetchOne(db, sql: "SELECT belegnummer, faelligkeit FROM buchungen WHERE id = ?", arguments: [id])
+    }
+    #expect(raw?["belegnummer"] as String? == "RG-2026-14")
+    #expect(raw?["faelligkeit"] as String? == "2026-10-14")
+}
+
 @Test func originalbetragBleibtAlsExakteDezimalzahlErhalten() throws {
     let repository = try Repository.inMemory()
     let original = try #require(Decimal(text: "1234,56789"))

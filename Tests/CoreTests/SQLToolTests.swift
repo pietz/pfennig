@@ -134,6 +134,28 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(result.touched.isEmpty)
 }
 
+@Test func ungueltigeFaelligkeitRolltOhneAktivitaetZurueck() throws {
+    let (repository, tool) = try tool()
+    let ungueltig = tool.execute("""
+    INSERT INTO buchungen (richtung, art, datum, faelligkeit, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2026-09-01', '2026-02-30', 'Ungültig', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(ungueltig.text.contains("CHECK constraint failed"))
+    #expect(ungueltig.touched.isEmpty)
+    #expect(try repository.allBookings().isEmpty)
+    #expect(try repository.database.read { try Aktivitaet.fetchCount($0) } == 0)
+
+    let gueltig = tool.execute("""
+    INSERT INTO buchungen (richtung, art, datum, faelligkeit, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2026-09-01', '2026-08-01', 'Gültig', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(gueltig.touched == [1])
+    #expect(try repository.allBookings().first?.faelligkeit == LocalDate(jahr: 2026, monat: 8, tag: 1))
+    #expect(try repository.database.read { try Aktivitaet.fetchCount($0) } == 1)
+}
+
 // MARK: - Transaktion, Log und Zeitstempel
 
 @Test func werkzeugMachtEineVerletzteRegelRueckgaengig() throws {

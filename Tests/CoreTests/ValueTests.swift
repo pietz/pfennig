@@ -20,3 +20,30 @@ import Testing
     #expect(LocalDate("14.09.2026") == nil)
     #expect(LocalDate(jahr: 2026, monat: 1, tag: 5) < datum)
 }
+
+@Test func faelligkeitIstHeuteNichtUeberfaelligUndVergangeneOffeneSchon() throws {
+    let heute = LocalDate.today()
+    let gestern = try LocalDate(#require(Calendar(identifier: .gregorian).date(byAdding: .day, value: -1, to: Date())))
+    let position = Position(netto: Cent(1000), steuersatz: 0, steuer: .null)
+    func buchung(_ faelligkeit: LocalDate, _ zahlungen: [Zahlung] = []) -> Buchung {
+        Buchung(
+            richtung: .ausgabe,
+            art: .rechnung,
+            datum: heute,
+            titel: "Rechnung",
+            faelligkeit: faelligkeit,
+            positionen: [position],
+            steuerbehandlung: .steuerfrei,
+            zahlungen: zahlungen
+        )
+    }
+
+    #expect(buchung(heute).istUeberfaellig == false)
+    #expect(buchung(gestern).istUeberfaellig)
+    #expect(
+        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(500), richtung: .ausgabe)]).istUeberfaellig
+    )
+    #expect(
+        buchung(gestern, [Zahlung(datum: heute, betrag: Cent(1000), richtung: .ausgabe)]).istUeberfaellig == false
+    )
+}

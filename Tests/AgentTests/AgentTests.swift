@@ -663,6 +663,20 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 
 /// The three lessons from the first real runs: no guessed private share, one
 /// spelling per company, short titles.
+@Test func anleitungTraegtBelegnummerUndFaelligkeitMitRegeln() throws {
+    let repository = try Repository.inMemory()
+    let text = try AgentInstructions.build(repository)
+
+    #expect(text.contains("belegnummer TEXT"))
+    #expect(text.contains("faelligkeit TEXT"))
+    #expect(text.contains("belegnummer übernimmst du nur, wenn der Beleg selbst"))
+    #expect(text.contains("keine Nummerierungsprüfung"))
+    #expect(text.contains("faelligkeit füllst du nur, wenn der Beleg selbst"))
+    #expect(text.contains("14 Tagen"))
+    #expect(text.contains("keine Chronologieprüfung"))
+    #expect(text.contains("Bei einem Kassenbon oder einer Kontobewegung bleiben"))
+}
+
 @Test func anleitungSchaerftPrivatanteilGegenparteiUndTitel() throws {
     let repository = try Repository.inMemory()
     _ = try repository.save(

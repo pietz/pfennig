@@ -54,6 +54,8 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
     public var richtung: Richtung
     public var art: Art
     public var datum: LocalDate
+    public var belegnummer: String?
+    public var faelligkeit: LocalDate?
     public var titel: String
     public var kategorie: String?
     public var privatanteilProzent: Int
@@ -79,6 +81,8 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         art: Art,
         datum: LocalDate,
         titel: String,
+        belegnummer: String? = nil,
+        faelligkeit: LocalDate? = nil,
         kategorie: String? = nil,
         privatanteilProzent: Int = 0,
         notizen: String? = nil,
@@ -99,6 +103,8 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         self.richtung = richtung
         self.art = art
         self.datum = datum
+        self.belegnummer = belegnummer
+        self.faelligkeit = faelligkeit
         self.titel = titel
         self.kategorie = kategorie
         self.privatanteilProzent = privatanteilProzent
@@ -149,6 +155,13 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         } else {
             .teilweise
         }
+    }
+
+    /// A booking is overdue only after its optional due date has passed and it
+    /// is not fully settled. Today itself is not overdue.
+    public var istUeberfaellig: Bool {
+        guard let faelligkeit else { return false }
+        return faelligkeit < .today() && zahlungsstand != .bezahlt
     }
 
     /// A receipt is required only for document bookings whose art carries one.

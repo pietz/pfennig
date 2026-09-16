@@ -26,6 +26,28 @@ import Testing
     #expect(text.contains("\"betrag\": 11900"))
     #expect(text.contains("SHA-256-Hashes"))
     #expect(text.contains("'reverse_charge'"))
+    #expect(text.contains("belegnummer TEXT"))
+    #expect(text.contains("faelligkeit TEXT"))
+}
+
+@Test func optionaleBuchungsfelderWerdenAlsGRDBNullGelesen() throws {
+    let repository = try Repository.inMemory()
+    try repository.database.write { db in
+        try db.execute(
+            sql: """
+            INSERT INTO buchungen (
+                richtung, art, datum, titel, belegnummer, faelligkeit, positionen, steuerbehandlung
+            ) VALUES (?, ?, ?, ?, NULL, NULL, ?, ?)
+            """,
+            arguments: [
+                "ausgabe", "beleg", "2026-09-14", "Null",
+                "[{\"netto\":100,\"steuersatz\":19,\"steuer\":19}]", "inland"
+            ]
+        )
+        let loaded = try #require(try Buchung.fetchOne(db))
+        #expect(loaded.belegnummer == nil)
+        #expect(loaded.faelligkeit == nil)
+    }
 }
 
 @Test func checkBedingungenWeisenUnbekannteWerteAb() throws {

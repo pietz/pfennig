@@ -18,6 +18,7 @@ struct Inspector: View {
     /// that does not carry one yet.
     @State private var foreignCurrency = false
     @State private var originalAmountText: String
+    @State private var dueDateText: String
     /// A plain text field writes into the draft with every keystroke. The
     /// draft goes to the database when the field is submitted or loses focus,
     /// so the table shows the change right away.
@@ -25,6 +26,8 @@ struct Inspector: View {
 
     private enum Field {
         case titel
+        case belegnummer
+        case faelligkeit
         case gegenpartei
         case land
         case ustid
@@ -39,6 +42,7 @@ struct Inspector: View {
         _draft = State(initialValue: buchung)
         _savedBaseline = State(initialValue: buchung)
         _originalAmountText = State(initialValue: buchung.originalbetrag?.deutschFormatiert ?? "")
+        _dueDateText = State(initialValue: buchung.faelligkeit?.formatted ?? "")
     }
 
     var body: some View {
@@ -67,6 +71,7 @@ struct Inspector: View {
             draft = updated
             savedBaseline = updated
             originalAmountText = updated.originalbetrag?.deutschFormatiert ?? ""
+            dueDateText = updated.faelligkeit?.formatted ?? ""
         }
         .onDisappear(perform: save)
         // Quitting must not swallow a field the user typed but never committed.
@@ -87,6 +92,7 @@ struct Inspector: View {
 
     private func save() {
         applyOriginalAmount()
+        applyDueDate()
         guard draft != savedBaseline else { return }
         guard model.buchungen.contains(where: { $0.id == draft.id }) else { return }
         guard let saved = model.save(draft) else { return }
@@ -111,6 +117,17 @@ struct Inspector: View {
             TextField("Datum", value: $draft.datum, format: .deutsch)
             TextField("Titel", text: $draft.titel)
                 .focused($focus, equals: .titel)
+            TextField("Belegnummer", text: text(\.belegnummer))
+                .focused($focus, equals: .belegnummer)
+            HStack {
+                TextField("Fälligkeit", text: $dueDateText)
+                    .focused($focus, equals: .faelligkeit)
+                if draft.istUeberfaellig {
+                    Label("Überfällig", systemImage: "clock.badge.exclamationmark")
+                        .foregroundStyle(.orange)
+                        .font(.callout)
+                }
+            }
             TextField("Gegenpartei", text: text(\.gegenparteiName))
                 .focused($focus, equals: .gegenpartei)
             TextField("Land", text: text(\.gegenparteiLand))
@@ -250,6 +267,19 @@ struct Inspector: View {
             return
         }
         draft.originalbetrag = value
+    }
+
+    private func applyDueDate() {
+        let text = dueDateText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.isEmpty == false else {
+            draft.faelligkeit = nil
+            return
+        }
+        guard let value = LocalDate(deutsch: text) else {
+            dueDateText = draft.faelligkeit?.formatted ?? ""
+            return
+        }
+        draft.faelligkeit = value
     }
 
     // MARK: - Steuer

@@ -89,8 +89,13 @@ public enum AgentInstructions {
     - Eine Buchung ist ein Dokument. Ein Beleg ist immer genau eine Zeile in buchungen, auch wenn er \
     mehrere Leistungen abrechnet.
     - titel sagt in höchstens fünf Wörtern, was gekauft oder verkauft wurde, etwa „Laptop-Sleeve“, \
-    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Unternehmensname; \
-    die Rechnungsnummer gehört in notizen.
+    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Unternehmensname.
+    - belegnummer übernimmst du nur, wenn der Beleg selbst eine Rechnungs- oder Belegnummer nennt. Übernimm \
+    sie wie angegeben; es gibt keine Nummerierungsprüfung und keine erfundene Nummer. Ohne Angabe bleibt sie leer.
+    - faelligkeit füllst du nur, wenn der Beleg selbst ein gültiges Fälligkeitsdatum oder eine ausdrückliche Frist \
+    nennt, etwa „zahlbar innerhalb von 14 Tagen“; dann berechnest du das Datum aus dem Belegdatum. Ohne Angabe \
+    bleibt sie leer. Es gibt keine Chronologieprüfung. Bei einem Kassenbon oder einer Kontobewegung bleiben \
+    belegnummer und faelligkeit leer.
     - gegenpartei_name ist der kurze, erkennbare Handelsname ohne Rechtsform, also Amazon, Adobe, \
     Deutsche Bahn, Telekom. Ist es dasselbe Unternehmen wie eine bekannte Gegenpartei, übernimm deren \
     Schreibweise. Den vollen Namen kannst du in notizen festhalten. gegenpartei_land und \

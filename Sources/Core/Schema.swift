@@ -11,6 +11,14 @@ public enum Schema {
         richtung TEXT NOT NULL CHECK (richtung IN ('einnahme', 'ausgabe')),
         art TEXT NOT NULL CHECK (art IN ('rechnung', 'beleg', 'gutschrift', 'steuerzahlung', 'nur_zahlung', 'ignoriert', 'sonstiges')),
         datum TEXT NOT NULL,                        -- Belegdatum als JJJJ-MM-TT
+        belegnummer TEXT,                           -- optionale Nummer, wie auf dem Beleg angegeben
+        faelligkeit TEXT CHECK (
+            faelligkeit IS NULL OR (
+                faelligkeit GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'
+                AND date(faelligkeit, '+0 days') IS NOT NULL
+                AND date(faelligkeit, '+0 days') = faelligkeit
+            )
+        ),                                          -- optionales Fälligkeitsdatum als JJJJ-MM-TT
         titel TEXT NOT NULL,
         kategorie TEXT,                             -- Schlüssel aus der EÜR-Kategorienliste im Code
         privatanteil_prozent INTEGER NOT NULL DEFAULT 0,
