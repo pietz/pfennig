@@ -47,8 +47,17 @@ public struct Responses: Sendable {
     var networkRetryDelay: Duration = .seconds(3)
 
     /// The transport the app uses. Tests never touch it.
+    ///
+    /// A fresh ephemeral session per request, on purpose. The shared session
+    /// learns from the first response that the host speaks HTTP/3 and keeps
+    /// that in the app's HTTP storage for a day; over HTTP/3, macOS drops a
+    /// burst of large uploads with EMSGSIZE ("Die Nachricht ist zu lang").
+    /// An ephemeral session knows no such entry and stays on HTTP/2, which
+    /// carries ten uploads at once without complaint. Measured 2026-09-16.
     public static let network: Transport = { request in
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let session = URLSession(configuration: .ephemeral)
+        defer { session.finishTasksAndInvalidate() }
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else {
             throw AgentError.network("Keine HTTP-Antwort.")
         }
