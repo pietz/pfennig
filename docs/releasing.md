@@ -2,6 +2,8 @@
 
 Pfennig will initially be distributed outside the Mac App Store as a Developer ID signed and Apple-notarized ZIP. Release credentials remain in the local macOS Keychain and are never passed through environment files or committed to the repository.
 
+After explicit owner authorization for a release, an agent may run `scripts/release.sh --notarize` using the existing Keychain setup. Key generation and credential setup remain owner-only; agents must not extract or display secrets or change Keychain access controls. The owner handles any macOS confirmation dialog. Publishing, pushing, and replacing the installed app still require explicit owner authorization.
+
 ## One-time setup
 
 Install a valid `Developer ID Application` certificate and store notarization credentials:

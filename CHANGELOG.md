@@ -1,6 +1,6 @@
 # Änderungen
 
-## 0.4.0 (vorbereitet)
+## 0.4.0 (2026-09-16)
 
 - Optional Belegnummer und Fälligkeit im Inspector; überfällige Buchungen werden gekennzeichnet
 - Kürzerer Agentenkontext mit Stammdaten, Buchungsschema und Kategorien; Dateieingang als separate Nachricht
