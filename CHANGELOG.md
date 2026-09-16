@@ -1,5 +1,18 @@
 # Änderungen
 
+## 0.4.0 (vorbereitet)
+
+- Optional Belegnummer und Fälligkeit im Inspector; überfällige Buchungen werden gekennzeichnet
+- Kürzerer Agentenkontext mit Stammdaten, Buchungsschema und Kategorien; Dateieingang als separate Nachricht
+- Agentenzugriff ausschließlich auf `buchungen`; interne Tabellen bleiben unzugänglich
+- Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; ohne Zahlungsdatum gilt das Belegdatum
+
+Hinweise:
+
+- Vorabversion ohne Schemamigration. Das Entwicklungsarchiv des Eigentümers wurde bereits mit Backup für die neuen Felder neu aufgebaut. Andere Archive aus 0.3.0 benötigen vor Nutzung einen abgestimmten Neuaufbau; das App-Update selbst löscht oder ersetzt keine Daten.
+- Bestehende Buchungen werden durch den neuen Prompt nicht rückwirkend korrigiert.
+- Die bekannte falsche Zuordnung ausländischer Umsatzsteuer als Vorsteuer in der EÜR ist noch nicht behoben. Entsprechende EÜR-Werte nicht ungeprüft übernehmen.
+
 ## 0.2.0 (2026-09-15)
 
 - Fremdwährungsbelege mit historischem Frankfurter-Referenzkurs, exakter Originalwährung und EUR-Cent-Beträgen

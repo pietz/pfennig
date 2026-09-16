@@ -185,12 +185,17 @@ private func input() -> FileInput {
     #expect(werkzeuge[0]["type"] as? String == "function")
     #expect(werkzeuge[0]["name"] as? String == "sql")
     #expect(werkzeuge[0]["strict"] as? Bool == true)
+    let sqlBeschreibung = try #require(werkzeuge[0]["description"] as? String)
+    #expect(sqlBeschreibung.contains("SELECT, INSERT und UPDATE auf buchungen"))
+    #expect(sqlBeschreibung.contains("dateien") == false)
     #expect(werkzeuge[1]["type"] as? String == "function")
     #expect(werkzeuge[1]["name"] as? String == "umrechnen")
     #expect(werkzeuge[1]["strict"] as? Bool == true)
     let eingabeteile = try #require(erste["input"] as? [[String: Any]])
     let content = try #require(eingabeteile[1]["content"] as? [[String: Any]])
     #expect(content[0]["type"] as? String == "input_file")
+    #expect(content[1]["type"] as? String == "input_text")
+    #expect(content[1]["text"] as? String == "Datei hinzugefügt: rechnung.pdf")
 
     let zweite = gesehen[1]
     #expect(zweite["previous_response_id"] as? String == "resp_1")
@@ -629,10 +634,13 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     }
 }
 
-@Test func anleitungTraegtSchemaKategorienUndGegenparteien() throws {
+@Test func anleitungTraegtNurBuchungsschemaNeutralesProfilUndKategorieschluessel() throws {
     let repository = try Repository.inMemory()
     try repository.saveProfile(
-        Profil(name: "Nordlicht Studio", ustid: "DE123456789", kleinunternehmer: true)
+        Profil(
+            name: "Nordlicht Studio", steuernummer: "12/345/67890", ustid: "DE123456789",
+            kleinunternehmer: true
+        )
     )
     _ = try repository.save(
         Buchung(
@@ -646,65 +654,51 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 
     let text = try AgentInstructions.build(repository)
     #expect(text.contains("CREATE TABLE buchungen"))
+    #expect(text.contains("CREATE TABLE dateien") == false)
+    #expect(text.contains("CREATE TABLE aktivitaeten") == false)
+    #expect(text.contains("CREATE TABLE anfragen") == false)
+    #expect(text.contains("CREATE TABLE einstellungen") == false)
+    #expect(text.contains("CREATE TABLE zeitraeume") == false)
     #expect(text.contains("steuerbehandlung TEXT NOT NULL CHECK"))
+    #expect(text.contains(
+        "Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am, "
+            + "geaendert_am sowie zahlungen[].id."
+    ))
+    #expect(text.contains("Einnahmen:\n"))
+    #expect(text.contains("Ausgaben:\n"))
     for kategorie in Kategorie.alle {
-        #expect(text.contains(kategorie.schluessel))
-        #expect(text.contains(kategorie.beschreibung))
+        #expect(text.contains("- `\(kategorie.schluessel)`"))
+        #expect(text.contains(kategorie.beschreibung) == false)
     }
-    #expect(text.contains("Hetzner (DE)"))
-    #expect(text.contains("DE123456789"))
-    #expect(text.contains("Kleinunternehmer nach §19"))
-    #expect(text.contains("Das Unternehmen heißt Nordlicht Studio"))
-    #expect(text.contains("\(LocalDate.today())"))
-    // Bank statements come later; this step's instructions do not mention them.
-    let anweisungen = try #require(text.components(separatedBy: "## So arbeitest du").last)
-    #expect(anweisungen.lowercased().contains("kontoauszug") == false)
+    #expect(text.contains("- heute: \(LocalDate.today())"))
+    #expect(text.contains("- name: Nordlicht Studio"))
+    #expect(text.contains("- ustid: DE123456789"))
+    #expect(text.contains("- kleinunternehmer: true"))
+    #expect(text.contains("12/345/67890") == false)
+    #expect(text.contains("Hetzner") == false)
+
+    let emptyProfileText = try AgentInstructions.build(Repository.inMemory())
+    #expect(emptyProfileText.contains("- name: nicht angegeben"))
+    #expect(emptyProfileText.contains("- ustid: nicht angegeben"))
+    #expect(emptyProfileText.contains("- kleinunternehmer: false"))
 }
 
-/// The three lessons from the first real runs: no guessed private share, one
-/// spelling per company, short titles.
-@Test func anleitungTraegtBelegnummerUndFaelligkeitMitRegeln() throws {
-    let repository = try Repository.inMemory()
-    let text = try AgentInstructions.build(repository)
+@Test func anleitungBeginntMitDerDauerhaftenUmgebungUndDerEinenRegel() throws {
+    let text = try AgentInstructions.build(Repository.inMemory())
+    let expected = """
+    Du bist der Buchhaltungsassistent in Pfennig, einer lokalen Anwendung für deutsche Selbstständige mit EÜR und Ist-Versteuerung.
 
-    #expect(text.contains("belegnummer TEXT"))
-    #expect(text.contains("faelligkeit TEXT"))
-    #expect(text.contains("belegnummer übernimmst du nur, wenn der Beleg selbst"))
-    #expect(text.contains("keine Nummerierungsprüfung"))
-    #expect(text.contains("faelligkeit füllst du nur, wenn der Beleg selbst"))
-    #expect(text.contains("14 Tagen"))
-    #expect(text.contains("keine Chronologieprüfung"))
-    #expect(text.contains("Bei einem Kassenbon oder einer Kontobewegung bleiben"))
-}
+    Du pflegst die Buchhaltungsdaten des Unternehmens anhand von Dokumenten und Nutzerangaben in der Datenbank. Pfennig zeigt diese Daten dem Nutzer an, der sie prüfen und bearbeiten kann.
 
-@Test func anleitungSchaerftPrivatanteilGegenparteiUndTitel() throws {
-    let repository = try Repository.inMemory()
-    _ = try repository.save(
-        Buchung(
-            richtung: .ausgabe, art: .rechnung, datum: LocalDate(jahr: 2026, monat: 8, tag: 2),
-            titel: "Laptop-Sleeve", kategorie: "buerobedarf", gegenparteiName: "Amazon",
-            gegenparteiLand: "LU",
-            positionen: [Position(netto: Cent(1000), steuersatz: 19, steuer: Cent(190))],
-            steuerbehandlung: .inland
-        ),
-        akteur: .nutzer
-    )
-    let text = try AgentInstructions.build(repository)
+    Eine Buchung fasst einen Geschäftsvorgang mit seinen Belegen, Positionen und Zahlungen zusammen. Mit deinen Werkzeugen kannst du vorhandene Buchungen nachschlagen und bearbeiten. Änderungen werden automatisch protokolliert und dem Nutzer zur Prüfung vorgelegt.
 
-    #expect(text.contains("privatanteil_prozent ist 0."))
-    #expect(text.contains("vom gekauften Produkt schließt du nie darauf"))
-    #expect(text.contains("kurze, erkennbare Handelsname ohne Rechtsform"))
-    #expect(text.contains("gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers"))
-    #expect(text.contains("titel sagt in höchstens fünf Wörtern"))
-    #expect(text.contains("Keine Rechnungsnummer, kein Datum, kein Unternehmensname"))
-    #expect(text.contains("übernimm die Schreibweise von hier Zeichen für Zeichen"))
-    #expect(text.contains("Deine Werkzeuge heißen sql und umrechnen"))
-    #expect(text.contains("tatsächlich gezahlte EUR-Betrag bekannt"))
-    #expect(text.contains("Nicht auf zwei Nachkommastellen runden"))
-    #expect(text.contains("erfinde keinen Wert"))
+    ## Regeln
 
-    // The examples and the cents rule stay.
-    #expect(text.contains(#"[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]"#))
-    #expect(text.contains(#""betrag": 11900"#))
-    #expect(text.contains("Euro-Cent als ganze Zahlen"))
+    - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
+    """
+
+    #expect(text.hasPrefix(expected + "\n\n## Profil"))
+    #expect(text.contains("## So arbeitest du") == false)
+    #expect(text.contains("Deine Werkzeuge heißen") == false)
+    #expect(text.contains("Amazon") == false)
 }

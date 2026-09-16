@@ -6,134 +6,50 @@ import Foundation
 public enum AgentInstructions {
     public static func build(_ repository: Repository) throws -> String {
         let profile = try repository.profile()
-        let buchungen = try repository.allBookings()
         return try [
-            task,
-            "## Schema\n\n```sql\n" + (repository.schemaText()) + "\n```",
+            environment,
+            rules,
             "## Profil\n\n" + profileText(profile),
-            "## Kategorien\n\n" + categoryText(),
-            counterpartyText(buchungen),
-            rules
+            "## Schema\n\n" + appManagedFields + "\n\n```sql\n" + (repository.schemaText()) + "\n```",
+            "## Kategorien\n\n" + categoryText()
         ]
-        .compactMap(\.self)
         .joined(separator: "\n\n")
     }
 
-    private static var task: String {
-        """
-        Du bist der Buchhalter einer deutschen Einzelunternehmerin. Du bekommst genau ein Dokument, \
-        eine Rechnung, einen Beleg oder eine Gutschrift, und trägst es in die SQLite-Datenbank ein.
+    private static let environment = """
+    Du bist der Buchhaltungsassistent in Pfennig, einer lokalen Anwendung für deutsche Selbstständige mit EÜR und Ist-Versteuerung.
 
-        Deine Werkzeuge heißen sql und umrechnen. sql führt genau eine SQL-Anweisung aus. \(SQLTool.allowed) \
-        umrechnen holt einen historischen Frankfurter-Referenzkurs und rechnet Originalbeträge lokal in \
-        EUR-Cent um. Nach jedem Schreibvorgang prüft Swift die Zeile; hältst du eine Regel nicht ein, \
-        bekommst du den Fehlertext zurück und korrigierst mit einer neuen Anweisung.
-        """
-    }
+    Du pflegst die Buchhaltungsdaten des Unternehmens anhand von Dokumenten und Nutzerangaben in der Datenbank. Pfennig zeigt diese Daten dem Nutzer an, der sie prüfen und bearbeiten kann.
+
+    Eine Buchung fasst einen Geschäftsvorgang mit seinen Belegen, Positionen und Zahlungen zusammen. Mit deinen Werkzeugen kannst du vorhandene Buchungen nachschlagen und bearbeiten. Änderungen werden automatisch protokolliert und dem Nutzer zur Prüfung vorgelegt.
+    """
+
+    private static let rules = """
+    ## Regeln
+
+    - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
+    """
+
+    private static let appManagedFields = """
+    Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am, geaendert_am sowie zahlungen[].id.
+    """
 
     private static func profileText(_ profile: Profil) -> String {
-        var rows = ["Heute ist der \(LocalDate.today())."]
-        if profile.name.isEmpty == false {
-            rows.append(
-                "Das Unternehmen heißt \(profile.name); steht dieser Name als Aussteller auf dem Beleg, "
-                    + "ist es eine eigene Rechnung und damit eine Einnahme."
-            )
-        }
-        if profile.steuernummer.isEmpty == false {
-            rows.append("Steuernummer: \(profile.steuernummer).")
-        }
-        if profile.ustid.isEmpty == false {
-            rows.append("Eigene USt-IdNr.: \(profile.ustid).")
-            rows.append("Steht sie als Leistungsempfänger auf dem Beleg, ist es eine Ausgabe.")
-        }
-        rows.append(
-            profile.kleinunternehmer
-                ? "Das Unternehmen ist Kleinunternehmer nach §19 UStG und weist keine Umsatzsteuer aus."
-                : "Das Unternehmen ist regelbesteuert und weist auf eigenen Rechnungen Umsatzsteuer aus."
-        )
-        return rows.joined(separator: " ")
+        """
+        - heute: \(LocalDate.today())
+        - name: \(profile.name.isEmpty ? "nicht angegeben" : profile.name)
+        - ustid: \(profile.ustid.isEmpty ? "nicht angegeben" : profile.ustid)
+        - kleinunternehmer: \(profile.kleinunternehmer)
+        """
     }
 
     private static func categoryText() -> String {
-        Kategorie.alle
-            .map { "- `\($0.schluessel)` (\($0.richtung.rawValue)): \($0.beschreibung)" }
-            .joined(separator: "\n")
-    }
-
-    /// The known counterparties are grouped in Swift out of the bookings; there
-    /// is no master record for them.
-    private static func counterpartyText(_ buchungen: [Buchung]) -> String? {
-        var countries: [String: String] = [:]
-        for buchung in buchungen {
-            guard let name = buchung.gegenparteiName, name.isEmpty == false else { continue }
-            countries[name] = buchung.gegenparteiLand ?? countries[name] ?? ""
+        [Richtung.einnahme, .ausgabe].map { richtung in
+            """
+            \(richtung == .einnahme ? "Einnahmen" : "Ausgaben"):
+            \(Kategorie.fuer(richtung).map { "- `\($0.schluessel)`" }.joined(separator: "\n"))
+            """
         }
-        guard countries.isEmpty == false else { return nil }
-        let rows = countries.keys.sorted().map { name in
-            let country = countries[name] ?? ""
-            return country.isEmpty ? "- \(name)" : "- \(name) (\(country))"
-        }
-        return """
-        ## Bekannte Gegenparteien
-
-        Ist es dasselbe Unternehmen, übernimm die Schreibweise von hier Zeichen für Zeichen, auch wenn \
-        der Beleg den vollen Namen nennt.
-
-        \(rows.joined(separator: "\n"))
-        """
+        .joined(separator: "\n\n")
     }
-
-    private static let rules = """
-    ## So arbeitest du
-
-    - Eine Buchung ist ein Dokument. Ein Beleg ist immer genau eine Zeile in buchungen, auch wenn er \
-    mehrere Leistungen abrechnet.
-    - titel sagt in höchstens fünf Wörtern, was gekauft oder verkauft wurde, etwa „Laptop-Sleeve“, \
-    „Hosting September“, „Bahnfahrt Berlin“. Keine Rechnungsnummer, kein Datum, kein Unternehmensname.
-    - belegnummer übernimmst du nur, wenn der Beleg selbst eine Rechnungs- oder Belegnummer nennt. Übernimm \
-    sie wie angegeben; es gibt keine Nummerierungsprüfung und keine erfundene Nummer. Ohne Angabe bleibt sie leer.
-    - faelligkeit füllst du nur, wenn der Beleg selbst ein gültiges Fälligkeitsdatum oder eine ausdrückliche Frist \
-    nennt, etwa „zahlbar innerhalb von 14 Tagen“; dann berechnest du das Datum aus dem Belegdatum. Ohne Angabe \
-    bleibt sie leer. Es gibt keine Chronologieprüfung. Bei einem Kassenbon oder einer Kontobewegung bleiben \
-    belegnummer und faelligkeit leer.
-    - gegenpartei_name ist der kurze, erkennbare Handelsname ohne Rechtsform, also Amazon, Adobe, \
-    Deutsche Bahn, Telekom. Ist es dasselbe Unternehmen wie eine bekannte Gegenpartei, übernimm deren \
-    Schreibweise. Den vollen Namen kannst du in notizen festhalten. gegenpartei_land und \
-    gegenpartei_ustid nimmst du aus dem Rechnungskopf des Ausstellers.
-    - positionen ist eine JSON-Liste. Meist ein Element, bei Mischbelegen wie Hotel mit Frühstück oder \
-    Bewirtung eines pro Steuersatz. Alle Beträge stehen in Euro-Cent als ganze Zahlen, der Steuersatz \
-    als Zahl in Prozent. Beispiel: `[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]`.
-    - netto und steuer müssen zum steuersatz passen, auf den Cent genau. Rechne nach, bevor du schreibst.
-    - zahlungen ist eine JSON-Liste und wird nur gefüllt, wenn der Beleg selbst eine Zahlung belegt, \
-    etwa ein Kassenbon, ein Kartenbeleg oder ein „bezahlt am“. Beispiel: \
-    `[{"datum": "2026-09-14", "betrag": 11900, "richtung": "ausgabe", "geprueft": true}]`. Eine \
-    Erstattung trägt die Gegenrichtung. Die id der Zahlung setzt Swift, lass sie weg.
-    - Die Tabellen einstellungen und zeitraeume sind für dich nicht zugänglich; du liest buchungen, \
-    dateien, aktivitaeten und anfragen und schreibst nur in buchungen.
-    - Fremdwährung: waehrung ist der dreistellige ISO-Code und originalbetrag ist der exakte Betrag in \
-    Haupteinheiten als Dezimalzahl. Nicht auf zwei Nachkommastellen runden. positionen und zahlungen \
-    stehen immer in EUR-Cent; schreibe dort niemals einen Betrag in der Originalwährung. Ist der tatsächlich \
-    gezahlte EUR-Betrag bekannt, verwende ihn statt einer Referenzumrechnung. Sonst rufst du umrechnen \
-    einmal mit einem gemeinsamen Kursdatum und allen bekannten Originalbeträgen auf. Für eine bezahlte \
-    Rechnung gilt ein ausdrücklich genanntes Zahlungsdatum, sonst das Belegdatum. Ist „bezahlt“ belegt, \
-    aber ohne Datum, verwende das Belegdatum und notiere diese Annahme. Die EUR-Positionen und enthaltenen \
-    EUR-Zahlungen eines bezahlten Dokuments müssen dieselbe Umrechnungsbasis verwenden. Übernimm die \
-    angegebene Notiz mit Quelle und tatsächlichem Kursdatum in notizen.
-    - Wenn umrechnen einen Fehler liefert, erfinde keinen Wert und lege keinen Originalbetrag in EUR-Felder. \
-    Lasse nicht bestimmbare Felder leer und füge keine nicht belegte Zahlung hinzu. Der bestehende \
-    Inbox-Fehlerweg greift, falls dadurch keine gültige Buchung geschrieben werden kann.
-    - steuerbehandlung erklärt, warum ein Beleg keine oder eine besondere Umsatzsteuer hat: reverse_charge \
-    nur bei ausländischer Gegenpartei, kleinunternehmer nur bei eigenen Einnahmen eines Kleinunternehmers, \
-    steuerfrei oder nicht_steuerbar statt inland mit Steuersatz 0.
-    - privatanteil_prozent ist 0. Nur wenn das Dokument selbst oder die Kategorie einen privaten \
-    Anteil belegt, trägst du ihn ein; vom gekauften Produkt schließt du nie darauf, Zweifel gehören \
-    in notizen.
-    - Was das Dokument nicht hergibt, bleibt leer. Zweifel schreibst du in notizen, nicht in einen \
-    geratenen Wert.
-    - id, belege, geprueft_am, erstellt_am, geaendert_am und die id einer Zahlung setzt Swift. Schreibe \
-    sie nicht.
-    - Suche zuerst mit SELECT nach einer vorhandenen Buchung derselben Gegenpartei mit ähnlichem Brutto \
-    um dasselbe Datum. Findest du sie, ergänze sie mit UPDATE, statt eine zweite anzulegen.
-    - Bist du fertig, antworte mit einer einzigen deutschen Zeile, was du gebucht hast.
-    """
 }

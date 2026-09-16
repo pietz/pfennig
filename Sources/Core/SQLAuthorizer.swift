@@ -14,7 +14,7 @@ import GRDBSQLite
 /// is exactly a statement that is allowed here.
 public enum SQLAuthorizer {
     /// SELECT is allowed on everything the agent may see.
-    static let readable: Set<String> = ["buchungen", "dateien", "aktivitaeten", "anfragen"]
+    static let readable: Set<String> = ["buchungen"]
     /// INSERT and UPDATE only ever touch the bookings.
     static let writable: Set<String> = ["buchungen"]
 
@@ -31,7 +31,7 @@ public enum SQLAuthorizer {
     /// The decision for one action code and its first argument, usually the
     /// table name. Everything the table below does not name is denied: DELETE,
     /// DROP, ALTER, CREATE, PRAGMA, ATTACH, transactions of the agent's own
-    /// and every access to `einstellungen` or `sqlite_master`.
+    /// and every access outside `buchungen`, including `sqlite_master`.
     static func allows(action: CInt, name: String?) -> Bool {
         switch action {
         case SQLITE_SELECT, SQLITE_FUNCTION: true

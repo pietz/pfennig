@@ -1,7 +1,6 @@
 /// The fixed list of categories, income first. The keys are what
 /// `buchungen.kategorie` stores and they never change; a booking with an
-/// unknown schluessel keeps it and is shown with the raw schluessel. The one-line
-/// description is what the agent reads in its instructions.
+/// unknown schluessel keeps it and is shown with the raw schluessel.
 public struct Kategorie: Hashable, Sendable, Identifiable {
     public let schluessel: String
     public let name: String

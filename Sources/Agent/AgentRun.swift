@@ -172,7 +172,7 @@ public struct AgentRun: Sendable {
             ["role": "system", "content": instructions],
             ["role": "user", "content": [
                 file.content,
-                ["type": "input_text", "text": "Verbuche dieses Dokument."]
+                ["type": "input_text", "text": "Datei hinzugefügt: \(file.name)"]
             ]]
         ]
 

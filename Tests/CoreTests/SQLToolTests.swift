@@ -21,9 +21,6 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
 @Test func autorisiererErlaubtDieNamentlichGenanntenAnweisungen() throws {
     let (_, tool) = try tool()
     #expect(tool.execute("SELECT id FROM buchungen").text.hasPrefix("Fehler") == false)
-    #expect(tool.execute("SELECT sha256 FROM dateien").text == "[]")
-    #expect(tool.execute("SELECT id FROM aktivitaeten").text == "[]")
-    #expect(tool.execute("SELECT id FROM anfragen").text == "[]")
     #expect(tool.execute(gueltigeBuchung).text.hasPrefix("ok"))
     #expect(tool.execute("UPDATE buchungen SET titel = 'Strom 2026' WHERE id = 1").text.hasPrefix("ok"))
 }
@@ -34,6 +31,9 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
     "ALTER TABLE buchungen ADD COLUMN spass TEXT",
     "CREATE TABLE spass (id INTEGER)",
     "PRAGMA journal_mode",
+    "SELECT sha256 FROM dateien",
+    "SELECT id FROM aktivitaeten",
+    "SELECT id FROM anfragen",
     "SELECT wert FROM einstellungen",
     "UPDATE einstellungen SET wert = 'true' WHERE schluessel = 'kleinunternehmer'",
     "SELECT sql FROM sqlite_master",

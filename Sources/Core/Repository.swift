@@ -262,13 +262,16 @@ public final class Repository: Sendable {
 
     // MARK: - Schema
 
-    /// The CREATE statements as SQLite stores them. The agent reads the schema
-    /// from the database itself, so it can never drift from what is there.
+    /// The CREATE statements for exactly the tables the agent may read. SQLite
+    /// supplies the text, so it cannot drift from the database.
     public func schemaText() throws -> String {
-        try database.read { db in
+        let names = SQLAuthorizer.readable.sorted()
+        let placeholders = names.map { _ in "?" }.joined(separator: ", ")
+        return try database.read { db in
             try String.fetchAll(
                 db,
-                sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+                sql: "SELECT sql FROM sqlite_master WHERE type = 'table' AND name IN (\(placeholders)) ORDER BY name",
+                arguments: StatementArguments(names)
             )
             .joined(separator: ";\n\n") + ";"
         }
