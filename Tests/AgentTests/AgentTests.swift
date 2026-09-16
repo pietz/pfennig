@@ -700,7 +700,7 @@ private actor Zaehler {
     #expect(text.contains("CREATE TABLE zeitraeume") == false)
     #expect(text.contains("steuerbehandlung TEXT NOT NULL CHECK"))
     #expect(text.contains(
-        "Von der Anwendung verwaltet, nicht setzen: id, geprueft_am, erstellt_am und geaendert_am."
+        "Von der Anwendung verwaltet, nicht setzen: `id`, `geprueft_am`, `erstellt_am` und `geaendert_am`."
     ))
     #expect(text.contains("Einnahmen:\n"))
     #expect(text.contains("Ausgaben:\n"))
@@ -734,8 +734,8 @@ private actor Zaehler {
 
     - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
     - Gehe von vollständig betrieblicher Nutzung aus, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt.
-    - Ein Beleg (Rechnung, Quittung, Gutschrift) wird eine neue Buchung mit der id der Datei in belege. Gibt es die Buchung zu dem Vorgang schon, ergänze sie und hänge die Datei dort an.
-    - Ein Kontoauszug zeigt, welche Buchungen bezahlt wurden. Trage die Zahlungen in die passenden Buchungen ein. Eine Bewegung ohne passende Buchung wird eine Buchung mit art nur_zahlung und dem Verwendungszweck als titel; eine private Bewegung oder eine Übertragung zwischen eigenen Konten wird eine Buchung mit art ignoriert. Lege nichts doppelt an.
+    - Ein Beleg (Rechnung, Quittung, Gutschrift) wird eine neue Buchung mit der `id` der Datei in `belege`. Gibt es die Buchung zu dem Vorgang schon, ergänze sie und hänge die Datei dort an.
+    - Ein Kontoauszug zeigt, welche Buchungen bezahlt wurden. Trage die Zahlungen in `zahlungen` der passenden Buchungen ein. Eine Bewegung ohne passende Buchung wird eine Buchung mit `art = nur_zahlung` und dem Verwendungszweck als `titel`; eine private Bewegung oder eine Übertragung zwischen eigenen Konten wird eine Buchung mit `art = ignoriert`. Lege nichts doppelt an.
     """
 
     #expect(text.hasPrefix(expected + "\n\n## Profil"))
