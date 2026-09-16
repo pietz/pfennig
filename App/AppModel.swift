@@ -234,18 +234,16 @@ final class AppModel {
         buchungen.removeAll { $0.id == id }
         selection = nil
         do {
-            // The last booking of a receipt takes the file with it.
-            try path.remove(repository.delete(id: id))
+            try repository.delete(id: id)
         } catch {
             errorMessage = "\(error)"
         }
     }
 
-    /// Takes one receipt off a booking, and its original out of the archive
-    /// when no other booking carries it.
-    func removeReceipt(_ sha256: String, from id: Int64) {
+    /// Takes one receipt off a booking. The file stays in the archive.
+    func removeReceipt(_ fileID: Int64, from id: Int64) {
         do {
-            try path.remove(repository.removeReceipt(sha256, from: id))
+            try repository.removeReceipt(fileID, from: id)
         } catch {
             errorMessage = "\(error)"
         }

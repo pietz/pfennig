@@ -63,7 +63,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
     public var originalbetrag: Decimal?
     public var steuerbehandlung: Steuerbehandlung
     public var zahlungen: [Zahlung]
-    public var belege: [String]
+    public var belege: [Int64]
     public var geprueftAm: Date?
     public var erstelltAm: Date
     public var geaendertAm: Date
@@ -87,7 +87,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         originalbetrag: Decimal? = nil,
         steuerbehandlung: Steuerbehandlung,
         zahlungen: [Zahlung] = [],
-        belege: [String] = [],
+        belege: [Int64] = [],
         geprueftAm: Date? = nil,
         erstelltAm: Date = Date(),
         geaendertAm: Date = Date()

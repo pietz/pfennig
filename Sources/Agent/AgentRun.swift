@@ -5,15 +5,16 @@ import Foundation
 /// formats as plain text. Nothing is prepared or converted, the file goes as
 /// it is; there is no parser for any format.
 public struct FileInput: Sendable {
+    /// The row in `dateien`; the agent writes it into `belege`.
+    public var id: Int64
     public var name: String
     public var fileExtension: String
-    public var sha256: String
     public var data: Data
 
-    public init(name: String, fileExtension: String, sha256: String, data: Data) {
+    public init(id: Int64, name: String, fileExtension: String, data: Data) {
+        self.id = id
         self.name = name
         self.fileExtension = fileExtension
-        self.sha256 = sha256
         self.data = data
     }
 
@@ -90,7 +91,7 @@ public struct RunAbort: Error, LocalizedError {
 /// One file, one run: the tool loop over the Responses API. The model is fixed
 /// in the code, there is no choice in the settings.
 public struct AgentRun: Sendable {
-    public static let maxToolCalls = 25
+    public static let maxToolCalls = 60
 
     let repository: Repository
     let tool: SQLTool
@@ -162,7 +163,7 @@ public struct AgentRun: Sendable {
     public func start(_ file: FileInput) async throws -> RunResult {
         let instructions = try AgentInstructions.build(repository)
         let ai = try repository.aiSettings()
-        let request = try repository.startRequest(dateiSha256: file.sha256, modell: ai.model.rawValue)
+        let request = try repository.startRequest(dateiId: file.id, modell: ai.model.rawValue)
         var trace = Trace()
         var result = RunResult()
         do {
@@ -201,7 +202,7 @@ public struct AgentRun: Sendable {
             ["role": "system", "content": instructions],
             ["role": "user", "content": [
                 file.content,
-                ["type": "input_text", "text": "Datei hinzugefügt: \(file.name)"]
+                ["type": "input_text", "text": "Datei \(file.id) hinzugefügt: \(file.name)"]
             ]]
         ]
 

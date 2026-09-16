@@ -27,11 +27,6 @@ public enum Steuerbehandlung: String, CaseIterable, Codable, Hashable, Sendable,
     case unklar
 }
 
-public enum Dateiart: String, Codable, Hashable, Sendable, DatabaseValueConvertible {
-    case beleg
-    case kontoauszug
-}
-
 public enum Akteur: String, Codable, Hashable, Sendable, DatabaseValueConvertible {
     case nutzer
     case agent

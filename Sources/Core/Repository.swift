@@ -4,7 +4,6 @@ import GRDB
 /// The only error Core raises by itself; everything else comes from GRDB.
 public enum CoreError: Error {
     case buchungNichtGefunden(Int64)
-    case keineBuchungAngehaengt
 }
 
 /// The single way into the database. Every write of a booking goes through
@@ -47,14 +46,10 @@ public final class Repository: Sendable {
 
     /// Removes a booking the user no longer wants. The activity log keeps the
     /// rows it already has; it records what happened and is not a copy of the
-    /// table. Answers with the receipts no booking carries any more, so the
-    /// caller can take their originals out of the archive.
-    @discardableResult
-    public func delete(id: Int64) throws -> [Datei] {
+    /// table. Its files stay in `dateien` and in the archive.
+    public func delete(id: Int64) throws {
         try database.write { db in
-            let hashes = try Buchung.fetchOne(db, key: id)?.belege ?? []
             try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
-            return try Repository.cleanupOrphanedFiles(hashes, in: db)
         }
     }
 
@@ -105,89 +100,48 @@ public final class Repository: Sendable {
 
     /// The file may already be in the table: its booking was deleted and the
     /// same original came back. The row is written either way.
-    public func saveFile(_ file: Datei) throws {
-        try database.write { try file.upsert($0) }
-    }
-
-    /// Saves the file row and attaches its hash in one transaction. A file is
-    /// not complete unless at least one booking from the agent run still exists.
-    public func saveFileAndAttachReceipt(_ file: Datei, to ids: [Int64]) throws {
+    /// Stores the file row and answers with its id, the number the agent
+    /// writes into `belege`.
+    public func saveFile(_ file: Datei) throws -> Int64 {
         try database.write { db in
-            try file.upsert(db)
-            var matched = false
-            for id in ids {
-                guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
-                matched = true
-                guard buchung.belege.contains(file.sha256) == false else { continue }
-                buchung.belege.append(file.sha256)
-                _ = try Repository.save(buchung, akteur: .agent, in: db)
-            }
-            guard matched else { throw CoreError.keineBuchungAngehaengt }
+            try file.insert(db)
+            return db.lastInsertedRowID
         }
     }
 
-    /// Dedupe is not "the file was seen once" but "a booking still carries it".
-    /// A file whose booking the user deleted goes to the agent again.
-    public func receiptIsUsed(_ sha256: String) throws -> Bool {
+    /// Dedupe is "hash exists": the id of the stored file with this hash.
+    public func fileID(sha256: String) throws -> Int64? {
         try database.read { db in
-            try Repository.receiptIsUsed(sha256, in: db)
+            try Int64.fetchOne(db, sql: "SELECT id FROM dateien WHERE sha256 = ?", arguments: [sha256])
         }
     }
 
-    private static func receiptIsUsed(_ sha256: String, in db: Database) throws -> Bool {
-        let count = try Int.fetchOne(
-            db, sql: "SELECT COUNT(*) FROM buchungen WHERE instr(belege, ?) > 0", arguments: [sha256]
-        )
-        return (count ?? 0) > 0
-    }
-
-    /// Takes a receipt off a booking and cleans up if it was the last one.
-    @discardableResult
-    public func removeReceipt(_ sha256: String, from id: Int64) throws -> [Datei] {
+    /// Takes a receipt off a booking. The file stays.
+    public func removeReceipt(_ fileID: Int64, from id: Int64) throws {
         try database.write { db in
-            guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
-            buchung.belege.removeAll { $0 == sha256 }
+            guard var buchung = try Buchung.fetchOne(db, key: id) else { return }
+            buchung.belege.removeAll { $0 == fileID }
             _ = try Repository.save(buchung, akteur: .nutzer, in: db)
-            return try Repository.cleanupOrphanedFiles([sha256], in: db)
         }
     }
 
-    /// Drops the rows in `files` no booking points at any more and answers
-    /// with them, so their originals can leave the archive too.
-    private static func cleanupOrphanedFiles(_ hashes: [String], in db: Database) throws -> [Datei] {
-        var orphans: [Datei] = []
-        for hash in hashes where try receiptIsUsed(hash, in: db) == false {
-            guard let file = try Datei.fetchOne(db, key: hash) else { continue }
-            try file.delete(db)
-            orphans.append(file)
-        }
-        return orphans
+    /// The rows behind the ids in `buchungen.belege`, in the order asked for.
+    public func files(for ids: [Int64]) throws -> [Datei] {
+        let found = try database.read { try Datei.fetchAll($0, keys: ids) }
+        return ids.compactMap { id in found.first { $0.id == id } }
     }
 
-    /// The rows behind the hashes in `buchungen.belege`, in the order asked for.
-    public func files(for hashes: [String]) throws -> [Datei] {
-        let found = try database.read { try Datei.fetchAll($0, keys: hashes) }
-        return hashes.compactMap { hash in found.first { $0.sha256 == hash } }
-    }
-
-    /// Hangs the file on the bookings the agent run touched. The list of
-    /// receipts belongs to Swift, not to the agent.
-    public func attachReceipt(_ sha256: String, to ids: [Int64]) throws {
-        try database.write { db in
-            for id in ids {
-                guard var buchung = try Buchung.fetchOne(db, key: id) else { continue }
-                guard buchung.belege.contains(sha256) == false else { continue }
-                buchung.belege.append(sha256)
-                _ = try Repository.save(buchung, akteur: .agent, in: db)
-            }
-        }
+    /// The ids in `belege` that name no stored file.
+    static func unknownFiles(_ ids: [Int64], in db: Database) throws -> [Int64] {
+        let known = try Set(Datei.fetchAll(db, keys: ids).compactMap(\.id))
+        return ids.filter { known.contains($0) == false }
     }
 
     // MARK: - Anfragen
 
-    public func startRequest(dateiSha256: String, modell: String) throws -> Int64 {
+    public func startRequest(dateiId: Int64, modell: String) throws -> Int64 {
         try database.write { db in
-            let request = Anfrage(dateiSha256: dateiSha256, modell: modell)
+            let request = Anfrage(dateiId: dateiId, modell: modell)
             try request.insert(db)
             return db.lastInsertedRowID
         }

@@ -33,15 +33,8 @@ public struct ArchivePaths: Hashable, Sendable {
         }
     }
 
-    /// The original of a receipt in the archive.
+    /// The original of a file in the archive.
     public func original(_ file: Datei) -> URL {
         archive.appending(path: "\(file.sha256).\(file.endung)")
-    }
-
-    /// Removes the originals of receipts no booking carries any more.
-    public func remove(_ files: [Datei]) {
-        for file in files {
-            try? FileManager.default.removeItem(at: original(file))
-        }
     }
 }

@@ -1,23 +1,18 @@
 import Foundation
 import GRDB
 
-/// One imported file in the archive. Dedupe is "hash exists".
+/// One imported file in the archive. Dedupe is "hash exists". The id is what
+/// the agent writes into `buchungen.belege`; the hash names the original.
 public struct Datei: Codable, Hashable, Sendable, Identifiable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "dateien"
-
-    /// The hash is the key of the row and the name in the archive.
-    public var id: String {
-        sha256
-    }
-
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
     public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
+    public var id: Int64?
     public var sha256: String
     public var dateiname: String
     public var endung: String
     public var groesse: Int64
-    public var art: Dateiart
     public var seiten: Int?
     public var importiertAm: Date
 
@@ -26,7 +21,6 @@ public struct Datei: Codable, Hashable, Sendable, Identifiable, FetchableRecord,
         dateiname: String,
         endung: String,
         groesse: Int64,
-        art: Dateiart,
         seiten: Int? = nil,
         importiertAm: Date = Date()
     ) {
@@ -34,7 +28,6 @@ public struct Datei: Codable, Hashable, Sendable, Identifiable, FetchableRecord,
         self.dateiname = dateiname
         self.endung = endung
         self.groesse = groesse
-        self.art = art
         self.seiten = seiten
         self.importiertAm = importiertAm
     }
@@ -80,7 +73,7 @@ public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, Persistable
     public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var id: Int64?
-    public var dateiSha256: String
+    public var dateiId: Int64
     public var modell: String
     public var gestartetAm: Date = .init()
     public var beendetAm: Date?

@@ -84,8 +84,9 @@ public struct FileIntake: Sendable {
         try FileManager.default.removeItem(at: url)
     }
 
-    /// Hashes the file, copies it into the inbox, runs the agent and archives
-    /// it. On failure the file stays in the inbox with the error text.
+    /// Hashes the file, stores it in inbox, archive and `dateien`, then runs
+    /// the agent. On failure the inbox copy stays with the error text; the
+    /// stored file is reused by the retry.
     public func process(_ url: URL) async -> FileIntakeResult {
         let data: Data
         do {
@@ -105,39 +106,34 @@ public struct FileIntake: Sendable {
         // moment it got there, at its origin before that.
         var location = url
         do {
-            if try repository.receiptIsUsed(hash) {
-                if isInInbox(url) {
-                    try? FileManager.default.removeItem(at: url)
-                }
+            // A known hash is done, unless it is the inbox copy of a failed
+            // run coming back for another try.
+            let known = try repository.fileID(sha256: hash)
+            if known != nil, isInInbox(url) == false {
                 return .alreadyPresent
             }
 
             let inbox = try inInbox(url, data: data, hash: hash)
             location = inbox
-            let input = FileInput(
-                name: inbox.lastPathComponent,
-                fileExtension: inbox.pathExtension.lowercased(),
-                sha256: hash,
-                data: data
-            )
-            guard input.isText == false || data.count <= FileInput.maxTextBytes else {
+            let fileExtension = inbox.pathExtension.lowercased()
+            guard FileInput.textExtensions.contains(fileExtension) == false
+                || data.count <= FileInput.maxTextBytes
+            else {
                 throw AgentError.textTooLarge
             }
             guard let key = key ?? Keychain.read(), key.isEmpty == false else {
                 throw AgentError.missingKey
             }
 
+            let id = try known ?? store(inbox, data: data, hash: hash)
+            let input = FileInput(id: id, name: inbox.lastPathComponent, fileExtension: fileExtension, data: data)
             let run = AgentRun(
                 repository: repository, tool: tool, key: key, transport: transport
             )
-            let result = try await run.start(input)
-            do {
-                try archive(inbox, hash: hash, data: data, result: result)
-            } catch {
-                // A file that did not reach the archive must be able to run
-                // again, so its bookings go the same way a broken run's do.
-                throw RunAbort(created: result.created, reason: error)
-            }
+            _ = try await run.start(input)
+            // The run is committed. A cleanup failure must not turn a
+            // successful import back into a failed run.
+            try? FileManager.default.removeItem(at: inbox)
             return .booked
         } catch let abort as RunAbort {
             // Rows of the broken run go, so a second attempt cannot double them.
@@ -165,25 +161,21 @@ public struct FileIntake: Sendable {
         return destination
     }
 
-    private func archive(_ inbox: URL, hash: String, data: Data, result: RunResult) throws {
+    /// Archive copy first, row second: a leftover copy without a row is
+    /// harmless and the next attempt finds it in place.
+    private func store(_ inbox: URL, data: Data, hash: String) throws -> Int64 {
         let endung = inbox.pathExtension.lowercased()
         let destination = path.archive.appending(path: "\(hash).\(endung)")
-        // Copy first. A leftover archive copy is safe when a later database
-        // write fails, and the Inbox remains the retryable source.
         if FileManager.default.fileExists(atPath: destination.path) == false {
             try FileManager.default.copyItem(at: inbox, to: destination)
         }
-        try repository.saveFileAndAttachReceipt(Datei(
+        return try repository.saveFile(Datei(
             sha256: hash,
             dateiname: inbox.lastPathComponent,
             endung: endung,
             groesse: Int64(data.count),
-            art: .beleg,
             seiten: endung == "pdf" ? PDFDocument(data: data)?.pageCount : nil
-        ), to: result.touched)
-        // The booking and file row are committed above. A cleanup failure must
-        // not turn a successful import back into a failed run.
-        try? FileManager.default.removeItem(at: inbox)
+        ))
     }
 
     /// Symlinks are resolved on both sides: a directory listing answers with

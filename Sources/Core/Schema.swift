@@ -35,7 +35,7 @@ public enum Schema {
         -- JSON-Liste, vorzeichenbehaftete Beträge in EUR-Cent (negativ = Erstattung):
         -- [{"datum": "2026-09-14", "betrag": 11900}]
         zahlungen TEXT NOT NULL DEFAULT '[]',
-        -- JSON-Liste der SHA-256-Hashes der zugehörigen Dateien: ["a1b2c3..."]
+        -- JSON-Liste der ids aus dateien, die Belege zu dieser Buchung sind: [3]
         belege TEXT NOT NULL DEFAULT '[]',
         geprueft_am TEXT,                           -- leer heißt ungeprüft
         erstellt_am TEXT NOT NULL DEFAULT (datetime('now')),
@@ -43,11 +43,11 @@ public enum Schema {
     );
 
     CREATE TABLE dateien (
-        sha256 TEXT PRIMARY KEY,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        sha256 TEXT NOT NULL UNIQUE,                -- auch der Name im Archiv
         dateiname TEXT NOT NULL,
         endung TEXT NOT NULL,
         groesse INTEGER NOT NULL,                   -- in Bytes
-        art TEXT NOT NULL CHECK (art IN ('beleg', 'kontoauszug')),
         seiten INTEGER,                             -- nur bei PDF
         importiert_am TEXT NOT NULL
     );
@@ -63,7 +63,7 @@ public enum Schema {
 
     CREATE TABLE anfragen (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        datei_sha256 TEXT NOT NULL,
+        datei_id INTEGER NOT NULL,
         modell TEXT NOT NULL,
         gestartet_am TEXT NOT NULL,
         beendet_am TEXT,

@@ -70,7 +70,7 @@ private let bestand = [
 
 @Test func reviewStatusSeparatesAttachmentsAndReview() {
     var unreviewedAttached = zeile(id: 10, richtung: .ausgabe, art: .rechnung, titel: "Rechnung", netto: 1000)
-    unreviewedAttached.belege = ["hash"]
+    unreviewedAttached.belege = [1]
     unreviewedAttached.zahlungen = [
         Zahlung(datum: .today(), betrag: unreviewedAttached.brutto)
     ]
@@ -95,7 +95,7 @@ private let bestand = [
     reviewedMissing.geprueftAm = Date(timeIntervalSince1970: 1)
     let unreviewedOther = zeile(id: 22, richtung: .ausgabe, art: .steuerzahlung, titel: "Steuer", netto: 3000)
     var unreviewedAttached = zeile(id: 23, richtung: .einnahme, art: .rechnung, titel: "Anhang", netto: 4000)
-    unreviewedAttached.belege = ["hash"]
+    unreviewedAttached.belege = [1]
     let buchungen = [unreviewedMissing, reviewedMissing, unreviewedOther, unreviewedAttached]
 
     #expect(

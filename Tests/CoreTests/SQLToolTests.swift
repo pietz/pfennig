@@ -73,25 +73,25 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(FileManager.default.fileExists(atPath: "/tmp/pfennig-leck.db") == false)
 }
 
-/// REPLACE looks like a DELETE and an INSERT, but SQLite only reports the
-/// insert. The row keeps its id, so the comparison sees it and Swift puts back
-/// what belongs to it.
-@Test func werkzeugHaeltBelegeAuchGegenReplace() throws {
+/// belege belongs to the agent, but only with files that exist. An unknown id
+/// rolls the write back with a word about it.
+@Test func werkzeugPrueftBelegeGegenDieDateien() throws {
     let (repository, tool) = try tool()
-    _ = tool.execute(gueltigeBuchung)
-    try repository.attachReceipt("abc", to: [1])
-    try repository.confirm(id: 1)
+    let mitBeleg = """
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung, belege)
+    VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland', '[1]')
+    """
+    let abgelehnt = tool.execute(mitBeleg)
+    #expect(abgelehnt.text.contains("belege nennt eine Datei, die es nicht gibt: 1"))
+    #expect(abgelehnt.touched.isEmpty)
+    #expect(try repository.allBookings().isEmpty)
 
-    let result = tool.execute("""
-    INSERT OR REPLACE INTO buchungen (id, richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
-    VALUES (1, 'ausgabe', 'beleg', '2026-09-02', 'Ersetzt', 'software',
-        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
-    """)
-    #expect(result.touched == [1])
-    let buchung = try #require(try repository.allBookings().first)
-    #expect(buchung.titel == "Ersetzt")
-    #expect(buchung.belege == ["abc"])
-    #expect(buchung.geprueftAm == nil)
+    let datei = try repository.saveFile(Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10))
+    #expect(datei == 1)
+    let angenommen = tool.execute(mitBeleg)
+    #expect(angenommen.touched == [1])
+    #expect(try repository.allBookings().first?.belege == [1])
 }
 
 /// A new id is a removal with another name: the old row would be gone without a
@@ -195,18 +195,16 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(aktivitaeten[0].nachher.titel == "Strom")
 }
 
-@Test func werkzeugSetztGeprueftAmBeiAenderungZurueckUndHaeltDieBelegeFest() throws {
+@Test func werkzeugSetztGeprueftAmBeiAenderungZurueck() throws {
     let (repository, tool) = try tool()
     #expect(tool.execute("""
-    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung,
-        geprueft_am, belege)
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung, geprueft_am)
     VALUES ('ausgabe', 'beleg', '2026-09-01', 'Frech', 'software',
-        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland', '2026-09-01 10:00:00', '["abc"]')
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland', '2026-09-01 10:00:00')
     """).touched == [1])
 
     let buchung = try #require(try repository.allBookings().first)
     #expect(buchung.geprueftAm == nil)
-    #expect(buchung.belege.isEmpty)
 
     // An agent change makes a previously confirmed booking unreviewed again.
     try repository.confirm(id: 1)

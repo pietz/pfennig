@@ -35,38 +35,20 @@ private actor Skript {
     }
 }
 
-/// Deletes the booking between the completed model response and import
-/// finalization, making the database transaction fail without private hooks.
-private actor BuchungLoeschendesSkript {
-    let repository: Repository
-    var antworten: [String]
-
-    init(repository: Repository, antworten: [String]) {
-        self.repository = repository
-        self.antworten = antworten
-    }
-
-    func antworten(auf request: URLRequest) -> (Data, HTTPURLResponse) {
-        let text = antworten.isEmpty ? "{}" : antworten.removeFirst()
-        if antworten.isEmpty {
-            _ = try? repository.delete(id: 1)
-        }
-        let http = HTTPURLResponse(
-            url: Responses.endpoint, statusCode: 200, httpVersion: nil, headerFields: nil
-        )!
-        return (Data(text.utf8), http)
-    }
-
-    var transport: Transport {
-        { [self] request in await antworten(auf: request) }
-    }
-}
-
 private let einfuegen = """
 INSERT INTO buchungen (richtung, art, datum, titel, kategorie, gegenpartei_name, gegenpartei_land,
     positionen, steuerbehandlung)
 VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwerke', 'DE',
     '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+"""
+
+/// The same booking with the stored file hung on it, the way the intake
+/// expects the agent to write it.
+private let einfuegenMitBeleg = """
+INSERT INTO buchungen (richtung, art, datum, titel, kategorie, gegenpartei_name, gegenpartei_land,
+    positionen, steuerbehandlung, belege)
+VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwerke', 'DE',
+    '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland', '[1]')
 """
 
 /// An answer that asks for a function tool, in the shape the Responses API
@@ -121,12 +103,7 @@ private func kursantwort(datum: String, waehrung: String, kurs: String) -> Strin
 }
 
 private func input() -> FileInput {
-    FileInput(
-        name: "rechnung.pdf",
-        fileExtension: "pdf",
-        sha256: String(repeating: "a", count: 64),
-        data: Data("%PDF".utf8)
-    )
+    FileInput(id: 1, name: "rechnung.pdf", fileExtension: "pdf", data: Data("%PDF".utf8))
 }
 
 @Test func laufFuehrtDasWerkzeugAusUndHaeltDieAnfrageFest() async throws {
@@ -195,7 +172,7 @@ private func input() -> FileInput {
     let content = try #require(eingabeteile[1]["content"] as? [[String: Any]])
     #expect(content[0]["type"] as? String == "input_file")
     #expect(content[1]["type"] as? String == "input_text")
-    #expect(content[1]["text"] as? String == "Datei hinzugefügt: rechnung.pdf")
+    #expect(content[1]["text"] as? String == "Datei 1 hinzugefügt: rechnung.pdf")
 
     let zweite = gesehen[1]
     #expect(zweite["previous_response_id"] as? String == "resp_1")
@@ -409,50 +386,38 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     return try (Repository.inMemory(), path, folder)
 }
 
-@Test func eingangUeberspringtNurEinenBelegDerNochAnEinerBuchungHaengt() async throws {
+@Test func eingangUeberspringtEineBekannteDateiAusserAusDerInbox() async throws {
     let (repository, path, folder) = try setUp()
     defer { try? FileManager.default.removeItem(at: folder) }
     let file = folder.appending(path: "beleg.pdf")
     let content = Data("%PDF-1.4 Beleg".utf8)
     try content.write(to: file)
     let hash = FileIntake.hash(content)
-
-    try repository.saveFile(Datei(
-        sha256: hash, dateiname: "beleg.pdf", endung: "pdf", groesse: Int64(content.count), art: .beleg
+    _ = try repository.saveFile(Datei(
+        sha256: hash,
+        dateiname: "beleg.pdf",
+        endung: "pdf",
+        groesse: Int64(content.count)
     ))
-    // The key may or may not be in this Mac's Keychain, so the transport
-    // answers with a refusal either way and the run cannot reach the network.
     let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
 
-    // The row in `files` alone is not enough: without a booking the file is
-    // new work again, and the run starts (and fails here on the missing key).
-    guard case .failed = await intake.process(file) else {
-        Issue.record("Ohne Buchung muss der Beleg erneut zum Agenten.")
-        return
-    }
-
-    let buchung = try repository.save(
-        Buchung(
-            richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
-            positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
-            steuerbehandlung: .steuerfrei, belege: [hash]
-        ),
-        akteur: .nutzer
-    )
-    let vorher = try repository.allRequests().count
+    // Dedupe is "hash exists": a fresh drop of a stored file is done, whether
+    // or not a booking carries it, and no run starts.
     guard case .alreadyPresent = await intake.process(file) else {
-        Issue.record("Der belegte Hash wurde nicht erkannt.")
+        Issue.record("Der bekannte Hash wurde nicht erkannt.")
         return
     }
-    // No run was started for it.
-    #expect(try repository.allRequests().count == vorher)
+    #expect(try repository.allRequests().isEmpty)
 
-    // And once the booking is gone, the same file is work again.
-    try path.remove(repository.delete(id: #require(buchung.id)))
-    guard case .failed = await intake.process(file) else {
-        Issue.record("Nach dem Löschen muss der Beleg erneut zum Agenten.")
+    // The inbox copy of a failed run is the one exception: it comes back for
+    // another try and reuses the stored file instead of storing it twice.
+    let inbox = path.inbox.appending(path: "beleg.pdf")
+    try content.write(to: inbox)
+    guard case .failed = await intake.process(inbox) else {
+        Issue.record("Die Inbox-Kopie muss erneut zum Agenten.")
         return
     }
+    #expect(try repository.fileID(sha256: hash) == 1)
 }
 
 @Test func eingangLegtDieDateiInDieInboxUndLaesstSieDortLiegen() async throws {
@@ -472,7 +437,9 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: file.path))
     #expect(intake.inbox().map(\.lastPathComponent) == ["rechnung.pdf"])
-    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).isEmpty)
+    // Whether the file reached the archive depends on whether this Mac has a
+    // key; either way no booking came out of it.
+    #expect(try repository.allBookings().isEmpty)
 }
 
 @Test func eingangLaesstDateiNachAgentenAntwortOhneBuchungInDerInbox() async throws {
@@ -498,7 +465,9 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(try repository.allBookings().isEmpty)
     #expect(try repository.allRequests().first?.status == .fehler)
     #expect(FileManager.default.fileExists(atPath: file.path))
-    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).isEmpty)
+    // The file itself is stored before the run and stays for the retry.
+    #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).count == 1)
+    #expect(try repository.fileID(sha256: FileIntake.hash(Data(contentsOf: file))) == 1)
 }
 
 @Test func eingangSpeichertDateiUndBelegGemeinsam() async throws {
@@ -508,7 +477,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     let content = Data("%PDF-1.4 Rechnung".utf8)
     try content.write(to: source)
     let hash = FileIntake.hash(content)
-    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    let skript = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
     let transport = await skript.transport
     let intake = try FileIntake(
         repository: repository, path: path, transport: transport, key: "test"
@@ -518,56 +487,54 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
         Issue.record("Der erfolgreiche Lauf wurde nicht verbucht.")
         return
     }
-    let file = try #require(try repository.files(for: [hash]).first)
+    let id = try #require(try repository.fileID(sha256: hash))
+    let file = try #require(try repository.files(for: [id]).first)
     let buchung = try #require(try repository.allBookings().first)
-    let archiv = path.original(file)
     #expect(file.sha256 == hash)
-    #expect(buchung.belege == [hash])
-    #expect(try Data(contentsOf: archiv) == content)
+    #expect(file.dateiname == "rechnung.pdf")
+    // The agent hung the file on the booking itself, in the INSERT.
+    #expect(buchung.belege == [id])
+    #expect(try repository.allRequests().first?.dateiId == id)
+    #expect(try Data(contentsOf: path.original(file)) == content)
     #expect(FileManager.default.fileExists(atPath: path.inbox.appending(path: "rechnung.pdf").path) == false)
 }
 
-@Test func eingangBehaeltDieInboxBeiFehlerDerDBFinalisierungUndKannArchivRestVerwenden() async throws {
+@Test func eingangVerwendetBeimErneutenVersuchDieGespeicherteDatei() async throws {
     let (repository, path, folder) = try setUp()
     defer { try? FileManager.default.removeItem(at: folder) }
     let source = folder.appending(path: "rechnung.pdf")
     let content = Data("%PDF-1.4 Rechnung".utf8)
     try content.write(to: source)
     let hash = FileIntake.hash(content)
-    let skript = BuchungLoeschendesSkript(
-        repository: repository, antworten: [werkzeugantwort(einfuegen), schlussantwort]
-    )
-    let transport = await skript.transport
-    let intake = try FileIntake(
-        repository: repository, path: path, transport: transport, key: "test"
-    )
 
+    // First run: the agent answers without a booking, the run fails.
+    let skript = Skript([schlussantwort])
+    let transport = await skript.transport
+    let intake = try FileIntake(repository: repository, path: path, transport: transport, key: "test")
     guard case let .failed(inbox, text) = await intake.process(source) else {
-        Issue.record("Die fehlerhafte Datenbank-Finalisierung hätte fehlschlagen müssen.")
+        Issue.record("Ein Lauf ohne Buchung hätte scheitern müssen.")
         return
     }
     #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: inbox.path))
-    #expect(try repository.files(for: [hash]).isEmpty)
+    #expect(try repository.fileID(sha256: hash) == 1)
     #expect(try repository.allBookings().isEmpty)
-    let archiv = path.archive.appending(path: "\(hash).pdf")
-    #expect(try Data(contentsOf: archiv) == content)
+    #expect(try Data(contentsOf: path.archive.appending(path: "\(hash).pdf")) == content)
 
-    // The retry uses the existing Inbox path. It must not copy a second archive
-    // file and must attach the document only after the new run writes a booking.
-    let retrySkript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    // The retry starts from the inbox copy, stores nothing twice and lets the
+    // agent hang the same file id on the new booking.
+    let retrySkript = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
     let retryTransport = await retrySkript.transport
-    let retry = try FileIntake(
-        repository: repository, path: path, transport: retryTransport, key: "test"
-    )
+    let retry = try FileIntake(repository: repository, path: path, transport: retryTransport, key: "test")
     guard case .booked = await retry.process(inbox) else {
-        Issue.record("Der Lauf hätte nach dem Datenbankfehler erneut versucht werden können.")
+        Issue.record("Der erneute Versuch hätte gelingen müssen.")
         return
     }
     #expect(FileManager.default.fileExists(atPath: inbox.path) == false)
     #expect(try FileManager.default.contentsOfDirectory(atPath: path.archive.path).count == 1)
-    #expect(try repository.allBookings().first?.belege == [hash])
-    #expect(try repository.files(for: [hash]).count == 1)
+    #expect(try repository.files(for: [1]).count == 1)
+    #expect(try repository.allBookings().first?.belege == [1])
+    #expect(try repository.allRequests().map(\.dateiId) == [1, 1])
 }
 
 @Test func verwerfenEntferntNurDieInboxKopie() throws {
@@ -640,7 +607,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     for name in ["xrechnung_01.01a_ubl", "xrechnung_01.01a_cii"] {
         let url = try #require(Bundle.module.url(forResource: name, withExtension: "xml", subdirectory: "Fixtures"))
         let data = try Data(contentsOf: url)
-        let input = FileInput(name: "\(name).xml", fileExtension: "xml", sha256: FileIntake.hash(data), data: data)
+        let input = FileInput(id: 1, name: "\(name).xml", fileExtension: "xml", data: data)
         let content = input.content
         #expect(content["type"] as? String == "input_text")
         let text = try #require(content["text"] as? String)
@@ -653,11 +620,11 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 @Test func textdateienInWindows1252KommenMitUmlautenAn() throws {
     let csv = try #require("Datum;Verwendungszweck;Betrag\n01.09.2026;Kontoführungsgebühren Müller;-9,90\n"
         .data(using: .windowsCP1252))
-    let input = FileInput(name: "umsaetze.csv", fileExtension: "csv", sha256: FileIntake.hash(csv), data: csv)
+    let input = FileInput(id: 1, name: "umsaetze.csv", fileExtension: "csv", data: csv)
     #expect((input.content["text"] as? String)?.contains("Kontoführungsgebühren Müller") == true)
 
     let utf8 = Data("Gebühren\n".utf8)
-    let utf8Input = FileInput(name: "u.csv", fileExtension: "csv", sha256: FileIntake.hash(utf8), data: utf8)
+    let utf8Input = FileInput(id: 1, name: "u.csv", fileExtension: "csv", data: utf8)
     #expect(utf8Input.content["text"] as? String == "Gebühren\n")
 }
 
@@ -704,7 +671,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.contains("CREATE TABLE zeitraeume") == false)
     #expect(text.contains("steuerbehandlung TEXT NOT NULL CHECK"))
     #expect(text.contains(
-        "Von der Anwendung verwaltet, nicht setzen: id, belege, geprueft_am, erstellt_am und geaendert_am."
+        "Von der Anwendung verwaltet, nicht setzen: id, geprueft_am, erstellt_am und geaendert_am."
     ))
     #expect(text.contains("Einnahmen:\n"))
     #expect(text.contains("Ausgaben:\n"))
@@ -738,6 +705,8 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 
     - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
     - Gehe von vollständig betrieblicher Nutzung aus, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt.
+    - Ist die hinzugefügte Datei ein Beleg zu einer Buchung (Rechnung, Quittung, Gutschrift), trage ihre id in belege dieser Buchung ein. Ein Kontoauszug ist kein Beleg und steht in keiner belege-Liste.
+    - Ein Kontoauszug bringt Zahlungen zu bestehenden Buchungen. Suche zu jeder Bewegung die passende Buchung nach Betrag, Datum und Gegenpartei und trage die Zahlung in zahlungen ein. Eine Bewegung ohne passende Buchung wird eine Buchung mit art nur_zahlung, dem Verwendungszweck als titel, einer Position über den Betrag ohne Steuer und steuerbehandlung unklar; private Bewegungen und Übertragungen zwischen eigenen Konten werden ignoriert. Prüfe vorher, was schon da ist, und lege keine Zahlung und keine Bewegung doppelt an.
     """
 
     #expect(text.hasPrefix(expected + "\n\n## Profil"))

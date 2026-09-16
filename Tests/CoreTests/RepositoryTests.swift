@@ -24,7 +24,7 @@ private func beispiel(
         positionen: positionen,
         steuerbehandlung: .inland,
         zahlungen: zahlungen,
-        belege: ["a1b2c3"]
+        belege: [1]
     )
 }
 
@@ -50,7 +50,7 @@ private func beispiel(
     #expect(geladen.steuerbehandlung == .inland)
     #expect(geladen.positionen.count == 2)
     #expect(geladen.positionen[1].steuersatz == 7)
-    #expect(geladen.belege == ["a1b2c3"])
+    #expect(geladen.belege == [1])
     #expect(geladen.geprueftAm == nil)
     #expect(geladen.netto == Cent(12000))
     #expect(geladen.steuer == Cent(2040))
@@ -62,7 +62,7 @@ private func beispiel(
     }
     let positionen: String = try #require(raw?["positionen"])
     #expect(positionen.contains("\"steuersatz\""))
-    #expect(try #require(raw?["belege"] as String?) == "[\"a1b2c3\"]")
+    #expect(try #require(raw?["belege"] as String?) == "[1]")
 }
 
 @Test func belegnummerUndFaelligkeitUeberstehenDenRundlauf() throws {
@@ -168,21 +168,20 @@ private func beispiel(
     #expect(geaendert.geprueftAm != nil)
 }
 
-@Test func agentenBeleganhaengenSetztBestaetigungZurueck() throws {
+@Test func dateienBekommenEineHochzaehlendeIdUndSindUeberDenHashBekannt() throws {
     let repository = try Repository.inMemory()
-    let buchung = try repository.save(beispiel(), akteur: .nutzer)
-    let id = try #require(buchung.id)
-    try repository.confirm(id: id)
-    #expect(try repository.allBookings().first?.geprueftAm != nil)
-
-    try repository.saveFileAndAttachReceipt(
-        Datei(sha256: "neu", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg),
-        to: [id]
-    )
-
-    let geladen = try #require(try repository.allBookings().first)
-    #expect(geladen.geprueftAm == nil)
-    #expect(geladen.belege.contains("neu"))
+    #expect(try repository.fileID(sha256: "abc") == nil)
+    let erste = try repository.saveFile(Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10))
+    let zweite = try repository.saveFile(Datei(sha256: "def", dateiname: "quittung.png", endung: "png", groesse: 20))
+    #expect(erste == 1)
+    #expect(zweite == 2)
+    #expect(try repository.fileID(sha256: "abc") == 1)
+    // The same hash cannot be stored twice.
+    #expect(throws: (any Error).self) {
+        try repository.saveFile(Datei(sha256: "abc", dateiname: "kopie.pdf", endung: "pdf", groesse: 10))
+    }
+    // Files come back in the order of the ids asked for.
+    #expect(try repository.files(for: [2, 1]).map(\.dateiname) == ["quittung.png", "rechnung.pdf"])
 }
 
 @Test func zahlungenUeberstehenDenRundlaufUnveraendert() throws {
@@ -232,54 +231,54 @@ private func beispiel(
     #expect(try repository.setting("kleinunternehmer") == "ja")
 }
 
-@Test func belegGiltNurAlsBekanntSolangeEineBuchungIhnTraegt() throws {
+@Test func loeschenEinerBuchungLaesstIhreDateiStehen() throws {
     let repository = try Repository.inMemory()
-    try repository.saveFile(
-        Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 4096, art: .beleg, seiten: 2)
-    )
-    // The row alone is not the answer; a booking has to point at it.
-    #expect(try repository.receiptIsUsed("abc") == false)
-
+    let datei = try repository.saveFile(Datei(
+        sha256: "abc",
+        dateiname: "rechnung.pdf",
+        endung: "pdf",
+        groesse: 4096,
+        seiten: 2
+    ))
     let buchung = try repository.save(
         Buchung(
             richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
             positionen: [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
-            steuerbehandlung: .inland, belege: ["abc"]
+            steuerbehandlung: .inland, belege: [datei]
         ),
         akteur: .nutzer
     )
-    #expect(try repository.receiptIsUsed("abc"))
+    #expect(try repository.allBookings().first?.belege == [datei])
 
-    // Deleting the booking takes the file row with it and names the original.
-    let verwaist = try repository.delete(id: #require(buchung.id))
-    #expect(verwaist.map(\.sha256) == ["abc"])
-    #expect(try repository.receiptIsUsed("abc") == false)
-    #expect(try repository.files(for: ["abc"]).isEmpty)
+    // The file is stored knowledge about the archive, not part of the booking.
+    try repository.delete(id: #require(buchung.id))
+    #expect(try repository.allBookings().isEmpty)
+    #expect(try repository.files(for: [datei]).count == 1)
+    #expect(try repository.fileID(sha256: "abc") == datei)
 }
 
 @Test func belegLaesstSichVonEinerBuchungNehmen() throws {
     let repository = try Repository.inMemory()
-    try repository.saveFile(
-        Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10, art: .beleg)
+    let datei = try repository.saveFile(Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10))
+    let buchung = try repository.save(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: "Eine",
+            positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
+            steuerbehandlung: .steuerfrei, belege: [datei]
+        ),
+        akteur: .nutzer
     )
-    func anlegen(_ titel: String) throws -> Int64 {
-        try #require(repository.save(
-            Buchung(
-                richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: titel,
-                positionen: [Position(netto: Cent(100), steuersatz: 0, steuer: .null)],
-                steuerbehandlung: .steuerfrei, belege: ["abc"]
-            ),
-            akteur: .nutzer
-        ).id)
-    }
-    let eine = try anlegen("Eine")
-    let andere = try anlegen("Andere")
+    let id = try #require(buchung.id)
 
-    // As long as the other booking carries it, the file stays.
-    #expect(try repository.removeReceipt("abc", from: eine).isEmpty)
-    #expect(try repository.files(for: ["abc"]).count == 1)
-    #expect(try repository.removeReceipt("abc", from: andere).map(\.sha256) == ["abc"])
-    #expect(try repository.files(for: ["abc"]).isEmpty)
+    try repository.removeReceipt(datei, from: id)
+
+    #expect(try repository.allBookings().first?.belege == [])
+    // A user action, logged like every other write; the file itself stays.
+    let aktivitaeten = try repository.database.read { db in
+        try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten WHERE buchung_id = ? ORDER BY id", arguments: [id])
+    }
+    #expect(aktivitaeten.count == 2)
+    #expect(try repository.files(for: [datei]).count == 1)
 }
 
 @Test func kiEinstellungenUeberstehenDenRundlauf() throws {
@@ -297,7 +296,7 @@ private func beispiel(
 
 @Test func anfragenWerdenGestartetUndBeendet() throws {
     let repository = try Repository.inMemory()
-    let id = try repository.startRequest(dateiSha256: "abc", modell: "gpt-5")
+    let id = try repository.startRequest(dateiId: 1, modell: "gpt-5")
     try repository.finishRequest(
         id: id,
         status: .erfolg,

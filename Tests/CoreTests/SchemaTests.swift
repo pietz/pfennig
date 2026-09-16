@@ -24,7 +24,7 @@ import Testing
     // describe the JSON columns have to survive the round trip.
     #expect(text.contains("\"netto\": 10000"))
     #expect(text.contains("\"betrag\": 11900"))
-    #expect(text.contains("SHA-256-Hashes"))
+    #expect(text.contains("ids aus dateien"))
     #expect(text.contains("'reverse_charge'"))
     #expect(text.contains("belegnummer TEXT"))
     #expect(text.contains("faelligkeit TEXT"))

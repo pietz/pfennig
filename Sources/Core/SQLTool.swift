@@ -132,13 +132,21 @@ public final class SQLTool: Sendable {
         in db: Database
     ) throws -> [String] {
         do {
-            guard var buchung = try Buchung.fetchOne(db, key: id) else { return [] }
+            guard let buchung = try Buchung.fetchOne(db, key: id) else { return [] }
             let previous = try row.map(Buchung.init(row:))
-            // id, belege, geprueft_am und Zeitstempel setzt Swift.
+            // id, geprueft_am und Zeitstempel setzt Swift.
             // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
-            buchung.belege = previous?.belege ?? []
             let saved = try Repository.save(buchung, akteur: .agent, before: previous, in: db)
-            return ValidationRules.validate(saved, profile: profile).map { "Buchung \(id): \($0)" }
+            var messages = ValidationRules.validate(saved, profile: profile)
+            // belege gehört dem Agenten, aber nur mit Dateien, die es gibt.
+            let unknown = try Repository.unknownFiles(saved.belege, in: db)
+            if unknown.isEmpty == false {
+                messages.append(
+                    "belege nennt \(unknown.count == 1 ? "eine Datei" : "Dateien"), die es nicht gibt: "
+                        + unknown.map(String.init).joined(separator: ", ")
+                )
+            }
+            return messages.map { "Buchung \(id): \($0)" }
         } catch {
             return ["""
             Buchung \(id) ließ sich nicht lesen: \(error.localizedDescription) positionen, zahlungen \

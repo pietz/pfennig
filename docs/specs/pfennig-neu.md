@@ -6,6 +6,8 @@
 
 **Ergänzung Dateiformate (2026-09-16):** Der Eingang unterscheidet zwei Klassen von Dateien an der Endung. Binärformate, die das Modell nativ liest (PDF, PNG, JPEG, WebP), gehen als Anhang. Textformate (XML, CSV, TXT, JSON, HTML) gehen als Klartext in die Nachricht, bis zu einem Megabyte; UTF-8 wird strikt gelesen, sonst gilt Windows-1252. Alles andere wird abgelehnt. Es gibt keine Parser für einzelne Formate; eine E-Rechnung im XML liest der Agent als Text, ein ZUGFeRD-PDF als Bild. Das eingebettete XML eines ZUGFeRD-PDF wird nicht ausgelesen. Steuerlich ist bei einer E-Rechnung das XML die Rechnung; bei Abweichung zwischen Bild und XML sieht die App nur das Bild, was als Ausstellerfehler selten ist und bewusst hingenommen wird.
 
+**Ergänzung Dateien (2026-09-16):** Eine abgelegte Datei wird zuerst gespeichert: Hash, Kopie im Archiv als `<sha256>.<endung>`, Zeile in `dateien`. Existiert der Hash bereits, ist die Datei fertig („bereits vorhanden“). Dann startet der Agentenlauf mit der Nachricht „Datei 3 hinzugefügt: rechnung.pdf“. `dateien` hat eine hochzählende `id` als Schlüssel und `sha256` als eindeutige Spalte; eine Spalte für die Art der Datei gibt es nicht, ob eine Datei Beleg oder Kontoauszug ist, ergibt sich daraus, ob eine Buchung sie trägt. `buchungen.belege` ist eine JSON-Liste von Datei-IDs und wird vom Agenten gepflegt, nicht von der Anwendung. Prüfregel: Jede ID in `belege` existiert in `dateien`. Dateien bleiben gespeichert, auch wenn keine Buchung sie trägt; das Entfernen eines Belegs von einer Buchung oder das Löschen der Buchung löscht die Datei nicht. Eine Datei, deren Hash bekannt ist, geht nicht erneut zum Agenten. Die Inbox bleibt Wiederholungsquelle bis zum erfolgreichen Lauf; bei einem Fehler bleiben Archivkopie und `dateien`-Zeile bestehen, und der erneute Versuch verwendet sie. Aus dem Lauf wird eine Buchung nur dann ein Beleg, wenn der Agent die Datei-ID einträgt; bei einem Kontoauszug trägt er sie nicht ein. Damit beginnt der zweite Schritt aus Abschnitt 1, die Kontoauszüge, als Änderung der Anleitung, nicht des Mechanismus: Der Agent ordnet jede Bewegung einer bestehenden Buchung zu und trägt die Zahlung ein, legt Bewegungen ohne Buchung als `nur_zahlung` und private oder interne als `ignoriert` an und prüft vorher, was schon da ist. Die Obergrenze der Werkzeugaufrufe je Lauf liegt bei 60, weil ein Auszug mehr Aufrufe braucht als ein Beleg; sie bleibt ein Netz gegen Endlosschleifen, kein Arbeitslimit.
+
 Gliederung:
 
 1. Zweck und Grenzen
@@ -39,18 +41,18 @@ Pfennig speichert Wissen über die Buchhaltung, nicht Protokoll über die Arbeit
 - `waehrung` und `originalbetrag`: nur bei Fremdwährungsbelegen gefüllt, leer heißt Euro. `originalbetrag` ist eine exakte Dezimalzahl in den Haupteinheiten der Originalwährung, ohne Rundung auf zwei Stellen. Die Positionen stehen immer in Euro. Ein tatsächlich gezahlter EUR-Betrag geht vor einer Referenzumrechnung; sonst trägt der Agent das Ergebnis des Umrechnungswerkzeugs ein.
 - `steuerbehandlung` (inland, reverse_charge, kleinunternehmer, steuerfrei, nicht_steuerbar, unklar). Beantwortet, warum ein Beleg keine oder eine besondere Umsatzsteuer hat.
 - `zahlungen`, JSON-Liste von {datum, betrag}. `betrag` ist ein vorzeichenbehafteter Betrag in EUR-Cent relativ zur Buchung: positiv für eine Zahlung, negativ für eine Erstattung. Teilzahlungen sind mehrere Elemente. Eine Zahlung gehört zu genau einem Eintrag; eine Überweisung für zwei Rechnungen sind zwei Zahlungselemente. Geprüft wird ausschließlich die Buchung als Ganzes über `geprueft_am`.
-- `belege`, JSON-Liste von SHA-256-Hashes der zugehörigen Dateien (keine Kontoauszüge).
+- `belege`, JSON-Liste der IDs aus `dateien` für die zugehörigen Dateien (keine Kontoauszüge); der Agent pflegt sie.
 - `geprueft_am` (leer = ungeprüft), `erstellt_am`, `geaendert_am`.
 
 Kategorie und Privatanteil gelten für den ganzen Beleg. Bei zwei Kategorien auf einem Beleg zählt die dominante; ein Randfall, der bewusst nicht abgebildet wird. Einnahmen und Ausgaben stehen in derselben Tabelle, unterschieden durch die Richtung.
 
 Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` (unklar, ungeprüft, Titel aus dem Verwendungszweck) oder `art = ignoriert` (privat, interner Übertrag; in der Tabelle ausgeblendet). So erkennt der Agent bereits verarbeitete Auszüge wieder, ohne eigene Tabelle.
 
-`dateien`: `sha256` (Schlüssel), `dateiname`, `endung`, `groesse`, `art` (beleg/kontoauszug), `seiten`, `importiert_am`. Dedupe ist „Hash existiert“. Kontoauszüge hängen an keinem Eintrag.
+`dateien`: `id` (hochzählende Ganzzahl), `sha256` (eindeutig), `dateiname`, `endung`, `groesse`, `seiten`, `importiert_am`. Dedupe ist „Hash existiert“. Ob eine Datei Beleg oder Kontoauszug ist, ergibt sich daraus, ob eine Buchung sie in `belege` trägt; Kontoauszüge hängen an keinem Eintrag.
 
 `aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `vorher` (JSON der Zeile, leer bei Neuanlage), `nachher` (JSON der Zeile). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen und zeigt, was der Agent geändert hat; angezeigt, kein Undo in der ersten Version. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
 
-`anfragen`: eine Anfrage an den Agenten pro Datei, `id`, `datei_sha256`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
+`anfragen`: eine Anfrage an den Agenten pro Datei, `id`, `datei_id`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
 
 `einstellungen`, Schlüssel und Wert. Enthält auch das Profil: Steuernummer, USt-ID, Kleinunternehmer, UStVA-Rhythmus, Dauerfristverlängerung. Der Agent hat keinen Werkzeugzugriff auf diese Tabelle.
 
@@ -96,11 +98,11 @@ Die Toolbar zeigt auf Start nur den Fortschrittsanzeiger, „Neue Buchung“ und
 
 **Weg einer Datei.** Der Nutzer zieht eine oder mehrere Dateien auf das Fenster. Für jede Datei:
 
-1. Swift berechnet den Hash und kopiert sie nach `Inbox/`.
-2. Existiert der Hash schon in `dateien`, ist die Datei fertig; kurze Rückmeldung „bereits vorhanden“.
-3. Sonst startet ein Agentenlauf für diese Datei. Bis zu zehn Dateien werden gleichzeitig verarbeitet; die Datenbank bleibt konsistent, weil jede SQL-Anweisung des Agenten in einer eigenen Transaktion läuft.
-4. Nach Erfolg wandert die Datei als `<hash>.<endung>` ins Archiv, bekommt eine Zeile in `dateien` und verlässt die Inbox. Das sql-Werkzeug meldet Swift die berührten Buchungs-IDs; an diese hängt Swift den Hash.
-5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“. Buchungen, die der abgebrochene Lauf angelegt hat, entfernt Swift vor einem erneuten Versuch, damit nichts doppelt entsteht.
+1. Swift berechnet den Hash. Existiert er schon in `dateien`, ist die Datei fertig; kurze Rückmeldung „bereits vorhanden“.
+2. Sonst kopiert Swift die Datei nach `Inbox/`, als `<hash>.<endung>` ins Archiv und legt die Zeile in `dateien` an.
+3. Dann startet ein Agentenlauf für diese Datei mit ihrer Datei-ID. Bis zu zehn Dateien werden gleichzeitig verarbeitet; die Datenbank bleibt konsistent, weil jede SQL-Anweisung des Agenten in einer eigenen Transaktion läuft. Der Agent trägt die Datei-ID in `belege` der Buchungen ein, zu denen die Datei als Beleg gehört.
+4. Nach Erfolg verlässt die Datei die Inbox.
+5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“. Buchungen, die der abgebrochene Lauf angelegt hat, entfernt Swift vor einem erneuten Versuch, damit nichts doppelt entsteht; Archivkopie und `dateien`-Zeile bleiben und werden wiederverwendet.
 
 Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind die Binär- und Textformate der Ergänzung Dateiformate; die Datei geht so, wie sie ist, an den Agenten, Binärdateien als Anhang, Textdateien als Klartext.
 
@@ -115,7 +117,7 @@ Der Agent erhält dynamisch aus der Datenbank selbst die tatsächliche CREATE-An
 
 **Kontext des Agenten.** Pro Datei ein Aufruf der Responses API. Die Nutzer-Nachricht ist ein beschreibendes Ereignis mit Dateiname und Anhang, kein Arbeitsauftrag. Der kurze dauerhafte Systemtext beschreibt Pfennig und Buchungen, gefolgt von zwei Regeln: Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, gilt das Belegdatum. Vollständig betriebliche Nutzung wird angenommen, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt. Danach folgen das neutrale Profil als Markdown-Liste mit `heute`, `name`, `ustid` und dem rohen Boolean `kleinunternehmer`, ein kurzer Hinweis auf die von der Anwendung verwalteten Felder direkt über der tatsächlichen CREATE-Anweisung nur für `buchungen` und die nach Einnahmen und Ausgaben gruppierten Kategorieschlüssel. Fehlender Name und fehlende USt-ID werden ausdrücklich als nicht angegeben bezeichnet. Steuernummer, Kategoriebeschreibungen, bekannte Gegenparteien und weitere fachliche oder anbieterspezifische Regeln stehen nicht im Kontext. Modell (gpt-5.6-sol, -terra, -luna), Reasoning-Aufwand und schnellere Verarbeitung (OpenAI Priority Processing, etwa doppelter Preis) wählt der Nutzer im Tab „KI-Zugang“ der Einstellungen.
 
-**Was der Agent füllt.** Der Agent pflegt die Buchungsfelder anhand des Dokuments und der Nutzerangaben. Von der Anwendung verwaltet und vom Agenten nicht gesetzt werden `id`, `belege`, `geprueft_am`, `erstellt_am` und `geaendert_am`. Pro sql-Aufruf entsteht oder ändert sich eine vollständige Buchung (mindestens eine Position), weil die Prüfregeln nach jedem Aufruf laufen. Ein erfolgreicher Import muss mindestens eine Buchung ändern.
+**Was der Agent füllt.** Der Agent pflegt die Buchungsfelder anhand des Dokuments und der Nutzerangaben. Von der Anwendung verwaltet und vom Agenten nicht gesetzt werden `id`, `geprueft_am`, `erstellt_am` und `geaendert_am`. `belege` setzt der Agent: die ID der hinzugefügten Datei, wenn sie ein Beleg zur Buchung ist. Pro sql-Aufruf entsteht oder ändert sich eine vollständige Buchung (mindestens eine Position), weil die Prüfregeln nach jedem Aufruf laufen. Ein erfolgreicher Import muss mindestens eine Buchung ändern.
 
 **Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.

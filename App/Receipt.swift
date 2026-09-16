@@ -21,7 +21,7 @@ struct ReceiptSection: View {
                     .frame(maxWidth: .infinity)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
             }
-            ForEach(files, id: \.sha256) { file in
+            ForEach(files) { file in
                 HStack(spacing: 4) {
                     Text(file.dateiname)
                         .font(.caption)
@@ -34,8 +34,8 @@ struct ReceiptSection: View {
                         NSWorkspace.shared.open(model.path.original(file))
                     }
                     Button("Vom Beleg nehmen", systemImage: "xmark") {
-                        guard let id = buchung.id else { return }
-                        model.removeReceipt(file.sha256, from: id)
+                        guard let id = buchung.id, let fileID = file.id else { return }
+                        model.removeReceipt(fileID, from: id)
                     }
                 }
                 .labelStyle(.iconOnly)
