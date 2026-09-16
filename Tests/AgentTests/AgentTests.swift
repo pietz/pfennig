@@ -695,6 +695,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     ## Regeln
 
     - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
+    - Gehe von vollständig betrieblicher Nutzung aus, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt.
     """
 
     #expect(text.hasPrefix(expected + "\n\n## Profil"))
