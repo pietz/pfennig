@@ -3,7 +3,8 @@
 ## Unveröffentlicht
 
 - Dateien werden zuerst gespeichert, dann läuft der Agent; er hängt den Beleg selbst an die Buchung, wodurch „Beleg fehlt“ nicht mehr kurz aufblitzt. Kontoauszüge kann der Agent jetzt verarbeiten: Zahlungen zu bestehenden Buchungen, Bewegungen ohne Buchung als `nur_zahlung`, private als `ignoriert`
-- Dateien bleiben im Archiv, auch wenn ihre Buchung gelöscht oder der Beleg abgehängt wird; eine bekannte Datei geht nicht erneut zum Agenten
+- Dateien bleiben im Archiv, auch wenn ihre Buchung gelöscht oder der Beleg abgehängt wird; eine Datei mit gelungenem Lauf geht nicht erneut zum Agenten, eine ohne läuft beim erneuten Ablegen noch einmal
+- Ein gescheiterter Verbindungsaufbau zu OpenAI wird nach drei Sekunden einmal wiederholt. macOS bricht gleichzeitige große Uploads über HTTP/3 mit „Die Nachricht ist zu lang“ ab und weicht danach auf HTTP/2 aus
 
 Hinweise:
 

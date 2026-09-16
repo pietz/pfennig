@@ -386,38 +386,67 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     return try (Repository.inMemory(), path, folder)
 }
 
-@Test func eingangUeberspringtEineBekannteDateiAusserAusDerInbox() async throws {
+@Test func eingangUeberspringtEineDateiErstNachEinemGelungenenLauf() async throws {
     let (repository, path, folder) = try setUp()
     defer { try? FileManager.default.removeItem(at: folder) }
     let file = folder.appending(path: "beleg.pdf")
     let content = Data("%PDF-1.4 Beleg".utf8)
     try content.write(to: file)
     let hash = FileIntake.hash(content)
-    _ = try repository.saveFile(Datei(
+    let id = try repository.saveFile(Datei(
         sha256: hash,
         dateiname: "beleg.pdf",
         endung: "pdf",
         groesse: Int64(content.count)
     ))
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "test")
 
-    // Dedupe is "hash exists": a fresh drop of a stored file is done, whether
-    // or not a booking carries it, and no run starts.
+    // Stored, but no run has succeeded: a fresh drop is work again and reuses
+    // the stored file instead of storing it twice.
+    guard case .failed = await intake.process(file) else {
+        Issue.record("Ohne gelungenen Lauf muss die Datei erneut zum Agenten.")
+        return
+    }
+    #expect(try repository.allRequests().map(\.dateiId) == [id])
+    #expect(try repository.fileID(sha256: hash) == id)
+
+    // After a successful run the same hash is done, from wherever it comes.
+    try repository.finishRequest(id: 1, status: .erfolg, eingabeTokens: 1, ausgabeTokens: 1, konversation: "[]")
     guard case .alreadyPresent = await intake.process(file) else {
         Issue.record("Der bekannte Hash wurde nicht erkannt.")
         return
     }
-    #expect(try repository.allRequests().isEmpty)
+    #expect(try repository.allRequests().count == 1)
+}
 
-    // The inbox copy of a failed run is the one exception: it comes back for
-    // another try and reuses the stored file instead of storing it twice.
-    let inbox = path.inbox.appending(path: "beleg.pdf")
-    try content.write(to: inbox)
-    guard case .failed = await intake.process(inbox) else {
-        Issue.record("Die Inbox-Kopie muss erneut zum Agenten.")
-        return
+@Test func einGescheiterterVerbindungsaufbauWirdEinmalWiederholt() async throws {
+    let versuche = Zaehler()
+    let transport: Transport = { request in
+        if await versuche.next() == 1 {
+            throw URLError(.networkConnectionLost)
+        }
+        let http = HTTPURLResponse(url: request.url!, statusCode: 200, httpVersion: nil, headerFields: nil)!
+        return (Data(schlussantwort.utf8), http)
     }
-    #expect(try repository.fileID(sha256: hash) == 1)
+    var responses = Responses(key: "test", transport: transport)
+    responses.networkRetryDelay = .zero
+    let antwort = try await responses.send(["model": "x"])
+    #expect(antwort["id"] as? String == "resp_2")
+    #expect(await versuche.next() == 3)
+
+    // A second failure is the answer.
+    let immer: Transport = { _ in throw URLError(.networkConnectionLost) }
+    var hartnaeckig = Responses(key: "test", transport: immer)
+    hartnaeckig.networkRetryDelay = .zero
+    await #expect(throws: AgentError.self) { try await hartnaeckig.send(["model": "x"]) }
+}
+
+private actor Zaehler {
+    var count = 0
+    func next() -> Int {
+        count += 1
+        return count
+    }
 }
 
 @Test func eingangLegtDieDateiInDieInboxUndLaesstSieDortLiegen() async throws {

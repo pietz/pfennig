@@ -106,10 +106,11 @@ public struct FileIntake: Sendable {
         // moment it got there, at its origin before that.
         var location = url
         do {
-            // A known hash is done, unless it is the inbox copy of a failed
-            // run coming back for another try.
+            // A known hash is done once a run for it has succeeded. A stored
+            // file whose runs all failed is work again, from the inbox copy or
+            // from a fresh drop.
             let known = try repository.fileID(sha256: hash)
-            if known != nil, isInInbox(url) == false {
+            if let known, try repository.hasSuccessfulRun(dateiId: known) {
                 return .alreadyPresent
             }
 

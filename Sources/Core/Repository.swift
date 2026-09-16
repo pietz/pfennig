@@ -109,10 +109,21 @@ public final class Repository: Sendable {
         }
     }
 
-    /// Dedupe is "hash exists": the id of the stored file with this hash.
+    /// The id of the stored file with this hash.
     public func fileID(sha256: String) throws -> Int64? {
         try database.read { db in
             try Int64.fetchOne(db, sql: "SELECT id FROM dateien WHERE sha256 = ?", arguments: [sha256])
+        }
+    }
+
+    /// Whether an agent run for the file has succeeded. A stored file without
+    /// one is not done and may run again.
+    public func hasSuccessfulRun(dateiId: Int64) throws -> Bool {
+        try database.read { db in
+            try Bool.fetchOne(
+                db, sql: "SELECT COUNT(*) > 0 FROM anfragen WHERE datei_id = ? AND status = 'erfolg'",
+                arguments: [dateiId]
+            ) ?? false
         }
     }
 

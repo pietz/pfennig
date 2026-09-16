@@ -43,6 +43,8 @@ public struct Responses: Sendable {
 
     let key: String
     let transport: Transport
+    /// The wait before a failed connection is tried once more.
+    var networkRetryDelay: Duration = .seconds(3)
 
     /// The transport the app uses. Tests never touch it.
     public static let network: Transport = { request in
@@ -81,19 +83,29 @@ public struct Responses: Sendable {
     }
 
     /// Sends the body and answers with the parsed response object. A rate limit
-    /// or a server error is tried once more, after `Retry-After` when it is there.
+    /// or a server error is tried once more, after `Retry-After` when it is
+    /// there. So is a failed connection: macOS drops a burst of large uploads
+    /// over HTTP/3 with "Message too long" and falls back to HTTP/2 for the
+    /// host afterwards, so the same request tends to go through a moment later.
     func send(_ body: [String: Any]) async throws -> [String: Any] {
         do {
             return try await sendOnce(body)
         } catch let rejection as Rejection where rejection.isTransient {
             try await Task.sleep(for: .seconds(rejection.retryAfter ?? 2))
-            do {
-                return try await sendOnce(body)
-            } catch let second as Rejection {
-                throw AgentError.api(status: second.status, text: second.text)
-            }
+            return try await sendAgain(body)
         } catch let rejection as Rejection {
             throw AgentError.api(status: rejection.status, text: rejection.text)
+        } catch AgentError.network(_) {
+            try await Task.sleep(for: networkRetryDelay)
+            return try await sendAgain(body)
+        }
+    }
+
+    private func sendAgain(_ body: [String: Any]) async throws -> [String: Any] {
+        do {
+            return try await sendOnce(body)
+        } catch let second as Rejection {
+            throw AgentError.api(status: second.status, text: second.text)
         }
     }
 

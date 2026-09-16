@@ -132,7 +132,7 @@ final class AppModel {
         case .booked:
             nil
         case .alreadyPresent:
-            IntakeMessage(id: url, kind: .info, text: "Bereits vorhanden, der Beleg hängt schon an einer Buchung.")
+            IntakeMessage(id: url, kind: .info, text: "Bereits vorhanden, die Datei wurde schon verarbeitet.")
         case let .failed(file, text):
             IntakeMessage(id: file, kind: .failure, text: text)
         }
