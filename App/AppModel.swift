@@ -16,7 +16,7 @@ final class AppModel {
     var reviewFilter: ReviewFilter = .alle
     var search = ""
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
-    var inspectorVisible = true
+    var inspectorVisible = false
     var exportVisible = false
     var errorMessage: String?
 

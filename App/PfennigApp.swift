@@ -20,7 +20,7 @@ struct PfennigApp: App {
             WorkspaceView(model: model)
                 .modifier(AppearanceModifier())
         }
-        .defaultSize(width: 1300, height: 700)
+        .defaultSize(width: 840, height: 500)
         .commands {
             CommandGroup(after: .appInfo) {
                 UpdateCommand(updater: updaterController.updater)
