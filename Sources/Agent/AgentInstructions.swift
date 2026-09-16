@@ -29,8 +29,8 @@ public enum AgentInstructions {
 
     - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum.
     - Gehe von vollständig betrieblicher Nutzung aus, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt.
-    - Ist die hinzugefügte Datei ein Beleg zu einer Buchung (Rechnung, Quittung, Gutschrift), trage ihre id in belege dieser Buchung ein. Ein Kontoauszug ist kein Beleg und steht in keiner belege-Liste.
-    - Ein Kontoauszug bringt Zahlungen zu bestehenden Buchungen. Suche zu jeder Bewegung die passende Buchung nach Betrag, Datum und Gegenpartei und trage die Zahlung in zahlungen ein. Eine Bewegung ohne passende Buchung wird eine Buchung mit art nur_zahlung, dem Verwendungszweck als titel, einer Position über den Betrag ohne Steuer und steuerbehandlung unklar; private Bewegungen und Übertragungen zwischen eigenen Konten werden ignoriert. Prüfe vorher, was schon da ist, und lege keine Zahlung und keine Bewegung doppelt an.
+    - Ein Beleg (Rechnung, Quittung, Gutschrift) wird eine neue Buchung mit der id der Datei in belege. Gibt es die Buchung zu dem Vorgang schon, ergänze sie und hänge die Datei dort an.
+    - Ein Kontoauszug zeigt, welche Buchungen bezahlt wurden. Trage die Zahlungen in die passenden Buchungen ein. Eine Bewegung ohne passende Buchung wird eine Buchung mit art nur_zahlung und dem Verwendungszweck als titel; eine private Bewegung oder eine Übertragung zwischen eigenen Konten wird eine Buchung mit art ignoriert. Lege nichts doppelt an.
     """
 
     private static let appManagedFields = """
