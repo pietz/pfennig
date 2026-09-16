@@ -6,7 +6,8 @@ Ideen aus der Produktdiskussion am 2026-09-16, vom Eigentümer als lohnend einge
 
 Was hier besser wird, verbessert jede Zahl dahinter.
 
-- **E-Rechnung lesen.** ZUGFeRD-PDFs tragen ein eingebettetes XML, XRechnungen sind reines XML. Swift erkennt beides und gibt dem Agenten das XML neben dem PDF; die Beträge, Sätze und Daten kommen dann aus der Quelle statt aus dem Bild. Kleiner Eingriff, große Wirkung. Empfohlener erster Schritt.
+- **Textformate im Eingang.** Entschieden am 2026-09-16, siehe Ergänzung Dateiformate in der Spec: Textdateien gehen als Klartext an den Agenten, ohne Parser. Damit liest der Agent XRechnungen und beliebige CSV- oder JSON-Exporte. Umsetzung ausstehend.
+- **ZUGFeRD-XML auslesen.** Zurückgestellt. Ein ZUGFeRD-PDF trägt das XML als Anhang; heute liest der Agent nur das Bild. Rechtlich gilt das XML, praktisch stimmen beide fast immer überein. Falls Ziffernfehler aus dem Bild auftreten, den Anhang über CGPDF holen und als Text neben das PDF legen, etwa fünfzig Zeilen.
 - **Kontoauszüge und Abgleich.** In der Spec als zweiter Schritt genannt, noch nicht gebaut. Anders als ein Beleg ist eine Kontobewegung kein eigenes Dokument, sondern muss gegen bestehende Buchungen abgeglichen werden: Zahlungsdatum und Betrag an die passende Rechnung, Rest als `nur_zahlung` oder `ignoriert`. Braucht ein eigenes Konzept für den Agentenlauf mit Zugriff auf die offenen Buchungen. Größte Lücke im Kernablauf, weil die Ist-Versteuerung am Zahlungsdatum hängt.
 - **Bewirtung.** Nur 70 Prozent der Bewirtungskosten sind Betriebsausgabe, die Vorsteuer bleibt voll abziehbar; der Beleg braucht Anlass und Teilnehmer. Heute setzt der Agent meist einen Privatanteil, was die Vorsteuer falsch kürzt. Eigene Behandlung in der EÜR plus Abfrage der fehlenden Angaben.
 
@@ -32,7 +33,7 @@ Pflichten und Fehler, die die Zielgruppe regelmäßig treffen.
 
 ## Empfohlene Reihenfolge
 
-1. E-Rechnung: klein, sofort spürbar, kein Spec-Konflikt.
+1. Textformate im Eingang: klein, entschieden, deckt XRechnung mit ab.
 2. Kontoauszüge und Abgleich: die größte Lücke im Kernablauf. Das Konzept dafür klärt zugleich, wie ein Agentenlauf mit Kontext auf bestehende Buchungen aussieht, und bereitet damit den Gesprächsagenten vor.
 3. Anlagevermögen und AfA: verhindert einen echten Fehler in der EÜR, Konzept ausstehend.
 4. Kleinunternehmer-Grenzen, ZM und Jahreserklärung: kleine Exporte und Anzeigen auf vorhandenen Daten.

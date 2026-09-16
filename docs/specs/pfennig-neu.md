@@ -4,6 +4,8 @@
 
 **Ergänzung Fremdwährung (2026-09-15):** Fremdwährungen und ein zweites Agentenwerkzeug sind freigegeben. Die Buchhaltung und alle Summen bleiben in EUR. Es gibt keine währungsspezifische Präzision, keine Kursgewinn- und Verlustrechnung und keinen Revaluierungsmechanismus.
 
+**Ergänzung Dateiformate (2026-09-16):** Der Eingang unterscheidet zwei Klassen von Dateien an der Endung. Binärformate, die das Modell nativ liest (PDF, PNG, JPEG, WebP), gehen als Anhang. Textformate (XML, CSV, TXT, JSON, HTML) gehen als Klartext in die Nachricht, bis zu einem Megabyte; UTF-8 wird strikt gelesen, sonst gilt Windows-1252. Alles andere wird abgelehnt. Es gibt keine Parser für einzelne Formate; eine E-Rechnung im XML liest der Agent als Text, ein ZUGFeRD-PDF als Bild. Das eingebettete XML eines ZUGFeRD-PDF wird nicht ausgelesen. Steuerlich ist bei einer E-Rechnung das XML die Rechnung; bei Abweichung zwischen Bild und XML sieht die App nur das Bild, was als Ausstellerfehler selten ist und bewusst hingenommen wird.
+
 Gliederung:
 
 1. Zweck und Grenzen
@@ -100,7 +102,7 @@ Die Toolbar zeigt auf Start nur den Fortschrittsanzeiger, „Neue Buchung“ und
 4. Nach Erfolg wandert die Datei als `<hash>.<endung>` ins Archiv, bekommt eine Zeile in `dateien` und verlässt die Inbox. Das sql-Werkzeug meldet Swift die berührten Buchungs-IDs; an diese hängt Swift den Hash.
 5. Bei Fehler bleibt sie in der Inbox mit Fehlertext, in der App sichtbar mit „Erneut versuchen“ und „Verwerfen“. Buchungen, die der abgebrochene Lauf angelegt hat, entfernt Swift vor einem erneuten Versuch, damit nichts doppelt entsteht.
 
-Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind PDF, Bilder und CSV; die Datei geht so, wie sie ist, an den Agenten.
+Der Fortschrittsanzeiger in der Toolbar zeigt den Stand, solange die Inbox nicht leer ist. Beim App-Start wird eine nicht leere Inbox abgearbeitet. Zugelassen sind die Binär- und Textformate der Ergänzung Dateiformate; die Datei geht so, wie sie ist, an den Agenten, Binärdateien als Anhang, Textdateien als Klartext.
 
 **Ein Agent, zwei Werkzeuge.** Der Agent arbeitet von Anfang an in einer Werkzeugschleife über die Responses API. Sein erstes Werkzeug ist `sql`: er liest und schreibt `buchungen` direkt mit SELECT, INSERT und UPDATE. Das zweite Werkzeug ist `umrechnen(waehrung, datum, betraege)`. Es fragt genau einmal den historischen Frankfurter-v2-Kurs für das Währungspaar und Datum ab und rechnet alle gelieferten Originalbeträge mit Swift `Decimal` in EUR-Cent um. Die öffentliche API erhält nur Währung und Datum, nicht Beträge oder Dokumente. Die Standardrate ist Frankfurters gemischte Referenzrate, ausdrücklich kein Bank- oder steuerlich vorgeschriebener Kurs. Rate, tatsächliches Kursdatum und Quelle stehen in der bestehenden Anfragekonversation. Es gibt keinen getrennten Extraktionspfad mit eigenem Ausgabeschema; was die App später zusätzlich kann (Kontoauszüge, Zuordnungen), ändert nur die Anleitung, nicht den Mechanismus.
 
