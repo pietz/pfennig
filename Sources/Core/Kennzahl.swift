@@ -113,8 +113,11 @@ public struct Kennzahl: Hashable, Sendable {
     // MARK: - Zuordnung
 
     /// The line an income belongs on. A domestic rate other than 19, 7 or 0
-    /// has no line on the 2026 form and is not reported.
-    public static func einnahme(behandlung: Steuerbehandlung, steuersatz: Decimal) -> Int? {
+    /// has no line on the 2026 form and is not reported. A reverse charge
+    /// income splits by the customer's country like the expense side: Kz 21
+    /// (§18b Satz 1 Nr. 2) is for services to a business in another member
+    /// state, everything else is a non-taxable turnover on Kz 45.
+    public static func einnahme(behandlung: Steuerbehandlung, steuersatz: Decimal, land: String?) -> Int? {
         switch behandlung {
         case .inland:
             switch steuersatz {
@@ -124,7 +127,7 @@ public struct Kennzahl: Hashable, Sendable {
             default: nil
             }
         case .kleinunternehmer, .steuerfrei: 48
-        case .reverseCharge: 21
+        case .reverseCharge: istEUStaat(land) ? 21 : 45
         case .nichtSteuerbar: 45
         case .unklar: nil
         }
@@ -132,14 +135,19 @@ public struct Kennzahl: Hashable, Sendable {
 
     /// The §13b pair of an expense. The form splits by where the supplier is
     /// established: Kz 46/47 for another EU member state (§13b Abs. 1), Kz
-    /// 84/85 for the rest, among them the third country SaaS case. A missing
-    /// country cannot be routed from the facts on file and takes the EU pair,
-    /// by far the more common one for this audience; the Prüfregeln already
-    /// keep a domestic counterparty out of reverse_charge.
+    /// 84/85 for the rest, among them the third country SaaS case. The
+    /// Prüfregeln already keep a domestic counterparty out of reverse_charge.
     public static func reverseCharge(land: String?) -> (bemessung: Int, steuer: Int) {
+        istEUStaat(land) ? (46, 47) : (84, 85)
+    }
+
+    /// Whether the country is another member state. A missing country cannot
+    /// be routed from the facts on file and counts as EU, by far the more
+    /// common case for this audience.
+    private static func istEUStaat(_ land: String?) -> Bool {
         let kuerzel = land?.uppercased() ?? ""
-        guard kuerzel.isEmpty == false else { return (46, 47) }
-        return euStaaten.contains(kuerzel) ? (46, 47) : (84, 85)
+        guard kuerzel.isEmpty == false else { return true }
+        return euStaaten.contains(kuerzel)
     }
 
     /// The member states of the European Union without Germany.

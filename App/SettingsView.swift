@@ -100,7 +100,7 @@ private struct AISettingsView: View {
                     .foregroundStyle(isConnected ? Color.green : Color.red)
                     .lineLimit(3)
             } else {
-                Text(hasKey ? "Schlüssel hasKey" : "Kein Schlüssel")
+                Text(hasKey ? "Schlüssel hinterlegt" : "Kein Schlüssel")
                     .foregroundStyle(.secondary)
             }
         }
@@ -119,8 +119,12 @@ private struct AISettingsView: View {
             hasKey = false
             return
         }
-        Keychain.write(key)
-        hasKey = true
+        hasKey = Keychain.write(key)
+        guard hasKey else {
+            isConnected = false
+            checkResult = "Der Schlüssel ließ sich nicht im Schlüsselbund speichern."
+            return
+        }
         test()
     }
 

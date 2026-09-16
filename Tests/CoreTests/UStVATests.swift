@@ -275,3 +275,30 @@ import Testing
     let ustva = UStVA.calculate([ausgabe], zeitraum: q3, profile: regel)
     #expect(UStVAXml.xml(ustva).contains("<Kz83>-19.00</Kz83>"))
 }
+
+@Test func reverseChargeEinnahmenTrennenEUUndDrittland() {
+    let eu = buchung(
+        id: 1,
+        richtung: .einnahme,
+        datum: datum(2026, 7, 1),
+        land: "FR",
+        positionen: [position(100_000, 0)],
+        behandlung: .reverseCharge,
+        zahlungen: [zahlung(2026, 8, 1, 100_000)]
+    )
+    let drittland = buchung(
+        id: 2,
+        richtung: .einnahme,
+        datum: datum(2026, 7, 2),
+        land: "US",
+        positionen: [position(50000, 0)],
+        behandlung: .reverseCharge,
+        zahlungen: [zahlung(2026, 8, 2, 50000)]
+    )
+    let ustva = UStVA.calculate([eu, drittland], zeitraum: q3, profile: regel)
+    // Kz 21 ist die §18b-Zeile für Leistungen an EU-Unternehmer, das Drittland
+    // ist ein übriger nicht steuerbarer Umsatz.
+    #expect(ustva.betrag(21) == 100_000)
+    #expect(ustva.betrag(45) == 50000)
+    #expect(ustva.zahllast == .null)
+}

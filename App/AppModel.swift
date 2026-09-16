@@ -103,22 +103,26 @@ final class AppModel {
         progress.running = true
         let intake = intake
         Task {
-            await withTaskGroup(of: (URL, FileIntakeResult).self) { group in
-                var offen = 0
-                while true {
-                    while offen < AppModel.maxConcurrent, queue.isEmpty == false {
-                        let url = queue.removeFirst()
-                        inProgress.insert(url)
-                        group.addTask { await (url, intake.process(url)) }
-                        offen += 1
+            // A drop that lands while the group drains its last file joins
+            // the queue after the loop has decided to stop, so look again.
+            repeat {
+                await withTaskGroup(of: (URL, FileIntakeResult).self) { group in
+                    var offen = 0
+                    while true {
+                        while offen < AppModel.maxConcurrent, queue.isEmpty == false {
+                            let url = queue.removeFirst()
+                            inProgress.insert(url)
+                            group.addTask { await (url, intake.process(url)) }
+                            offen += 1
+                        }
+                        guard let (url, result) = await group.next() else { break }
+                        offen -= 1
+                        inProgress.remove(url)
+                        record(result, fuer: url)
+                        progress.done += 1
                     }
-                    guard let (url, result) = await group.next() else { break }
-                    offen -= 1
-                    inProgress.remove(url)
-                    record(result, fuer: url)
-                    progress.done += 1
                 }
-            }
+            } while queue.isEmpty == false
             progress = Progress()
         }
     }
@@ -193,6 +197,7 @@ final class AppModel {
         if filter == .einnahmen {
             filter = .alle
         }
+        reviewFilter = .alle
         search = ""
         selection = saved.id
         inspectorVisible = true

@@ -143,7 +143,9 @@ public struct AgentRun: Sendable {
             guard result.touched.isEmpty == false else {
                 throw AgentError.noBooking
             }
-            try repository.finishRequest(
+            // The log is metadata. A failure to write it must not turn a
+            // finished run into an abort that removes the committed bookings.
+            try? repository.finishRequest(
                 id: request, status: .erfolg, eingabeTokens: trace.inputTokens,
                 ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
             )

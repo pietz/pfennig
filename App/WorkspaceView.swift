@@ -28,6 +28,26 @@ struct WorkspaceView: View {
     @Bindable var model: AppModel
     /// The app opens on the overview.
     @State private var workspace: Workspace = .start
+    /// True while a drag hangs over the window.
+    @State private var isDropTarget = false
+
+    @ViewBuilder private var detail: some View {
+        switch workspace {
+        case .start:
+            StartView(model: model, workspace: $workspace)
+        case .buchungen:
+            // A plain trailing pane, not the native inspector. The native one
+            // floats over the detail column instead of narrowing it, which
+            // hides the right hand table columns.
+            HStack(spacing: 0) {
+                MainWindow(model: model)
+                if model.inspectorVisible {
+                    Divider()
+                    inspectorPane.frame(width: WorkspaceView.inspectorWidth)
+                }
+            }
+        }
+    }
 
     var body: some View {
         NavigationSplitView {
@@ -42,22 +62,21 @@ struct WorkspaceView: View {
             .toolbar(removing: .sidebarToggle)
             .safeAreaInset(edge: .bottom, spacing: 0) { settingsLink }
         } detail: {
-            switch workspace {
-            case .start:
-                StartView(model: model, workspace: $workspace)
-            case .buchungen:
-                // A plain trailing pane, not the native inspector. The native one
-                // floats over the detail column instead of narrowing it, which
-                // hides the right hand table columns.
-                HStack(spacing: 0) {
-                    MainWindow(model: model)
-                    if model.inspectorVisible {
-                        Divider()
-                        inspectorPane.frame(width: WorkspaceView.inspectorWidth)
+            detail
+                .overlay {
+                    if isDropTarget {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(Color.accentColor, lineWidth: 3)
+                            .padding(3)
+                            .allowsHitTesting(false)
                     }
                 }
-            }
         }
+        // Drag and drop counts for the whole window, on Start as well.
+        .dropDestination(for: URL.self) { urls, _ in
+            model.acceptFiles(urls)
+            return true
+        } isTargeted: { isDropTarget = $0 }
         // Export is reachable from both pages, so the sheet sits at window scope.
         .sheet(isPresented: $model.exportVisible) {
             ExportSheet(model: model, preselected: model.exportPeriod)

@@ -82,7 +82,8 @@ public struct UStVA: Hashable, Sendable {
         for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
             for anteil in anteile[stelle] {
                 guard let nummer = Kennzahl.einnahme(
-                    behandlung: buchung.steuerbehandlung, steuersatz: anteil.steuersatz
+                    behandlung: buchung.steuerbehandlung, steuersatz: anteil.steuersatz,
+                    land: buchung.gegenparteiLand
                 ) else { continue }
                 // The §19 income of a Kleinunternehmer stays out of the form.
                 guard profile.kleinunternehmer == false || nummer != 48 else { continue }

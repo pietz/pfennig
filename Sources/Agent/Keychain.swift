@@ -22,11 +22,14 @@ public enum Keychain: Sendable {
         return String(decoding: data, as: UTF8.self)
     }
 
-    public static func write(_ key: String) {
+    /// Stores the key and says whether it is there now. The old item goes
+    /// first, so a refused add leaves no key behind and the caller must not
+    /// claim one.
+    public static func write(_ key: String) -> Bool {
         remove()
         var entry = base
         entry[kSecValueData as String] = Data(key.utf8)
-        SecItemAdd(entry as CFDictionary, nil)
+        return SecItemAdd(entry as CFDictionary, nil) == errSecSuccess
     }
 
     public static func remove() {

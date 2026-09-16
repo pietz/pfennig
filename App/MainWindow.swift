@@ -7,8 +7,6 @@ import SwiftUI
 struct MainWindow: View {
     @Bindable var model: AppModel
     @State private var toDelete: Buchung?
-    /// True while a drag hangs over the window.
-    @State private var isDropTarget = false
     @SceneStorage("columns") private var columns: TableColumnCustomization<Buchung>
 
     var body: some View {
@@ -19,22 +17,9 @@ struct MainWindow: View {
                 Divider()
             }
             ledgerTable(rows)
-                .overlay {
-                    if isDropTarget {
-                        RoundedRectangle(cornerRadius: 8)
-                            .strokeBorder(Color.accentColor, lineWidth: 3)
-                            .padding(3)
-                            .allowsHitTesting(false)
-                    }
-                }
             Divider()
             Footer(totals: Overview.totals(rows))
         }
-        // Drag and drop counts for the whole window.
-        .dropDestination(for: URL.self) { urls, _ in
-            model.acceptFiles(urls)
-            return true
-        } isTargeted: { isDropTarget = $0 }
         .searchable(text: $model.search, prompt: "Suchen")
         .toolbar { toolbarItems }
         // The table shrinks with the inspector; only the Unternehmen column gives.

@@ -1,5 +1,5 @@
 @testable import Agent
-import Core
+@testable import Core
 import Foundation
 import GRDB
 import Testing
@@ -701,4 +701,30 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(text.contains("## So arbeitest du") == false)
     #expect(text.contains("Deine Werkzeuge heißen") == false)
     #expect(text.contains("Amazon") == false)
+}
+
+@Test func laufBleibtErfolgreichWennNurDasAnfragenLogNichtSchreibbarIst() async throws {
+    let repository = try Repository.inMemory()
+    // The log write is the only thing that fails: a trigger refuses the
+    // success row, the booking table stays untouched.
+    try await repository.database.write { db in
+        try db.execute(sql: """
+        CREATE TRIGGER sperre_erfolg BEFORE UPDATE ON anfragen
+        WHEN NEW.status = 'erfolg'
+        BEGIN SELECT RAISE(ABORT, 'Log gesperrt'); END
+        """)
+    }
+    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    let run = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "test",
+        transport: skript.transport
+    )
+
+    let result = try await run.start(input())
+    #expect(result.created == [1])
+    // The booking the run committed is still there; only the log stayed open.
+    #expect(try repository.allBookings().count == 1)
+    #expect(try repository.allRequests().first?.status == nil)
 }

@@ -1,5 +1,14 @@
 # Änderungen
 
+## Unveröffentlicht
+
+- UStVA: Reverse-Charge-Einnahmen an Kunden außerhalb der EU stehen in Kz 45 statt in Kz 21; Kz 21 bleibt für Leistungen an EU-Unternehmer
+- Ein fehlgeschlagener Eintrag ins Anfragenprotokoll bricht einen erfolgreichen Import nicht mehr ab und löscht keine Buchungen mehr
+- Drag-and-drop funktioniert auch auf der Startseite
+- Eine Datei, die während des letzten laufenden Imports abgelegt wird, bleibt nicht mehr liegen
+- „Neue Buchung“ setzt auch den Statusfilter zurück, damit die neue Buchung sichtbar ist
+- Die Einstellungen melden, wenn der Schlüssel nicht im Schlüsselbund gespeichert werden konnte, statt einen hinterlegten Schlüssel anzuzeigen
+
 ## 0.5.0 (2026-09-16)
 
 - Neue Startseite mit Begrüßung, Jahresauswahl, Einnahmen, Ausgaben und Saldo des Jahres nach Zahlungsdatum, den To-Dos „Prüfen“, „Belege nachtragen“ und „Überfällig“ sowie den drei dringendsten Fristen für UStVA und EÜR; ein Klick führt in die gefilterte Buchungsliste oder in den Export
