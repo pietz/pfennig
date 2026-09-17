@@ -11,8 +11,13 @@ import Foundation
 ///   Zahlungsdatum), per payment. That is conservative against §15 UStG, where
 ///   the invoice alone would already do, and needs no further field.
 /// - **§13b** arises with the service, in practice with the Belegdatum, and in
-///   full; the payment date does not matter. A Kleinunternehmer owes the tax
-///   without the matching Vorsteuer.
+///   full, at the rate of its positions; the payment date does not matter. A
+///   Kleinunternehmer owes the tax without the matching Vorsteuer.
+/// - **Kz 21**, an own service to a business in another member state, follows
+///   the same clock: the whole net in the period of the Belegdatum and no
+///   Anzahlungen (Anleitung USt 1 E 2026 zu Zeile 35, §18b Satz 3 UStG). The
+///   Belegdatum stands in for the day of the service, which Pfennig does not
+///   keep. Kz 45 stays with the payments.
 /// - A **Kleinunternehmer** has no Kz 81/86/66 and does not report the §19
 ///   income in Kz 48 either: the Voranmeldung exists only because of §13b
 ///   (§18 Abs. 4a UStG) and reports only that.
@@ -70,13 +75,21 @@ public struct UStVA: Hashable, Sendable {
     }
 
     /// Income counts per payment in the period of its date, with the
-    /// Bemessungsgrundlage of the share that payment carries.
+    /// Bemessungsgrundlage of the share that payment carries. A service to a
+    /// business in another member state is the exception: it counts in full in
+    /// the period of its Belegdatum.
     private static func einnahme(
         _ buchung: Buchung,
         zeitraum: Zeitraum,
         profile: Profil,
         in werte: inout [Int: Cent]
     ) {
+        if buchung.steuerbehandlung == .reverseCharge, Kennzahl.istEUStaat(buchung.gegenparteiLand) {
+            guard zeitraum.enthaelt(buchung.datum) else { return }
+            buchen(21, buchung.netto, in: &werte)
+            return
+        }
+
         let zahlungen = geordnet(buchung)
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
         for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
@@ -113,12 +126,12 @@ public struct UStVA: Hashable, Sendable {
         case .reverseCharge:
             // The service dates the entry, not the payment.
             guard zeitraum.enthaelt(buchung.datum) else { return }
-            let bemessung = buchung.netto
-            let steuer = buchung.steuer == .null
-                ? Position.steuer(netto: bemessung, steuersatz: 19)
-                : buchung.steuer
+            // Every position carries the rate the recipient owes, 19 or 7.
+            let steuer = buchung.positionen.reduce(Cent.null) {
+                $0 + Position.steuer(netto: $1.netto, steuersatz: $1.steuersatz)
+            }
             let rows = Kennzahl.reverseCharge(land: buchung.gegenparteiLand)
-            buchen(rows.bemessung, bemessung, in: &werte)
+            buchen(rows.bemessung, buchung.netto, in: &werte)
             buchen(rows.steuer, steuer, in: &werte)
             if profile.kleinunternehmer == false {
                 buchen(67, steuer, in: &werte)

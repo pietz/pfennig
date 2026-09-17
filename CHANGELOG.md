@@ -2,6 +2,10 @@
 
 ## Unveröffentlicht
 
+- UStVA: Eine sonstige Leistung an ein EU-Unternehmen steht mit ihrem vollen Netto im Zeitraum des Belegdatums in Kz 21. Anzahlungen und späte Zahlungen verschieben sie nicht mehr, denn Kz 21 folgt der Leistungsausführung (Anleitung USt 1 E 2026 zu Zeile 35, §18b Satz 3 UStG); das Belegdatum steht dafür ein. Kz 45 zählt weiter je Zahlung
+- UStVA: Ein §13b-Bezug zu 7 Prozent ist darstellbar. Eine Position mit `reverse_charge` trägt jetzt den Steuersatz, den der Leistungsempfänger schuldet (19 oder 7), und `steuer` 0; Kz 47, 85 und 67 rechnen mit diesem Satz statt pauschal mit 19 Prozent. Ein E-Book aus Irland wurde bisher um zwölf Punkte zu hoch gemeldet
+- UStVA: Ein nicht steuerbarer Umsatz steht nur noch in Kz 45, wenn `gegenpartei_land` gesetzt und nicht DE ist. Nicht steuerbare Inlandsumsätze gehören dort nicht hin (Anleitung zu Zeile 36) und bleiben aus dem Formular
+
 - Anlagevermögen: Eine Ausgabe mit `nutzungsdauer_jahre` ist ein Anlagegut. Sie steht in der EÜR nicht mehr auf ihrer Kategoriezeile, sondern mit der AfA des Jahres auf Zeile 34, linear ab dem Anschaffungsmonat und im letzten Jahr mit dem Rest; ihre Vorsteuer zählt unverändert im Zahlungszeitraum. Der Inspector zeigt bei Ausgaben das Feld „Nutzungsdauer in Jahren“, der EÜR-Export bekommt einen zweiten Block für die Anlage AVEÜR mit Einzelliste, und der Agent findet die Nutzungsdauer in der neuen Tabelle `afa_tabelle`, der amtlichen AfA-Tabelle (BMF vom 15.12.2000, Computerhardware nach BMF vom 22.02.2022)
 - Dateien werden zuerst gespeichert, dann läuft der Agent; er hängt den Beleg selbst an die Buchung, wodurch „Beleg fehlt“ nicht mehr kurz aufblitzt. Kontoauszüge kann der Agent jetzt verarbeiten: Zahlungen zu bestehenden Buchungen, Bewegungen ohne Buchung als `nur_zahlung`, private als `ignoriert`
 - Dateien bleiben im Archiv, auch wenn ihre Buchung gelöscht oder der Beleg abgehängt wird; eine Datei mit gelungenem Lauf geht nicht erneut zum Agenten, eine ohne läuft beim erneuten Ablegen noch einmal

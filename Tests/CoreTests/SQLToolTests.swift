@@ -306,6 +306,21 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.reverseChargeOhneSteuer(mitSteuer, profile) != nil)
     #expect(ValidationRules.reverseChargeOhneSteuer(netto, profile) == nil)
 
+    // Ein §13b-Bezug zu 7 Prozent: der Satz bleibt stehen, die Steuer nicht.
+    let siebenOhneSteuer = [Position(netto: Cent(10000), steuersatz: 7, steuer: .null)]
+    let ebook = basis(positionen: siebenOhneSteuer, steuerbehandlung: .reverseCharge, land: "IE")
+    #expect(ValidationRules.reverseChargeOhneSteuer(ebook, profile) == nil)
+    #expect(ValidationRules.steuerPasstZumSatz(ebook, profile) == nil)
+    #expect(ValidationRules.reverseChargeAusgabeBrauchtSatz(ebook, profile) == nil)
+    #expect(ValidationRules.reverseChargeAusgabeBrauchtSatz(netto, profile) != nil)
+    // Bei einer eigenen Leistung ins Ausland schuldet der Empfänger seinen
+    // eigenen Satz; die Regel greift dort nicht.
+    let eigeneLeistung = basis(
+        richtung: .einnahme, kategorie: "umsatz_dienstleistung", positionen: ohneSteuer,
+        steuerbehandlung: .reverseCharge, land: "IE"
+    )
+    #expect(ValidationRules.reverseChargeAusgabeBrauchtSatz(eigeneLeistung, profile) == nil)
+
     let null = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: .null)]
     let echt = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(11900))]
     let erstattung = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(-11900))]

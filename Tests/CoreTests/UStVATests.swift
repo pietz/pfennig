@@ -81,7 +81,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 8, 3),
         land: "IE",
-        positionen: [position(10000, 0)],
+        positionen: [positionOhneSteuer(10000, 19)],
         behandlung: .reverseCharge
     )
     let ustva = UStVA.calculate([saas], zeitraum: q3, profile: regel)
@@ -99,7 +99,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 8, 3),
         land: "US",
-        positionen: [position(10000, 0)],
+        positionen: [positionOhneSteuer(10000, 19)],
         behandlung: .reverseCharge
     )
     let ustva = UStVA.calculate([saas], zeitraum: q3, profile: regel)
@@ -109,13 +109,31 @@ import Testing
     #expect(ustva.betrag(67) == 1900)
 }
 
+@Test func einParagraf13bBezugTraegtDenSatzSeinerPosition() {
+    // E-Book aus Irland zu 7 Prozent, §12 Abs. 2 Nr. 14 UStG: die Position
+    // trägt den Satz, den der Leistungsempfänger schuldet.
+    let ebook = buchung(
+        id: 1,
+        richtung: .ausgabe,
+        datum: datum(2026, 8, 3),
+        land: "IE",
+        positionen: [positionOhneSteuer(10000, 7)],
+        behandlung: .reverseCharge
+    )
+    let ustva = UStVA.calculate([ebook], zeitraum: q3, profile: regel)
+    #expect(ustva.betrag(46) == 10000)
+    #expect(ustva.betrag(47) == 700)
+    #expect(ustva.betrag(67) == 700)
+    #expect(ustva.zahllast == .null)
+}
+
 @Test func reverseChargeZaehltZumBelegdatumUndNichtZurZahlung() {
     let saas = buchung(
         id: 1,
         richtung: .ausgabe,
         datum: datum(2026, 8, 3),
         land: "IE",
-        positionen: [position(10000, 0)],
+        positionen: [positionOhneSteuer(10000, 19)],
         behandlung: .reverseCharge,
         zahlungen: [zahlung(2026, 11, 2, 10000)]
     )
@@ -137,7 +155,7 @@ import Testing
         richtung: .ausgabe,
         datum: datum(2026, 8, 3),
         land: "IE",
-        positionen: [position(10000, 0)],
+        positionen: [positionOhneSteuer(10000, 19)],
         behandlung: .reverseCharge
     )
     let ustva = UStVA.calculate([einnahme, saas], zeitraum: q3, profile: klein)
@@ -195,7 +213,7 @@ import Testing
         positionen: [position(10000, 19)],
         zahlungen: [zahlung(2026, 8, 1, 11900)]
     )
-    // Ohne die Ausnahme stünde die Erstattung des Finanzamts in Kz 45.
+    // Die Erstattung des Finanzamts ist kein Umsatz; sie bleibt über art draußen.
     let finanzamt = buchung(
         id: 2,
         richtung: .einnahme,
@@ -301,6 +319,42 @@ import Testing
     #expect(ustva.betrag(21) == 100_000)
     #expect(ustva.betrag(45) == 50000)
     #expect(ustva.zahllast == .null)
+}
+
+@Test func eineEuLeistungStehtVollImZeitraumIhresBelegs() {
+    // Kz 21 folgt der Leistungsausführung, nicht dem Geld: Anzahlungen bleiben
+    // draußen und der Gesamtbetrag steht im Zeitraum des Belegdatums
+    // (Anleitung USt 1 E 2026 zu Zeile 35, §18b Satz 3 UStG).
+    let rechnung = buchung(
+        id: 1,
+        richtung: .einnahme,
+        datum: datum(2026, 9, 1),
+        land: "FR",
+        positionen: [position(100_000, 0)],
+        behandlung: .reverseCharge,
+        zahlungen: [zahlung(2026, 9, 20, 50000), zahlung(2026, 10, 20, 50000)]
+    )
+    #expect(UStVA.calculate([rechnung], zeitraum: q3, profile: regel).betrag(21) == 100_000)
+    #expect(UStVA.calculate([rechnung], zeitraum: q4, profile: regel).zeilen.isEmpty)
+}
+
+@Test func nichtSteuerbareUmsaetzeStehenNurMitAusgangImAuslandInKz45() {
+    /// Kz 45 verlangt einen Leistungsort außerhalb des Inlands; ein nicht
+    /// steuerbarer Inlandsumsatz steht in keiner Zeile (Anleitung zu Zeile 36).
+    func umsatz(_ land: String?) -> Buchung {
+        buchung(
+            id: 1,
+            richtung: .einnahme,
+            datum: datum(2026, 7, 1),
+            land: land,
+            positionen: [position(50000, 0)],
+            behandlung: .nichtSteuerbar,
+            zahlungen: [zahlung(2026, 8, 1, 50000)]
+        )
+    }
+    #expect(UStVA.calculate([umsatz(nil)], zeitraum: q3, profile: regel).zeilen.isEmpty)
+    #expect(UStVA.calculate([umsatz("DE")], zeitraum: q3, profile: regel).zeilen.isEmpty)
+    #expect(UStVA.calculate([umsatz("US")], zeitraum: q3, profile: regel).betrag(45) == 50000)
 }
 
 @Test func griechenlandZaehltMitBeidenLaenderkennungen() {

@@ -124,7 +124,7 @@ Der Agent erhält dynamisch aus der Datenbank selbst die tatsächliche CREATE-An
 **Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
 - kategorie ist ein bekannter Schlüssel, datum ist gültig und nicht weit in der Zukunft. Eine ausgefüllte faelligkeit ist ein gültiges Datum; es gibt keine Prüfung ihrer Reihenfolge zum Belegdatum. belegnummer wird als Text übernommen, ohne Nummerierungsprüfung.
-- steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei und mit steuer 0 in jeder Position (die geschuldete Steuer rechnet Pfennig), kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland nur mit 19 oder 7 Prozent; Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar.
+- steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei und mit steuer 0 in jeder Position; bei Ausgaben trägt die Position den geschuldeten Satz 19 oder 7, aus dem Pfennig die Steuer rechnet, kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland nur mit 19 oder 7 Prozent; Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar.
 - Zahlungen: Betrag ungleich null, Datum gültig.
 
 Schlägt eine Regel fehl, bekommt der Agent den Fehlertext zurück. Gibt er nach wenigen Versuchen auf, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.

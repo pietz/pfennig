@@ -29,6 +29,7 @@ public enum Schema {
         gegenpartei_ustid TEXT,
         -- JSON-Liste, mindestens ein Element, Beträge in EUR-Cent:
         -- [{"netto": 10000, "steuersatz": 19, "steuer": 1900}]
+        -- bei reverse_charge steht in steuersatz der Satz, den du als Leistungsempfänger schuldest (19 oder 7), und in steuer 0
         positionen TEXT NOT NULL DEFAULT '[]',
         waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
         originalbetrag TEXT,                        -- nur bei Fremdwährung, exakte Dezimalzahl in Haupteinheiten

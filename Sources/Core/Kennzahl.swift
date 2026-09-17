@@ -116,7 +116,11 @@ public struct Kennzahl: Hashable, Sendable {
     /// has no line on the 2026 form and is not reported. A reverse charge
     /// income splits by the customer's country like the expense side: Kz 21
     /// (§18b Satz 1 Nr. 2) is for services to a business in another member
-    /// state, everything else is a non-taxable turnover on Kz 45.
+    /// state, everything else is a non-taxable turnover on Kz 45. Kz 45 asks
+    /// for a place of supply abroad, so a nicht steuerbarer Umsatz without a
+    /// foreign country stays out of the form; the Anleitung zu Zeile 36 keeps
+    /// the domestic ones, among them Geschäftsveräußerungen und Innenumsätze,
+    /// off that line.
     public static func einnahme(behandlung: Steuerbehandlung, steuersatz: Decimal, land: String?) -> Int? {
         switch behandlung {
         case .inland:
@@ -128,7 +132,7 @@ public struct Kennzahl: Hashable, Sendable {
             }
         case .kleinunternehmer, .steuerfrei: 48
         case .reverseCharge: istEUStaat(land) ? 21 : 45
-        case .nichtSteuerbar: 45
+        case .nichtSteuerbar: istAusland(land) ? 45 : nil
         case .unklar: nil
         }
     }
@@ -144,10 +148,17 @@ public struct Kennzahl: Hashable, Sendable {
     /// Whether the country is another member state. A missing country cannot
     /// be routed from the facts on file and counts as EU, by far the more
     /// common case for this audience.
-    private static func istEUStaat(_ land: String?) -> Bool {
+    static func istEUStaat(_ land: String?) -> Bool {
         let kuerzel = land?.uppercased() ?? ""
         guard kuerzel.isEmpty == false else { return true }
         return euStaaten.contains(kuerzel)
+    }
+
+    /// Whether the country is a foreign one. Only then can the place of
+    /// supply be abroad; a missing country is a domestic turnover.
+    private static func istAusland(_ land: String?) -> Bool {
+        let kuerzel = land?.uppercased() ?? ""
+        return kuerzel.isEmpty == false && kuerzel != "DE"
     }
 
     /// The member states of the European Union without Germany. Greece is in

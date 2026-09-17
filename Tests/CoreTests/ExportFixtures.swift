@@ -11,6 +11,11 @@ func position(_ netto: Int64, _ satz: Decimal) -> Position {
     Position(netto: Cent(netto), steuersatz: satz, steuer: Position.steuer(netto: Cent(netto), steuersatz: satz))
 }
 
+/// A §13b position: it carries the rate the recipient owes and no tax.
+func positionOhneSteuer(_ netto: Int64, _ satz: Decimal) -> Position {
+    Position(netto: Cent(netto), steuersatz: satz, steuer: .null)
+}
+
 func buchung(
     id: Int64 = 1,
     richtung: Richtung,

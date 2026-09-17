@@ -24,6 +24,7 @@ public enum ValidationRules {
         kleinunternehmerNurBeiEigenenEinnahmen,
         inlandNurMit19Oder7,
         reverseChargeOhneSteuer,
+        reverseChargeAusgabeBrauchtSatz,
         zahlungenSindPlausibel,
         nutzungsdauerNurBeiAusgaben
     ]
@@ -39,7 +40,10 @@ public enum ValidationRules {
         buchung.positionen.isEmpty ? "Die Buchung braucht mindestens eine Position." : nil
     }
 
+    /// The positions of a reverse charge booking carry the rate the recipient
+    /// owes and no tax at all, so there is nothing here to compare.
     static let steuerPasstZumSatz: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung != .reverseCharge else { return nil }
         for (nummer, position) in buchung.positionen.enumerated() {
             let erwartet = Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
             let abweichung = Cent(abs((position.steuer - erwartet).value))
@@ -106,6 +110,20 @@ public enum ValidationRules {
         guard buchung.steuerbehandlung == .reverseCharge else { return nil }
         guard buchung.positionen.contains(where: { $0.steuer != .null }) else { return nil }
         return "Bei reverse_charge steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
+    }
+
+    /// On a §13b purchase the rate is the one the recipient owes, and Pfennig
+    /// computes Kz 47 or 85 from it, so it has to be a German rate. On an own
+    /// service abroad the recipient owes their own country's tax, which the
+    /// form never asks for, so there the rate stays free.
+    static let reverseChargeAusgabeBrauchtSatz: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung == .reverseCharge, buchung.richtung == .ausgabe else { return nil }
+        guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+        else { return nil }
+        return """
+        Bei reverse_charge trägt jede Position den Steuersatz, den du als Leistungsempfänger schuldest: \
+        19 oder 7, nicht \(fremd.steuersatz).
+        """
     }
 
     /// Eine Nutzungsdauer macht die Buchung zum Anlagegut; eine Einnahme kann
