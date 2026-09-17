@@ -111,6 +111,12 @@ public struct FileIntake: Sendable {
             // from a fresh drop.
             let known = try repository.fileID(sha256: hash)
             if let known, try repository.hasSuccessfulRun(dateiId: known) {
+                // A leftover inbox copy of a done file would announce itself
+                // on every start and has no discard; take it along. An
+                // original from outside the inbox stays untouched.
+                if isInInbox(url) {
+                    try? FileManager.default.removeItem(at: url)
+                }
                 return .alreadyPresent
             }
 

@@ -417,6 +417,56 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
         return
     }
     #expect(try repository.allRequests().count == 1)
+    // The drop lay outside the inbox, so the skip left it where it was.
+    #expect(try Data(contentsOf: file) == content)
+}
+
+@Test func eingangRaeumtDieInboxKopieBereitsVorhandenerDateiWeg() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
+    let content = Data("%PDF-1.4 Rechnung".utf8)
+    try content.write(to: source)
+
+    // The first run fails and leaves its inbox copy; the second drop of the
+    // same original succeeds and takes its own, differently named copy with
+    // it. The first copy stays behind in the inbox.
+    let gescheitert = Skript([schlussantwort])
+    let erster = try await FileIntake(
+        repository: repository, path: path, transport: gescheitert.transport, key: "test"
+    )
+    guard case .failed = await erster.process(source) else {
+        Issue.record("Der erste Lauf hätte scheitern müssen.")
+        return
+    }
+    let gelungen = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
+    let zweiter = try await FileIntake(
+        repository: repository, path: path, transport: gelungen.transport, key: "test"
+    )
+    guard case .booked = await zweiter.process(source) else {
+        Issue.record("Der zweite Lauf hätte gelingen müssen.")
+        return
+    }
+    let uebrig = try #require(zweiter.inbox().first)
+    #expect(zweiter.inbox().count == 1)
+    #expect(uebrig.lastPathComponent == "rechnung.pdf")
+
+    // What the start scan finds is a done file with an inbox copy: already
+    // present, and the copy goes away instead of being announced forever.
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    guard case .alreadyPresent = await intake.process(uebrig) else {
+        Issue.record("Die übrige Kopie hätte als bereits vorhanden gegolten.")
+        return
+    }
+    #expect(FileManager.default.fileExists(atPath: uebrig.path) == false)
+    #expect(intake.inbox().isEmpty)
+
+    // A drop of the original from outside the inbox stays untouched.
+    guard case .alreadyPresent = await intake.process(source) else {
+        Issue.record("Das Original hätte als bereits vorhanden gegolten.")
+        return
+    }
+    #expect(try Data(contentsOf: source) == content)
 }
 
 @Test func einGescheiterterVerbindungsaufbauWirdEinmalWiederholt() async throws {
