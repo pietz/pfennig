@@ -31,11 +31,11 @@ private let jahresbestand = [
 
 @Test func dieZeilenFassenDieKategorienZusammen() {
     let euer = EUeR.calculate(jahresbestand, jahr: 2026, profile: regel)
-    #expect(euer.zeilen.map(\.zeile) == [11, 18, 43, 59])
+    #expect(euer.zeilen.map(\.zeile) == [15, 17, 50, 57])
     #expect(euer.zeilen[0].betrag.value == 100_000)
-    // Software mit 30 Prozent Privatanteil plus Hosting, beide in Zeile 43.
+    // Software mit 30 Prozent Privatanteil plus Hosting, beide in Zeile 50.
     #expect(euer.zeilen[2].betrag.value == 7000 + 5000)
-    #expect(euer.zeilen[2].bezeichnung == "Software, Hosting, Telekommunikation")
+    #expect(euer.zeilen[2].bezeichnung == "Laufende EDV-Kosten")
     #expect(euer.einnahmen.value == 100_000 + 19000)
     #expect(euer.ausgaben.value == 12000 + 1330 + 950)
     #expect(euer.ergebnis.value == 119_000 - 14280)
@@ -62,7 +62,7 @@ private let jahresbestand = [
         )
     ]
     let euer = EUeR.calculate(bestand, jahr: 2026, profile: regel)
-    #expect(euer.zeilen.map(\.zeile) == [11, 18, 47, 59])
+    #expect(euer.zeilen.map(\.zeile) == [15, 17, 36, 57])
     #expect(euer.zeilen[0].betrag.value == 200_000)
     #expect(euer.zeilen[1].bezeichnung == "Vereinnahmte Umsatzsteuer")
     #expect(euer.zeilen[1].betrag.value == 38000)
@@ -75,9 +75,9 @@ private let jahresbestand = [
     #expect(euer.ergebnis.value == euer.einnahmen.value - euer.ausgaben.value)
     #expect(euer.ergebnis.value == 166_600)
 
-    // Kleinunternehmer: brutto je Zeile, keine Umsatzsteuerzeilen.
+    // Kleinunternehmer: brutto je Zeile, alle Einnahmen auf Zeile 12, keine Umsatzsteuerzeilen.
     let ohneVorsteuer = EUeR.calculate(bestand, jahr: 2026, profile: klein)
-    #expect(ohneVorsteuer.zeilen.map(\.zeile) == [11, 47])
+    #expect(ohneVorsteuer.zeilen.map(\.zeile) == [12, 36])
     #expect(ohneVorsteuer.zeilen[0].betrag.value == 238_000)
     #expect(ohneVorsteuer.zeilen[1].betrag.value == 71400)
     #expect(ohneVorsteuer.ergebnis.value == 166_600)
@@ -126,10 +126,10 @@ private let jahresbestand = [
     let csv = EUeR.calculate(jahresbestand, jahr: 2026, profile: regel).csv
     #expect(csv == """
     Zeile;Bezeichnung;Betrag
-    11;Umsatz Dienstleistung;1000,00
-    18;Vereinnahmte Umsatzsteuer;190,00
-    43;Software, Hosting, Telekommunikation;120,00
-    59;Gezahlte Vorsteuer;22,80
+    15;Umsatzsteuerpflichtige Betriebseinnahmen;1000,00
+    17;Vereinnahmte Umsatzsteuer;190,00
+    50;Laufende EDV-Kosten;120,00
+    57;Gezahlte Vorsteuer;22,80
 
     """)
 }
@@ -137,4 +137,30 @@ private let jahresbestand = [
 @Test func einNegativerBetragBehaeltSeinVorzeichen() {
     #expect(EUeR.komma(Cent(-5)) == "-0,05")
     #expect(EUeR.komma(Cent(123_456)) == "1234,56")
+}
+
+@Test func einnahmenFolgenDerSteuerbehandlung() {
+    let eu = buchung(
+        id: 7,
+        richtung: .einnahme,
+        datum: datum(2026, 2, 1),
+        kategorie: "umsatz_dienstleistung",
+        land: "IE",
+        positionen: [position(100_000, 0)],
+        behandlung: .reverseCharge,
+        zahlungen: [zahlung(2026, 3, 1, 100_000)]
+    )
+    let erstattung = buchung(
+        id: 8,
+        richtung: .einnahme,
+        art: .steuerzahlung,
+        datum: datum(2026, 4, 1),
+        kategorie: "ust_erstattung",
+        positionen: [position(30000, 0)],
+        behandlung: .nichtSteuerbar,
+        zahlungen: [zahlung(2026, 4, 1, 30000)]
+    )
+    let euer = EUeR.calculate([eu, erstattung], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.zeile) == [16, 18])
+    #expect(euer.zeilen[0].bezeichnung == "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen")
 }

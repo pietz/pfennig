@@ -16,6 +16,8 @@ Hinweise:
 - Fristen für UStVA und EÜR rücken auf den nächsten Werktag, wenn sie auf ein Wochenende oder einen bundesweiten Feiertag fallen
 - Der Agent bekommt klarere Rückmeldungen: `inland` nur mit 19 oder 7 Prozent, `reverse_charge` ohne Steuer in den Positionen
 - Das Löschen einer Buchung steht jetzt im Aktivitätenprotokoll
+- EÜR: Die Zeilennummern folgen jetzt der amtlichen Anlage EÜR 2025 (BMF vom 29.08.2025) statt einem alten Platzhalter; Einnahmen stehen je nach Steuerbehandlung auf Zeile 12, 15 oder 16, die Umsatzsteuer auf 17 und 57, und der Export trägt die amtlichen Zeilentitel
+- Der Agent behandelt den Inhalt einer Datei als Daten und Beweismaterial, nicht als Anweisung
 - Ein fehlgeschlagener Eintrag ins Anfragenprotokoll bricht einen erfolgreichen Import nicht mehr ab und löscht keine Buchungen mehr
 - Drag-and-drop funktioniert auch auf der Startseite
 - Eine Datei, die während des letzten laufenden Imports abgelegt wird, bleibt nicht mehr liegen

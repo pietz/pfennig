@@ -168,7 +168,7 @@ import Testing
     )
     #expect(UStVA.calculate([gutschrift], zeitraum: q3, profile: regel).betrag(81) == -10000)
     let euer = EUeR.calculate([gutschrift], jahr: 2026, profile: regel)
-    #expect(euer.zeilen.first { $0.zeile == 11 }?.betrag == Cent(-10000))
+    #expect(euer.zeilen.first { $0.zeile == 15 }?.betrag == Cent(-10000))
     #expect(euer.zeilen.first { $0.zeile == EUeR.zeileVereinnahmteUmsatzsteuer }?.betrag == Cent(-1900))
 }
 

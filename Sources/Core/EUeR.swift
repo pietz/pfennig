@@ -32,15 +32,35 @@ public struct EUeR: Hashable, Sendable {
         }
     }
 
-    /// The two lines that no category feeds.
-    ///
-    /// **Ungeprüft** like the numbers on `Kategorie.euerZeile`: they take the
-    /// place the official form gives them, the vereinnahmte Umsatzsteuer after
-    /// the Betriebseinnahmen and the gezahlte Vorsteuer right before the
-    /// Umsatzsteuerzahlung, with the numbers that are still free in the
-    /// 2023/2024 placeholder table.
-    public static let zeileVereinnahmteUmsatzsteuer = 18
-    public static let zeileGezahlteVorsteuer = 59
+    /// The two lines that no category feeds, Anlage EÜR 2025.
+    public static let zeileVereinnahmteUmsatzsteuer = 17
+    public static let zeileGezahlteVorsteuer = 57
+
+    /// The line titles of the Anlage EÜR 2025 for the lines Pfennig fills,
+    /// shortened to what fits a CSV cell.
+    static let titel: [Int: String] = [
+        12: "Betriebseinnahmen als umsatzsteuerlicher Kleinunternehmer",
+        15: "Umsatzsteuerpflichtige Betriebseinnahmen",
+        16: "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen",
+        17: "Vereinnahmte Umsatzsteuer",
+        18: "Vom Finanzamt erstattete Umsatzsteuer",
+        29: "Bezogene Fremdleistungen",
+        36: "Geringwertige Wirtschaftsgüter",
+        39: "Miete/Pacht für Geschäftsräume",
+        43: "Telekommunikation",
+        44: "Übernachtungs- und Reisenebenkosten",
+        45: "Fortbildungskosten",
+        46: "Rechts- und Steuerberatung, Buchführung",
+        49: "Beiträge, Gebühren, Abgaben und Versicherungen",
+        50: "Laufende EDV-Kosten",
+        51: "Arbeitsmittel",
+        54: "Werbekosten",
+        57: "Gezahlte Vorsteuer",
+        58: "An das Finanzamt gezahlte Umsatzsteuer",
+        60: "Übrige unbeschränkt abziehbare Betriebsausgaben",
+        63: "Bewirtungsaufwendungen",
+        70: "Sonstige tatsächliche Fahrtkosten"
+    ]
 
     public let jahr: Int
     public let zeilen: [Zeile]
@@ -75,7 +95,8 @@ public struct EUeR: Hashable, Sendable {
                 summe.netto + (brutto ? summe.steuer : .null), prozent: buchung.privatanteilProzent
             )
             if betrag != .null {
-                werte[kategorie.euerZeile, default: .null] = werte[kategorie.euerZeile, default: .null] + betrag
+                let zeile = zeile(buchung, kategorie, profile: profile)
+                werte[zeile, default: .null] = werte[zeile, default: .null] + betrag
             }
             guard brutto == false else { continue }
             switch buchung.richtung {
@@ -91,7 +112,7 @@ public struct EUeR: Hashable, Sendable {
             Zeile(
                 zeile: nummer,
                 bezeichnung: bezeichnung(nummer),
-                richtung: Kategorie.alle.first { $0.euerZeile == nummer }?.richtung ?? .ausgabe,
+                richtung: nummer < 24 ? .einnahme : .ausgabe,
                 betrag: werte[nummer] ?? .null
             )
         }
@@ -140,11 +161,26 @@ public struct EUeR: Hashable, Sendable {
         return Cent(NSDecimalNumber(decimal: rounded).int64Value)
     }
 
-    /// The categories that share a line, in the order of the list. The line
-    /// titles of the official form are not part of Pfennig, so the categories
-    /// name the line.
+    /// The income lines of the form follow the tax treatment, not the kind of
+    /// income: a Kleinunternehmer puts all income on line 12, regularly taxed
+    /// income goes on 15, tax-free, non-taxable and §13b income on 16. Only
+    /// the Umsatzsteuererstattung keeps its own line. Expenses follow the
+    /// category.
+    static func zeile(_ buchung: Buchung, _ kategorie: Kategorie, profile: Profil) -> Int {
+        guard buchung.richtung == .einnahme, kategorie.euerZeile != 18 else { return kategorie.euerZeile }
+        if profile.kleinunternehmer {
+            return 12
+        }
+        switch buchung.steuerbehandlung {
+        case .reverseCharge, .steuerfrei, .nichtSteuerbar: return 16
+        case .inland, .kleinunternehmer, .unklar: return kategorie.euerZeile
+        }
+    }
+
+    /// The official title of the line, or the categories on it when the form
+    /// has no title Pfennig knows.
     private static func bezeichnung(_ zeile: Int) -> String {
-        Kategorie.alle.filter { $0.euerZeile == zeile }.map(\.name).joined(separator: ", ")
+        titel[zeile] ?? Kategorie.alle.filter { $0.euerZeile == zeile }.map(\.name).joined(separator: ", ")
     }
 
     // MARK: - CSV

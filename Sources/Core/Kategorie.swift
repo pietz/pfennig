@@ -5,14 +5,12 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
     public let schluessel: String
     public let name: String
     public let richtung: Richtung
-    /// The line of the Anlage EÜR this category is typed into.
-    ///
-    /// **Ungeprüft**: the line numbers come from the 2023/2024 layout of the
-    /// form; the official Anlage EÜR 2026 was not available when they were
-    /// written and the numbering is likely to have moved. They are a starting
-    /// point for the user, not a checked mapping. The lines
+    /// The line of the Anlage EÜR 2025 this category is typed into, checked
+    /// against the official form (BMF, 29.08.2025). For income the line
+    /// follows the tax treatment, see `EUeR.zeile`; the number here is the
+    /// line of regularly taxed income. The two computed VAT lines
     /// `EUeR.zeileVereinnahmteUmsatzsteuer` and `EUeR.zeileGezahlteVorsteuer`
-    /// belong to the two computed VAT lines and no category takes them.
+    /// no category takes.
     public let euerZeile: Int
     public let beschreibung: String
     /// The SF Symbol the ledger shows in front of the booking.
@@ -45,13 +43,13 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
     public static let alle: [Kategorie] = [
         Kategorie(
             schluessel: "umsatz_dienstleistung", name: "Umsatz Dienstleistung", richtung: .einnahme,
-            euerZeile: 11,
+            euerZeile: 15,
             beschreibung: "Honorare für eigene Arbeit, Projekte, Beratung, Entwicklung.",
             symbol: "briefcase"
         ),
         Kategorie(
             schluessel: "umsatz_waren", name: "Umsatz Waren", richtung: .einnahme,
-            euerZeile: 14,
+            euerZeile: 15,
             beschreibung: "Verkauf von Gegenständen oder Handelsware.",
             symbol: "shippingbox"
         ),
@@ -63,31 +61,31 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
         ),
         Kategorie(
             schluessel: "sonstige_einnahme", name: "Sonstige Einnahme", richtung: .einnahme,
-            euerZeile: 17,
+            euerZeile: 15,
             beschreibung: "Einnahme, die in keine andere Einnahmekategorie passt.",
             symbol: "doc.text"
         ),
         Kategorie(
             schluessel: "ust_erstattung", name: "Umsatzsteuererstattung", richtung: .einnahme,
-            euerZeile: 16,
+            euerZeile: 18,
             beschreibung: "Erstattung des Finanzamts aus der Umsatzsteuervoranmeldung.",
             symbol: "building.columns"
         ),
         Kategorie(
             schluessel: "zinsen", name: "Zinsen", richtung: .einnahme,
-            euerZeile: 21,
+            euerZeile: 16,
             beschreibung: "Zinserträge aus Geschäftskonten oder Anlagen.",
             symbol: "percent"
         ),
         Kategorie(
             schluessel: "software", name: "Software", richtung: .ausgabe,
-            euerZeile: 43,
+            euerZeile: 50,
             beschreibung: "Programme, Abos und Dienste wie Entwicklungswerkzeuge oder KI-APIs.",
             symbol: "app"
         ),
         Kategorie(
             schluessel: "hosting", name: "Hosting", richtung: .ausgabe,
-            euerZeile: 43,
+            euerZeile: 50,
             beschreibung: "Server, Domains, Cloud-Speicher und Rechenzeit.",
             symbol: "cloud"
         ),
@@ -99,79 +97,79 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
         ),
         Kategorie(
             schluessel: "buerobedarf", name: "Bürobedarf", richtung: .ausgabe,
-            euerZeile: 45,
+            euerZeile: 51,
             beschreibung: "Verbrauchsmaterial fürs Büro, Papier, Stifte, Kleinteile.",
             symbol: "pencil.and.ruler"
         ),
         Kategorie(
             schluessel: "miete", name: "Miete", richtung: .ausgabe,
-            euerZeile: 41,
+            euerZeile: 39,
             beschreibung: "Miete und Nebenkosten für Arbeitsräume oder Coworking.",
             symbol: "building.2"
         ),
         Kategorie(
             schluessel: "hardware", name: "Hardware", richtung: .ausgabe,
-            euerZeile: 47,
+            euerZeile: 36,
             beschreibung: "Rechner, Bildschirme, Telefone und sonstige Geräte.",
             symbol: "desktopcomputer"
         ),
         Kategorie(
             schluessel: "werbung", name: "Werbung", richtung: .ausgabe,
-            euerZeile: 51,
+            euerZeile: 54,
             beschreibung: "Anzeigen, Website, Visitenkarten und andere Außendarstellung.",
             symbol: "megaphone"
         ),
         Kategorie(
             schluessel: "beratung", name: "Beratung", richtung: .ausgabe,
-            euerZeile: 39,
+            euerZeile: 46,
             beschreibung: "Steuerberatung, Rechtsberatung, Notar und ähnliche Honorare.",
             symbol: "person.circle"
         ),
         Kategorie(
             schluessel: "fremdleistung", name: "Fremdleistung", richtung: .ausgabe,
-            euerZeile: 27,
+            euerZeile: 29,
             beschreibung: "Zugekaufte Arbeit von Subunternehmern für eigene Projekte.",
             symbol: "person.2"
         ),
         Kategorie(
             schluessel: "reise_fahrt", name: "Reise: Fahrt", richtung: .ausgabe,
-            euerZeile: 55,
+            euerZeile: 70,
             beschreibung: "Bahn, Flug, Taxi, Mietwagen und Tankbelege einer Geschäftsreise.",
             symbol: "suitcase"
         ),
         Kategorie(
             schluessel: "reise_uebernachtung", name: "Reise: Übernachtung", richtung: .ausgabe,
-            euerZeile: 55,
+            euerZeile: 44,
             beschreibung: "Hotel und Unterkunft auf einer Geschäftsreise.",
             symbol: "bed.double"
         ),
         Kategorie(
             schluessel: "bewirtung", name: "Bewirtung", richtung: .ausgabe,
-            euerZeile: 56,
+            euerZeile: 63,
             beschreibung: "Restaurantbelege für Geschäftsessen mit Bewirtungsanlass.",
             symbol: "fork.knife"
         ),
         Kategorie(
             schluessel: "fortbildung", name: "Fortbildung", richtung: .ausgabe,
-            euerZeile: 48,
+            euerZeile: 45,
             beschreibung: "Kurse, Konferenzen, Fachbücher und Schulungen.",
             symbol: "book"
         ),
         Kategorie(
             schluessel: "versicherung", name: "Versicherung", richtung: .ausgabe,
-            euerZeile: 44,
+            euerZeile: 49,
             beschreibung: "Betriebliche Versicherungen wie Haftpflicht oder Rechtsschutz.",
             symbol: "shield"
         ),
         Kategorie(
             schluessel: "bankgebuehren", name: "Bankgebühren", richtung: .ausgabe,
-            euerZeile: 50,
+            euerZeile: 49,
             beschreibung: "Kontoführung, Überweisungsentgelte und Kartengebühren.",
             symbol: "banknote"
         ),
         Kategorie(
             schluessel: "zahlungsanbieter", name: "Zahlungsanbieter", richtung: .ausgabe,
-            euerZeile: 50,
+            euerZeile: 49,
             beschreibung: "Gebühren von Stripe, PayPal und vergleichbaren Diensten.",
             symbol: "creditcard"
         ),
@@ -183,19 +181,19 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
         ),
         Kategorie(
             schluessel: "porto", name: "Porto", richtung: .ausgabe,
-            euerZeile: 46,
+            euerZeile: 51,
             beschreibung: "Briefmarken, Pakete und Versandkosten.",
             symbol: "envelope"
         ),
         Kategorie(
             schluessel: "ust_zahlung", name: "Umsatzsteuerzahlung", richtung: .ausgabe,
-            euerZeile: 60,
+            euerZeile: 58,
             beschreibung: "Zahlung an das Finanzamt aus der Umsatzsteuervoranmeldung.",
             symbol: "building.columns"
         ),
         Kategorie(
             schluessel: "sonstige_ausgabe", name: "Sonstige Ausgabe", richtung: .ausgabe,
-            euerZeile: 62,
+            euerZeile: 60,
             beschreibung: "Ausgabe, die in keine andere Ausgabekategorie passt.",
             symbol: "doc.text"
         )
