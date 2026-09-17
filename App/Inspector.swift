@@ -95,6 +95,15 @@ struct Inspector: View {
                         steuerbehandlung: treatment
                     )
                 }
+            } else {
+                // Leaving reverse charge recalculates the invoice tax from the
+                // rates it left standing, like a net or rate edit does.
+                for i in draft.positionen.indices {
+                    draft.positionen[i].steuer = Position.steuer(
+                        netto: draft.positionen[i].netto,
+                        steuersatz: draft.positionen[i].steuersatz
+                    )
+                }
             }
             save()
         }

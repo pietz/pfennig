@@ -83,6 +83,12 @@ import Testing
     for treatment in Steuerbehandlung.allCases where treatment != .reverseCharge {
         #expect(Position.steuer(netto: Cent(10000), steuersatz: 19, steuerbehandlung: treatment) == Cent(1900))
     }
+
+    // Switching away from reverse charge recalculates the invoice tax from
+    // the rate it left standing, so gross is not left equal to net.
+    position.steuer = Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
+    #expect(position.steuersatz == 7)
+    #expect(position.steuer == Cent(140))
 }
 
 @Test func kategorienSindFestUndNachRichtungSortiert() {

@@ -1,5 +1,7 @@
 # Status
 
+**Steuer nach dem Wechsel von Reverse Charge (2026-09-18).** Der Wechsel weg von `reverse_charge` rechnet die Positionssteuer aus Netto und Satz neu, wie eine Netto- oder Satzänderung; vorher blieb Brutto gleich Netto, bis die Bestätigung die Buchung zurückwies. Der Wechsel auf Reverse Charge leert weiter, das Steuerfeld bleibt deaktiviert. Die Regression ergänzt den Reverse-Charge-Formattest.
+
 **Anführungszeichen im EÜR-CSV (2026-09-18).** Der EÜR-Export setzt alle Textzellen in doppelte Anführungszeichen und verdoppelt ein eingebettetes Anführungszeichen, Zahlen und Daten bleiben unquotiert. Vorher stand `anlage.titel` roh in der Zeile des Anlageverzeichnisses; ein Semikolon im Titel verschob Spalten, ein Zeilenumbruch fügte Zeilen hinzu. Regressionen decken Titel mit Semikolon, Anführungszeichen und Zeilenumbruch ab, jeweils mit intaktem Zeilenaufbau. 169 Tests, SwiftFormat und App-Build erfolgreich.
 
 **Inbox-Kopie bereits vorhandener Dateien (2026-09-18).** Der Eingang entfernt im Befund „bereits vorhanden“ jetzt die Inbox-Kopie einer Datei, für die ein Lauf gelungen ist (nur innerhalb der Inbox, ein Fehlschlag beim Entfernen wird toleriert); ein Original von außerhalb bleibt unberührt. Der Fall entstand, wenn nach einem gescheiterten Lauf ein erneutes Ablegen gelang: die Kopie des Fehlversuchs blieb liegen und meldete sich bei jedem Start von neuem, ohne Verwerfen-Möglichkeit. Regressionen decken das Wegräumen der Inbox-Kopie und das unberührte Original ab.
