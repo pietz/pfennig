@@ -2,6 +2,18 @@
 import Foundation
 import Testing
 
+private func mehrjaehrigesAnlagegut() -> Buchung {
+    buchung(
+        id: 100,
+        richtung: .ausgabe,
+        art: .sonstiges,
+        datum: datum(2024, 3, 15),
+        nutzungsdauer: 2,
+        positionen: [position(300_000, 19)],
+        zahlungen: [zahlung(2024, 3, 20, 357_000)]
+    )
+}
+
 @Test func derQuartalszahlerSchuldetImSeptemberDasDritteQuartal() {
     let zeitraum = Zeitraum.naechsteUStVA(
         rhythmus: .vierteljaehrlich, dauerfristverlaengerung: false, today: datum(2026, 9, 14)
@@ -75,6 +87,55 @@ import Testing
     geprueft.geprueftAm = Date()
     #expect(q3.ungeprueft([offen, geprueft]) == 1)
     #expect(q4.ungeprueft([offen, geprueft]) == 0)
+}
+
+@Test func euerBeruehrtSpaetereUndLetzteAfaJahreAberKeineUStVA() {
+    let anlagegut = mehrjaehrigesAnlagegut()
+    let euer2025 = Zeitraum(jahr: 2025, einteilung: .jahr)
+    let euer2026 = Zeitraum(jahr: 2026, einteilung: .jahr)
+    let euer2027 = Zeitraum(jahr: 2027, einteilung: .jahr)
+    let ustva2025 = Zeitraum(jahr: 2025, einteilung: .quartal(1))
+
+    #expect(euer2025.beruehrt(anlagegut))
+    // 2026 is the final partial depreciation year for a March acquisition.
+    #expect(euer2026.beruehrt(anlagegut))
+    #expect(euer2027.beruehrt(anlagegut) == false)
+    #expect(ustva2025.beruehrt(anlagegut) == false)
+}
+
+@Test func datumUndZahlungBeruehrenWeiterhinEuerUndUStVA() {
+    let rechnung = buchung(
+        id: 101,
+        richtung: .einnahme,
+        datum: datum(2025, 12, 31),
+        positionen: [position(10000, 19)],
+        zahlungen: [zahlung(2026, 1, 15, 11900)]
+    )
+    #expect(Zeitraum(jahr: 2025, einteilung: .monat(12)).beruehrt(rechnung))
+    #expect(Zeitraum(jahr: 2026, einteilung: .monat(1)).beruehrt(rechnung))
+    #expect(Zeitraum(jahr: 2025, einteilung: .jahr).beruehrt(rechnung))
+    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).beruehrt(rechnung))
+    #expect(Zeitraum(jahr: 2027, einteilung: .jahr).beruehrt(rechnung) == false)
+}
+
+@Test func eineEinjaehrigeAnlageBleibtAufIhrAnschaffungsjahrBegrenzt() {
+    let anlagegut = buchung(
+        id: 102,
+        richtung: .ausgabe,
+        art: .sonstiges,
+        datum: datum(2026, 11, 2),
+        nutzungsdauer: 1,
+        positionen: [position(250_000, 19)]
+    )
+    #expect(Zeitraum(jahr: 2025, einteilung: .jahr).beruehrt(anlagegut) == false)
+    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).beruehrt(anlagegut))
+    #expect(Zeitraum(jahr: 2027, einteilung: .jahr).beruehrt(anlagegut) == false)
+}
+
+@Test func ungepruefteSpaetereAfaZaehltNurInDerEuer() {
+    let anlagegut = mehrjaehrigesAnlagegut()
+    #expect(Zeitraum(jahr: 2025, einteilung: .jahr).ungeprueft([anlagegut]) == 1)
+    #expect(Zeitraum(jahr: 2025, einteilung: .quartal(1)).ungeprueft([anlagegut]) == 0)
 }
 
 @Test func einExportierterZeitraumUeberlebtDenRundweg() throws {

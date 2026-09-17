@@ -193,9 +193,12 @@ public struct Zeitraum: Hashable, Sendable {
 
     /// True when a date of the booking can place it in this period: its own
     /// date, which carries §13b and is the floor of the Vorsteuer, or one of
-    /// its payment dates.
+    /// its payment dates. An EÜR year also contains an Anlagegut while its
+    /// existing AfA schedule contributes an amount to that year.
     public func beruehrt(_ buchung: Buchung) -> Bool {
-        enthaelt(buchung.datum) || buchung.zahlungen.contains { enthaelt($0.datum) }
+        enthaelt(buchung.datum)
+            || buchung.zahlungen.contains { enthaelt($0.datum) }
+            || (art == .euer && AfA.betrag(buchung, jahr: jahr, brutto: false) > .null)
     }
 
     /// How many bookings of the period the user has not confirmed yet.

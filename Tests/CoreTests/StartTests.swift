@@ -94,6 +94,29 @@ struct StartTests {
         #expect(euer.tage < 0)
     }
 
+    @Test("Eine laufende AfA bringt ihr späteres EÜR-Jahr in die Fristen")
+    func anlagegutAlleinMachtSpaeteresEuerJahrUeberfaellig() throws {
+        let anlagegut = buchung(
+            id: 100,
+            richtung: .ausgabe,
+            art: .sonstiges,
+            datum: datum(2024, 3, 15),
+            nutzungsdauer: 2,
+            positionen: [position(300_000, 19)],
+            zahlungen: [zahlung(2024, 3, 20, 357_000)]
+        )
+        let fristen = Start.fristen(
+            [anlagegut],
+            exportiert: [:],
+            profil: regel,
+            today: heute
+        )
+        let euer2025 = try #require(fristen.first {
+            $0.zeitraum == Zeitraum(jahr: 2025, einteilung: .jahr)
+        })
+        #expect(euer2025.tage < 0)
+    }
+
     @Test("Ohne Buchungen sind nur die nächste UStVA und die nächste EÜR geschuldet")
     func leereDatenbankHatNichtsUeberfaelliges() {
         let fristen = Start.fristen([], exportiert: [:], profil: regel, today: heute)
