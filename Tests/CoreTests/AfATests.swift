@@ -78,6 +78,24 @@ private let laptop = buchung(
     #expect(euer.zeilen[0].betrag.value == 23077)
 }
 
+@Test func einAnlagegutOhneKategorieBleibtInEuerUndAveuer() {
+    var ohneKategorie = schreibtisch
+    ohneKategorie.kategorie = nil
+
+    let erstesJahr = EUeR.calculate([ohneKategorie], jahr: 2026, profile: regel)
+    #expect(erstesJahr.zeilen.map(\.zeile) == [34, 58])
+    #expect(erstesJahr.zeilen[0].betrag.value == 19231)
+    // Die abziehbare Vorsteuer bleibt auch ohne Kategorie im Zahlungsjahr erhalten.
+    #expect(erstesJahr.zeilen[1].betrag.value == 57000)
+    #expect(erstesJahr.anlagen.map(\.id) == [1])
+    #expect(erstesJahr.csv.contains("Anlage AVEÜR 2026, Büroausstattung"))
+
+    let spaeteresJahr = EUeR.calculate([ohneKategorie], jahr: 2027, profile: regel)
+    #expect(spaeteresJahr.zeilen.map(\.zeile) == [34])
+    #expect(spaeteresJahr.zeilen[0].betrag.value == 23077)
+    #expect(spaeteresJahr.anlagen.map(\.id) == [1])
+}
+
 @Test func dieAnlageAVEUeRFasstDieAnlagegueterDesJahresZusammen() {
     // Der Schreibtisch steht seit 2024 im Betriebsvermögen, der Laptop kommt
     // 2026 dazu und ist am Jahresende schon ganz abgeschrieben.

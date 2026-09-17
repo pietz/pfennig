@@ -117,8 +117,11 @@ public struct EUeR: Hashable, Sendable {
         var vorsteuer = Cent.null
 
         for buchung in buchungen where buchung.art != .ignoriert {
-            guard let key = buchung.kategorie,
-                  let kategorie = Kategorie.alle.first(where: { $0.schluessel == key })
+            let kategorie = buchung.kategorie.flatMap { key in
+                Kategorie.alle.first(where: { $0.schluessel == key })
+            }
+            guard kategorie != nil
+                || (buchung.richtung == .ausgabe && buchung.nutzungsdauerJahre != nil)
             else { continue }
             let summe = summe(buchung, zeitraum: zeitraum)
             let betrag: Cent
@@ -149,8 +152,8 @@ public struct EUeR: Hashable, Sendable {
                 vorsteuer = vorsteuer + abziehbar
             }
             if betrag != .null {
-                let zeile = zeile(buchung, kategorie, profile: profile)
-                werte[zeile, default: .null] = werte[zeile, default: .null] + betrag
+                let zeilenummer = kategorie.map { EUeR.zeile(buchung, $0, profile: profile) } ?? zeileAfA
+                werte[zeilenummer, default: .null] = werte[zeilenummer, default: .null] + betrag
             }
         }
 
