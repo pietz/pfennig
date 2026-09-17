@@ -142,13 +142,69 @@ private let jahresbestand = [
 @Test func dasCsvTraegtKommaUndSemikolon() {
     let csv = EUeR.calculate(jahresbestand, jahr: 2026, profile: regel).csv
     #expect(csv == """
-    Zeile (Anlage EÜR 2026);Bezeichnung;Betrag
-    15;Umsatzsteuerpflichtige Betriebseinnahmen;1000,00
-    17;Vereinnahmte Umsatzsteuer;190,00
-    51;Laufende EDV-Kosten;120,00
-    58;Gezahlte Vorsteuer;22,80
+    "Zeile (Anlage EÜR 2026)";"Bezeichnung";"Betrag"
+    15;"Umsatzsteuerpflichtige Betriebseinnahmen";1000,00
+    17;"Vereinnahmte Umsatzsteuer";190,00
+    51;"Laufende EDV-Kosten";120,00
+    58;"Gezahlte Vorsteuer";22,80
 
     """)
+}
+
+/// Ein Anlagegut mit gegebenem Titel; die CSV übernimmt ihn als Zelle.
+private func anlage(_ titel: String) -> Buchung {
+    var gut = buchung(
+        richtung: .ausgabe,
+        datum: datum(2026, 3, 15),
+        kategorie: "hardware",
+        nutzungsdauer: 13,
+        positionen: [position(300_000, 19)],
+        zahlungen: [zahlung(2026, 3, 20, 357_000)]
+    )
+    gut.titel = titel
+    return gut
+}
+
+@Test func einTitelMitSemikolonVerschiebtKeineSpalten() {
+    let csv = EUeR.calculate([anlage("Tisch; breit")], jahr: 2026, profile: regel).csv
+    // Der komplette Aufbau bleibt in Form: die Zeilen vor und hinter dem
+    // Anlagegut stehen unverändert, nur der Titel liegt in Anführungszeichen.
+    #expect(csv == """
+    "Zeile (Anlage EÜR 2026)";"Bezeichnung";"Betrag"
+    34;"AfA auf bewegliche Wirtschaftsgüter";192,31
+    58;"Gezahlte Vorsteuer";570,00
+
+    "Anlage AVEÜR 2026, Büroausstattung"
+    48;"Anschaffungs-/Herstellungskosten";3000,00
+    49;"Buchwert zu Beginn des Jahres";0,00
+    50;"Zugänge";3000,00
+    51;"Sonderabschreibungen";0,00
+    52;"AfA";192,31
+    53;"Abgänge";0,00
+    54;"Buchwert am Ende des Jahres";2807,69
+    63;"Summe der AfA";192,31
+
+    "Anlagegut";"Anschaffung";"Anschaffungskosten";"AfA 2026";"Restbuchwert"
+    "Tisch; breit";15.03.2026;3000,00;192,31;2807,69
+
+    "Nicht abgebildet: Fahrzeuge, Gebäude und Grundstücke, immaterielle Wirtschaftsgüter und Software, Verkauf und Privatentnahme eines Anlageguts, degressive AfA, Sonderabschreibung nach §7g, Sammelposten und nachträgliche Anschaffungskosten."
+
+    """)
+}
+
+@Test func einTitelMitAnfuehrungszeichenWirdVerdoppelt() {
+    let csv = EUeR.calculate([anlage("Tisch \"XL\"")], jahr: 2026, profile: regel).csv
+    #expect(csv.contains(#""Tisch ""XL""";15.03.2026;3000,00;192,31;2807,69"#))
+}
+
+@Test func einTitelMitZeilenumbruchFuegtKeineZeileHinzu() {
+    let csv = EUeR.calculate([anlage("Tisch\nZubehör")], jahr: 2026, profile: regel).csv
+    // Der Umbruch bleibt innerhalb der Anführungszeichen; Datum und Beträge
+    // der Zeile folgen dem schließenden.
+    #expect(csv.contains("""
+    "Tisch
+    Zubehör";15.03.2026;3000,00;192,31;2807,69
+    """))
 }
 
 @Test func einNegativerBetragBehaeltSeinVorzeichen() {

@@ -279,17 +279,20 @@ public struct EUeR: Hashable, Sendable {
 
     // MARK: - CSV
 
-    /// `Zeile (Anlage EÜR 2026);Bezeichnung;Betrag`, German decimal comma,
-    /// UTF-8. The header names the form year, because the line numbers only
-    /// mean something with it. The values of the Anlage EÜR are typed into the
-    /// form by hand; there is no upload for it.
+    /// `"Zeile (Anlage EÜR 2026)";"Bezeichnung";"Betrag"`, German decimal
+    /// comma, UTF-8, every text cell in double quotes. The header names the
+    /// form year, because the line numbers only mean something with it. The
+    /// values of the Anlage EÜR are typed into the form by hand; there is no
+    /// upload for it.
     public var csv: String {
-        var zeilentext = ["Zeile (Anlage EÜR \(EUeR.formularjahr));Bezeichnung;Betrag"]
+        var zeilentext = [["Zeile (Anlage EÜR \(EUeR.formularjahr))", "Bezeichnung", "Betrag"]
+            .map(EUeR.text)
+            .joined(separator: ";")]
         for zeile in zeilen {
-            zeilentext.append("\(zeile.zeile);\(zeile.bezeichnung);\(EUeR.komma(zeile.betrag))")
+            zeilentext.append("\(zeile.zeile);\(EUeR.text(zeile.bezeichnung));\(EUeR.komma(zeile.betrag))")
         }
         if anlagen.isEmpty == false {
-            zeilentext += ["", "Anlage AVEÜR \(EUeR.formularjahr), Büroausstattung"] + anlageverzeichnis
+            zeilentext += ["", EUeR.text("Anlage AVEÜR \(EUeR.formularjahr), Büroausstattung")] + anlageverzeichnis
         }
         return zeilentext.joined(separator: "\n") + "\n"
     }
@@ -311,11 +314,13 @@ public struct EUeR: Hashable, Sendable {
             (54, "Buchwert am Ende des Jahres", addiert { AfA.restbuchwert($0, endeJahr: jahr, brutto: brutto) }),
             (63, "Summe der AfA", afa)
         ]
-        return werte.map { "\($0.0);\($0.1);\(EUeR.komma($0.2))" }
-            + ["", "Anlagegut;Anschaffung;Anschaffungskosten;AfA \(jahr);Restbuchwert"]
+        return werte.map { "\($0.0);\(EUeR.text($0.1));\(EUeR.komma($0.2))" }
+            + ["", ["Anlagegut", "Anschaffung", "Anschaffungskosten", "AfA \(jahr)", "Restbuchwert"]
+                .map(EUeR.text)
+                .joined(separator: ";")]
             + anlagen.map { anlage in
                 [
-                    anlage.titel,
+                    EUeR.text(anlage.titel),
                     anlage.datum.formatted,
                     EUeR.komma(AfA.anschaffungskosten(anlage, brutto: brutto)),
                     EUeR.komma(AfA.betrag(anlage, jahr: jahr, brutto: brutto)),
@@ -323,16 +328,23 @@ public struct EUeR: Hashable, Sendable {
                 ]
                 .joined(separator: ";")
             }
-            + ["", """
+            + ["", EUeR.text("""
             Nicht abgebildet: Fahrzeuge, Gebäude und Grundstücke, immaterielle Wirtschaftsgüter und Software, \
             Verkauf und Privatentnahme eines Anlageguts, degressive AfA, Sonderabschreibung nach §7g, \
             Sammelposten und nachträgliche Anschaffungskosten.
-            """]
+            """)]
     }
 
     /// A sum over the Anlagegüter of the year.
     private func addiert(_ wert: (Buchung) -> Cent) -> Cent {
         anlagen.reduce(Cent.null) { $0 + wert($1) }
+    }
+
+    /// A text cell of the CSV: in double quotes, an embedded quote doubled,
+    /// so a semicolon or newline in a title cannot shift columns or add rows.
+    /// Numbers and dates stay unquoted.
+    static func text(_ wert: String) -> String {
+        "\"\(wert.replacingOccurrences(of: "\"", with: "\"\""))\""
     }
 
     /// `1234,56`, without a thousands separator, so a spreadsheet reads the

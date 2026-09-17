@@ -106,19 +106,19 @@ private let laptop = buchung(
     #expect(euer.anlagen.map(\.id) == [1, 2])
     #expect(euer.csv.contains("""
 
-    Anlage AVEÜR 2026, Büroausstattung
-    48;Anschaffungs-/Herstellungskosten;5500,00
-    49;Buchwert zu Beginn des Jahres;2576,92
-    50;Zugänge;2500,00
-    51;Sonderabschreibungen;0,00
-    52;AfA;2730,77
-    53;Abgänge;0,00
-    54;Buchwert am Ende des Jahres;2346,15
-    63;Summe der AfA;2730,77
+    "Anlage AVEÜR 2026, Büroausstattung"
+    48;"Anschaffungs-/Herstellungskosten";5500,00
+    49;"Buchwert zu Beginn des Jahres";2576,92
+    50;"Zugänge";2500,00
+    51;"Sonderabschreibungen";0,00
+    52;"AfA";2730,77
+    53;"Abgänge";0,00
+    54;"Buchwert am Ende des Jahres";2346,15
+    63;"Summe der AfA";2730,77
 
-    Anlagegut;Anschaffung;Anschaffungskosten;AfA 2026;Restbuchwert
-    Test;15.03.2024;3000,00;230,77;2346,15
-    Test;02.11.2026;2500,00;2500,00;0,00
+    "Anlagegut";"Anschaffung";"Anschaffungskosten";"AfA 2026";"Restbuchwert"
+    "Test";15.03.2024;3000,00;230,77;2346,15
+    "Test";02.11.2026;2500,00;2500,00;0,00
     """))
     #expect(euer.csv.contains("Nicht abgebildet: Fahrzeuge, Gebäude"))
 }
