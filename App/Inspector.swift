@@ -63,7 +63,7 @@ struct Inspector: View {
             notizen
         }
         .formStyle(.grouped)
-        .onSubmit(save)
+        .onSubmit { save() }
         .onChange(of: focus) { save() }
         .onChange(of: buchung) { _, updated in
             // The database is authoritative, even if local typing is unsaved.
@@ -73,7 +73,7 @@ struct Inspector: View {
             originalAmountText = updated.originalbetrag?.deutschFormatiert ?? ""
             dueDateText = updated.faelligkeit?.formatted ?? ""
         }
-        .onDisappear(perform: save)
+        .onDisappear { save() }
         // Quitting must not swallow a field the user typed but never committed.
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             save()
@@ -102,14 +102,16 @@ struct Inspector: View {
         .safeAreaInset(edge: .bottom) { confirmBar }
     }
 
-    private func save() {
+    @discardableResult
+    private func save() -> Bool {
         applyOriginalAmount()
         applyDueDate()
-        guard draft != savedBaseline else { return }
-        guard model.buchungen.contains(where: { $0.id == draft.id }) else { return }
-        guard let saved = model.save(draft) else { return }
+        guard draft != savedBaseline else { return true }
+        guard model.buchungen.contains(where: { $0.id == draft.id }) else { return false }
+        guard let saved = model.save(draft) else { return false }
         draft = saved
         savedBaseline = saved
+        return true
     }
 
     // MARK: - Grunddaten
@@ -171,6 +173,9 @@ struct Inspector: View {
             get: { draft.richtung },
             set: { updated in
                 draft.richtung = updated
+                if updated == .einnahme {
+                    draft.nutzungsdauerJahre = nil
+                }
                 if let known = Kategorie.alle.first(where: { $0.schluessel == draft.kategorie }),
                    known.richtung != updated
                 {
@@ -378,7 +383,7 @@ struct Inspector: View {
             VStack(spacing: 0) {
                 Divider()
                 Button {
-                    save()
+                    guard save() else { return }
                     model.confirm(draft)
                 } label: {
                     Text("Bestätigen").frame(maxWidth: .infinity)

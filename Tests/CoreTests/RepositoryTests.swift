@@ -28,6 +28,30 @@ private func beispiel(
     )
 }
 
+private func bestaetigungsfehler(
+    _ repository: Repository,
+    buchung: Buchung,
+    erwartet: String
+) throws {
+    let saved = try repository.save(buchung, akteur: .nutzer)
+    let id = try #require(saved.id)
+    var messages: [String] = []
+    do {
+        try repository.confirm(id: id)
+    } catch let error as CoreError {
+        guard case let .validierungFehlgeschlagen(found) = error else {
+            Issue.record("Bestätigung warf den falschen Core-Fehler: \(error)")
+            return
+        }
+        messages = found
+    } catch {
+        Issue.record("Bestätigung warf einen unerwarteten Fehler: \(error)")
+    }
+    #expect(messages.contains { $0.contains(erwartet) })
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.geprueftAm == saved.geprueftAm)
+}
+
 @Test func buchungUeberstehtDenRundlauf() throws {
     let repository = try Repository.inMemory()
     let saved = try repository.save(
@@ -154,6 +178,70 @@ private func beispiel(
     #expect(letzte?.nachher?.geprueftAm != nil)
 
     #expect(throws: CoreError.self) { try repository.confirm(id: 999) }
+}
+
+@Test func ungueltigeBestaetigungLaesstGeprueftAmUndAktivitaetUnveraendert() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    let timestamp = Date(timeIntervalSince1970: 123)
+    buchung.geprueftAm = timestamp
+    buchung.nutzungsdauerJahre = 0
+    let saved = try repository.save(buchung, akteur: .nutzer)
+    let id = try #require(saved.id)
+    let aktivitaetenVorher = try repository.database.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM aktivitaeten") ?? 0
+    }
+
+    do {
+        try repository.confirm(id: id)
+        Issue.record("Eine ungültige Buchung wurde bestätigt.")
+    } catch let error as CoreError {
+        guard case let .validierungFehlgeschlagen(messages) = error else {
+            Issue.record("Bestätigung warf den falschen Core-Fehler: \(error)")
+            return
+        }
+        #expect(messages.contains { $0.contains("größer als null") })
+    } catch {
+        Issue.record("Bestätigung warf einen unerwarteten Fehler: \(error)")
+    }
+
+    let geladen = try #require(try repository.allBookings().first)
+    #expect(geladen.geprueftAm == timestamp)
+    let aktivitaetenDanach = try repository.database.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM aktivitaeten") ?? 0
+    }
+    #expect(aktivitaetenDanach == aktivitaetenVorher)
+}
+
+@Test func bestaetigungVerwendetDieReverseChargePruefregel() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.gegenparteiLand = "FR"
+    buchung.steuerbehandlung = .reverseCharge
+    buchung.positionen[0].steuer = Cent(1)
+    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "steuer 0")
+}
+
+@Test func bestaetigungVerwendetDieNutzungsdauerPruefregel() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.nutzungsdauerJahre = 0
+    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "größer als null")
+}
+
+@Test func bestaetigungVerwendetDieRichtungsPruefregelFuerNutzungsdauer() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel(richtung: .einnahme)
+    buchung.kategorie = "umsatz_dienstleistung"
+    buchung.nutzungsdauerJahre = 1
+    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "nur bei Ausgaben")
+}
+
+@Test func bestaetigungVerwendetDieKategoriePruefregel() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.kategorie = nil
+    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "kategorie fehlt")
 }
 
 @Test func nutzerAenderungErhaeltBestaetigung() throws {

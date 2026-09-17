@@ -2,8 +2,17 @@ import Foundation
 import GRDB
 
 /// The only error Core raises by itself; everything else comes from GRDB.
-public enum CoreError: Error {
+public enum CoreError: Error, LocalizedError {
     case buchungNichtGefunden(Int64)
+    case validierungFehlgeschlagen([String])
+
+    public var errorDescription: String? {
+        switch self {
+        case let .buchungNichtGefunden(id): "Buchung \(id) nicht gefunden."
+        case let .validierungFehlgeschlagen(messages):
+            "Die Buchung konnte nicht bestätigt werden:\n" + messages.joined(separator: "\n")
+        }
+    }
 }
 
 /// The single way into the database. Every write of a booking goes through
@@ -36,11 +45,16 @@ public final class Repository: Sendable {
         try database.write { try Repository.save(buchung, akteur: akteur, in: $0) }
     }
 
-    /// Marks a booking as reviewed by the user.
+    /// Marks a booking as reviewed by the user after checking the current
+    /// persisted row against the same rules the agent uses.
     public func confirm(id: Int64) throws {
         try database.write { db in
             guard var buchung = try Buchung.fetchOne(db, key: id) else {
                 throw CoreError.buchungNichtGefunden(id)
+            }
+            let messages = try ValidationRules.validate(buchung, profile: Repository.profile(db))
+            guard messages.isEmpty else {
+                throw CoreError.validierungFehlgeschlagen(messages)
             }
             buchung.geprueftAm = Date()
             _ = try Repository.save(buchung, akteur: .nutzer, in: db)

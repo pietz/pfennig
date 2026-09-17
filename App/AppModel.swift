@@ -223,7 +223,7 @@ final class AppModel {
         do {
             try repository.confirm(id: id)
         } catch {
-            errorMessage = "\(error)"
+            errorMessage = error.localizedDescription
         }
     }
 
