@@ -21,6 +21,10 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
 @Test func autorisiererErlaubtDieNamentlichGenanntenAnweisungen() throws {
     let (_, tool) = try tool()
     #expect(tool.execute("SELECT id FROM buchungen").text.hasPrefix("Fehler") == false)
+    // Die AfA-Tabelle ist Wissen der Anwendung und nur lesbar.
+    #expect(tool.execute(
+        "SELECT nutzungsdauer_jahre FROM afa_tabelle WHERE fundstelle = '6.14.3.2'"
+    ).text == "[{\"nutzungsdauer_jahre\":1}]")
     #expect(tool.execute(gueltigeBuchung).text.hasPrefix("ok"))
     #expect(tool.execute("UPDATE buchungen SET titel = 'Strom 2026' WHERE id = 1").text.hasPrefix("ok"))
 }
@@ -37,7 +41,9 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
     "SELECT wert FROM einstellungen",
     "UPDATE einstellungen SET wert = 'true' WHERE schluessel = 'kleinunternehmer'",
     "SELECT sql FROM sqlite_master",
-    "INSERT INTO dateien (sha256, dateiname, endung, groesse, art, importiert_am) VALUES ('a', 'b', 'c', 1, 'beleg', 'd')"
+    "INSERT INTO dateien (sha256, dateiname, endung, groesse, art, importiert_am) VALUES ('a', 'b', 'c', 1, 'beleg', 'd')",
+    "INSERT INTO afa_tabelle (fundstelle, bezeichnung, nutzungsdauer_jahre, quelle) VALUES ('1.1', 'x', 2, 'y')",
+    "UPDATE afa_tabelle SET nutzungsdauer_jahre = 99"
 ])
 func autorisiererWeistAllesAndereAb(sql: String) throws {
     let (_, tool) = try tool()
@@ -306,4 +312,14 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: null), profile) != nil)
     #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: echt), profile) == nil)
     #expect(ValidationRules.zahlungenSindPlausibel(basis(zahlungen: erstattung), profile) == nil)
+
+    var anlage = basis()
+    anlage.nutzungsdauerJahre = 13
+    #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(anlage, profile) == nil)
+    anlage.nutzungsdauerJahre = 0
+    #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(anlage, profile) != nil)
+    var umsatz = basis(richtung: .einnahme, kategorie: "umsatz_waren")
+    umsatz.nutzungsdauerJahre = 13
+    #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(umsatz, profile) != nil)
+    #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(basis(), profile) == nil)
 }

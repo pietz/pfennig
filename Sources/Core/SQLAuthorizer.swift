@@ -14,7 +14,7 @@ import GRDBSQLite
 /// is exactly a statement that is allowed here.
 public enum SQLAuthorizer {
     /// SELECT is allowed on everything the agent may see.
-    static let readable: Set<String> = ["buchungen"]
+    static let readable: Set<String> = ["buchungen", "afa_tabelle"]
     /// INSERT and UPDATE only ever touch the bookings.
     static let writable: Set<String> = ["buchungen"]
 

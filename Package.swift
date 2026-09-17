@@ -18,7 +18,8 @@ let package = Package(
             dependencies: [
                 .product(name: "GRDB", package: "GRDB.swift"),
                 .product(name: "GRDBSQLite", package: "GRDB.swift"),
-            ]
+            ],
+            resources: [.copy("Resources")]
         ),
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
         // Responses client, agent instructions, tool loop and file intake.

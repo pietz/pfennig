@@ -52,6 +52,9 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
     public var titel: String
     public var kategorie: String?
     public var privatanteilProzent: Int
+    /// Set makes the booking an Anlagegut: its cost leaves the category line
+    /// and comes back as the AfA of each year, siehe `AfA`.
+    public var nutzungsdauerJahre: Int?
     public var notizen: String?
     public var gegenparteiName: String?
     public var gegenparteiLand: String?
@@ -78,6 +81,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         faelligkeit: LocalDate? = nil,
         kategorie: String? = nil,
         privatanteilProzent: Int = 0,
+        nutzungsdauerJahre: Int? = nil,
         notizen: String? = nil,
         gegenparteiName: String? = nil,
         gegenparteiLand: String? = nil,
@@ -101,6 +105,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         self.titel = titel
         self.kategorie = kategorie
         self.privatanteilProzent = privatanteilProzent
+        self.nutzungsdauerJahre = nutzungsdauerJahre
         self.notizen = notizen
         self.gegenparteiName = gegenparteiName
         self.gegenparteiLand = gegenparteiLand

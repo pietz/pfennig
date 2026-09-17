@@ -52,6 +52,9 @@ public struct EUeR: Hashable, Sendable {
     public static let zeileVereinnahmteUmsatzsteuer = 17
     public static let zeileGezahlteVorsteuer = 58
 
+    /// The line every Anlagegut goes on instead of its category line.
+    static let zeileAfA = 34
+
     /// The one line Pfennig fills that has a nicht abziehbare and an
     /// abziehbare column, §4 Abs. 5 Satz 1 Nr. 2 EStG.
     static let zeileBewirtung = 64
@@ -65,6 +68,7 @@ public struct EUeR: Hashable, Sendable {
         17: "Vereinnahmte Umsatzsteuer",
         18: "Vom Finanzamt erstattete Umsatzsteuer",
         30: "Bezogene Fremdleistungen",
+        34: "AfA auf bewegliche Wirtschaftsgüter",
         37: "Geringwertige Wirtschaftsgüter",
         40: "Miete/Pacht für Geschäftsräume",
         44: "Telekommunikation",
@@ -84,6 +88,11 @@ public struct EUeR: Hashable, Sendable {
 
     public let jahr: Int
     public let zeilen: [Zeile]
+    /// The Anlagegüter still in the business at the end of the year; they
+    /// fill the second block of the CSV, the Anlage AVEÜR.
+    public let anlagen: [Buchung]
+    /// Whether the Anschaffungskosten count gross, which is the Kleinunternehmer.
+    let brutto: Bool
 
     public var einnahmen: Cent {
         zeilen.filter { $0.richtung == .einnahme }.reduce(Cent.null) { $0 + $1.betrag }
@@ -129,8 +138,14 @@ public struct EUeR: Hashable, Sendable {
                     : UStVA.abziehbar(summe.steuer, privatanteil: prozent)
                 // The business share of net and tax, minus what line 58 takes:
                 // what stays here is the tax that §15 UStG does not give back.
-                betrag = ohnePrivatanteil(summe.netto, prozent: prozent)
+                let betrieblich = ohnePrivatanteil(summe.netto, prozent: prozent)
                     + ohnePrivatanteil(summe.steuer, prozent: prozent) - abziehbar
+                // An Anlagegut is no expense of the year it was paid in; it
+                // brings the AfA of the year instead, §4 Abs. 3 Satz 3 EStG.
+                // Its Vorsteuer stays untouched and follows the payment.
+                betrag = buchung.nutzungsdauerJahre == nil
+                    ? betrieblich
+                    : AfA.betrag(buchung, jahr: jahr, brutto: brutto)
                 vorsteuer = vorsteuer + abziehbar
             }
             if betrag != .null {
@@ -160,9 +175,25 @@ public struct EUeR: Hashable, Sendable {
         }
         // The form prints the nicht abziehbare column of line 64 first, and
         // Swift does not promise a stable sort, so the order is part of the key.
-        return EUeR(jahr: jahr, zeilen: rows.sorted {
-            ($0.zeile, $0.nichtAbziehbar ? 0 : 1) < ($1.zeile, $1.nichtAbziehbar ? 0 : 1)
-        })
+        return EUeR(
+            jahr: jahr,
+            zeilen: rows.sorted {
+                ($0.zeile, $0.nichtAbziehbar ? 0 : 1) < ($1.zeile, $1.nichtAbziehbar ? 0 : 1)
+            },
+            anlagen: anlagen(buchungen, jahr: jahr, brutto: brutto),
+            brutto: brutto
+        )
+    }
+
+    /// The Anlagegüter the Anlage AVEÜR of the year lists: everything bought
+    /// in the year or earlier that still had a Buchwert when the year began.
+    private static func anlagen(_ buchungen: [Buchung], jahr: Int, brutto: Bool) -> [Buchung] {
+        buchungen.filter { buchung in
+            guard buchung.art != .ignoriert, buchung.nutzungsdauerJahre != nil, buchung.datum.jahr <= jahr
+            else { return false }
+            return buchung.datum.jahr == jahr
+                || AfA.restbuchwert(buchung, endeJahr: jahr - 1, brutto: brutto) > .null
+        }
     }
 
     /// The rows one line of the form gets: one, except for the Bewirtung,
@@ -224,6 +255,9 @@ public struct EUeR: Hashable, Sendable {
     /// the Umsatzsteuererstattung keeps its own line. Expenses follow the
     /// category.
     static func zeile(_ buchung: Buchung, _ kategorie: Kategorie, profile: Profil) -> Int {
+        if buchung.nutzungsdauerJahre != nil {
+            return zeileAfA
+        }
         guard buchung.richtung == .einnahme, kategorie.euerZeile != 18 else { return kategorie.euerZeile }
         if profile.kleinunternehmer {
             return 12
@@ -251,7 +285,51 @@ public struct EUeR: Hashable, Sendable {
         for zeile in zeilen {
             zeilentext.append("\(zeile.zeile);\(zeile.bezeichnung);\(EUeR.komma(zeile.betrag))")
         }
+        if anlagen.isEmpty == false {
+            zeilentext += ["", "Anlage AVEÜR \(EUeR.formularjahr), Büroausstattung"] + anlageverzeichnis
+        }
         return zeilentext.joined(separator: "\n") + "\n"
+    }
+
+    /// The second block: the values of the group Büroausstattung for the
+    /// Anlage AVEÜR, and under them the list of the single Anlagegüter for the
+    /// user's own records.
+    private var anlageverzeichnis: [String] {
+        let afa = addiert { AfA.betrag($0, jahr: jahr, brutto: brutto) }
+        let werte: [(Int, String, Cent)] = [
+            (48, "Anschaffungs-/Herstellungskosten", addiert { AfA.anschaffungskosten($0, brutto: brutto) }),
+            (49, "Buchwert zu Beginn des Jahres", addiert {
+                $0.datum.jahr < jahr ? AfA.restbuchwert($0, endeJahr: jahr - 1, brutto: brutto) : .null
+            }),
+            (50, "Zugänge", addiert { $0.datum.jahr == jahr ? AfA.anschaffungskosten($0, brutto: brutto) : .null }),
+            (51, "Sonderabschreibungen", .null),
+            (52, "AfA", afa),
+            (53, "Abgänge", .null),
+            (54, "Buchwert am Ende des Jahres", addiert { AfA.restbuchwert($0, endeJahr: jahr, brutto: brutto) }),
+            (63, "Summe der AfA", afa)
+        ]
+        return werte.map { "\($0.0);\($0.1);\(EUeR.komma($0.2))" }
+            + ["", "Anlagegut;Anschaffung;Anschaffungskosten;AfA \(jahr);Restbuchwert"]
+            + anlagen.map { anlage in
+                [
+                    anlage.titel,
+                    anlage.datum.formatted,
+                    EUeR.komma(AfA.anschaffungskosten(anlage, brutto: brutto)),
+                    EUeR.komma(AfA.betrag(anlage, jahr: jahr, brutto: brutto)),
+                    EUeR.komma(AfA.restbuchwert(anlage, endeJahr: jahr, brutto: brutto))
+                ]
+                .joined(separator: ";")
+            }
+            + ["", """
+            Nicht abgebildet: Fahrzeuge, Gebäude und Grundstücke, immaterielle Wirtschaftsgüter und Software, \
+            Verkauf und Privatentnahme eines Anlageguts, degressive AfA, Sonderabschreibung nach §7g, \
+            Sammelposten und nachträgliche Anschaffungskosten.
+            """]
+    }
+
+    /// A sum over the Anlagegüter of the year.
+    private func addiert(_ wert: (Buchung) -> Cent) -> Cent {
+        anlagen.reduce(Cent.null) { $0 + wert($1) }
     }
 
     /// `1234,56`, without a thousands separator, so a spreadsheet reads the

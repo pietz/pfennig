@@ -84,6 +84,7 @@ struct Inspector: View {
         .onChange(of: draft.datum) { save() }
         .onChange(of: draft.kategorie) { save() }
         .onChange(of: draft.privatanteilProzent) { save() }
+        .onChange(of: draft.nutzungsdauerJahre) { save() }
         .onChange(of: draft.positionen) { save() }
         .onChange(of: draft.steuerbehandlung) { save() }
         .onChange(of: draft.zahlungen) { save() }
@@ -146,6 +147,9 @@ struct Inspector: View {
             }
 
             TextField("Privatanteil in Prozent", value: $draft.privatanteilProzent, format: .number)
+            if draft.richtung == .ausgabe {
+                TextField("Nutzungsdauer in Jahren", value: $draft.nutzungsdauerJahre, format: .number)
+            }
         }
     }
 

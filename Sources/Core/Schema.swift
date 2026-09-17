@@ -22,6 +22,7 @@ public enum Schema {
         titel TEXT NOT NULL,
         kategorie TEXT,                             -- Schlüssel aus der EÜR-Kategorienliste im Code
         privatanteil_prozent INTEGER NOT NULL DEFAULT 0,
+        nutzungsdauer_jahre INTEGER,                -- leer heißt gewöhnliche Ausgabe, gesetzt macht die Buchung zum Anlagegut
         notizen TEXT,
         gegenpartei_name TEXT,
         gegenpartei_land TEXT,                      -- Länderkürzel, zum Beispiel DE
@@ -84,6 +85,15 @@ public enum Schema {
         idx INTEGER NOT NULL,                       -- 1-12 Monat, 41-44 Quartal, 0 bei der EÜR
         exportiert_am TEXT NOT NULL,
         PRIMARY KEY (jahr, art, idx)
+    );
+
+    -- Wissen der Anwendung, keine Nutzerdaten: die amtliche AfA-Tabelle für
+    -- allgemein verwendbare Anlagegüter, bei jedem Start neu eingespielt.
+    CREATE TABLE afa_tabelle (
+        fundstelle TEXT PRIMARY KEY,
+        bezeichnung TEXT NOT NULL,
+        nutzungsdauer_jahre INTEGER NOT NULL,
+        quelle TEXT NOT NULL
     );
     """
 

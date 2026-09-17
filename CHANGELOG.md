@@ -2,6 +2,7 @@
 
 ## Unveröffentlicht
 
+- Anlagevermögen: Eine Ausgabe mit `nutzungsdauer_jahre` ist ein Anlagegut. Sie steht in der EÜR nicht mehr auf ihrer Kategoriezeile, sondern mit der AfA des Jahres auf Zeile 34, linear ab dem Anschaffungsmonat und im letzten Jahr mit dem Rest; ihre Vorsteuer zählt unverändert im Zahlungszeitraum. Der Inspector zeigt bei Ausgaben das Feld „Nutzungsdauer in Jahren“, der EÜR-Export bekommt einen zweiten Block für die Anlage AVEÜR mit Einzelliste, und der Agent findet die Nutzungsdauer in der neuen Tabelle `afa_tabelle`, der amtlichen AfA-Tabelle (BMF vom 15.12.2000, Computerhardware nach BMF vom 22.02.2022)
 - Dateien werden zuerst gespeichert, dann läuft der Agent; er hängt den Beleg selbst an die Buchung, wodurch „Beleg fehlt“ nicht mehr kurz aufblitzt. Kontoauszüge kann der Agent jetzt verarbeiten: Zahlungen zu bestehenden Buchungen, Bewegungen ohne Buchung als `nur_zahlung`, private als `ignoriert`
 - Dateien bleiben im Archiv, auch wenn ihre Buchung gelöscht oder der Beleg abgehängt wird; eine Datei mit gelungenem Lauf geht nicht erneut zum Agenten, eine ohne läuft beim erneuten Ablegen noch einmal
 - Mehrere gleichzeitig abgelegte Dateien scheiterten mit „Die Verbindung zu OpenAI kam nicht zustande: Die Nachricht ist zu lang“, sobald macOS für den Host HTTP/3 gelernt hatte. Jede Anfrage nutzt jetzt eine eigene ephemere Verbindung, die bei HTTP/2 bleibt; ein gescheiterter Verbindungsaufbau wird zusätzlich einmal wiederholt
@@ -9,6 +10,7 @@
 Hinweise:
 
 - Schemawechsel ohne Migration: `dateien` hat eine hochzählende `id`, `belege` sind Datei-IDs, die Spalte `art` entfällt; `aktivitaeten.nachher` darf leer sein. Das Entwicklungsarchiv des Eigentümers wurde mit Backup zurückgesetzt bzw. angepasst
+- Schemawechsel ohne Migration: `buchungen` hat die Spalte `nutzungsdauer_jahre`, dazu kommt die Tabelle `afa_tabelle`, die die App bei jedem Start aus der mitgelieferten CSV neu füllt
 
 - Der Eingang nimmt neben PDF und Bildern jetzt auch WebP sowie Textdateien an (XML, CSV, TXT, JSON, HTML); Textdateien gehen bis 1 MB als Klartext an den Agenten, damit liest er auch XRechnungen. Windows-1252-kodierte Bank-Exporte kommen mit Umlauten an
 - UStVA: Reverse-Charge-Einnahmen an Kunden außerhalb der EU stehen in Kz 45 statt in Kz 21; Kz 21 bleibt für Leistungen an EU-Unternehmer

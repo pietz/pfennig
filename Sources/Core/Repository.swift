@@ -13,7 +13,10 @@ public final class Repository: Sendable {
 
     private init(_ database: DatabaseQueue) throws {
         self.database = database
-        try database.write(Schema.create)
+        try database.write { db in
+            try Schema.create(db)
+            try Wissen.einspielen(db)
+        }
     }
 
     public convenience init(path: URL) throws {

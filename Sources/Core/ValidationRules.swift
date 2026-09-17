@@ -24,7 +24,8 @@ public enum ValidationRules {
         kleinunternehmerNurBeiEigenenEinnahmen,
         inlandNurMit19Oder7,
         reverseChargeOhneSteuer,
-        zahlungenSindPlausibel
+        zahlungenSindPlausibel,
+        nutzungsdauerNurBeiAusgaben
     ]
 
     /// All complaints about one booking, empty when it passes.
@@ -105,6 +106,16 @@ public enum ValidationRules {
         guard buchung.steuerbehandlung == .reverseCharge else { return nil }
         guard buchung.positionen.contains(where: { $0.steuer != .null }) else { return nil }
         return "Bei reverse_charge steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
+    }
+
+    /// Eine Nutzungsdauer macht die Buchung zum Anlagegut; eine Einnahme kann
+    /// keines sein und null Jahre gibt es nicht.
+    static let nutzungsdauerNurBeiAusgaben: Regel = { buchung, _ in
+        guard let jahre = buchung.nutzungsdauerJahre else { return nil }
+        guard buchung.richtung == .ausgabe else {
+            return "nutzungsdauer_jahre gibt es nur bei Ausgaben."
+        }
+        return jahre > 0 ? nil : "nutzungsdauer_jahre muss größer als null sein."
     }
 
     static let zahlungenSindPlausibel: Regel = { buchung, _ in

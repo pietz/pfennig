@@ -30,6 +30,27 @@ import Testing
     #expect(text.contains("faelligkeit TEXT"))
 }
 
+@Test func dieAfaTabelleKommtBeiJedemOeffnenFrischAusDemBundle() throws {
+    let ordner = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    try FileManager.default.createDirectory(at: ordner, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: ordner) }
+    let path = ordner.appending(path: "pfennig.sqlite")
+
+    func zeilen(_ repository: Repository) throws -> Int {
+        try repository.database.read { try Int.fetchOne($0, sql: "SELECT COUNT(*) FROM afa_tabelle") ?? 0 }
+    }
+    #expect(try zeilen(Repository.inMemory()) == 201)
+    #expect(try zeilen(Repository(path: path)) == 201)
+    // Zweites Öffnen löscht und schreibt neu, es verdoppelt nicht.
+    let erneut = try Repository(path: path)
+    #expect(try zeilen(erneut) == 201)
+
+    let notebook = try erneut.database.read { db in
+        try Int.fetchOne(db, sql: "SELECT nutzungsdauer_jahre FROM afa_tabelle WHERE fundstelle = '6.14.3.2'")
+    }
+    #expect(notebook == 1)
+}
+
 @Test func optionaleBuchungsfelderWerdenAlsGRDBNullGelesen() throws {
     let repository = try Repository.inMemory()
     try repository.database.write { db in
