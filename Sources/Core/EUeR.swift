@@ -17,9 +17,10 @@ import Foundation
 /// Vorsteuer, books gross on the category lines and has no VAT lines; the
 /// payments he makes under §13b stay on their own category line.
 ///
-/// The Privatanteil of a booking is taken off its own amount before it reaches
-/// the line, and off its Vorsteuer the same way. The vereinnahmte Umsatzsteuer
-/// is owed in full, so no Privatanteil is taken off it.
+/// The Privatanteil of an expense is taken off its own amount before it
+/// reaches the line, and off its Vorsteuer the same way. Income has no private
+/// share, and the vereinnahmte Umsatzsteuer is owed in full, so neither is
+/// shortened.
 public struct EUeR: Hashable, Sendable {
     public struct Zeile: Hashable, Sendable, Identifiable {
         public let zeile: Int
@@ -32,11 +33,15 @@ public struct EUeR: Hashable, Sendable {
         }
     }
 
-    /// The two lines that no category feeds, Anlage EÜR 2025.
-    public static let zeileVereinnahmteUmsatzsteuer = 17
-    public static let zeileGezahlteVorsteuer = 57
+    /// The year of the official form the line numbers belong to, BMF-Schreiben
+    /// vom 01.09.2026.
+    public static let formularjahr = 2026
 
-    /// The line titles of the Anlage EÜR 2025 for the lines Pfennig fills,
+    /// The two lines that no category feeds, Anlage EÜR 2026.
+    public static let zeileVereinnahmteUmsatzsteuer = 17
+    public static let zeileGezahlteVorsteuer = 58
+
+    /// The line titles of the Anlage EÜR 2026 for the lines Pfennig fills,
     /// shortened to what fits a CSV cell.
     static let titel: [Int: String] = [
         12: "Betriebseinnahmen als umsatzsteuerlicher Kleinunternehmer",
@@ -44,22 +49,22 @@ public struct EUeR: Hashable, Sendable {
         16: "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen",
         17: "Vereinnahmte Umsatzsteuer",
         18: "Vom Finanzamt erstattete Umsatzsteuer",
-        29: "Bezogene Fremdleistungen",
-        36: "Geringwertige Wirtschaftsgüter",
-        39: "Miete/Pacht für Geschäftsräume",
-        43: "Telekommunikation",
-        44: "Übernachtungs- und Reisenebenkosten",
-        45: "Fortbildungskosten",
-        46: "Rechts- und Steuerberatung, Buchführung",
-        49: "Beiträge, Gebühren, Abgaben und Versicherungen",
-        50: "Laufende EDV-Kosten",
-        51: "Arbeitsmittel",
-        54: "Werbekosten",
-        57: "Gezahlte Vorsteuer",
-        58: "An das Finanzamt gezahlte Umsatzsteuer",
-        60: "Übrige unbeschränkt abziehbare Betriebsausgaben",
-        63: "Bewirtungsaufwendungen",
-        70: "Sonstige tatsächliche Fahrtkosten"
+        30: "Bezogene Fremdleistungen",
+        37: "Geringwertige Wirtschaftsgüter",
+        40: "Miete/Pacht für Geschäftsräume",
+        44: "Telekommunikation",
+        45: "Übernachtungs- und Reisenebenkosten",
+        46: "Fortbildungskosten",
+        47: "Rechts- und Steuerberatung, Buchführung",
+        50: "Beiträge, Gebühren, Abgaben und Versicherungen",
+        51: "Laufende EDV-Kosten",
+        52: "Arbeitsmittel",
+        55: "Werbekosten",
+        58: "Gezahlte Vorsteuer",
+        59: "An das Finanzamt gezahlte Umsatzsteuer",
+        61: "Übrige unbeschränkt abziehbare Betriebsausgaben",
+        64: "Bewirtungsaufwendungen",
+        71: "Sonstige tatsächliche Fahrtkosten"
     ]
 
     public let jahr: Int
@@ -91,9 +96,11 @@ public struct EUeR: Hashable, Sendable {
                   let kategorie = Kategorie.alle.first(where: { $0.schluessel == key })
             else { continue }
             let summe = summe(buchung, zeitraum: zeitraum)
-            let betrag = ohnePrivatanteil(
-                summe.netto + (brutto ? summe.steuer : .null), prozent: buchung.privatanteilProzent
-            )
+            let roh = summe.netto + (brutto ? summe.steuer : .null)
+            // Only an expense can be partly private; income is earned in full.
+            let betrag = buchung.richtung == .ausgabe
+                ? ohnePrivatanteil(roh, prozent: buchung.privatanteilProzent)
+                : roh
             if betrag != .null {
                 let zeile = zeile(buchung, kategorie, profile: profile)
                 werte[zeile, default: .null] = werte[zeile, default: .null] + betrag
@@ -185,11 +192,12 @@ public struct EUeR: Hashable, Sendable {
 
     // MARK: - CSV
 
-    /// `Zeile;Bezeichnung;Betrag`, German decimal comma, UTF-8. The values of
-    /// the Anlage EÜR are typed into the form by hand; there is no upload for
-    /// it.
+    /// `Zeile (Anlage EÜR 2026);Bezeichnung;Betrag`, German decimal comma,
+    /// UTF-8. The header names the form year, because the line numbers only
+    /// mean something with it. The values of the Anlage EÜR are typed into the
+    /// form by hand; there is no upload for it.
     public var csv: String {
-        var zeilentext = ["Zeile;Bezeichnung;Betrag"]
+        var zeilentext = ["Zeile (Anlage EÜR \(EUeR.formularjahr));Bezeichnung;Betrag"]
         for zeile in zeilen {
             zeilentext.append("\(zeile.zeile);\(zeile.bezeichnung);\(EUeR.komma(zeile.betrag))")
         }

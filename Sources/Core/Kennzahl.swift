@@ -150,10 +150,12 @@ public struct Kennzahl: Hashable, Sendable {
         return euStaaten.contains(kuerzel)
     }
 
-    /// The member states of the European Union without Germany.
+    /// The member states of the European Union without Germany. Greece is in
+    /// twice: `EL` is its code in the VAT world, `GR` its ISO code, and the
+    /// agent may write either.
     private static let euStaaten: Set<String> = [
-        "AT", "BE", "BG", "CY", "CZ", "DK", "EE", "ES", "FI", "FR", "GR", "HR", "HU", "IE",
-        "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"
+        "AT", "BE", "BG", "CY", "CZ", "DK", "EE", "EL", "ES", "FI", "FR", "GR", "HR", "HU",
+        "IE", "IT", "LT", "LU", "LV", "MT", "NL", "PL", "PT", "RO", "SE", "SI", "SK"
     ]
 
     // MARK: - Zahllast

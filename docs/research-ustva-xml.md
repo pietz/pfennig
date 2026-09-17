@@ -65,15 +65,15 @@ Aus dem BMF-Vordruckmuster 2026 (USt 1 A, per PDF-Auswertung, Wortlaut nicht Zei
 | 81 | Umsätze zu 19 % |
 | 86 | Umsätze zu 7 % |
 | 66 | Abziehbare Vorsteuerbeträge |
-| 46 | Leistungen nach §13b Abs. 1 Nr. 1-3 (z. B. Bauleistungen, im Ausland ansässiger Leistender bei bestimmten Fällen) |
-| 47 | Leistungen nach §13b Abs. 2 (u. a. Abs. 2 Nr. 1: sonstige Leistungen eines im Ausland ansässigen Unternehmers, praktisch der typische Fall für ausländisches SaaS) |
-| 67 | Vorsteuer aus den §13b-Leistungen (Kz 46/47), analog zum Vorsteuerabzug bei Reverse Charge |
-| 84 | Leistungen im Sinne des §13b Abs. 2 Nr. 5 (bestimmte weitere Reverse-Charge-Tatbestände) |
-| 85 | Leistungen von im Ausland ansässigen Unternehmern (weitere Abgrenzung zu 46/47) |
+| 46 | Bemessungsgrundlage: sonstige Leistungen eines im übrigen Gemeinschaftsgebiet ansässigen Unternehmers (§13b Abs. 1 UStG, Leistungsort nach §3a Abs. 2 UStG) |
+| 47 | Steuer auf die Umsätze der Kz 46 |
+| 84 | Bemessungsgrundlage: andere Leistungen (§13b Abs. 2 Nr. 1, 2, 4 bis 12 UStG), darunter der Bezug von einem außerhalb der EU ansässigen Unternehmer, also der Drittlands-SaaS-Fall |
+| 85 | Steuer auf die Umsätze der Kz 84 |
+| 67 | Vorsteuer aus den §13b-Leistungen der Kz 46 und 84 |
 | 83 | Verbleibende Umsatzsteuer-Vorauszahlung/Zahllast bzw. Überschuss, wird beim XML-Upload als vom Nutzer berechneter Wert übernommen |
 | 500 | Neu ab Besteuerungszeitraum 2026: ergänzende Angaben zur Steueranmeldung, ersetzt die bisherige pauschale Kz 23 (z. B. Kz 500 = 2 für abweichende Rechtsauffassung, Kz 500 = 3 für Antrag auf personelle Prüfung) |
 
-Für Kleinunternehmer mit reiner §13b-Zahllast sind praktisch nur Kz 46/47/67/83 (bzw. 84/85 je nach Leistungsart) sowie ggf. Kz 500 relevant, keine Kz 81/86/66. Quelle: BMF-Vordruckmuster 2026 (siehe Quellenliste); eine wortgetreue Ausfüllanleitung (USt 1 E 2026) wurde als PDF gefunden, aber inhaltlich nicht Zeile für Zeile im Volltext extrahiert, daher als "recherchiert, nicht wortwörtlich verifiziert" markiert.
+Kz 46/47 und Kz 84/85 sind also kein inhaltlicher Gegensatz, sondern dieselbe Reverse-Charge-Logik, getrennt nach dem Sitz des Leistenden: EU-Ausland auf 46/47, alles übrige auf 84/85. Pfennig ordnet in `Kennzahl.reverseCharge` genau danach zu. Für Kleinunternehmer mit reiner §13b-Zahllast sind praktisch nur Kz 46/47 bzw. 84/85 sowie Kz 67/83 und ggf. Kz 500 relevant, keine Kz 81/86/66. Quelle: BMF-Vordruckmuster 2026 (siehe Quellenliste); eine wortgetreue Ausfüllanleitung (USt 1 E 2026) wurde als PDF gefunden, aber inhaltlich nicht Zeile für Zeile im Volltext extrahiert, daher als "recherchiert, nicht wortwörtlich verifiziert" markiert.
 
 ## 5. Fristen (§18 UStG, §19 UStG, §46-48 UStDV)
 

@@ -31,9 +31,9 @@ private let jahresbestand = [
 
 @Test func dieZeilenFassenDieKategorienZusammen() {
     let euer = EUeR.calculate(jahresbestand, jahr: 2026, profile: regel)
-    #expect(euer.zeilen.map(\.zeile) == [15, 17, 50, 57])
+    #expect(euer.zeilen.map(\.zeile) == [15, 17, 51, 58])
     #expect(euer.zeilen[0].betrag.value == 100_000)
-    // Software mit 30 Prozent Privatanteil plus Hosting, beide in Zeile 50.
+    // Software mit 30 Prozent Privatanteil plus Hosting, beide in Zeile 51.
     #expect(euer.zeilen[2].betrag.value == 7000 + 5000)
     #expect(euer.zeilen[2].bezeichnung == "Laufende EDV-Kosten")
     #expect(euer.einnahmen.value == 100_000 + 19000)
@@ -62,7 +62,7 @@ private let jahresbestand = [
         )
     ]
     let euer = EUeR.calculate(bestand, jahr: 2026, profile: regel)
-    #expect(euer.zeilen.map(\.zeile) == [15, 17, 36, 57])
+    #expect(euer.zeilen.map(\.zeile) == [15, 17, 37, 58])
     #expect(euer.zeilen[0].betrag.value == 200_000)
     #expect(euer.zeilen[1].bezeichnung == "Vereinnahmte Umsatzsteuer")
     #expect(euer.zeilen[1].betrag.value == 38000)
@@ -77,7 +77,7 @@ private let jahresbestand = [
 
     // Kleinunternehmer: brutto je Zeile, alle Einnahmen auf Zeile 12, keine Umsatzsteuerzeilen.
     let ohneVorsteuer = EUeR.calculate(bestand, jahr: 2026, profile: klein)
-    #expect(ohneVorsteuer.zeilen.map(\.zeile) == [12, 36])
+    #expect(ohneVorsteuer.zeilen.map(\.zeile) == [12, 37])
     #expect(ohneVorsteuer.zeilen[0].betrag.value == 238_000)
     #expect(ohneVorsteuer.zeilen[1].betrag.value == 71400)
     #expect(ohneVorsteuer.ergebnis.value == 166_600)
@@ -100,6 +100,23 @@ private let jahresbestand = [
     let euer = EUeR.calculate(jahresbestand, jahr: 2026, profile: klein)
     // 11.900 Cent brutto, davon 70 Prozent betrieblich, plus 5.950 Cent Hosting.
     #expect(euer.zeilen[1].betrag.value == 8330 + 5950)
+}
+
+@Test func derPrivatanteilKuerztNurAusgaben() {
+    let honorar = buchung(
+        id: 9,
+        richtung: .einnahme,
+        datum: datum(2026, 2, 1),
+        kategorie: "umsatz_dienstleistung",
+        privatanteil: 40,
+        positionen: [position(100_000, 19)],
+        zahlungen: [zahlung(2026, 3, 1, 119_000)]
+    )
+    let euer = EUeR.calculate([honorar], jahr: 2026, profile: regel)
+    // Eine Einnahme wird in voller Höhe erzielt; ein Privatanteil kürzt nur Ausgaben.
+    #expect(euer.zeilen.map(\.zeile) == [15, 17])
+    #expect(euer.zeilen[0].betrag.value == 100_000)
+    #expect(euer.zeilen[1].betrag.value == 19000)
 }
 
 @Test func buchungenOhneKategorieUndIgnorierteBleibenDraussen() {
@@ -125,11 +142,11 @@ private let jahresbestand = [
 @Test func dasCsvTraegtKommaUndSemikolon() {
     let csv = EUeR.calculate(jahresbestand, jahr: 2026, profile: regel).csv
     #expect(csv == """
-    Zeile;Bezeichnung;Betrag
+    Zeile (Anlage EÜR 2026);Bezeichnung;Betrag
     15;Umsatzsteuerpflichtige Betriebseinnahmen;1000,00
     17;Vereinnahmte Umsatzsteuer;190,00
-    50;Laufende EDV-Kosten;120,00
-    57;Gezahlte Vorsteuer;22,80
+    51;Laufende EDV-Kosten;120,00
+    58;Gezahlte Vorsteuer;22,80
 
     """)
 }

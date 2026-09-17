@@ -5,8 +5,8 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
     public let schluessel: String
     public let name: String
     public let richtung: Richtung
-    /// The line of the Anlage EÜR 2025 this category is typed into, checked
-    /// against the official form (BMF, 29.08.2025). For income the line
+    /// The line of the Anlage EÜR 2026 this category is typed into, checked
+    /// against the official form (BMF, 01.09.2026). For income the line
     /// follows the tax treatment, see `EUeR.zeile`; the number here is the
     /// line of regularly taxed income. The two computed VAT lines
     /// `EUeR.zeileVereinnahmteUmsatzsteuer` and `EUeR.zeileGezahlteVorsteuer`
@@ -79,121 +79,121 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
         ),
         Kategorie(
             schluessel: "software", name: "Software", richtung: .ausgabe,
-            euerZeile: 50,
+            euerZeile: 51,
             beschreibung: "Programme, Abos und Dienste wie Entwicklungswerkzeuge oder KI-APIs.",
             symbol: "app"
         ),
         Kategorie(
             schluessel: "hosting", name: "Hosting", richtung: .ausgabe,
-            euerZeile: 50,
+            euerZeile: 51,
             beschreibung: "Server, Domains, Cloud-Speicher und Rechenzeit.",
             symbol: "cloud"
         ),
         Kategorie(
             schluessel: "telekommunikation", name: "Telekommunikation", richtung: .ausgabe,
-            euerZeile: 43,
+            euerZeile: 44,
             beschreibung: "Mobilfunk, Festnetz und Internetanschluss.",
             symbol: "phone"
         ),
         Kategorie(
             schluessel: "buerobedarf", name: "Bürobedarf", richtung: .ausgabe,
-            euerZeile: 51,
+            euerZeile: 52,
             beschreibung: "Verbrauchsmaterial fürs Büro, Papier, Stifte, Kleinteile.",
             symbol: "pencil.and.ruler"
         ),
         Kategorie(
             schluessel: "miete", name: "Miete", richtung: .ausgabe,
-            euerZeile: 39,
+            euerZeile: 40,
             beschreibung: "Miete und Nebenkosten für Arbeitsräume oder Coworking.",
             symbol: "building.2"
         ),
         Kategorie(
             schluessel: "hardware", name: "Hardware", richtung: .ausgabe,
-            euerZeile: 36,
+            euerZeile: 37,
             beschreibung: "Rechner, Bildschirme, Telefone und sonstige Geräte.",
             symbol: "desktopcomputer"
         ),
         Kategorie(
             schluessel: "werbung", name: "Werbung", richtung: .ausgabe,
-            euerZeile: 54,
+            euerZeile: 55,
             beschreibung: "Anzeigen, Website, Visitenkarten und andere Außendarstellung.",
             symbol: "megaphone"
         ),
         Kategorie(
             schluessel: "beratung", name: "Beratung", richtung: .ausgabe,
-            euerZeile: 46,
+            euerZeile: 47,
             beschreibung: "Steuerberatung, Rechtsberatung, Notar und ähnliche Honorare.",
             symbol: "person.circle"
         ),
         Kategorie(
             schluessel: "fremdleistung", name: "Fremdleistung", richtung: .ausgabe,
-            euerZeile: 29,
+            euerZeile: 30,
             beschreibung: "Zugekaufte Arbeit von Subunternehmern für eigene Projekte.",
             symbol: "person.2"
         ),
         Kategorie(
             schluessel: "reise_fahrt", name: "Reise: Fahrt", richtung: .ausgabe,
-            euerZeile: 70,
+            euerZeile: 71,
             beschreibung: "Bahn, Flug, Taxi, Mietwagen und Tankbelege einer Geschäftsreise.",
             symbol: "suitcase"
         ),
         Kategorie(
             schluessel: "reise_uebernachtung", name: "Reise: Übernachtung", richtung: .ausgabe,
-            euerZeile: 44,
+            euerZeile: 45,
             beschreibung: "Hotel und Unterkunft auf einer Geschäftsreise.",
             symbol: "bed.double"
         ),
         Kategorie(
             schluessel: "bewirtung", name: "Bewirtung", richtung: .ausgabe,
-            euerZeile: 63,
+            euerZeile: 64,
             beschreibung: "Restaurantbelege für Geschäftsessen mit Bewirtungsanlass.",
             symbol: "fork.knife"
         ),
         Kategorie(
             schluessel: "fortbildung", name: "Fortbildung", richtung: .ausgabe,
-            euerZeile: 45,
+            euerZeile: 46,
             beschreibung: "Kurse, Konferenzen, Fachbücher und Schulungen.",
             symbol: "book"
         ),
         Kategorie(
             schluessel: "versicherung", name: "Versicherung", richtung: .ausgabe,
-            euerZeile: 49,
+            euerZeile: 50,
             beschreibung: "Betriebliche Versicherungen wie Haftpflicht oder Rechtsschutz.",
             symbol: "shield"
         ),
         Kategorie(
             schluessel: "bankgebuehren", name: "Bankgebühren", richtung: .ausgabe,
-            euerZeile: 49,
+            euerZeile: 50,
             beschreibung: "Kontoführung, Überweisungsentgelte und Kartengebühren.",
             symbol: "banknote"
         ),
         Kategorie(
             schluessel: "zahlungsanbieter", name: "Zahlungsanbieter", richtung: .ausgabe,
-            euerZeile: 49,
+            euerZeile: 50,
             beschreibung: "Gebühren von Stripe, PayPal und vergleichbaren Diensten.",
             symbol: "creditcard"
         ),
         Kategorie(
             schluessel: "mitgliedschaft", name: "Mitgliedschaft", richtung: .ausgabe,
-            euerZeile: 49,
+            euerZeile: 50,
             beschreibung: "Beiträge zu Kammern, Verbänden und Berufsvereinigungen.",
             symbol: "person.3"
         ),
         Kategorie(
             schluessel: "porto", name: "Porto", richtung: .ausgabe,
-            euerZeile: 51,
+            euerZeile: 52,
             beschreibung: "Briefmarken, Pakete und Versandkosten.",
             symbol: "envelope"
         ),
         Kategorie(
             schluessel: "ust_zahlung", name: "Umsatzsteuerzahlung", richtung: .ausgabe,
-            euerZeile: 58,
+            euerZeile: 59,
             beschreibung: "Zahlung an das Finanzamt aus der Umsatzsteuervoranmeldung.",
             symbol: "building.columns"
         ),
         Kategorie(
             schluessel: "sonstige_ausgabe", name: "Sonstige Ausgabe", richtung: .ausgabe,
-            euerZeile: 60,
+            euerZeile: 61,
             beschreibung: "Ausgabe, die in keine andere Ausgabekategorie passt.",
             symbol: "doc.text"
         )

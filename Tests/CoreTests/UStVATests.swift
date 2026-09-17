@@ -303,6 +303,13 @@ import Testing
     #expect(ustva.zahllast == .null)
 }
 
+@Test func griechenlandZaehltMitBeidenLaenderkennungen() {
+    // Umsatzsteuerlich heißt Griechenland EL, nach ISO GR; der Agent schreibt mal das eine, mal das andere.
+    #expect(Kennzahl.reverseCharge(land: "EL").steuer == 47)
+    #expect(Kennzahl.reverseCharge(land: "GR").steuer == 47)
+    #expect(Kennzahl.einnahme(behandlung: .reverseCharge, steuersatz: 0, land: "EL") == 21)
+}
+
 @Test func derPrivatanteilKuerztDieVorsteuerUndUnterZehnProzentGibtEsKeine() {
     let laptop = buchung(
         id: 1,
