@@ -1,0 +1,202 @@
+fundstelle;bezeichnung;nutzungsdauer_jahre;quelle
+1.1;Hallen in Leichtbauweise;14;BMF 15.12.2000
+1.2;Tennishallen, Squashhallen u.ä.;20;BMF 15.12.2000
+1.3;Traglufthallen;10;BMF 15.12.2000
+1.4;Kühlhallen;20;BMF 15.12.2000
+1.5;Baracken und Schuppen;16;BMF 15.12.2000
+1.6;Baubuden;8;BMF 15.12.2000
+1.7;Bierzelte;8;BMF 15.12.2000
+1.8;Pumpenhäuser, Trafostationshäuser und Schalthäuser;20;BMF 15.12.2000
+1.9.1;aus Beton;33;BMF 15.12.2000
+1.9.2;aus Stahl;25;BMF 15.12.2000
+1.9.3;aus Kunststoff;17;BMF 15.12.2000
+1.10.1;aus Mauerwerk oder Beton;33;BMF 15.12.2000
+1.10.2;aus Metall;10;BMF 15.12.2000
+1.11;Laderampen;25;BMF 15.12.2000
+2.1.1;mit Packlage;19;BMF 15.12.2000
+2.1.2;in Kies, Schotter, Schlacken;9;BMF 15.12.2000
+2.2.1;aus Stahl und Beton;33;BMF 15.12.2000
+2.2.2;aus Holz;15;BMF 15.12.2000
+2.3.1;aus Holz;5;BMF 15.12.2000
+2.3.2;Sonstige;17;BMF 15.12.2000
+2.4;Außenbeleuchtung, Straßenbeleuchtung;19;BMF 15.12.2000
+2.5;Orientierungssysteme, Schilderbrücken;10;BMF 15.12.2000
+2.6;Uferbefestigungen;20;BMF 15.12.2000
+2.7.1;Brunnen;20;BMF 15.12.2000
+2.7.2.1;aus Beton oder Mauerwerk;33;BMF 15.12.2000
+2.7.2.2;aus Ton oder Kunststoff;13;BMF 15.12.2000
+2.7.3;Kläranlagen m. Zu- und Ableitung;20;BMF 15.12.2000
+2.7.4;Löschwasserteiche;20;BMF 15.12.2000
+2.7.5;Wasserspeicher;20;BMF 15.12.2000
+2.8;Grünanlagen;15;BMF 15.12.2000
+2.9;Golfplätze;20;BMF 15.12.2000
+3.1.1;Dampferzeugung (Dampfkessel mit Zubehör);15;BMF 15.12.2000
+3.1.2;Stromerzeugung (Gleichrichter, Ladeaggregate, Notstromaggregate, Stromgeneratoren, Stromumformer usw.);19;BMF 15.12.2000
+3.1.3;Akkumulatoren;10;BMF 15.12.2000
+3.1.4;Kraft-Wärmekopplungsanlagen (Blockheizkraftwerke);10;BMF 15.12.2000
+3.1.5;Windkraftanlagen;16;BMF 15.12.2000
+3.1.6;Photovoltaikanlagen;20;BMF 15.12.2000
+3.1.7;Solaranlagen;10;BMF 15.12.2000
+3.1.8;Heißluft-, Kälteanlagen, Kompressoren, Ventilatoren usw.;14;BMF 15.12.2000
+3.1.9;Kessel einschl. Druckkessel;15;BMF 15.12.2000
+3.1.10;Wasseraufbereitungsanlagen;12;BMF 15.12.2000
+3.1.11;Wasserenthärtungsanlagen;12;BMF 15.12.2000
+3.1.12;Wasserreinigungsanlagen;11;BMF 15.12.2000
+3.1.13;Druckluftanlagen;12;BMF 15.12.2000
+3.1.14;Wärmetauscher;15;BMF 15.12.2000
+3.2;Rückgewinnungsanlagen;10;BMF 15.12.2000
+3.3.1;allgemein;18;BMF 15.12.2000
+3.3.2;Emissionsmessgeräte;8;BMF 15.12.2000
+3.3.3;Materialprüfgeräte;10;BMF 15.12.2000
+3.3.4;Ultraschallgeräte (nicht medizinisch);10;BMF 15.12.2000
+3.3.5.1;elektronisch;8;BMF 15.12.2000
+3.3.5.2;mechanisch;12;BMF 15.12.2000
+3.4.1;Elevatoren, Förderschnecken, Rollenbahnen, Hängebahnen, Transportbänder, Förderbänder und Plattenbänder;14;BMF 15.12.2000
+3.4.2.1;nach gesetzlichen Vorschriften;33;BMF 15.12.2000
+3.4.2.2;sonstige;15;BMF 15.12.2000
+3.4.3.1;ortsfest oder auf Schienen;21;BMF 15.12.2000
+3.4.3.2;sonstige;14;BMF 15.12.2000
+3.4.4.1;stationär;15;BMF 15.12.2000
+3.4.4.2;mobil;11;BMF 15.12.2000
+3.5;Hochregallager;15;BMF 15.12.2000
+3.6;Transportcontainer, Baucontainer, Bürocontainer und Wohncontainer;10;BMF 15.12.2000
+3.7;Ladeneinbauten, Gaststätteneinbauten Schaufensteranlagen u. -einbauten;8;BMF 15.12.2000
+3.8;Lichtreklame;9;BMF 15.12.2000
+3.9;Schaukästen, Vitrinen;9;BMF 15.12.2000
+3.10.1;Brückenwaagen;20;BMF 15.12.2000
+3.10.2;Tank- und Zapfanlagen für Treib- und Schmierstoffe;14;BMF 15.12.2000
+3.10.3;Brennstofftanks;25;BMF 15.12.2000
+3.10.4;Autowaschanlagen;10;BMF 15.12.2000
+3.10.5;Abzugsvorrichtungen, Entstaubungsvorrichtungen;14;BMF 15.12.2000
+3.10.6;Alarmanlagen und Überwachungsanlagen;11;BMF 15.12.2000
+3.10.7;Sprinkleranlagen;20;BMF 15.12.2000
+4.1;Schienenfahrzeuge;25;BMF 15.12.2000
+4.2.1;Personenkraftwagen und Kombiwagen;6;BMF 15.12.2000
+4.2.2;Motorräder, Motorroller, Fahrräder u.ä.;7;BMF 15.12.2000
+4.2.3;Lastkraftwagen, Sattelschlepper, Kipper;9;BMF 15.12.2000
+4.2.4;Traktoren und Schlepper;12;BMF 15.12.2000
+4.2.5;Kleintraktoren;8;BMF 15.12.2000
+4.2.6;Anhänger, Auflieger, Wechselaufbauten;11;BMF 15.12.2000
+4.2.7;Omnibusse;9;BMF 15.12.2000
+4.2.8.1;Feuerwehrfahrzeuge;10;BMF 15.12.2000
+4.2.8.2;Rettungsfahrzeuge und Krankentransportfahrzeuge;6;BMF 15.12.2000
+4.2.9;Wohnmobile, Wohnwagen;8;BMF 15.12.2000
+4.2.10;Bauwagen;12;BMF 15.12.2000
+4.3.1;Flugzeuge unter 20 t höchstzulässigem Fluggewicht;21;BMF 15.12.2000
+4.3.2;Drehflügler (Hubschrauber);19;BMF 15.12.2000
+4.3.3;Heißluftballone;5;BMF 15.12.2000
+4.3.4;Luftschiffe;8;BMF 15.12.2000
+4.4.1;Barkassen;20;BMF 15.12.2000
+4.4.2;Pontons;30;BMF 15.12.2000
+4.4.3;Segelyachten;20;BMF 15.12.2000
+4.5;sonstige Beförderungsmittel (Elektrokarren, Stapler, Hubwagen usw.);8;BMF 15.12.2000
+5.1;Abrichtmaschinen;13;BMF 15.12.2000
+5.2;Biegemaschinen;13;BMF 15.12.2000
+5.3.1;stationär;16;BMF 15.12.2000
+5.3.2;mobil;8;BMF 15.12.2000
+5.4;Bohrhämmer und Presslufthämmer;7;BMF 15.12.2000
+5.5;Bürstmaschinen;10;BMF 15.12.2000
+5.6;Drehbänke;16;BMF 15.12.2000
+5.7.1;stationär;15;BMF 15.12.2000
+5.7.2;mobil;8;BMF 15.12.2000
+5.8;Funkenerosionsmaschinen;7;BMF 15.12.2000
+5.9.1;stationär;16;BMF 15.12.2000
+5.9.2;mobil;9;BMF 15.12.2000
+5.10.1;stationär;13;BMF 15.12.2000
+5.10.2;mobil;5;BMF 15.12.2000
+5.11;Pressen und Stanzen;14;BMF 15.12.2000
+5.12;Stauchmaschinen;10;BMF 15.12.2000
+5.13;Stampfer und Rüttelplatten;11;BMF 15.12.2000
+5.14.1;stationär;14;BMF 15.12.2000
+5.14.2;mobil;8;BMF 15.12.2000
+5.15.1;stationär;10;BMF 15.12.2000
+5.15.2;mobil;7;BMF 15.12.2000
+5.16;Sandstrahlgebläse;9;BMF 15.12.2000
+5.17.1;stationär;15;BMF 15.12.2000
+5.17.2;mobil;8;BMF 15.12.2000
+5.18.1;stationär;13;BMF 15.12.2000
+5.18.2;mobil;8;BMF 15.12.2000
+5.19;Shredder;6;BMF 15.12.2000
+5.20;Schweißgeräte und Lötgeräte;13;BMF 15.12.2000
+5.21;Spritzgussmaschinen;13;BMF 15.12.2000
+5.22;Abfüllanlagen;10;BMF 15.12.2000
+5.23;Verpackungsmaschinen, Folienschweißgeräte;13;BMF 15.12.2000
+5.24;Zusammentragmaschinen;12;BMF 15.12.2000
+5.25;Stempelmaschinen;8;BMF 15.12.2000
+5.26;Banderoliermaschinen;8;BMF 15.12.2000
+5.27;Sonstige Be- und Verarbeitungsmaschinen (Abkanten, Anleimen, Anspitzen, Ätzen, Beschichten, Drucken, Eloxieren, Entfetten, Entgraten, Erodieren, Etikettieren, Falzen, Färben, Feilen, Gießen, Galvanisieren, Gravieren, Härten, Heften, Lackieren, Nieten);13;BMF 15.12.2000
+6.1;Wirtschaftsgüter der Werkstätten-, Labor- und Lagereinrichtungen;14;BMF 15.12.2000
+6.2;Wirtschaftsgüter der Ladeneinrichtungen;8;BMF 15.12.2000
+6.3;Messestände;6;BMF 15.12.2000
+6.4;Kühleinrichtungen;8;BMF 15.12.2000
+6.5;Klimageräte (mobil);11;BMF 15.12.2000
+6.6;Belüftungsgeräte, Entlüftungsgeräte (mobil);10;BMF 15.12.2000
+6.7;Fettabscheider;5;BMF 15.12.2000
+6.8;Magnetabscheider;6;BMF 15.12.2000
+6.9;Nassabscheider;5;BMF 15.12.2000
+6.10;Heißluftgebläse, Kaltluftgebläse (mobil);11;BMF 15.12.2000
+6.11;Raumheizgeräte (mobil);9;BMF 15.12.2000
+6.12;Arbeitszelte;6;BMF 15.12.2000
+6.13.1;Fernsprechnebenstellenanlagen;10;BMF 15.12.2000
+6.13.2.1;Allgemein;8;BMF 15.12.2000
+6.13.2.2;Mobilfunkendgeräte;5;BMF 15.12.2000
+6.13.3;Textendeinrichtungen (Faxgeräte u.ä.);6;BMF 15.12.2000
+6.13.4;Betriebsfunkanlagen;11;BMF 15.12.2000
+6.13.5;Antennenmasten;10;BMF 15.12.2000
+6.14.1;Adressiermaschinen, Kuvertiermaschinen, Frankiermaschinen;8;BMF 15.12.2000
+6.14.2;Paginiermaschinen;8;BMF 15.12.2000
+6.14.3.1;Großrechner;7;BMF 15.12.2000
+6.14.3.2;Workstations, Personalcomputer, Notebooks und deren Peripheriegeräte (Drucker, Scanner, Bildschirme u.ä.);1;BMF 22.02.2022
+6.14.4;Foto-, Film-, Video- und Audiogeräte (Fernseher, CD-Player, Recorder, Lautsprecher, Radios, Verstärker, Kameras, Monitore u.ä.);7;BMF 15.12.2000
+6.14.5;Beschallungsanlagen;9;BMF 15.12.2000
+6.14.6;Präsentationsgeräte, Datensichtgeräte;8;BMF 15.12.2000
+6.14.7;Registrierkassen;6;BMF 15.12.2000
+6.14.8;Schreibmaschinen;9;BMF 15.12.2000
+6.14.9.1;elektronisch;8;BMF 15.12.2000
+6.14.9.2;mechanisch;14;BMF 15.12.2000
+6.14.10;Vervielfältigungsgeräte;7;BMF 15.12.2000
+6.14.11;Zeiterfassungsgeräte;8;BMF 15.12.2000
+6.14.12;Geldprüfgeräte, Geldsortiergeräte, Geldwechselgeräte und Geldzählgeräte;7;BMF 15.12.2000
+6.14.13;Reißwölfe (Aktenvernichter);8;BMF 15.12.2000
+6.14.14;Kartenleser (EC-, Kredit-);8;BMF 15.12.2000
+6.15;Büromöbel;13;BMF 15.12.2000
+6.16;Verkaufstheken;10;BMF 15.12.2000
+6.17;Verkaufsbuden, Verkaufsstände;8;BMF 15.12.2000
+6.18;Bepflanzungen in Gebäuden;10;BMF 15.12.2000
+6.19.1;Stahlschränke;14;BMF 15.12.2000
+6.19.2;Panzerschränke, Tresore;23;BMF 15.12.2000
+6.19.3;Tresoranlagen;25;BMF 15.12.2000
+6.19.4.1;normale;8;BMF 15.12.2000
+6.19.4.2;hochwertige (ab 1.000 DM/m2);15;BMF 15.12.2000
+6.19.5;Kunstwerke (ohne Werke anerkannter Künstler);15;BMF 15.12.2000
+6.19.6;Waagen (Obst-, Gemüse-, Fleisch- u.ä.);11;BMF 15.12.2000
+6.19.7;Rohrpostanlagen;10;BMF 15.12.2000
+7.1;Betonkleinmischer;6;BMF 15.12.2000
+7.2.1;Bohnermaschinen;8;BMF 15.12.2000
+7.2.2;Desinfektionsgeräte;10;BMF 15.12.2000
+7.2.3;Geschirr- und Gläserspülmaschinen;7;BMF 15.12.2000
+7.2.4;Hochdruckreiniger (Dampf- und Wasser-);8;BMF 15.12.2000
+7.2.5;Industriestaubsauger;7;BMF 15.12.2000
+7.2.6;Kehrmaschinen;9;BMF 15.12.2000
+7.2.7;Räumgeräte;9;BMF 15.12.2000
+7.2.8;Sterilisatoren;10;BMF 15.12.2000
+7.2.9;Teppichreinigungsgeräte (transportabel);7;BMF 15.12.2000
+7.2.10;Waschmaschinen;10;BMF 15.12.2000
+7.2.11;Bautrocknungs- und Entfeuchtungsgeräte;5;BMF 15.12.2000
+7.3;Wäschetrockner;8;BMF 15.12.2000
+7.4.1;Getränkeautomaten, Leergutautomaten;7;BMF 15.12.2000
+7.4.2;Warenautomaten;5;BMF 15.12.2000
+7.4.3;Zigarettenautomaten;8;BMF 15.12.2000
+7.4.4;Passbildautomaten;5;BMF 15.12.2000
+7.4.5;Visitenkartenautomaten;5;BMF 15.12.2000
+7.5.1;Geldspielgeräte (Spielgeräte mit Gewinnmöglichkeit);4;BMF 15.12.2000
+7.5.2;Musikautomaten;8;BMF 15.12.2000
+7.5.3;Videoautomaten;6;BMF 15.12.2000
+7.5.4;sonstige Unterhaltungsautomaten (z.B. Flipper);5;BMF 15.12.2000
+7.6;Fahnenmasten;10;BMF 15.12.2000
+7.7;Kühlschränke;10;BMF 15.12.2000
+7.8;Laborgeräte (Mikroskope, Präzisionswaagen u.ä.);13;BMF 15.12.2000
+7.9;Mikrowellengeräte;8;BMF 15.12.2000
+7.10;Rasenmäher;9;BMF 15.12.2000
+7.11;Toilettenkabinen und Toilettenwagen;9;BMF 15.12.2000
+7.12;Zentrifugen;10;BMF 15.12.2000
