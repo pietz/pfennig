@@ -50,6 +50,41 @@ import Testing
     #expect(Position.steuer(netto: Cent(1999), steuersatz: 19) == Cent(380))
 }
 
+@Test func reverseChargeBearbeitungLaesstSatzStehenUndSteuerNull() {
+    var position = Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))
+
+    // Switching the treatment clears invoice tax, not the applicable rate.
+    position.steuer = Position.steuer(
+        netto: position.netto,
+        steuersatz: position.steuersatz,
+        steuerbehandlung: .reverseCharge
+    )
+    #expect(position.steuersatz == 19)
+    #expect(position.steuer == .null)
+
+    // Net and rate edits stay at zero while reverse charge is selected.
+    position.netto = Cent(2000)
+    position.steuer = Position.steuer(
+        netto: position.netto,
+        steuersatz: position.steuersatz,
+        steuerbehandlung: .reverseCharge
+    )
+    #expect(position.steuer == .null)
+    position.steuersatz = 7
+    position.steuer = Position.steuer(
+        netto: position.netto,
+        steuersatz: position.steuersatz,
+        steuerbehandlung: .reverseCharge
+    )
+    #expect(position.steuersatz == 7)
+    #expect(position.steuer == .null)
+
+    // Existing recalculation remains unchanged for every other treatment.
+    for treatment in Steuerbehandlung.allCases where treatment != .reverseCharge {
+        #expect(Position.steuer(netto: Cent(10000), steuersatz: 19, steuerbehandlung: treatment) == Cent(1900))
+    }
+}
+
 @Test func kategorienSindFestUndNachRichtungSortiert() {
     #expect(Kategorie.alle.count == 26)
     #expect(Kategorie.alle.first?.schluessel == "umsatz_dienstleistung")

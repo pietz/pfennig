@@ -22,6 +22,18 @@ public struct Position: Codable, Hashable, Sendable {
         NSDecimalRound(&rounded, &raw, 0, .plain)
         return Cent(NSDecimalNumber(decimal: rounded).int64Value)
     }
+
+    /// The invoice tax shown by the Inspector. Reverse-charge positions keep
+    /// their applicable rate, but never carry invoice tax.
+    public static func steuer(
+        netto: Cent,
+        steuersatz: Decimal,
+        steuerbehandlung: Steuerbehandlung
+    ) -> Cent {
+        steuerbehandlung == .reverseCharge
+            ? .null
+            : steuer(netto: netto, steuersatz: steuersatz)
+    }
 }
 
 /// One payment of a booking. Its amount is signed in relation to the booking:

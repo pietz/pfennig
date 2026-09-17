@@ -86,7 +86,18 @@ struct Inspector: View {
         .onChange(of: draft.privatanteilProzent) { save() }
         .onChange(of: draft.nutzungsdauerJahre) { save() }
         .onChange(of: draft.positionen) { save() }
-        .onChange(of: draft.steuerbehandlung) { save() }
+        .onChange(of: draft.steuerbehandlung) { _, treatment in
+            if treatment == .reverseCharge {
+                for i in draft.positionen.indices {
+                    draft.positionen[i].steuer = Position.steuer(
+                        netto: draft.positionen[i].netto,
+                        steuersatz: draft.positionen[i].steuersatz,
+                        steuerbehandlung: treatment
+                    )
+                }
+            }
+            save()
+        }
         .onChange(of: draft.zahlungen) { save() }
         .safeAreaInset(edge: .bottom) { confirmBar }
     }
@@ -199,6 +210,7 @@ struct Inspector: View {
                     .frame(width: 70)
                     TextField("Steuer", value: position(i, \.steuer, fallback: .null), format: .euro)
                         .labelsHidden()
+                        .disabled(draft.steuerbehandlung == .reverseCharge)
                     Button("Position entfernen", systemImage: "minus.circle") { removePosition(i) }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
@@ -230,14 +242,19 @@ struct Inspector: View {
         }
     }
 
-    /// The tax follows the net amount and the rate, until the user overwrites it.
+    /// The tax follows the net amount and the rate, except reverse charge keeps
+    /// invoice tax at zero; the user may overwrite it for other treatments.
     private func netBinding(_ i: Int) -> Binding<Cent> {
         Binding(
             get: { position(i, \.netto, fallback: .null).wrappedValue },
             set: { updated in
                 guard draft.positionen.indices.contains(i) else { return }
                 draft.positionen[i].netto = updated
-                draft.positionen[i].steuer = Position.steuer(netto: updated, steuersatz: draft.positionen[i].steuersatz)
+                draft.positionen[i].steuer = Position.steuer(
+                    netto: updated,
+                    steuersatz: draft.positionen[i].steuersatz,
+                    steuerbehandlung: draft.steuerbehandlung
+                )
             }
         )
     }
@@ -250,7 +267,11 @@ struct Inspector: View {
                 guard draft.positionen.indices.contains(i) else { return }
                 let satz = min(max(updated, 0), 100)
                 draft.positionen[i].steuersatz = satz
-                draft.positionen[i].steuer = Position.steuer(netto: draft.positionen[i].netto, steuersatz: satz)
+                draft.positionen[i].steuer = Position.steuer(
+                    netto: draft.positionen[i].netto,
+                    steuersatz: satz,
+                    steuerbehandlung: draft.steuerbehandlung
+                )
             }
         )
     }
