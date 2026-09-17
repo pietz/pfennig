@@ -1,6 +1,14 @@
 # Änderungen
 
-## Unveröffentlicht
+## 0.6.0 (2026-09-18)
+
+- Inspector: Bei `reverse_charge` bleibt die Positionssteuer bei Änderungen von Netto und Satz null und das Steuerfeld ist deaktiviert; beim Wechsel auf `reverse_charge` wird vorhandene Steuer geleert, beim Wechsel weg davon neu aus Netto und Satz berechnet
+- Bestätigen prüft die gespeicherte Buchung mit denselben Prüfregeln wie der Agent; bei Fehlern bleibt der Prüfstatus unverändert und die Meldung erscheint im bestehenden Fehlerhinweis. Der Wechsel einer Ausgabe zu einer Einnahme löscht die Nutzungsdauer
+- UStVA: Kz 67 zählt bei Reverse-Charge-Dienstleistungen nur den betrieblichen Anteil der geschuldeten Steuer; die Zehn-Prozent-Grenze wird dort nicht angewandt, sie betrifft Gegenstände (§15 Abs. 1 UStG)
+- EÜR: Ein Anlagegut gehört in jedes Jahr seiner laufenden AfA, also auch in Fristen, Ungeprüft-Hinweis und Änderungswarnung bereits exportierter Jahre; für die UStVA bleiben Beleg- und Zahlungsdatum maßgeblich
+- EÜR: Ein Anlagegut ohne Kategorie steht mit seiner AfA auf Zeile 34 und in der Anlage AVEÜR, statt aus der Rechnung zu verschwinden
+- Eingang: Eine übrig gebliebene Inbox-Kopie einer bereits verarbeiteten Datei wird beim Start entfernt, statt sich bei jedem Start erneut zu melden
+- EÜR-Export: Textzellen des CSV stehen in Anführungszeichen, eingebettete Anführungszeichen werden verdoppelt; ein Titel mit Semikolon oder Zeilenumbruch verschiebt keine Spalten mehr
 
 - UStVA: Eine sonstige Leistung an ein EU-Unternehmen steht mit ihrem vollen Netto im Zeitraum des Belegdatums in Kz 21. Anzahlungen und späte Zahlungen verschieben sie nicht mehr, denn Kz 21 folgt der Leistungsausführung (Anleitung USt 1 E 2026 zu Zeile 35, §18b Satz 3 UStG); das Belegdatum steht dafür ein. Kz 45 zählt weiter je Zahlung
 - UStVA: Ein §13b-Bezug zu 7 Prozent ist darstellbar. Eine Position mit `reverse_charge` trägt jetzt den Steuersatz, den der Leistungsempfänger schuldet (19 oder 7), und `steuer` 0; Kz 47, 85 und 67 rechnen mit diesem Satz statt pauschal mit 19 Prozent. Ein E-Book aus Irland wurde bisher um zwölf Punkte zu hoch gemeldet
