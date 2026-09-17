@@ -82,7 +82,8 @@ public struct EUeR: Hashable, Sendable {
             case .einnahme:
                 vereinnahmt = vereinnahmt + summe.steuer
             case .ausgabe:
-                vorsteuer = vorsteuer + ohnePrivatanteil(summe.steuer, prozent: buchung.privatanteilProzent)
+                // The same share the UStVA takes into Kz 66.
+                vorsteuer = vorsteuer + UStVA.abziehbar(summe.steuer, privatanteil: buchung.privatanteilProzent)
             }
         }
 

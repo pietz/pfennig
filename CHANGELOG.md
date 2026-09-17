@@ -8,10 +8,14 @@
 
 Hinweise:
 
-- Schemawechsel ohne Migration: `dateien` hat eine hochzählende `id`, `belege` sind Datei-IDs, die Spalte `art` entfällt. Das Entwicklungsarchiv des Eigentümers wurde mit Backup zurückgesetzt
+- Schemawechsel ohne Migration: `dateien` hat eine hochzählende `id`, `belege` sind Datei-IDs, die Spalte `art` entfällt; `aktivitaeten.nachher` darf leer sein. Das Entwicklungsarchiv des Eigentümers wurde mit Backup zurückgesetzt bzw. angepasst
 
 - Der Eingang nimmt neben PDF und Bildern jetzt auch WebP sowie Textdateien an (XML, CSV, TXT, JSON, HTML); Textdateien gehen bis 1 MB als Klartext an den Agenten, damit liest er auch XRechnungen. Windows-1252-kodierte Bank-Exporte kommen mit Umlauten an
 - UStVA: Reverse-Charge-Einnahmen an Kunden außerhalb der EU stehen in Kz 45 statt in Kz 21; Kz 21 bleibt für Leistungen an EU-Unternehmer
+- UStVA und EÜR: Die Vorsteuer in Kz 66 und in der EÜR-Zeile „Gezahlte Vorsteuer“ zählt nur den betrieblichen Anteil einer Ausgabe mit Privatanteil; unter zehn Prozent betrieblicher Nutzung entfällt sie ganz
+- Fristen für UStVA und EÜR rücken auf den nächsten Werktag, wenn sie auf ein Wochenende oder einen bundesweiten Feiertag fallen
+- Der Agent bekommt klarere Rückmeldungen: `inland` nur mit 19 oder 7 Prozent, `reverse_charge` ohne Steuer in den Positionen
+- Das Löschen einer Buchung steht jetzt im Aktivitätenprotokoll
 - Ein fehlgeschlagener Eintrag ins Anfragenprotokoll bricht einen erfolgreichen Import nicht mehr ab und löscht keine Buchungen mehr
 - Drag-and-drop funktioniert auch auf der Startseite
 - Eine Datei, die während des letzten laufenden Imports abgelegt wird, bleibt nicht mehr liegen

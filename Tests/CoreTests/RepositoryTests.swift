@@ -126,12 +126,12 @@ private func beispiel(
 
     #expect(aktivitaeten[0].akteur == .agent)
     #expect(aktivitaeten[0].vorher == nil)
-    #expect(aktivitaeten[0].nachher.titel == "Bürostuhl")
+    #expect(aktivitaeten[0].nachher?.titel == "Bürostuhl")
     #expect(aktivitaeten[0].buchungId == buchung.id)
 
     #expect(aktivitaeten[1].akteur == .nutzer)
     #expect(aktivitaeten[1].vorher?.titel == "Bürostuhl")
-    #expect(aktivitaeten[1].nachher.titel == "Schreibtisch")
+    #expect(aktivitaeten[1].nachher?.titel == "Schreibtisch")
 
     // Updating must not add a second booking.
     #expect(try repository.allBookings().count == 1)
@@ -151,7 +151,7 @@ private func beispiel(
     }
     #expect(letzte?.akteur == .nutzer)
     #expect(letzte?.vorher?.geprueftAm == nil)
-    #expect(letzte?.nachher.geprueftAm != nil)
+    #expect(letzte?.nachher?.geprueftAm != nil)
 
     #expect(throws: CoreError.self) { try repository.confirm(id: 999) }
 }
@@ -318,9 +318,16 @@ private func beispiel(
 
     try repository.delete(id: id)
     #expect(try repository.allBookings().isEmpty)
-    // The log keeps what happened, it is not a copy of the table.
-    let eintraege = try repository.database.read { try Aktivitaet.fetchCount($0) }
-    #expect(eintraege == 1)
+    // The log keeps the deletion too, §146 Abs. 4 AO: the last row carries the
+    // final state and no `nachher`.
+    let eintraege = try repository.database.read { try Aktivitaet.fetchAll(
+        $0,
+        sql: "SELECT * FROM aktivitaeten ORDER BY id"
+    ) }
+    #expect(eintraege.count == 2)
+    #expect(eintraege.last?.vorher?.titel == saved.titel)
+    #expect(eintraege.last?.nachher == nil)
+    #expect(eintraege.last?.akteur == .nutzer)
 }
 
 @Test func profilUeberstehtDenRundlauf() throws {

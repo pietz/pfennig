@@ -100,8 +100,13 @@ public struct Zeitraum: Hashable, Sendable {
 
     /// The deadline: the tenth day after the period, §18 Abs. 1 UStG, one
     /// month later with a Dauerfristverlängerung, §§46-48 UStDV. The EÜR year
-    /// is due on the 31st of July of the following year, §149 Abs. 2 AO.
+    /// is due on the 31st of July of the following year, §149 Abs. 2 AO. A
+    /// day off moves it to the next working day, §108 Abs. 3 AO.
     public func frist(dauerfristverlaengerung: Bool = false) -> LocalDate {
+        Werktag.amOderNach(stichtag(dauerfristverlaengerung: dauerfristverlaengerung))
+    }
+
+    private func stichtag(dauerfristverlaengerung: Bool) -> LocalDate {
         guard art == .ustva else { return LocalDate(jahr: jahr + 1, monat: 7, tag: 31) }
         var jahr = jahr
         var monat = letzterMonat + 1 + (dauerfristverlaengerung ? 1 : 0)

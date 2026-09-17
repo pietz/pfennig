@@ -34,7 +34,8 @@ public struct Datei: Codable, Hashable, Sendable, Identifiable, FetchableRecord,
 }
 
 /// One entry of the activity log, written once per repository write. It carries
-/// the whole booking before and after the change; `vorher` is empty on insert.
+/// the whole booking before and after the change; `vorher` is empty on insert,
+/// `nachher` on delete.
 public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "aktivitaeten"
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
@@ -45,7 +46,7 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, Persista
     public var zeitpunkt: Date
     public var akteur: Akteur
     public var vorher: Buchung?
-    public var nachher: Buchung
+    public var nachher: Buchung?
 
     /// The logged booking keeps the column names and readable timestamps;
     /// the log is shown to the user and read by the agent.

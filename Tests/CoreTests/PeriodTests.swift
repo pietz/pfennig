@@ -7,7 +7,8 @@ import Testing
         rhythmus: .vierteljaehrlich, dauerfristverlaengerung: false, today: datum(2026, 9, 14)
     )
     #expect(zeitraum == q3)
-    #expect(zeitraum.frist().formatted == "10.10.2026")
+    // Der 10. Oktober 2026 ist ein Samstag, §108 Abs. 3 AO schiebt auf Montag.
+    #expect(zeitraum.frist().formatted == "12.10.2026")
     #expect(zeitraum.frist(dauerfristverlaengerung: true).formatted == "10.11.2026")
 }
 
@@ -38,7 +39,8 @@ import Testing
 @Test func ueberDenJahreswechselHinweg() {
     let januar = Zeitraum.naechsteUStVA(rhythmus: .monatlich, dauerfristverlaengerung: false, today: datum(2027, 1, 5))
     #expect(januar == Zeitraum(jahr: 2026, einteilung: .monat(12)))
-    #expect(januar.frist().formatted == "10.01.2027")
+    // Der 10. Januar 2027 ist ein Sonntag.
+    #expect(januar.frist().formatted == "11.01.2027")
 }
 
 @Test func dieEuerZeigtBisZurFristAufDasVorjahr() {
@@ -92,4 +94,17 @@ import Testing
     // Ein zweiter Export desselben Zeitraums legt keine zweite Zeile an.
     try repository.markExported(q3)
     #expect(try repository.exportedPeriods().count == 3)
+}
+
+@Test func fristenWeichenWochenendeUndBundesweitenFeiertagenAus() {
+    // Pfingstmontag 2030 fällt auf den 10. Juni.
+    #expect(Werktag.ostersonntag(2030).formatted == "21.04.2030")
+    let mai2030 = Zeitraum(jahr: 2030, einteilung: .monat(5))
+    #expect(mai2030.frist().formatted == "11.06.2030")
+    // Christi Himmelfahrt 2029 fällt auf den 10. Mai.
+    #expect(Zeitraum(jahr: 2029, einteilung: .monat(4)).frist().formatted == "11.05.2029")
+    // Der 31. Juli 2027 ist ein Samstag.
+    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).frist().formatted == "02.08.2027")
+    // Ein Werktag bleibt, wie er ist.
+    #expect(Zeitraum(jahr: 2026, einteilung: .monat(8)).frist().formatted == "10.09.2026")
 }

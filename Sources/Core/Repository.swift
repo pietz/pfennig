@@ -44,12 +44,15 @@ public final class Repository: Sendable {
         }
     }
 
-    /// Removes a booking the user no longer wants. The activity log keeps the
-    /// rows it already has; it records what happened and is not a copy of the
-    /// table. Its files stay in `dateien` and in the archive.
+    /// Removes a booking the user no longer wants and logs it, §146 Abs. 4 AO:
+    /// the last row for the booking carries its final state and no `nachher`.
+    /// Its files stay in `dateien` and in the archive.
     public func delete(id: Int64) throws {
         try database.write { db in
+            guard let buchung = try Buchung.fetchOne(db, key: id) else { return }
             try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
+            let entry = Aktivitaet(buchungId: id, zeitpunkt: Date(), akteur: .nutzer, vorher: buchung, nachher: nil)
+            try entry.insert(db)
         }
     }
 

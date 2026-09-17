@@ -50,7 +50,7 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 `dateien`: `id` (hochzählende Ganzzahl), `sha256` (eindeutig), `dateiname`, `endung`, `groesse`, `seiten`, `importiert_am`. Dedupe ist „Hash existiert“. Ob eine Datei Beleg oder Kontoauszug ist, ergibt sich daraus, ob eine Buchung sie in `belege` trägt; Kontoauszüge hängen an keinem Eintrag.
 
-`aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `vorher` (JSON der Zeile, leer bei Neuanlage), `nachher` (JSON der Zeile). Ein Insert pro Schreibvorgang im Repository. Ersetzt Herkunft, Audit und Vorschlagstabellen und zeigt, was der Agent geändert hat; angezeigt, kein Undo in der ersten Version. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
+`aktivitaeten`: ein Log, `id`, `buchung_id`, `zeitpunkt`, `akteur` (nutzer/agent), `vorher` (JSON der Zeile, leer bei Neuanlage), `nachher` (JSON der Zeile, leer bei Löschung). Ein Insert pro Schreibvorgang im Repository, auch beim Löschen einer Buchung (§146 Abs. 4 AO): die letzte Zeile trägt den Endstand in `vorher`. Ersetzt Herkunft, Audit und Vorschlagstabellen und zeigt, was der Agent geändert hat; angezeigt, kein Undo in der ersten Version. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
 
 `anfragen`: eine Anfrage an den Agenten pro Datei, `id`, `datei_id`, `modell`, `gestartet_am`, `beendet_am`, `status` (erfolg/fehler), `eingabe_tokens`, `ausgabe_tokens`, `konversation` (JSON ohne Dateibytes: Text, Werkzeugaufrufe, Antworten). Kosten rechnet Swift aus einer Preistabelle im Code, damit Preisänderungen rückwirkend stimmen. Das SQL-Werkzeug des Agenten hat keinen Zugriff auf diese Tabelle.
 
@@ -122,7 +122,7 @@ Der Agent erhält dynamisch aus der Datenbank selbst die tatsächliche CREATE-An
 **Prüfregeln in Swift.** Schema und CHECK-Bedingungen garantieren Form und Typen; die Prüfregeln decken Inhalt ab, den das Schema nicht ausdrücken kann. Jede Regel ist eine kleine Funktion in einer Liste, eine neue Regel ist eine neue Funktion:
 - Jede Position: netto und steuer passen zum steuersatz, Toleranz 1 Cent. Mindestens eine Position.
 - kategorie ist ein bekannter Schlüssel, datum ist gültig und nicht weit in der Zukunft. Eine ausgefüllte faelligkeit ist ein gültiges Datum; es gibt keine Prüfung ihrer Reihenfolge zum Belegdatum. belegnummer wird als Text übernommen, ohne Nummerierungsprüfung.
-- steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei, kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland mit Steuersatz 0 nur bei steuerfrei oder nicht_steuerbar.
+- steuerbehandlung passt zu Land und Profil: reverse_charge nur bei ausländischer Gegenpartei und mit steuer 0 in jeder Position (die geschuldete Steuer rechnet Pfennig), kleinunternehmer nur bei Einnahmen eines Kleinunternehmers, inland nur mit 19 oder 7 Prozent; Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar.
 - Zahlungen: Betrag ungleich null, Datum gültig.
 
 Schlägt eine Regel fehl, bekommt der Agent den Fehlertext zurück. Gibt er nach wenigen Versuchen auf, bleibt die Datei mit dem Fehlertext in der Inbox. Ob die Zahlen zum Beleg passen, prüft Swift nicht; das ist die Aufgabe des Nutzers.
@@ -136,7 +136,7 @@ Ein Knopf „Export“ in der Toolbar öffnet ein Sheet. Vorausgewählt ist die 
 - **UStVA** wird als XML gespeichert, wie es Mein ELSTER im Formular „XML-Daten hochladen“ annimmt, ohne Herstellerregistrierung. Der Nutzer lädt die Datei hoch, prüft das vorausgefüllte Formular und sendet selbst ab. Das Sheet zeigt den Link dazu. Der Aufbau des XML ist aus öffentlichen Quellen rekonstruiert und wurde am 2026-09-14 mit einem Testupload der Q3-2026-Datei in Mein ELSTER verifiziert: die Datei wurde angenommen und die Kennzahlen ins Formular übernommen, ohne Absenden.
 - **EÜR** wird als CSV mit Formularzeile, Bezeichnung und Betrag gespeichert; für die Anlage EÜR gibt es keinen Upload, die Werte werden abgetippt.
 
-Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Kleinunternehmer, geprüfte Kennzahlen) und XML-Exporter werden aus dem alten Code übernommen. Mit dem Export kommt eine kleine Tabelle `zeitraeume` (jahr, art, index, exportiert_am), damit die App anstehende Zeiträume erinnern und nachträgliche Änderungen in exportierten Zeiträumen warnen kann. Keine Übermittlung aus der App.
+Berechnung (Ist-Versteuerung nach Zahlungsdatum, Vorsteuer, Reverse Charge, Kleinunternehmer, geprüfte Kennzahlen) und XML-Exporter werden aus dem alten Code übernommen. Die Vorsteuer in Kz 66 zählt nur den betrieblichen Anteil, wie die EÜR den Aufwand; liegt die betriebliche Nutzung unter zehn Prozent, gibt es keinen Abzug (§15 Abs. 1 Satz 2 UStG). Fristen fallen auf den 10. des Folgemonats bzw. den 31. Juli des Folgejahres und rücken auf den nächsten Werktag, wenn dieser Tag ein Wochenende oder ein bundesweiter Feiertag ist (§108 Abs. 3 AO); regionale Feiertage wie Fronleichnam bleiben außen vor. Mit dem Export kommt eine kleine Tabelle `zeitraeume` (jahr, art, index, exportiert_am), damit die App anstehende Zeiträume erinnern und nachträgliche Änderungen in exportierten Zeiträumen warnen kann. Keine Übermittlung aus der App.
 
 ## 6. Technik und Vorgehen
 

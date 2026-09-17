@@ -140,7 +140,8 @@ struct StartTests {
         let ustva = try #require(fristen.first { $0.zeitraum.art == .ustva })
         #expect(ustva.faellig == LocalDate(jahr: 2026, monat: 11, tag: 10))
         let euer = try #require(fristen.first { $0.zeitraum.art == .euer })
-        #expect(euer.faellig.monat == 7 && euer.faellig.tag == 31)
+        // Der 31. Juli 2027 ist ein Samstag, also der 2. August.
+        #expect(euer.faellig == LocalDate(jahr: 2027, monat: 8, tag: 2))
     }
 
     @Test("Jahreswerte zählen Zahlungen des Jahres, nicht Belegdaten")

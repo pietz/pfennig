@@ -28,6 +28,8 @@ Pflichten und Fehler, die die Zielgruppe regelmäßig treffen.
 - **Übergabe an den Steuerberater.** Ein Jahresordner mit Belegen nach Datum und Gegenpartei benannt, Buchungsliste und EÜR-Werte als CSV. Prüfen, ob ein etabliertes Format lohnt (DATEV-Buchungsstapel, CSV-Konventionen der gängigen Kanzleisoftware) oder ob ein sauberer Ordner reicht.
 - **Live-API-Tests.** Ein kleiner Testsatz, der mit echtem Schlüssel gegen Luna bei niedrigem Aufwand läuft: ein PDF, eine XRechnung, ein Kontoauszug, jeweils Ende zu Ende durch den Eingang. Nicht Teil von `swift test`, sondern ein eigener Aufruf, der den Schlüssel aus dem Schlüsselbund nimmt und wenige Cent kostet. Hätte den HTTP/3-Fehler vom 2026-09-16 vor dem Nutzer gefunden.
 
+- **Reste aus dem Steuer-Review (2026-09-17).** Kleinunternehmer mit §13b-Eingang schulden die Steuer, ohne dass Pfennig die EÜR daran erinnert; Kz 87 (§13b-Eingang zu 7 Prozent) fehlt; unentgeltliche Wertabgaben bei nachträglicher Privatnutzung; regionale Feiertage bei Fristen (Fronleichnam, Reformationstag) über ein Bundesland im Profil; Storno statt Löschen für bereits exportierte Zeiträume.
+
 ## Verworfen oder zurückgestellt
 
 - **Erwartete wiederkehrende Belege.** Für Abos fehlt am Ende trotzdem die Rechnung; der Hinweis allein spart wenig. Zurückgestellt.

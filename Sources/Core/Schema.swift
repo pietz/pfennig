@@ -58,7 +58,7 @@ public enum Schema {
         zeitpunkt TEXT NOT NULL,
         akteur TEXT NOT NULL CHECK (akteur IN ('nutzer', 'agent')),
         vorher TEXT,                                -- JSON-Objekt der Buchungszeile vor der Änderung, leer bei Neuanlage
-        nachher TEXT NOT NULL                       -- JSON-Objekt der Buchungszeile nach der Änderung
+        nachher TEXT                                -- JSON-Objekt der Buchungszeile nach der Änderung, leer bei Löschung
     );
 
     CREATE TABLE anfragen (

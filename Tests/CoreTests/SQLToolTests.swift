@@ -192,7 +192,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(aktivitaeten.count == 1)
     #expect(aktivitaeten[0].akteur == .agent)
     #expect(aktivitaeten[0].vorher == nil)
-    #expect(aktivitaeten[0].nachher.titel == "Strom")
+    #expect(aktivitaeten[0].nachher?.titel == "Strom")
 }
 
 @Test func werkzeugSetztGeprueftAmBeiAenderungZurueck() throws {
@@ -287,10 +287,18 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.kleinunternehmerNurBeiEigenenEinnahmen(einnahme, Profil()) != nil)
 
     let ohneSteuer = [Position(netto: Cent(10000), steuersatz: 0, steuer: .null)]
-    #expect(ValidationRules.inlandOhneSteuerBrauchtEigeneBehandlung(basis(positionen: ohneSteuer), profile) != nil)
-    #expect(ValidationRules.inlandOhneSteuerBrauchtEigeneBehandlung(
-        basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile
-    ) == nil)
+    let sechzehn = [Position(netto: Cent(10000), steuersatz: 16, steuer: Cent(1600))]
+    let sieben = [Position(netto: Cent(10000), steuersatz: 7, steuer: Cent(700))]
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: ohneSteuer), profile) != nil)
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sechzehn), profile)?.contains("16") == true)
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sieben), profile) == nil)
+    #expect(ValidationRules
+        .inlandNurMit19Oder7(basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile) == nil)
+
+    let mitSteuer = basis(positionen: sieben, steuerbehandlung: .reverseCharge, land: "IE")
+    let netto = basis(positionen: ohneSteuer, steuerbehandlung: .reverseCharge, land: "IE")
+    #expect(ValidationRules.reverseChargeOhneSteuer(mitSteuer, profile) != nil)
+    #expect(ValidationRules.reverseChargeOhneSteuer(netto, profile) == nil)
 
     let null = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: .null)]
     let echt = [Zahlung(datum: LocalDate(jahr: 2026, monat: 9, tag: 2), betrag: Cent(11900))]

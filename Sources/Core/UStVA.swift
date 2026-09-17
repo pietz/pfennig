@@ -106,7 +106,8 @@ public struct UStVA: Hashable, Sendable {
             let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
             for (stelle, zahlung) in zahlungen.enumerated() {
                 guard zeitraum.enthaelt(max(buchung.datum, zahlung.datum)) else { continue }
-                buchen(66, anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }, in: &werte)
+                let steuer = anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }
+                buchen(66, abziehbar(steuer, privatanteil: buchung.privatanteilProzent), in: &werte)
             }
 
         case .reverseCharge:
@@ -136,6 +137,12 @@ public struct UStVA: Hashable, Sendable {
         buchung.zahlungen.enumerated()
             .sorted { ($0.element.datum, $0.offset) < ($1.element.datum, $1.offset) }
             .map(\.element)
+    }
+
+    /// The deductible share of the input VAT: none below ten percent of
+    /// business use, §15 Abs. 1 Satz 2 UStG, otherwise the business share.
+    static func abziehbar(_ steuer: Cent, privatanteil: Int) -> Cent {
+        privatanteil > 90 ? .null : EUeR.ohnePrivatanteil(steuer, prozent: privatanteil)
     }
 
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {

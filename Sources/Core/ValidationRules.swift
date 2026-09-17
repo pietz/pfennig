@@ -22,7 +22,8 @@ public enum ValidationRules {
         datumLiegtNichtWeitInDerZukunft,
         reverseChargeNurBeiAuslaendischerGegenpartei,
         kleinunternehmerNurBeiEigenenEinnahmen,
-        inlandOhneSteuerBrauchtEigeneBehandlung,
+        inlandNurMit19Oder7,
+        reverseChargeOhneSteuer,
         zahlungenSindPlausibel
     ]
 
@@ -87,10 +88,23 @@ public enum ValidationRules {
         return nil
     }
 
-    static let inlandOhneSteuerBrauchtEigeneBehandlung: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung == .inland, buchung.positionen.isEmpty == false else { return nil }
-        guard buchung.positionen.allSatisfy({ $0.steuersatz == 0 }) else { return nil }
-        return "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
+    /// The 2026 form has lines for 19 and 7 percent only. Anything else would
+    /// fall out of the UStVA without a word, so it is refused here instead.
+    static let inlandNurMit19Oder7: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung == .inland else { return nil }
+        guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+        else { return nil }
+        return fremd.steuersatz == 0
+            ? "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
+            : "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
+    }
+
+    /// A §13b invoice carries no German VAT; the app computes the owed tax and
+    /// the matching Vorsteuer itself. Tax in a position would count twice.
+    static let reverseChargeOhneSteuer: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung == .reverseCharge else { return nil }
+        guard buchung.positionen.contains(where: { $0.steuer != .null }) else { return nil }
+        return "Bei reverse_charge steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
     }
 
     static let zahlungenSindPlausibel: Regel = { buchung, _ in
