@@ -181,3 +181,75 @@ private let jahresbestand = [
     #expect(euer.zeilen.map(\.zeile) == [16, 18])
     #expect(euer.zeilen[0].bezeichnung == "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen")
 }
+
+@Test func nichtAbziehbareVorsteuerBleibtBruttoAufDerZeile() {
+    // Unter zehn Prozent betrieblicher Nutzung gibt es keinen Vorsteuerabzug,
+    // §15 Abs. 1 Satz 2 UStG; der betriebliche Anteil steht dann brutto.
+    let kaum = buchung(
+        id: 10,
+        richtung: .ausgabe,
+        datum: datum(2026, 3, 1),
+        kategorie: "telekommunikation",
+        privatanteil: 95,
+        positionen: [position(100_000, 19)],
+        zahlungen: [zahlung(2026, 3, 1, 119_000)]
+    )
+    let euer = EUeR.calculate([kaum], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.zeile) == [44])
+    #expect(euer.zeilen[0].betrag.value == 5950)
+    #expect(euer.ausgaben.value == 5950)
+}
+
+@Test func auslaendischeSteuerIstKeineVorsteuer() {
+    // Ein österreichisches Hotel mit zehn Prozent: keine deutsche Vorsteuer,
+    // also brutto auf die Reisezeile und nichts in Zeile 58.
+    let hotel = buchung(
+        id: 11,
+        richtung: .ausgabe,
+        datum: datum(2026, 6, 1),
+        kategorie: "reise_uebernachtung",
+        land: "AT",
+        positionen: [position(20000, 10)],
+        behandlung: .nichtSteuerbar,
+        zahlungen: [zahlung(2026, 6, 1, 22000)]
+    )
+    let euer = EUeR.calculate([hotel], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.zeile) == [45])
+    #expect(euer.zeilen[0].betrag.value == 22000)
+}
+
+@Test func bewirtungStehtInBeidenSpalten() {
+    let essen = buchung(
+        id: 12,
+        richtung: .ausgabe,
+        datum: datum(2026, 7, 1),
+        kategorie: "bewirtung",
+        positionen: [position(10000, 19)],
+        zahlungen: [zahlung(2026, 7, 1, 11900)]
+    )
+    let euer = EUeR.calculate([essen], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.zeile) == [58, 64, 64])
+    // Das Formular druckt die nicht abziehbare Spalte zuerst.
+    #expect(euer.zeilen[1].bezeichnung == "Bewirtungsaufwendungen, nicht abziehbar (30 %)")
+    #expect(euer.zeilen[1].betrag.value == 3000)
+    #expect(euer.zeilen[2].bezeichnung == "Bewirtungsaufwendungen, abziehbar (70 %)")
+    #expect(euer.zeilen[2].betrag.value == 7000)
+    // Nur die 70 Prozent und die volle Vorsteuer mindern den Gewinn.
+    #expect(euer.ausgaben.value == 7000 + 1900)
+    #expect(euer.ergebnis.value == -8900)
+}
+
+@Test func dieBewirtungsspaltenErgebenZusammenDenBetrag() {
+    let essen = buchung(
+        id: 13,
+        richtung: .ausgabe,
+        datum: datum(2026, 7, 1),
+        kategorie: "bewirtung",
+        positionen: [position(3333, 0)],
+        behandlung: .steuerfrei,
+        zahlungen: [zahlung(2026, 7, 1, 3333)]
+    )
+    let euer = EUeR.calculate([essen], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.betrag.value) == [1000, 2333])
+    #expect(euer.ausgaben.value == 2333)
+}

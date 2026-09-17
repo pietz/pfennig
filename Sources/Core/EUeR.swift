@@ -17,6 +17,12 @@ import Foundation
 /// Vorsteuer, books gross on the category lines and has no VAT lines; the
 /// payments he makes under §13b stay on their own category line.
 ///
+/// Only the Vorsteuer that is deductible under §15 UStG reaches line 58. Tax
+/// that is not deductible stays with its expense and goes gross on the
+/// category line, Anleitung zu Zeile 58: foreign or tax-free invoices, the
+/// §13b tax that was never paid to the supplier, and the tax of an expense
+/// used less than ten percent for the business.
+///
 /// The Privatanteil of an expense is taken off its own amount before it
 /// reaches the line, and off its Vorsteuer the same way. Income has no private
 /// share, and the vereinnahmte Umsatzsteuer is owed in full, so neither is
@@ -27,9 +33,14 @@ public struct EUeR: Hashable, Sendable {
         public let bezeichnung: String
         public let richtung: Richtung
         public let betrag: Cent
+        /// The form takes the nicht abziehbaren 30 Prozent der Bewirtung in
+        /// its own column of line 64, the Gewinn does not take them at all.
+        public var nichtAbziehbar = false
 
-        public var id: Int {
-            zeile
+        /// Line 64 stands twice in the result, so its number alone does not
+        /// name a row.
+        public var id: String {
+            "\(zeile) \(bezeichnung)"
         }
     }
 
@@ -40,6 +51,10 @@ public struct EUeR: Hashable, Sendable {
     /// The two lines that no category feeds, Anlage EÜR 2026.
     public static let zeileVereinnahmteUmsatzsteuer = 17
     public static let zeileGezahlteVorsteuer = 58
+
+    /// The one line Pfennig fills that has a nicht abziehbare and an
+    /// abziehbare column, §4 Abs. 5 Satz 1 Nr. 2 EStG.
+    static let zeileBewirtung = 64
 
     /// The line titles of the Anlage EÜR 2026 for the lines Pfennig fills,
     /// shortened to what fits a CSV cell.
@@ -75,7 +90,8 @@ public struct EUeR: Hashable, Sendable {
     }
 
     public var ausgaben: Cent {
-        zeilen.filter { $0.richtung == .ausgabe }.reduce(Cent.null) { $0 + $1.betrag }
+        zeilen.filter { $0.richtung == .ausgabe && $0.nichtAbziehbar == false }
+            .reduce(Cent.null) { $0 + $1.betrag }
     }
 
     public var ergebnis: Cent {
@@ -96,32 +112,35 @@ public struct EUeR: Hashable, Sendable {
                   let kategorie = Kategorie.alle.first(where: { $0.schluessel == key })
             else { continue }
             let summe = summe(buchung, zeitraum: zeitraum)
-            let roh = summe.netto + (brutto ? summe.steuer : .null)
-            // Only an expense can be partly private; income is earned in full.
-            let betrag = buchung.richtung == .ausgabe
-                ? ohnePrivatanteil(roh, prozent: buchung.privatanteilProzent)
-                : roh
+            let betrag: Cent
+            switch buchung.richtung {
+            case .einnahme:
+                // Income is earned in full; a Privatanteil only shortens expenses.
+                betrag = summe.netto + (brutto ? summe.steuer : .null)
+                if brutto == false {
+                    vereinnahmt = vereinnahmt + summe.steuer
+                }
+            case .ausgabe:
+                let prozent = buchung.privatanteilProzent
+                // The same share the UStVA takes into Kz 66, and only where
+                // the supplier charged German tax the business actually paid.
+                let abziehbar = brutto || buchung.steuerbehandlung != .inland
+                    ? Cent.null
+                    : UStVA.abziehbar(summe.steuer, privatanteil: prozent)
+                // The business share of net and tax, minus what line 58 takes:
+                // what stays here is the tax that §15 UStG does not give back.
+                betrag = ohnePrivatanteil(summe.netto, prozent: prozent)
+                    + ohnePrivatanteil(summe.steuer, prozent: prozent) - abziehbar
+                vorsteuer = vorsteuer + abziehbar
+            }
             if betrag != .null {
                 let zeile = zeile(buchung, kategorie, profile: profile)
                 werte[zeile, default: .null] = werte[zeile, default: .null] + betrag
             }
-            guard brutto == false else { continue }
-            switch buchung.richtung {
-            case .einnahme:
-                vereinnahmt = vereinnahmt + summe.steuer
-            case .ausgabe:
-                // The same share the UStVA takes into Kz 66.
-                vorsteuer = vorsteuer + UStVA.abziehbar(summe.steuer, privatanteil: buchung.privatanteilProzent)
-            }
         }
 
-        var rows = werte.keys.sorted().map { nummer in
-            Zeile(
-                zeile: nummer,
-                bezeichnung: bezeichnung(nummer),
-                richtung: nummer < 24 ? .einnahme : .ausgabe,
-                betrag: werte[nummer] ?? .null
-            )
+        var rows = werte.keys.sorted().flatMap { nummer in
+            zeilen(nummer, betrag: werte[nummer] ?? .null)
         }
         if vereinnahmt != .null {
             rows.append(Zeile(
@@ -139,7 +158,38 @@ public struct EUeR: Hashable, Sendable {
                 betrag: vorsteuer
             ))
         }
-        return EUeR(jahr: jahr, zeilen: rows.sorted { $0.zeile < $1.zeile })
+        // The form prints the nicht abziehbare column of line 64 first, and
+        // Swift does not promise a stable sort, so the order is part of the key.
+        return EUeR(jahr: jahr, zeilen: rows.sorted {
+            ($0.zeile, $0.nichtAbziehbar ? 0 : 1) < ($1.zeile, $1.nichtAbziehbar ? 0 : 1)
+        })
+    }
+
+    /// The rows one line of the form gets: one, except for the Bewirtung,
+    /// which is 70 Prozent abziehbar and 30 Prozent nicht abziehbar, §4 Abs. 5
+    /// Satz 1 Nr. 2 EStG. The abziehbare share is rounded and the rest is the
+    /// remainder, so both columns together stay the full amount.
+    private static func zeilen(_ nummer: Int, betrag: Cent) -> [Zeile] {
+        let richtung: Richtung = nummer < 24 ? .einnahme : .ausgabe
+        guard nummer == zeileBewirtung else {
+            return [Zeile(zeile: nummer, bezeichnung: bezeichnung(nummer), richtung: richtung, betrag: betrag)]
+        }
+        let abziehbar = ohnePrivatanteil(betrag, prozent: 30)
+        return [
+            Zeile(
+                zeile: nummer,
+                bezeichnung: "\(bezeichnung(nummer)), nicht abziehbar (30 %)",
+                richtung: richtung,
+                betrag: betrag - abziehbar,
+                nichtAbziehbar: true
+            ),
+            Zeile(
+                zeile: nummer,
+                bezeichnung: "\(bezeichnung(nummer)), abziehbar (70 %)",
+                richtung: richtung,
+                betrag: abziehbar
+            )
+        ]
     }
 
     /// What one booking brings into the year: the net and the tax of the

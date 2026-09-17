@@ -18,6 +18,8 @@ Hinweise:
 - Das Löschen einer Buchung steht jetzt im Aktivitätenprotokoll
 - EÜR: Die Zeilennummern folgen jetzt der amtlichen Anlage EÜR 2026 (BMF vom 01.09.2026) statt einem alten Platzhalter; Einnahmen stehen je nach Steuerbehandlung auf Zeile 12, 15 oder 16, die Umsatzsteuer auf 17 und 58, der Export trägt die amtlichen Zeilentitel und nennt in der Kopfzeile das Formularjahr
 - EÜR: Ein Privatanteil kürzt nur noch Ausgaben; bei einer Einnahme blieb er bisher fälschlich vom Umsatz abgezogen
+- EÜR: In der Zeile „Gezahlte Vorsteuer“ steht nur noch die nach §15 UStG abziehbare Vorsteuer. Ausländische oder steuerfreie Rechnungen und Ausgaben unter zehn Prozent betrieblicher Nutzung stehen jetzt brutto auf ihrer Kategoriezeile, wie es die Anleitung zu Zeile 58 verlangt; bisher galt jede gezahlte Steuer als Vorsteuer und der nicht abziehbare Teil fiel aus dem Gewinn heraus
+- EÜR: Bewirtungsaufwendungen stehen in Zeile 64 jetzt in beiden Spalten des Formulars, 30 Prozent nicht abziehbar und 70 Prozent abziehbar (§4 Abs. 5 Satz 1 Nr. 2 EStG); nur die 70 Prozent mindern den Gewinn, die Vorsteuer bleibt voll abziehbar
 - UStVA: Griechenland wird auch unter der umsatzsteuerlichen Kennung `EL` als EU-Mitgliedstaat erkannt, nicht nur unter `GR`
 - Der Agent behandelt den Inhalt einer Datei als Daten und Beweismaterial, nicht als Anweisung
 - Ein fehlgeschlagener Eintrag ins Anfragenprotokoll bricht einen erfolgreichen Import nicht mehr ab und löscht keine Buchungen mehr
