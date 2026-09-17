@@ -127,6 +127,71 @@ import Testing
     #expect(ustva.zahllast == .null)
 }
 
+@Test func reverseChargeVorsteuerFolgtDemBetrieblichenAnteilBeiDienstleistungen() {
+    func bezug(privatanteil: Int, steuersatz: Decimal) -> Buchung {
+        buchung(
+            richtung: .ausgabe,
+            datum: datum(2026, 8, 3),
+            privatanteil: privatanteil,
+            land: "IE",
+            positionen: [positionOhneSteuer(20000, steuersatz)],
+            behandlung: .reverseCharge
+        )
+    }
+
+    // 200 Euro netto: liability remains 38 Euro while Kz 67 follows the
+    // business share, including the 95-percent case without a goods cutoff.
+    let neunzehn = [
+        (privatanteil: 0, vorsteuer: Int64(3800)),
+        (privatanteil: 40, vorsteuer: 2280),
+        (privatanteil: 95, vorsteuer: 190),
+        (privatanteil: 100, vorsteuer: 0)
+    ]
+    for fall in neunzehn {
+        let ustva = UStVA.calculate(
+            [bezug(privatanteil: fall.privatanteil, steuersatz: 19)],
+            zeitraum: q3,
+            profile: regel
+        )
+        #expect(ustva.betrag(46) == 20000)
+        #expect(ustva.betrag(47) == 3800)
+        #expect(ustva.betrag(67) == fall.vorsteuer)
+    }
+
+    let sieben = [
+        (privatanteil: 0, vorsteuer: Int64(1400)),
+        (privatanteil: 40, vorsteuer: 840),
+        (privatanteil: 95, vorsteuer: 70),
+        (privatanteil: 100, vorsteuer: 0)
+    ]
+    for fall in sieben {
+        let ustva = UStVA.calculate(
+            [bezug(privatanteil: fall.privatanteil, steuersatz: 7)],
+            zeitraum: q3,
+            profile: regel
+        )
+        #expect(ustva.betrag(46) == 20000)
+        #expect(ustva.betrag(47) == 1400)
+        #expect(ustva.betrag(67) == fall.vorsteuer)
+    }
+}
+
+@Test func reverseChargeKleinunternehmerZiehenKeineVorsteuerAuchMitPrivatanteil() {
+    let saas = buchung(
+        richtung: .ausgabe,
+        datum: datum(2026, 8, 3),
+        privatanteil: 40,
+        land: "IE",
+        positionen: [positionOhneSteuer(20000, 19)],
+        behandlung: .reverseCharge
+    )
+    let ustva = UStVA.calculate([saas], zeitraum: q3, profile: klein)
+    #expect(ustva.betrag(46) == 20000)
+    #expect(ustva.betrag(47) == 3800)
+    #expect(ustva.betrag(67) == 0)
+    #expect(ustva.zahllast == Cent(3800))
+}
+
 @Test func reverseChargeZaehltZumBelegdatumUndNichtZurZahlung() {
     let saas = buchung(
         id: 1,

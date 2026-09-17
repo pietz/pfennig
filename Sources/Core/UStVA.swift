@@ -134,7 +134,14 @@ public struct UStVA: Hashable, Sendable {
             buchen(rows.bemessung, buchung.netto, in: &werte)
             buchen(rows.steuer, steuer, in: &werte)
             if profile.kleinunternehmer == false {
-                buchen(67, steuer, in: &werte)
+                // §15 Abs. 1 Satz 2's ten-percent rule is limited to goods.
+                // This supported RC flow is for services, so Kz 67 keeps the
+                // business share even when business use is below ten percent.
+                buchen(
+                    67,
+                    EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent),
+                    in: &werte
+                )
             }
 
         case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, .unklar:
