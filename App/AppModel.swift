@@ -90,7 +90,6 @@ final class AppModel {
         let incoming = urls.filter { inProgress.contains($0) == false && queue.contains($0) == false }
         guard incoming.isEmpty == false else { return }
         queue.append(contentsOf: incoming)
-        progress.total += incoming.count
         process()
     }
 
@@ -119,7 +118,6 @@ final class AppModel {
                         offen -= 1
                         inProgress.remove(url)
                         record(result, fuer: url)
-                        progress.done += 1
                     }
                 }
             } while queue.isEmpty == false
@@ -313,18 +311,12 @@ final class AppModel {
     }
 }
 
-/// What the toolbar shows while the inbox is worked through.
+/// Whether the toolbar shows its spinner while the inbox is worked through.
 struct Progress: Equatable {
-    var total = 0
-    var done = 0
     var running = false
 
     var visible: Bool {
-        total > 0
-    }
-
-    var text: String {
-        "\(done) von \(total) fertig"
+        running
     }
 }
 

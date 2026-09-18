@@ -1,5 +1,7 @@
 # Status
 
+**Ruhiger Eingangsindikator.** Während der parallelen Dateiverarbeitung zeigt die Toolbar nur noch den Spinner. Der verzögert wirkende Textzähler und sein Fortschrittszustand sind entfernt; Sichtbarkeit und Verarbeitung bleiben unverändert.
+
 **Validierung und Kleinunternehmer-Fristen.** `privatanteil_prozent` wird beim Agentenschreiben und Bestätigen auf 0 bis 100 begrenzt; Einnahmen eines Kleinunternehmers dürfen nicht als `inland` in die steuerpflichtigen UStVA-Kennzahlen gelangen. Die Startseite zeigt Kleinunternehmern keine regelmäßige UStVA-Frist mehr, wohl aber einen Monats- oder Quartalszeitraum, in dem die bestehende UStVA-Berechnung eine unterstützte §13b-Steuer in Kz 47 oder 85 ergibt. Regelbesteuerte Profile bleiben unverändert. 177 Tests und App-Build erfolgreich, unabhängig geprüft.
 
 **Exportjahr-Schutz.** UStVA-XML und EÜR-CSV lassen sich nur für das Steuerjahr 2026 speichern. Die UStVA-Kennzahlen/XML-Struktur und die EÜR-Zuordnungen sind für andere Jahre nicht verifiziert; der Export bricht mit einer klaren deutschen Fehlermeldung ab, ohne eine Datei zu erzeugen. Die Berechnungen und das 2026-Verhalten bleiben unverändert; unabhängig geprüft.

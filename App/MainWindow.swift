@@ -169,13 +169,7 @@ struct MainWindow: View {
         // Visible for as long as there is something in the queue.
         if model.progress.visible {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text(model.progress.text)
-                        .font(.callout)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                }
+                ProgressView().controlSize(.small)
             }
         }
         ToolbarItem(placement: .primaryAction) {

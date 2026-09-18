@@ -113,17 +113,11 @@ struct StartView: View {
 
     /// Filters, search and the inspector belong to the table and stay away.
     /// What remains are the two actions that concern the whole window, plus the
-    /// intake progress.
+    /// intake indicator.
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         if model.progress.visible {
             ToolbarItem(placement: .primaryAction) {
-                HStack(spacing: 8) {
-                    ProgressView().controlSize(.small)
-                    Text(model.progress.text)
-                        .font(.callout)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                }
+                ProgressView().controlSize(.small)
             }
         }
         ToolbarItem(placement: .primaryAction) {
