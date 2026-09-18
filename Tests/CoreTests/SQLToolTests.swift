@@ -338,3 +338,72 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(umsatz, profile) != nil)
     #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(basis(), profile) == nil)
 }
+
+@Test func privatanteilProzentGrenzen() {
+    let profile = Profil()
+    let datum = LocalDate(jahr: 2026, monat: 9, tag: 1)
+    let erwarteteFaelle = [
+        (wert: -1, gueltig: false),
+        (wert: 0, gueltig: true),
+        (wert: 100, gueltig: true),
+        (wert: 101, gueltig: false)
+    ]
+
+    for fall in erwarteteFaelle {
+        let buchung = Buchung(
+            richtung: .ausgabe,
+            art: .beleg,
+            datum: datum,
+            titel: "T",
+            kategorie: "software",
+            privatanteilProzent: fall.wert,
+            positionen: [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
+            steuerbehandlung: .inland
+        )
+        let fehler = "privatanteil_prozent muss zwischen 0 und 100 liegen."
+
+        #expect((ValidationRules.privatanteilIstGueltig(buchung, profile) == nil) == fall.gueltig)
+        #expect(ValidationRules.validate(buchung, profile: profile).contains(fehler) == !fall.gueltig)
+    }
+}
+
+@Test func kleinunternehmerKeineInlandseinnahmen() {
+    let profile = Profil(kleinunternehmer: true)
+    let datum = LocalDate(jahr: 2026, monat: 9, tag: 1)
+    let steuerpflichtigePosition = Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))
+    let steuerfreiePosition = Position(netto: Cent(10000), steuersatz: 0, steuer: .null)
+    let reverseChargePosition = Position(netto: Cent(10000), steuersatz: 19, steuer: .null)
+    let fehler = "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
+
+    func einnahme(
+        behandlung: Steuerbehandlung,
+        land: String?,
+        position: Position
+    ) -> Buchung {
+        Buchung(
+            richtung: .einnahme,
+            art: .rechnung,
+            datum: datum,
+            titel: "T",
+            kategorie: "umsatz_dienstleistung",
+            gegenparteiLand: land,
+            positionen: [position],
+            steuerbehandlung: behandlung
+        )
+    }
+
+    let inland = einnahme(behandlung: .inland, land: "DE", position: steuerpflichtigePosition)
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(inland, profile) == fehler)
+    #expect(ValidationRules.validate(inland, profile: profile).contains(fehler))
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(inland, Profil()) == nil)
+
+    let auslandNichtSteuerbar = einnahme(behandlung: .nichtSteuerbar, land: "IE", position: steuerfreiePosition)
+    let steuerfrei = einnahme(behandlung: .steuerfrei, land: "DE", position: steuerfreiePosition)
+    let reverseCharge = einnahme(behandlung: .reverseCharge, land: "IE", position: reverseChargePosition)
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(auslandNichtSteuerbar, profile) == nil)
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(steuerfrei, profile) == nil)
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(reverseCharge, profile) == nil)
+    #expect(ValidationRules.validate(auslandNichtSteuerbar, profile: profile).isEmpty)
+    #expect(ValidationRules.validate(steuerfrei, profile: profile).isEmpty)
+    #expect(ValidationRules.validate(reverseCharge, profile: profile).isEmpty)
+}

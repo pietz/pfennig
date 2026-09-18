@@ -124,6 +124,88 @@ struct StartTests {
         #expect(fristen.allSatisfy { $0.tage >= 0 })
     }
 
+    @Test("Ein Kleinunternehmer ohne §13b erhält keine UStVA-Frist")
+    func kleinunternehmerOhne13bHatKeineUStvaFrist() {
+        let buchungen = [eintrag(id: 1, datum: datum(2026, 8, 1))]
+        let fristen = Start.fristen(buchungen, exportiert: [:], profil: klein, today: heute)
+
+        #expect(fristen.filter { $0.zeitraum.art == .ustva }.isEmpty)
+    }
+
+    @Test("Ein Kleinunternehmer erhält die UStVA-Frist für eine §13b-Ausgabe")
+    func kleinunternehmerMit13bHatUStvaFrist() {
+        let reverseCharge = buchung(
+            id: 1,
+            richtung: .ausgabe,
+            datum: datum(2025, 2, 3),
+            land: "IE",
+            positionen: [positionOhneSteuer(10000, 19)],
+            behandlung: .reverseCharge
+        )
+        let fristen = Start.fristen([reverseCharge], exportiert: [:], profil: klein, today: heute)
+
+        #expect(fristen.contains { $0.titel == "UStVA Q1 2025" })
+        #expect(fristen.contains { $0.titel == "UStVA Q3 2026" } == false)
+    }
+
+    @Test("Nur eine tatsächliche §13b-Schuld erzeugt beim Kleinunternehmer eine UStVA-Frist")
+    func kleinunternehmerOhneTatsaechliche13bSchuldHatKeineUStvaFrist() {
+        let buchungen = [
+            buchung(
+                id: 1,
+                richtung: .ausgabe,
+                datum: datum(2025, 2, 3),
+                land: "IE",
+                positionen: [positionOhneSteuer(0, 19)],
+                behandlung: .reverseCharge
+            ),
+            buchung(
+                id: 2,
+                richtung: .ausgabe,
+                datum: datum(2025, 3, 3),
+                land: nil,
+                positionen: [positionOhneSteuer(10000, 19)],
+                behandlung: .reverseCharge
+            ),
+            buchung(
+                id: 3,
+                richtung: .ausgabe,
+                art: .steuerzahlung,
+                datum: datum(2025, 3, 3),
+                land: "IE",
+                positionen: [positionOhneSteuer(10000, 19)],
+                behandlung: .reverseCharge
+            )
+        ]
+        let fristen = Start.fristen(buchungen, exportiert: [:], profil: klein, today: heute)
+
+        #expect(fristen.filter { $0.zeitraum.art == .ustva }.isEmpty)
+    }
+
+    @Test("Die §13b-Frist eines Kleinunternehmers folgt dem monatlichen Rhythmus")
+    func kleinunternehmerMit13bHatMonatlicheUStvaFrist() {
+        var profil = klein
+        profil.rhythmus = .monatlich
+        let reverseCharge = buchung(
+            id: 1,
+            richtung: .ausgabe,
+            datum: datum(2025, 12, 20),
+            land: "IE",
+            positionen: [positionOhneSteuer(10000, 19)],
+            behandlung: .reverseCharge
+        )
+        let fristen = Start.fristen([reverseCharge], exportiert: [:], profil: profil, today: heute)
+
+        #expect(fristen.filter { $0.zeitraum.art == .ustva }.map(\.titel) == ["UStVA Dezember 2025"])
+    }
+
+    @Test("Ein Regelbesteuerter erhält weiterhin die nächste UStVA-Frist")
+    func regelbesteuerterHatWeiterhinUStvaFrist() {
+        let fristen = Start.fristen([], exportiert: [:], profil: regel, today: heute)
+
+        #expect(fristen.contains { $0.titel == "UStVA Q3 2026" })
+    }
+
     @Test("Leere Zeiträume vor der ersten Buchung erscheinen nicht")
     func leereZeitraeumeFehlen() {
         // Ein Beleg vom November 2025: Q1 bis Q3 2025 bleiben draußen, Q4 2025 und die EÜR 2025 kommen.

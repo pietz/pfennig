@@ -7,7 +7,7 @@ import UniformTypeIdentifiers
 /// Mein ELSTER or types into the Anlage EÜR. It computes on demand and keeps
 /// no state beyond the chosen period.
 struct ExportSheet: View {
-    let model: AppModel
+    @Bindable var model: AppModel
     @Environment(\.dismiss) private var close
 
     private let profile: Profil
@@ -68,6 +68,11 @@ struct ExportSheet: View {
             footer
         }
         .frame(width: 560, height: 600)
+        .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
+            Button("OK") {}
+        } message: { text in
+            Text(text)
+        }
     }
 
     // MARK: - Auswahl
@@ -229,18 +234,22 @@ struct ExportSheet: View {
     /// Writes the file where the user wants it and notes the period as
     /// exported. Pfennig does not transmit; the upload happens in Mein ELSTER.
     private func save() {
-        let panel = NSSavePanel()
-        panel.nameFieldStringValue = zeitraum.dateiname
-        panel.allowedContentTypes = [art == .ustva ? .xml : .commaSeparatedText]
-        panel.canCreateDirectories = true
-        guard panel.runModal() == .OK, let destination = panel.url else { return }
         do {
+            try ExportError.validate(year: zeitraum.jahr)
+
+            let panel = NSSavePanel()
+            panel.nameFieldStringValue = zeitraum.dateiname
+            panel.allowedContentTypes = [art == .ustva ? .xml : .commaSeparatedText]
+            panel.canCreateDirectories = true
+            guard panel.runModal() == .OK, let destination = panel.url else { return }
             switch art {
             case .ustva: try UStVAXml.daten(ustva).write(to: destination)
             case .euer: try Data(euer.csv.utf8).write(to: destination)
             }
             model.markExported(zeitraum)
             close()
+        } catch let error as ExportError {
+            model.errorMessage = error.localizedDescription
         } catch {
             model.errorMessage = "Die Datei ließ sich nicht schreiben: \(error.localizedDescription)"
         }

@@ -19,9 +19,11 @@ public enum ValidationRules {
         mindestensEinePosition,
         steuerPasstZumSatz,
         kategorieIstBekannt,
+        privatanteilIstGueltig,
         datumLiegtNichtWeitInDerZukunft,
         reverseChargeNurBeiAuslaendischerGegenpartei,
         kleinunternehmerNurBeiEigenenEinnahmen,
+        kleinunternehmerKeineInlandseinnahmen,
         inlandNurMit19Oder7,
         reverseChargeOhneSteuer,
         reverseChargeAusgabeBrauchtSatz,
@@ -69,6 +71,13 @@ public enum ValidationRules {
         return nil
     }
 
+    static let privatanteilIstGueltig: Regel = { buchung, _ in
+        guard (0 ... 100).contains(buchung.privatanteilProzent) else {
+            return "privatanteil_prozent muss zwischen 0 und 100 liegen."
+        }
+        return nil
+    }
+
     static let datumLiegtNichtWeitInDerZukunft: Regel = { buchung, _ in
         let grenze = LocalDate(Date().addingTimeInterval(Double(vorlaufTage) * 86400))
         guard buchung.datum > grenze else { return nil }
@@ -91,6 +100,15 @@ public enum ValidationRules {
             return "steuerbehandlung kleinunternehmer passt nicht, das Profil ist regelbesteuert."
         }
         return nil
+    }
+
+    /// Taxable domestic income would populate UStVA fields that a
+    /// Kleinunternehmer must not report.
+    static let kleinunternehmerKeineInlandseinnahmen: Regel = { buchung, profile in
+        guard profile.kleinunternehmer,
+              buchung.richtung == .einnahme,
+              buchung.steuerbehandlung == .inland else { return nil }
+        return "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
     }
 
     /// The 2026 form has lines for 19 and 7 percent only. Anything else would

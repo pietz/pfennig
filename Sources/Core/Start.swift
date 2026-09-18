@@ -106,11 +106,23 @@ public enum Start {
         let aeltestes = sichtbar.flatMap { [$0.datum] + $0.zahlungen.map(\.datum) }.min()
 
         func offene(ab naechster: Zeitraum) -> [Zeitraum] {
-            var zeitraeume = [naechster]
+            func brauchtUStVA(_ zeitraum: Zeitraum) -> Bool {
+                guard profil.kleinunternehmer, zeitraum.art == .ustva else { return true }
+                let unterstuetzt = sichtbar.filter { buchung in
+                    ValidationRules.reverseChargeNurBeiAuslaendischerGegenpartei(buchung, profil) == nil
+                        && ValidationRules.reverseChargeOhneSteuer(buchung, profil) == nil
+                        && ValidationRules.reverseChargeAusgabeBrauchtSatz(buchung, profil) == nil
+                }
+                return UStVA.calculate(unterstuetzt, zeitraum: zeitraum, profile: profil).zeilen.contains {
+                    [47, 85].contains($0.kennzahl.nummer)
+                }
+            }
+
+            var zeitraeume = brauchtUStVA(naechster) ? [naechster] : []
             guard let aeltestes else { return zeitraeume }
             var zeitraum = naechster.vorheriger
             while zeitraum.bis >= aeltestes {
-                if sichtbar.contains(where: zeitraum.beruehrt) {
+                if brauchtUStVA(zeitraum), sichtbar.contains(where: zeitraum.beruehrt) {
                     zeitraeume.append(zeitraum)
                 }
                 zeitraum = zeitraum.vorheriger
