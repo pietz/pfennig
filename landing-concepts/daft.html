@@ -44,27 +44,34 @@
       <figcaption>Hier kommt ein Blick in die App.</figcaption>
     </figure>
 
-    <section class="text-center max-w-xl mx-auto" id="ablauf">
-      <h2>Deine Belege hast du schon. Die Zahlen stehen drin.</h2>
-      <p>Zieh Rechnungen, Belege und Kontoauszüge auf Pfennig. Die App liest die Dokumente, trägt Buchungen ein und ordnet Zahlungen zu. Das Abtippen kannst du dir sparen.</p>
+    <section class="mt-16" id="ablauf">
+      <header class="text-center max-w-xl mx-auto mb-8">
+        <h2>Deine Belege hast du schon. Die Zahlen stehen drin.</h2>
+      </header>
+      <div class="grid">
+        <article>
+          <header><h3>Ablegen statt abtippen.</h3></header>
+          <p>Zieh Rechnungen, Belege und Kontoauszüge auf Pfennig. Die App liest die Dokumente, trägt Buchungen ein und ordnet Zahlungen zu. Das Abtippen kannst du dir sparen.</p>
+        </article>
+        <article>
+          <header><h3>Einmal in Ruhe prüfen.</h3></header>
+          <p>Öffne den Beleg neben der Buchung, prüfe die Angaben und bestätige sie. Falls etwas nicht stimmt, korrigierst du es direkt. Einnahmen, Ausgaben und offene Zahlungen bleiben in einer übersichtlichen Tabelle.</p>
+        </article>
+      </div>
     </section>
 
-    <section class="text-center max-w-xl mx-auto">
-      <h2>Weniger eintippen. Einmal drüberschauen.</h2>
-      <p>Du siehst, was Pfennig eingetragen hat, und kannst den Beleg direkt daneben öffnen. Prüfe die Angaben, korrigiere bei Bedarf und bestätige die Buchung. Einnahmen, Ausgaben und offene Zahlungen bleiben in einer übersichtlichen Tabelle.</p>
-    </section>
-
-    <section class="text-center max-w-xl mx-auto">
-      <h2>Und wenn die Steuer ansteht?</h2>
-      <p>Für die Umsatzsteuervoranmeldung bekommst du eine XML-Datei. Die lädst du in Mein ELSTER hoch, prüfst das Formular und sendest es selbst ab. Für die EÜR exportierst du die Werte als CSV und überträgst sie von Hand in die Anlage EÜR.</p>
-      <p class="muted"><small>Für Freiberufler mit EÜR und Ist-Versteuerung, auch Kleinunternehmer. Steuerexporte aktuell für 2026.</small></p>
-    </section>
-
-    <section class="text-center max-w-xl mx-auto" id="daten">
-      <h2>Deine Belege. Du weißt, wo sie sind.</h2>
-      <p>Deine Buchhaltung und dein Belegarchiv werden lokal auf deinem Mac gespeichert. Zum Auslesen sendet Pfennig deine Dokumente an OpenAI. Dafür nutzt du deinen eigenen API-Schlüssel und bezahlst die Verarbeitung direkt bei OpenAI nach Nutzung.</p>
-      <p>Pfennig kümmert sich um deine Einnahmen und Ausgaben. Rechnungen schreiben oder dein Bankkonto anbinden gehört nicht dazu.</p>
-    </section>
+    <div class="grid mt-16">
+      <section>
+        <h2>Und wenn die Steuer ansteht?</h2>
+        <p>Pfennig bereitet deine Umsatzsteuervoranmeldung und EÜR vor. Du übernimmst die vorbereiteten Angaben in Mein ELSTER, prüfst sie und sendest selbst ab.</p>
+        <p class="muted"><small>Für Freiberufler mit EÜR und Ist-Versteuerung, auch Kleinunternehmer. Steuerexporte aktuell für 2026.</small></p>
+      </section>
+      <section id="daten">
+        <h2>Deine Belege. Du weißt, wo sie sind.</h2>
+        <p>Deine Buchhaltung und dein Belegarchiv werden lokal auf deinem Mac gespeichert. Zum Auslesen sendet Pfennig deine Dokumente an OpenAI. Dafür nutzt du deinen eigenen API-Schlüssel und bezahlst die Verarbeitung direkt bei OpenAI nach Nutzung.</p>
+        <p>Pfennig kümmert sich um deine Einnahmen und Ausgaben. Rechnungen schreiben oder dein Bankkonto anbinden gehört nicht dazu.</p>
+      </section>
+    </div>
   </main>
 
   <footer class="container text-center">
