@@ -99,18 +99,98 @@
       </div>
     </section>
 
-    <div class="grid mt-16">
-      <section>
-        <h2>Und wenn die Steuer ansteht?</h2>
-        <p>Pfennig bereitet deine Umsatzsteuervoranmeldung und EÜR vor. Du übernimmst die vorbereiteten Angaben in Mein ELSTER, prüfst sie und sendest selbst ab.</p>
-        <p class="muted"><small>Für Freiberufler mit EÜR und Ist-Versteuerung, auch Kleinunternehmer. Steuerexporte aktuell für 2026.</small></p>
-      </section>
-      <section id="daten">
-        <h2>Deine Belege. Du weißt, wo sie sind.</h2>
-        <p>Deine Buchhaltung und dein Belegarchiv werden lokal auf deinem Mac gespeichert. Zum Auslesen sendet Pfennig deine Dokumente an OpenAI. Dafür nutzt du deinen eigenen API-Schlüssel und bezahlst die Verarbeitung direkt bei OpenAI nach Nutzung.</p>
-        <p>Pfennig kümmert sich um deine Einnahmen und Ausgaben. Rechnungen schreiben oder dein Bankkonto anbinden gehört nicht dazu.</p>
-      </section>
-    </div>
+    <section class="mt-24" aria-labelledby="ueberblick-titel">
+      <div class="grid items-center">
+        <div>
+          <h2 id="ueberblick-titel">Wissen, was noch offen ist.</h2>
+          <p>Nicht erst, wenn die Steuer ansteht. Auf der Startseite siehst du, was reingekommen ist, was rausging und was noch deine Aufmerksamkeit braucht.</p>
+          <ul>
+            <li>Buchungen, die noch zu prüfen sind.</li>
+            <li>Fehlende Belege und überfällige Rechnungen.</li>
+            <li>Die nächsten Fristen für UStVA und EÜR.</li>
+          </ul>
+        </div>
+        <figure>
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für einen Screenshot der Pfennig-Startseite">
+          <figcaption>Jahresüberblick, offene Aufgaben und Fristen.</figcaption>
+        </figure>
+      </div>
+    </section>
+
+    <section class="mt-24" aria-labelledby="zielgruppe-titel">
+      <header class="text-center max-w-2xl mx-auto mb-8">
+        <h2 id="zielgruppe-titel">Für deine Selbstständigkeit.<br>Nicht für jede Buchhaltung.</h2>
+        <p class="muted">Für Freiberufler und Einzelunternehmer in Deutschland mit EÜR und Ist-Versteuerung. Auch als Kleinunternehmer.</p>
+      </header>
+      <article>
+        <div class="grid">
+          <section>
+            <h3>Für das, was bei dir anfällt.</h3>
+            <ul>
+              <li>Einnahmen, Ausgaben und Zahlungen aus Kontoauszügen.</li>
+              <li>Belege in Fremdwährungen und Reverse Charge.</li>
+              <li>Teilzahlungen, Erstattungen und betriebliche Anteile.</li>
+            </ul>
+          </section>
+          <section>
+            <h3>Bewusst kein Alles-in-einem.</h3>
+            <p>Rechnungen schreiben, dein Bankkonto verbinden, Bilanz oder Lohnabrechnung: Das macht Pfennig nicht. Es konzentriert sich auf die Buchhaltung deiner vorhandenen Belege.</p>
+          </section>
+        </div>
+        <footer>Steuerexporte sind derzeit für 2026 verfügbar.</footer>
+      </article>
+    </section>
+
+    <section class="mt-24" id="daten" aria-labelledby="daten-titel">
+      <div class="grid gap-8">
+        <div>
+          <h2 id="daten-titel">Auf deinem Mac gespeichert.<br>Mit OpenAI ausgelesen.</h2>
+          <p>Deine Buchhaltung und die Originalbelege liegen auf deinem Mac. Zum Auslesen sendet Pfennig Dokumente sowie benötigte Profil- und Buchungsdaten an OpenAI.</p>
+          <p>Du verwendest deinen eigenen API-Schlüssel. Pfennig ist kostenlos; die Verarbeitung bezahlst du direkt bei OpenAI nach Nutzung.</p>
+        </div>
+        <div>
+          <h3>So fängst du an.</h3>
+          <ol>
+            <li><strong>Pfennig installieren.</strong> Lade die App und zieh sie in deinen Programme-Ordner.</li>
+            <li><strong>Einmal einrichten.</strong> Fülle dein Steuerprofil aus und hinterlege deinen OpenAI-API-Schlüssel in den Einstellungen.</li>
+            <li><strong>Den ersten Beleg ablegen.</strong> Zieh ihn auf das Fenster und prüfe die erfasste Buchung.</li>
+          </ol>
+          <p><a href="https://platform.openai.com/api-keys">API-Schlüssel bei OpenAI erstellen</a></p>
+          <p class="muted"><small>Dafür brauchst du ein OpenAI-Konto mit eingerichteter API-Abrechnung. Ein ChatGPT-Abo deckt diese Nutzung nicht ab.</small></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-24 max-w-2xl mx-auto" aria-labelledby="fragen-titel">
+      <header class="text-center mb-8">
+        <h2 id="fragen-titel">Noch ein paar Fragen?</h2>
+      </header>
+      <details>
+        <summary>Wie kommen meine Zahlen zu ELSTER?</summary>
+        <p>Für die UStVA lädst du die von Pfennig vorbereitete Datei in Mein ELSTER hoch. Die EÜR-Werte überträgst du von Hand in das Formular. Du prüfst die Angaben und sendest selbst ab; Pfennig übermittelt nichts an das Finanzamt.</p>
+      </details>
+      <details>
+        <summary>Welche Dokumente kann ich ablegen?</summary>
+        <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML und Kontoauszüge als PDF oder CSV. Eine Bankanbindung brauchst du dafür nicht: Du lädst den Auszug bei deiner Bank herunter und legst ihn auf Pfennig ab.</p>
+      </details>
+      <details>
+        <summary>Was ist, wenn etwas falsch erkannt wird?</summary>
+        <p>Du kannst jede Buchung ansehen und korrigieren. Vergleiche die Angaben mit dem Original, bevor du sie bestätigst. Prüfe auch deine Steuerzahlen vor der Abgabe: Ungeprüfte Buchungen werden nicht automatisch aus der Berechnung ausgeschlossen.</p>
+      </details>
+      <details>
+        <summary>Was kostet die Verarbeitung?</summary>
+        <p>Die Kosten bei OpenAI hängen vom gewählten Modell und deinen Dokumenten ab. Du bezahlst die API-Nutzung direkt dort, unabhängig von der kostenlosen Pfennig-App. Die aktuellen Preise findest du <a href="https://openai.com/api/pricing/">bei OpenAI</a>.</p>
+      </details>
+    </section>
+
+    <section class="text-center mt-24" aria-labelledby="loslegen-titel">
+      <h2 id="loslegen-titel">Fang mit einem Beleg an.</h2>
+      <p class="muted mx-auto max-w-xl">Lade Pfennig, richte deinen Zugang ein und schau dir an, wie aus deinem ersten Beleg eine Buchung wird.</p>
+      <div class="cluster justify-center mt-8">
+        <a class="button large" href="https://github.com/pietz/pfennig/releases/latest">Kostenlos für Mac laden</a>
+      </div>
+      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel<br>OpenAI-Nutzung wird separat abgerechnet.</small></p>
+    </section>
   </main>
 
   <footer class="container text-center">
