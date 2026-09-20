@@ -120,7 +120,7 @@ public struct UStVA: Hashable, Sendable {
             for (stelle, zahlung) in zahlungen.enumerated() {
                 guard zeitraum.enthaelt(max(buchung.datum, zahlung.datum)) else { continue }
                 let steuer = anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }
-                buchen(66, abziehbar(steuer, privatanteil: buchung.privatanteilProzent), in: &werte)
+                buchen(66, EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent), in: &werte)
             }
 
         case .reverseCharge:
@@ -134,9 +134,6 @@ public struct UStVA: Hashable, Sendable {
             buchen(rows.bemessung, buchung.netto, in: &werte)
             buchen(rows.steuer, steuer, in: &werte)
             if profile.kleinunternehmer == false {
-                // §15 Abs. 1 Satz 2's ten-percent rule is limited to goods.
-                // This supported RC flow is for services, so Kz 67 keeps the
-                // business share even when business use is below ten percent.
                 buchen(
                     67,
                     EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent),
@@ -157,12 +154,6 @@ public struct UStVA: Hashable, Sendable {
         buchung.zahlungen.enumerated()
             .sorted { ($0.element.datum, $0.offset) < ($1.element.datum, $1.offset) }
             .map(\.element)
-    }
-
-    /// The deductible share of the input VAT: none below ten percent of
-    /// business use, §15 Abs. 1 Satz 2 UStG, otherwise the business share.
-    static func abziehbar(_ steuer: Cent, privatanteil: Int) -> Cent {
-        privatanteil > 90 ? .null : EUeR.ohnePrivatanteil(steuer, prozent: privatanteil)
     }
 
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {

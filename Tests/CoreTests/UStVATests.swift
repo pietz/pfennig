@@ -429,7 +429,7 @@ import Testing
     #expect(Kennzahl.einnahme(behandlung: .reverseCharge, steuersatz: 0, land: "EL") == 21)
 }
 
-@Test func derPrivatanteilKuerztDieVorsteuerUndUnterZehnProzentGibtEsKeine() {
+@Test func derPrivatanteilKuerztDieVorsteuer() {
     let laptop = buchung(
         id: 1,
         richtung: .ausgabe,
@@ -441,11 +441,10 @@ import Testing
     // 60 Prozent von 190,00 Euro, wie in der EÜR.
     #expect(UStVA.calculate([laptop], zeitraum: q3, profile: regel).betrag(66) == 11400)
 
-    // Unter zehn Prozent unternehmerischer Nutzung ist gar kein Abzug erlaubt, §15 Abs. 1 Satz 2 UStG.
+    // Auch ein kleiner betrieblicher Anteil bleibt abziehbar: die Grenze des
+    // §15 Abs. 1 Satz 2 UStG gilt nur für Gegenstände, und ob eine Buchung
+    // einen Gegenstand oder eine Leistung betrifft, weiß Pfennig nicht.
     var kaum = laptop
     kaum.privatanteilProzent = 95
-    #expect(UStVA.calculate([kaum], zeitraum: q3, profile: regel).zeilen.isEmpty)
-    // The EÜR line for paid input VAT follows the same cut.
-    let euer = EUeR.calculate([kaum], jahr: 2026, profile: regel)
-    #expect(euer.zeilen.contains { $0.zeile == EUeR.zeileGezahlteVorsteuer } == false)
+    #expect(UStVA.calculate([kaum], zeitraum: q3, profile: regel).betrag(66) == 950)
 }

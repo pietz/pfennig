@@ -138,7 +138,7 @@ public struct EUeR: Hashable, Sendable {
                 // the supplier charged German tax the business actually paid.
                 let abziehbar = brutto || buchung.steuerbehandlung != .inland
                     ? Cent.null
-                    : UStVA.abziehbar(summe.steuer, privatanteil: prozent)
+                    : ohnePrivatanteil(summe.steuer, prozent: prozent)
                 // The business share of net and tax, minus what line 58 takes:
                 // what stays here is the tax that §15 UStG does not give back.
                 let betrieblich = ohnePrivatanteil(summe.netto, prozent: prozent)

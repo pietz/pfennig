@@ -238,9 +238,10 @@ private func anlage(_ titel: String) -> Buchung {
     #expect(euer.zeilen[0].bezeichnung == "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen")
 }
 
-@Test func nichtAbziehbareVorsteuerBleibtBruttoAufDerZeile() {
-    // Unter zehn Prozent betrieblicher Nutzung gibt es keinen Vorsteuerabzug,
-    // §15 Abs. 1 Satz 2 UStG; der betriebliche Anteil steht dann brutto.
+@Test func einKleinerBetrieblicherAnteilBehaeltSeineVorsteuer() {
+    // Die Zehn-Prozent-Grenze des §15 Abs. 1 Satz 2 UStG gilt nur für
+    // Gegenstände; für sonstige Leistungen bleibt auch ein kleiner Anteil
+    // abziehbar, also netto auf der Kategoriezeile und die Vorsteuer auf 58.
     let kaum = buchung(
         id: 10,
         richtung: .ausgabe,
@@ -251,8 +252,9 @@ private func anlage(_ titel: String) -> Buchung {
         zahlungen: [zahlung(2026, 3, 1, 119_000)]
     )
     let euer = EUeR.calculate([kaum], jahr: 2026, profile: regel)
-    #expect(euer.zeilen.map(\.zeile) == [44])
-    #expect(euer.zeilen[0].betrag.value == 5950)
+    #expect(euer.zeilen.map(\.zeile) == [44, EUeR.zeileGezahlteVorsteuer])
+    #expect(euer.zeilen[0].betrag.value == 5000)
+    #expect(euer.zeilen[1].betrag.value == 950)
     #expect(euer.ausgaben.value == 5950)
 }
 
