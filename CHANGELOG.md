@@ -1,5 +1,13 @@
 # Änderungen
 
+## 0.7.0 (2026-09-20)
+
+- Bestätigen prüft nur noch die Regeln, die eine Buchung ungültig machen. Eine Rechnung, deren Rundung je Zeile um mehr als einen Cent abweicht, und eine echt vorausdatierte Rechnung lassen sich jetzt bestätigen; für den Agenten gelten beide Regeln unverändert weiter
+- Eine Eingangsrechnung darf einen anderen Steuersatz als 19 oder 7 tragen, etwa den Pauschalsatz nach §24 UStG; bei Einnahmen bleiben 19 und 7 verbindlich, Steuersatz 0 gehört in beiden Richtungen auf steuerfrei oder nicht_steuerbar
+- UStVA und EÜR: Die Zehn-Prozent-Grenze des Vorsteuerabzugs entfällt. Sie gilt nur für Gegenstände, und Pfennig unterscheidet Gegenstand und Leistung nicht; auch ein kleiner betrieblicher Anteil bleibt damit abziehbar
+- Der Agent erfährt in der Werkzeugbeschreibung, dass er `afa_tabelle` lesen darf. Bisher widersprach sie der Regel, die Nutzungsdauer von dort zu holen
+- `scripts/release.sh` führt die Tests aus, bevor es etwas entfernt
+
 ## 0.6.0 (2026-09-18)
 
 - Inspector: Bei `reverse_charge` bleibt die Positionssteuer bei Änderungen von Netto und Satz null und das Steuerfeld ist deaktiviert; beim Wechsel auf `reverse_charge` wird vorhandene Steuer geleert, beim Wechsel weg davon neu aus Netto und Satz berechnet
