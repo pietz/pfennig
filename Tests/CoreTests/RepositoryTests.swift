@@ -404,9 +404,9 @@ private func bestaetigungsfehler(
 @Test func anfragenWerdenGestartetUndBeendet() throws {
     let repository = try Repository.inMemory()
     let id = try repository.startRequest(dateiId: 1, modell: "gpt-5")
-    try repository.finishRequest(
+    try repository.finishRequest(id: id, status: .erfolg)
+    try repository.recordRequestTrace(
         id: id,
-        status: .erfolg,
         eingabeTokens: 1200,
         ausgabeTokens: 300,
         konversation: "[{\"rolle\":\"agent\"}]"

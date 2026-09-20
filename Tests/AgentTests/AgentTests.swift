@@ -414,7 +414,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(try repository.fileID(sha256: hash) == id)
 
     // After a successful run the same hash is done, from wherever it comes.
-    try repository.finishRequest(id: 1, status: .erfolg, eingabeTokens: 1, ausgabeTokens: 1, konversation: "[]")
+    try repository.finishRequest(id: 1, status: .erfolg)
     guard case .alreadyPresent = await intake.process(file) else {
         Issue.record("Der bekannte Hash wurde nicht erkannt.")
         return
@@ -799,28 +799,75 @@ private actor Zaehler {
     #expect(text.contains("Amazon") == false)
 }
 
-@Test func laufBleibtErfolgreichWennNurDasAnfragenLogNichtSchreibbarIst() async throws {
-    let repository = try Repository.inMemory()
-    // The log write is the only thing that fails: a trigger refuses the
-    // success row, the booking table stays untouched.
+@Test func eingangBleibtOhneDiagnoseLogDauerhaftErfolgreich() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
     try await repository.database.write { db in
         try db.execute(sql: """
-        CREATE TRIGGER sperre_erfolg BEFORE UPDATE ON anfragen
-        WHEN NEW.status = 'erfolg'
-        BEGIN SELECT RAISE(ABORT, 'Log gesperrt'); END
+        CREATE TRIGGER sperre_diagnose BEFORE UPDATE OF konversation ON anfragen
+        BEGIN SELECT RAISE(ABORT, 'Diagnose gesperrt'); END
         """)
     }
-    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
-    let run = try await AgentRun(
-        repository: repository,
-        tool: SQLTool(repository),
-        key: "test",
-        transport: skript.transport
-    )
-
-    let result = try await run.start(input())
-    #expect(result.created == [1])
-    // The booking the run committed is still there; only the log stayed open.
+    let file = folder.appending(path: "beleg.pdf")
+    try Data("%PDF synthetisch".utf8).write(to: file)
+    let skript = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
+    let intake = try await FileIntake(repository: repository, path: path, transport: skript.transport, key: "test")
+    guard case .booked = await intake.process(file) else {
+        Issue.record("Diagnosefehler darf den Import nicht verhindern.")
+        return
+    }
+    let request = try #require(try repository.allRequests().first)
+    #expect(request.status == .erfolg)
+    #expect(request.konversation == nil)
+    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId))
+    #expect(intake.inbox().isEmpty)
+    guard case .alreadyPresent = await intake.process(file) else {
+        Issue.record("Die Datei muss trotz fehlender Diagnose dauerhaft erkannt werden.")
+        return
+    }
+    #expect(try repository.allRequests().count == 1)
     #expect(try repository.allBookings().count == 1)
-    #expect(try repository.allRequests().first?.status == nil)
+}
+
+@Test func fehlenderAbschlussBehaeltInboxUndBuchungen() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try await repository.database.write { db in
+        try db.execute(sql: """
+        CREATE TRIGGER sperre_abschluss BEFORE UPDATE OF status ON anfragen
+        WHEN NEW.status = 'erfolg'
+        BEGIN SELECT RAISE(ABORT, 'Abschluss gesperrt'); END
+        """)
+    }
+    let file = folder.appending(path: "beleg.pdf")
+    try Data("%PDF synthetisch".utf8).write(to: file)
+    let skript = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
+    let intake = try await FileIntake(repository: repository, path: path, transport: skript.transport, key: "test")
+    guard case let .failed(inbox, _) = await intake.process(file) else {
+        Issue.record("Ohne dauerhaften Abschluss darf der Import keinen Erfolg melden.")
+        return
+    }
+    #expect(FileManager.default.fileExists(atPath: inbox.path))
+    #expect(try repository.allBookings().count == 1)
+    let request = try #require(try repository.allRequests().first)
+    #expect(request.status == nil)
+    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId) == false)
+    #expect(request.konversation != nil)
+
+    // Once storage works again, the agent can complete the retained booking
+    // on retry instead of losing it or creating a replacement.
+    try await repository.database.write { db in
+        try db.execute(sql: "DROP TRIGGER sperre_abschluss")
+    }
+    let retryScript = Skript([
+        werkzeugantwort("UPDATE buchungen SET notizen = 'Erneut geprüft' WHERE id = 1"), schlussantwort
+    ])
+    let retry = try await FileIntake(repository: repository, path: path, transport: retryScript.transport, key: "test")
+    guard case .booked = await retry.process(inbox) else {
+        Issue.record("Der erneute Versuch muss den gespeicherten Beleg abschließen können.")
+        return
+    }
+    #expect(try repository.allBookings().count == 1)
+    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId))
+    #expect(retry.inbox().isEmpty)
 }

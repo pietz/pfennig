@@ -183,9 +183,18 @@ public final class Repository: Sendable {
         try database.read { try Anfrage.fetchAll($0, sql: "SELECT * FROM anfragen ORDER BY id") }
     }
 
-    public func finishRequest(
+    /// Durable outcome used by intake deduplication, independent of diagnostics.
+    public func finishRequest(id: Int64, status: Anfragestatus) throws {
+        try database.write { db in
+            try db.execute(
+                sql: "UPDATE anfragen SET beendet_am = ?, status = ? WHERE id = ?",
+                arguments: [Date(), status, id]
+            )
+        }
+    }
+
+    public func recordRequestTrace(
         id: Int64,
-        status: Anfragestatus,
         eingabeTokens: Int,
         ausgabeTokens: Int,
         konversation: String
@@ -194,10 +203,10 @@ public final class Repository: Sendable {
             try db.execute(
                 sql: """
                 UPDATE anfragen
-                SET beendet_am = ?, status = ?, eingabe_tokens = ?, ausgabe_tokens = ?, konversation = ?
+                SET eingabe_tokens = ?, ausgabe_tokens = ?, konversation = ?
                 WHERE id = ?
                 """,
-                arguments: [Date(), status, eingabeTokens, ausgabeTokens, konversation, id]
+                arguments: [eingabeTokens, ausgabeTokens, konversation, id]
             )
         }
     }

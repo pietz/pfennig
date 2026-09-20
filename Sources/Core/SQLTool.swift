@@ -11,7 +11,7 @@ public struct SQLResult: Sendable {
 }
 
 /// The agent's one tool. It runs a single SQL statement against the app
-/// database inside the three limits of spec section 4: the authorizer decides
+/// database inside three limits: the authorizer decides
 /// what may be compiled, the statement runs in a transaction whose commit
 /// depends on the validation rules, and every touched booking leaves a row in
 /// `aktivitaeten`.

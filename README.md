@@ -26,8 +26,21 @@ scripts/build.sh       # App-Bundle bauen
 scripts/run.sh         # bauen und starten
 ```
 
-Die Spezifikation steht in `docs/specs/pfennig-neu.md`, die Arbeitsregeln in `AGENTS.md`, der aktuelle Stand in `docs/status.md`. Releases sind in `docs/releasing.md` beschrieben.
+Die Produktgrenzen und Arbeitsregeln stehen in `AGENTS.md`, die Entwicklungshistorie in `docs/status.md`. Releases sind in `docs/releasing.md` beschrieben.
 
 ## Lizenz
 
 GNU General Public License, Version 3. Siehe `LICENSE`.
+
+## Optionaler Agenten-Akzeptanztest
+
+`scripts/test-live.sh` prüft mit Luna und niedrigem Denkaufwand eine synthetische
+PDF-Rechnung, die Zuordnung einer CSV-Kontobewegung und den erneuten Import beider
+Dateien. Der Aufruf verwendet den in der App eingerichteten API-Schlüssel aus dem
+Schlüsselbund und verursacht API-Kosten. Er arbeitet ausschließlich mit erzeugten
+Testdokumenten und einem temporären Archiv, das danach entfernt wird.
+
+Normale Tests und CI führen diesen Test nicht aus. Der Live-Test bewertet die
+resultierenden Buchungen statt einer bestimmten Antwort oder SQL-Abfolge. Ein
+Fehlschlag ist zu untersuchen; ein einzelner erfolgreicher Lauf belegt keine
+allgemeine Importgenauigkeit. Private Belege werden nie als Testdaten verwendet.

@@ -1,7 +1,7 @@
 import GRDB
 import GRDBSQLite
 
-/// The first of the three limits from spec section 4: what the agent's sql
+/// The authorization boundary: what the agent's sql
 /// tool may compile at all. SQLite asks this function once per action while it
 /// compiles a statement, so a denied action fails the statement before a single
 /// row is read or written.
