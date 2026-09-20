@@ -20,8 +20,9 @@ public final class SQLTool: Sendable {
     public static let rowLimit = 50
 
     /// What the authorizer lets through, in one sentence. The tool says it in
-    /// its refusals, the instructions and the tool description repeat it.
-    public static let allowed = "Erlaubt sind SELECT, INSERT und UPDATE auf buchungen."
+    /// its refusals and the tool description repeats it.
+    public static let allowed =
+        "Erlaubt sind SELECT auf buchungen und afa_tabelle sowie INSERT und UPDATE auf buchungen."
 
     private let repository: Repository
     /// An empty copy of the schema with the authorizer on it. It compiles the

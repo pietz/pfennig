@@ -163,7 +163,10 @@ private func input() -> FileInput {
     #expect(werkzeuge[0]["name"] as? String == "sql")
     #expect(werkzeuge[0]["strict"] as? Bool == true)
     let sqlBeschreibung = try #require(werkzeuge[0]["description"] as? String)
-    #expect(sqlBeschreibung.contains("SELECT, INSERT und UPDATE auf buchungen"))
+    // Die Beschreibung nennt genau das, was der Autorisierer zulässt: die
+    // AfA-Tabelle lesend, die Buchungen auch schreibend.
+    #expect(sqlBeschreibung.contains("SELECT auf buchungen und afa_tabelle"))
+    #expect(sqlBeschreibung.contains("INSERT und UPDATE auf buchungen"))
     #expect(sqlBeschreibung.contains("dateien") == false)
     #expect(werkzeuge[1]["type"] as? String == "function")
     #expect(werkzeuge[1]["name"] as? String == "umrechnen")

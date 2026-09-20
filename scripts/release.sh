@@ -180,6 +180,11 @@ if [[ "$MODE" == "--notarize" ]]; then
   xcrun notarytool history --keychain-profile "$NOTARY_PROFILE" >/dev/null
 fi
 
+# A release that fails its own tests must not exist. This runs before the
+# archive is removed, so a red suite leaves the previous release untouched.
+echo "==> swift test"
+swift test
+
 xcodegen generate --quiet
 rm -rf "$ARCHIVE_PATH" "$EXPORT_PATH"
 mkdir -p "$DIST_DIR"
