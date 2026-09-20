@@ -3,9 +3,9 @@
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$REPO_ROOT"
 
-if [ ! -d "$PROJECT" ]; then
-  xcodegen generate --quiet
-fi
+# Always regenerate: project.yml carries the version and the file list, and a
+# stale project silently builds the previous one.
+xcodegen generate --quiet
 
 xcodebuild_run \
   -project "$PROJECT" \
