@@ -2,17 +2,46 @@ import AppKit
 import Sparkle
 import SwiftUI
 
+/// Receives Finder and Launch Services document-open events. AppKit may send
+/// them before the SwiftUI window exists, so early files wait for its model.
+@MainActor
+final class ApplicationDelegate: NSObject, NSApplicationDelegate {
+    private var model: AppModel?
+    private var pendingFiles: [URL] = []
+
+    func connect(to model: AppModel) {
+        self.model = model
+        guard pendingFiles.isEmpty == false else { return }
+        model.acceptFiles(pendingFiles)
+        pendingFiles = []
+    }
+
+    func application(_ sender: NSApplication, openFiles filenames: [String]) {
+        let files = filenames.map { URL(filePath: $0) }
+        if let model {
+            model.acceptFiles(files)
+        } else {
+            pendingFiles.append(contentsOf: files)
+        }
+        sender.reply(toOpenOrPrint: .success)
+    }
+}
+
 @main
 struct PfennigApp: App {
-    @State private var model = AppModel()
+    @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var applicationDelegate
+    @State private var model: AppModel
     private let updaterController: SPUStandardUpdaterController
 
     init() {
+        let model = AppModel()
+        _model = State(initialValue: model)
         updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
+        applicationDelegate.connect(to: model)
     }
 
     var body: some Scene {

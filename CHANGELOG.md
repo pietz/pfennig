@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.7.2 (2026-09-20)
+
+- Dateien der unterstützten Formate lassen sich aus dem Finder oder mit `open -a Pfennig …` in Pfennig öffnen und gehen durch denselben Eingang wie abgelegte Dateien. Pfennig steht dafür als alternative App bereit, übernimmt aber keine Standardzuordnungen
+
 ## 0.7.1 (2026-09-20)
 
 - Buchungen lassen sich mit Befehlsklick oder Umschaltklick gemeinsam auswählen und nach einer Bestätigung zusammen löschen. Bei einer Auswahl bleibt der normale Inspector sichtbar, bei mehreren zeigt er nur deren Anzahl
