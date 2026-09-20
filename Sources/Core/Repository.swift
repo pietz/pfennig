@@ -66,11 +66,26 @@ public final class Repository: Sendable {
     /// the last row for the booking carries its final state and no `nachher`.
     /// Its files stay in `dateien` and in the archive.
     public func delete(id: Int64) throws {
+        try delete(ids: [id])
+    }
+
+    /// Removes several bookings in one transaction and leaves one final
+    /// activity entry for each booking that existed.
+    public func delete(ids: Set<Int64>) throws {
+        guard ids.isEmpty == false else { return }
         try database.write { db in
-            guard let buchung = try Buchung.fetchOne(db, key: id) else { return }
-            try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
-            let entry = Aktivitaet(buchungId: id, zeitpunkt: Date(), akteur: .nutzer, vorher: buchung, nachher: nil)
-            try entry.insert(db)
+            for id in ids.sorted() {
+                guard let buchung = try Buchung.fetchOne(db, key: id) else { continue }
+                try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
+                let entry = Aktivitaet(
+                    buchungId: id,
+                    zeitpunkt: Date(),
+                    akteur: .nutzer,
+                    vorher: buchung,
+                    nachher: nil
+                )
+                try entry.insert(db)
+            }
         }
     }
 

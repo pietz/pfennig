@@ -437,6 +437,29 @@ private func bestaetigungsfehler(
     #expect(eintraege.last?.akteur == .nutzer)
 }
 
+@Test func mehrereBuchungenWerdenGemeinsamGeloeschtUndProtokolliert() throws {
+    let repository = try Repository.inMemory()
+    let erste = try repository.save(beispiel(), akteur: .nutzer)
+    var zweiteBuchung = beispiel()
+    zweiteBuchung.titel = "Monitor"
+    let zweite = try repository.save(zweiteBuchung, akteur: .nutzer)
+    var bleibendeBuchung = beispiel()
+    bleibendeBuchung.titel = "Tastatur"
+    let bleibende = try repository.save(bleibendeBuchung, akteur: .nutzer)
+    let ids = try Set([#require(erste.id), #require(zweite.id)])
+
+    try repository.delete(ids: ids)
+
+    #expect(try repository.allBookings().map(\.id) == [bleibende.id])
+    let loeschungen = try repository.database.read { db in
+        try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten WHERE nachher IS NULL ORDER BY id")
+    }
+    #expect(loeschungen.count == 2)
+    #expect(Set(loeschungen.map(\.buchungId)) == ids)
+    #expect(Set(loeschungen.compactMap { $0.vorher?.titel }) == ["Bürostuhl", "Monitor"])
+    #expect(loeschungen.allSatisfy { $0.akteur == .nutzer })
+}
+
 @Test func profilUeberstehtDenRundlauf() throws {
     let repository = try Repository.inMemory()
     #expect(try repository.profile() == Profil())

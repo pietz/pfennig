@@ -120,6 +120,11 @@ struct WorkspaceView: View {
         if let buchung = model.selected {
             Inspector(model: model, buchung: buchung)
                 .id(buchung.id)
+        } else if model.selection.isEmpty == false {
+            Text("\(model.selection.count) Buchungen ausgewählt")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             VStack(spacing: 14) {
                 Image("PfennigMark")
