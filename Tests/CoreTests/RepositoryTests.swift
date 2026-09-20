@@ -244,6 +244,25 @@ private func bestaetigungsfehler(
     try bestaetigungsfehler(repository, buchung: buchung, erwartet: "kategorie fehlt")
 }
 
+/// Eine mehrzeilige Rechnung rundet je Zeile und weicht dadurch stärker ab, als
+/// die Toleranz erlaubt. Der Nutzer hat den Beleg vor sich und darf bestätigen.
+@Test func bestaetigungLaesstEineSteuerAbweichungZu() throws {
+    let repository = try Repository.inMemory()
+    let schief = [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1895))]
+    let saved = try repository.save(beispiel(positionen: schief), akteur: .agent)
+    try repository.confirm(id: #require(saved.id))
+    #expect(try repository.allBookings().first?.geprueftAm != nil)
+}
+
+@Test func bestaetigungLaesstEinKuenftigesDatumZu() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.datum = LocalDate(Date().addingTimeInterval(30 * 86400))
+    let saved = try repository.save(buchung, akteur: .agent)
+    try repository.confirm(id: #require(saved.id))
+    #expect(try repository.allBookings().first?.geprueftAm != nil)
+}
+
 @Test func nutzerAenderungErhaeltBestaetigung() throws {
     let repository = try Repository.inMemory()
     var buchung = try repository.save(beispiel(), akteur: .nutzer)

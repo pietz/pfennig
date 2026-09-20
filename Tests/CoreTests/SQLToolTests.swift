@@ -184,6 +184,20 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(try repository.allBookings().isEmpty)
 }
 
+/// Die Leseregeln gelten nur für den Agenten: die Steuer zum Satz weist schon
+/// der Test darüber zurück, das Datum hier. Der Nutzer darf beides bestätigen.
+@Test func werkzeugMachtEinenLesefehlerDesAgentenRueckgaengig() throws {
+    let (repository, tool) = try tool()
+    let result = tool.execute("""
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2099-09-01', 'Später', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(result.text.contains("liegt zu weit in der Zukunft"))
+    #expect(result.touched.isEmpty)
+    #expect(try repository.allBookings().isEmpty)
+}
+
 @Test func werkzeugSchreibtEineAktivitaetUndLaesstGeprueftAmLeer() throws {
     let (repository, tool) = try tool()
     let result = tool.execute(gueltigeBuchung)
@@ -293,10 +307,18 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.kleinunternehmerNurBeiEigenenEinnahmen(einnahme, Profil()) != nil)
 
     let ohneSteuer = [Position(netto: Cent(10000), steuersatz: 0, steuer: .null)]
-    let sechzehn = [Position(netto: Cent(10000), steuersatz: 16, steuer: Cent(1600))]
+    let neun = [Position(netto: Cent(10000), steuersatz: 9, steuer: Cent(900))]
     let sieben = [Position(netto: Cent(10000), steuersatz: 7, steuer: Cent(700))]
     #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: ohneSteuer), profile) != nil)
-    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sechzehn), profile)?.contains("16") == true)
+    #expect(ValidationRules.inlandNurMit19Oder7(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: ohneSteuer), profile
+    ) != nil)
+    // Der Pauschalsatz nach §24 UStG steht auf einer Eingangsrechnung; Kz 66
+    // nimmt die ausgewiesene Steuer. Auf der Einnahmenseite gibt es dafür keine Zeile.
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: neun), profile) == nil)
+    #expect(ValidationRules.inlandNurMit19Oder7(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: neun), profile
+    )?.contains("9") == true)
     #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sieben), profile) == nil)
     #expect(ValidationRules
         .inlandNurMit19Oder7(basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile) == nil)

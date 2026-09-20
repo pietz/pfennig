@@ -137,7 +137,10 @@ public final class SQLTool: Sendable {
             // id, geprueft_am und Zeitstempel setzt Swift.
             // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
             let saved = try Repository.save(buchung, akteur: .agent, before: previous, in: db)
+            // Der Agent bekommt zusätzlich die Leseregeln, damit er ein
+            // missverstandenes Dokument im selben Lauf noch einmal ansieht.
             var messages = ValidationRules.validate(saved, profile: profile)
+                + ValidationRules.leseregeln.compactMap { $0(saved, profile) }
             // belege gehört dem Agenten, aber nur mit Dateien, die es gibt.
             let unknown = try Repository.unknownFiles(saved.belege, in: db)
             if unknown.isEmpty == false {

@@ -46,7 +46,8 @@ public final class Repository: Sendable {
     }
 
     /// Marks a booking as reviewed by the user after checking the current
-    /// persisted row against the same rules the agent uses.
+    /// persisted row against the rules that make a booking invalid. The
+    /// reading rules are the agent's alone; the user has the document.
     public func confirm(id: Int64) throws {
         try database.write { db in
             guard var buchung = try Buchung.fetchOne(db, key: id) else {

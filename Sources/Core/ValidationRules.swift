@@ -3,7 +3,8 @@ import Foundation
 /// What the schema cannot express. The CHECK constraints guarantee form and
 /// types, these rules guarantee content. Every rule is one small function that
 /// answers with a German sentence when the booking does not hold; a new rule
-/// is a new function in `alle`.
+/// is a new function in `alle` or, if it only catches a misread document, in
+/// `leseregeln`.
 public enum ValidationRules {
     /// A rate is met when net times rate and the written tax differ by at most
     /// one cent, which is the rounding the document itself may have used.
@@ -15,11 +16,10 @@ public enum ValidationRules {
 
     public typealias Regel = @Sendable (Buchung, Profil) -> String?
 
+    /// What makes a booking invalid, no matter who wrote it.
     public static let alle: [Regel] = [
         mindestensEinePosition,
-        steuerPasstZumSatz,
         kategorieIstBekannt,
-        datumLiegtNichtWeitInDerZukunft,
         reverseChargeNurBeiAuslaendischerGegenpartei,
         kleinunternehmerNurBeiEigenenEinnahmen,
         inlandNurMit19Oder7,
@@ -27,6 +27,15 @@ public enum ValidationRules {
         reverseChargeAusgabeBrauchtSatz,
         zahlungenSindPlausibel,
         nutzungsdauerNurBeiAusgaben
+    ]
+
+    /// What catches the agent misreading a document. A booking that breaks one
+    /// of these may still be true: an invoice rounds its lines differently than
+    /// the total, or it really is dated ahead. The user who confirms has the
+    /// document in front of them, so only the agent's writes run these.
+    public static let leseregeln: [Regel] = [
+        steuerPasstZumSatz,
+        datumLiegtNichtWeitInDerZukunft
     ]
 
     /// All complaints about one booking, empty when it passes.
@@ -50,7 +59,8 @@ public enum ValidationRules {
             guard abweichung > toleranz else { continue }
             return """
             Position \(nummer + 1): steuer \(position.steuer.value) passt nicht zu netto \
-            \(position.netto.value) bei \(position.steuersatz) Prozent, erwartet \(erwartet.value) Cent.
+            \(position.netto.value) bei \(position.steuersatz) Prozent. Lies die Beträge im Beleg noch \
+            einmal und lege für jeden Steuersatz und jede Rechnungszeile eine eigene Position an.
             """
         }
         return nil
@@ -93,15 +103,21 @@ public enum ValidationRules {
         return nil
     }
 
-    /// The 2026 form has lines for 19 and 7 percent only. Anything else would
-    /// fall out of the UStVA without a word, so it is refused here instead.
+    /// A rate of 0 is no domestic turnover in either direction; it belongs on
+    /// another treatment. The 19 or 7 binds income alone: the 2026 form has
+    /// lines for those two rates, so any other rate would fall out of the UStVA
+    /// without a word. An incoming invoice may carry the rate the supplier
+    /// charges, among them the flat rate of §24 UStG, and Kz 66 takes the
+    /// written tax as it stands.
     static let inlandNurMit19Oder7: Regel = { buchung, _ in
         guard buchung.steuerbehandlung == .inland else { return nil }
-        guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+        if buchung.positionen.contains(where: { $0.steuersatz == 0 }) {
+            return "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
+        }
+        guard buchung.richtung == .einnahme,
+              let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
         else { return nil }
-        return fremd.steuersatz == 0
-            ? "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
-            : "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
+        return "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
     }
 
     /// A §13b invoice carries no German VAT; the app computes the owed tax and
