@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.7.1 (2026-09-20)
+
+- Buchungen lassen sich mit Befehlsklick oder Umschaltklick gemeinsam auswählen und nach einer Bestätigung zusammen löschen. Bei einer Auswahl bleibt der normale Inspector sichtbar, bei mehreren zeigt er nur deren Anzahl
+
 ## 0.7.0 (2026-09-20)
 
 - Bestätigen prüft nur noch die Regeln, die eine Buchung ungültig machen. Eine Rechnung, deren Rundung je Zeile um mehr als einen Cent abweicht, und eine echt vorausdatierte Rechnung lassen sich jetzt bestätigen; für den Agenten gelten beide Regeln unverändert weiter

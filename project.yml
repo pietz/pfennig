@@ -24,8 +24,8 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
-    MARKETING_VERSION: "0.7.0"
-    CURRENT_PROJECT_VERSION: "7"
+    MARKETING_VERSION: "0.7.1"
+    CURRENT_PROJECT_VERSION: "8"
     # The "Apple Development: ... (85S4HQKSU2)" certificate carries team
     # 34MWWCL4H2 in its OU; the number in its common name is the certificate's
     # own id, not a team. Signing Debug with it keeps the designated
