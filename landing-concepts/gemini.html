@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pfennig (Gemini Flash Konzept) · Lokale macOS-Buchhaltung für Freiberufler</title>
+  <meta name="description" content="Pfennig ist eine ruhige, lokale macOS-App für deutsche Freiberufler mit EÜR und Ist-Versteuerung. Belege ablegen, KI bucht, Sie prüfen und bestätigen.">
+  <style>
+    /* --- CSS Reset & Custom Properties --- */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      /* Typography */
+      --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Menlo", "Monaco", "Consolas", monospace;
+
+      /* Color Palette: Warm Paper & Quiet Indie Tech circa 2020 */
+      --bg-canvas: #fbfbf9;
+      --bg-surface: #ffffff;
+      --bg-surface-subtle: #f4f3ef;
+      --bg-surface-inset: #eae8e1;
+
+      --text-main: #181816;
+      --text-muted: #52504b;
+      --text-faint: #5a5750;
+
+      --border-light: #e6e4dc;
+      --border-medium: #d6d3c7;
+      --border-dark: #b5b1a3;
+
+      /* Accent: Understated Copper / Warm Ink */
+      --accent-copper: #9b4819;
+      --accent-copper-soft: #fbf3ee;
+      --accent-green: #24683f;
+      --accent-green-soft: #edf6f0;
+      --accent-blue: #23527c;
+
+      --radius-sm: 4px;
+      --radius-md: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 18px;
+
+      --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.02);
+      --shadow-window: 0 16px 38px -12px rgba(0, 0, 0, 0.12), 0 3px 12px rgba(0, 0, 0, 0.05);
+
+      --max-width: 980px;
+    }
+
+    html {
+      font-size: 16px;
+      background-color: var(--bg-canvas);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.55;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Accessibility Skip Link */
+    .skip-link {
+      position: absolute;
+      top: -40px;
+      left: 16px;
+      background: var(--text-main);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      z-index: 100;
+      text-decoration: none;
+      font-size: 0.875rem;
+      transition: top 0.15s ease;
+    }
+    .skip-link:focus {
+      top: 12px;
+    }
+
+    a {
+      color: var(--text-main);
+      text-decoration-thickness: 1px;
+      text-underline-offset: 3px;
+    }
+    a:hover {
+      color: var(--accent-copper);
+    }
+
+    /* Container */
+    .container {
+      width: 100%;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* --- Header & Navigation --- */
+    header.site-header {
+      background-color: rgba(251, 251, 249, 0.94);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border-light);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .header-inner {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #a75525 0%, #7d330d 100%);
+      color: #fff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+      letter-spacing: -0.03em;
+      box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(125, 51, 13, 0.2);
+    }
+
+    .brand-text {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-main);
+    }
+
+    .concept-tag {
+      font-size: 0.75rem;
+      font-weight: 500;
+      background: var(--bg-surface-inset);
+      color: var(--text-muted);
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid var(--border-light);
+    }
+
+    nav.main-nav {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .nav-link {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.15s ease;
+    }
+    .nav-link:hover {
+      color: var(--text-main);
+    }
+
+    .header-cta {
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: var(--text-main);
+      color: #ffffff;
+      padding: 7px 14px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      transition: background 0.15s ease;
+    }
+    .header-cta:hover {
+      background: #33322d;
+      color: #ffffff;
+    }
+
+    /* --- Hero Section --- */
+    section.hero {
+      padding: 72px 0 36px 0;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--accent-copper);
+      background: var(--accent-copper-soft);
+      border: 1px solid rgba(155, 72, 25, 0.16);
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 20px;
+    }
+
+    h1.hero-title {
+      font-size: 2.85rem;
+      line-height: 1.15;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      margin-bottom: 18px;
+    }
+
+    p.hero-subtitle {
+      font-size: 1.18rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+      max-width: 680px;
+      margin: 0 auto 30px auto;
+    }
+
+    .hero-actions {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--text-main);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 12px 22px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      transition: transform 0.1s ease, background 0.15s ease;
+    }
+    .btn-primary:hover {
+      background: #2b2a26;
+      color: #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-surface);
+      color: var(--text-main);
+      border: 1px solid var(--border-medium);
+      font-weight: 500;
+      font-size: 0.95rem;
+      padding: 12px 20px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      box-shadow: var(--shadow-subtle);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .btn-secondary:hover {
+      background: var(--bg-surface-subtle);
+      border-color: var(--border-dark);
+      color: var(--text-main);
+    }
+
+    .hero-footnote {
+      font-size: 0.825rem;
+      color: var(--text-muted);
+    }
+
+    /* --- Tasteful App Window Placeholder --- */
+    section.window-preview {
+      padding: 24px 0 64px 0;
+    }
+
+    .mac-window {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-window);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .mac-window-titlebar {
+      height: 42px;
+      background: #f7f6f2;
+      border-bottom: 1px solid var(--border-light);
+      display: grid;
+      grid-template-columns: 80px 1fr 80px;
+      align-items: center;
+      padding: 0 16px;
+      user-select: none;
+    }
+
+    .traffic-lights {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .traffic-dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    .dot-close { background: #e86a5d; }
+    .dot-min { background: #e5b94c; }
+    .dot-zoom { background: #61c454; }
+
+    .window-title {
+      font-size: 0.825rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .window-title-badge {
+      font-size: 0.7rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: var(--bg-surface-inset);
+      padding: 1px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border-light);
+    }
+
+    /* Placeholder Stage Canvas */
+    .stage-canvas {
+      position: relative;
+      background: #fafaf7;
+      aspect-ratio: 840 / 500;
+      width: 100%;
+      display: flex;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    /* Subtle architectural wireframe suggesting the real AppKit/SwiftUI layout */
+    .wireframe-sidebar {
+      width: 190px;
+      background: #f3f2ed;
+      border-right: 1px solid var(--border-light);
+      padding: 18px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .wireframe-nav-item {
+      height: 28px;
+      border-radius: 6px;
+      background: rgba(0,0,0,0.03);
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      gap: 8px;
+    }
+    .wireframe-nav-item.active {
+      background: #ffffff;
+      border: 1px solid var(--border-light);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+    .wire-icon {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      background: var(--border-medium);
+    }
+    .wireframe-nav-item.active .wire-icon {
+      background: var(--accent-copper);
+    }
+    .wire-label {
+      height: 8px;
+      border-radius: 2px;
+      background: var(--border-medium);
+      flex: 1;
+    }
+
+    .wireframe-main {
+      flex: 1;
+      padding: 18px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #ffffff;
+    }
+
+    .wireframe-toolbar {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 10px;
+    }
+    .wire-tool-group {
+      display: flex;
+      gap: 6px;
+    }
+    .wire-pill {
+      height: 22px;
+      width: 60px;
+      background: var(--bg-surface-subtle);
+      border-radius: 4px;
+      border: 1px solid var(--border-light);
+    }
+    .wire-search {
+      height: 22px;
+      width: 140px;
+      background: var(--bg-surface-subtle);
+      border-radius: 4px;
+      border: 1px solid var(--border-light);
+    }
+
+    .wireframe-table {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .wireframe-row {
+      height: 38px;
+      border-radius: 6px;
+      background: #faf9f6;
+      border: 1px solid #f0ede4;
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      align-items: center;
+      padding: 0 12px;
+      gap: 12px;
+    }
+    .wireframe-row:nth-child(even) {
+      background: #ffffff;
+    }
+
+    .wire-cell {
+      height: 10px;
+      background: var(--border-light);
+      border-radius: 3px;
+    }
+
+    .wireframe-inspector {
+      width: 250px;
+      background: #fafaf7;
+      border-left: 1px solid var(--border-light);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .wire-inspector-box {
+      border: 1px solid var(--border-light);
+      background: #ffffff;
+      border-radius: 8px;
+      height: 90px;
+    }
+
+    .wire-inspector-lines {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Central Intentional Tasteful Placeholder Card */
+    .placeholder-centerpiece {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(251, 251, 249, 0.72);
+      backdrop-filter: blur(4px);
+      padding: 24px;
+    }
+
+    .placeholder-card {
+      background: #ffffff;
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 24px 32px;
+      max-width: 490px;
+      text-align: center;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+    }
+
+    .placeholder-icon {
+      width: 44px;
+      height: 44px;
+      margin: 0 auto 14px auto;
+      border-radius: 10px;
+      background: var(--bg-surface-inset);
+      border: 1px solid var(--border-medium);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent-copper);
+    }
+
+    .placeholder-card h2 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+      letter-spacing: -0.01em;
+    }
+
+    .placeholder-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 14px;
+    }
+
+    .placeholder-specs {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-light);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .window-caption {
+      margin-top: 14px;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .caption-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* --- Section: Workflow (Der Ablauf) --- */
+    section.section {
+      padding: 56px 0;
+      border-top: 1px solid var(--border-light);
+    }
+
+    .section-header {
+      margin-bottom: 36px;
+    }
+
+    .section-eyebrow {
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--accent-copper);
+      margin-bottom: 6px;
+    }
+
+    h2.section-title {
+      font-size: 1.85rem;
+      letter-spacing: -0.02em;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    p.section-desc {
+      font-size: 1.05rem;
+      color: var(--text-muted);
+      max-width: 640px;
+    }
+
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 18px;
+    }
+
+    .step-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 22px 18px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .step-number {
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--accent-copper);
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+
+    .step-card h3 {
+      font-size: 1.025rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .step-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+      flex: 1;
+    }
+
+    .step-card .step-detail {
+      margin-top: 14px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--border-light);
+      font-size: 0.775rem;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* --- Section: Architecture / Principles --- */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 26px;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .feature-card h3 {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.925rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 12px;
+    }
+
+    .feature-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      margin-top: 14px;
+    }
+
+    .feature-list li {
+      font-size: 0.85rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .feature-list li::before {
+      content: "✓";
+      color: var(--accent-green);
+      font-weight: 700;
+    }
+
+    /* --- Section: Privacy & Honesty Box --- */
+    .transparency-box {
+      background: var(--bg-surface-subtle);
+      border: 1px solid var(--border-medium);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-top: 32px;
+    }
+
+    .transparency-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .transparency-header h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .transparency-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-medium);
+      padding: 2px 8px;
+      border-radius: 4px;
+      color: var(--text-muted);
+    }
+
+    .transparency-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .transparency-item h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+
+    .transparency-item p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* --- Comparison / Scope Table --- */
+    .scope-table-wrap {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-subtle);
+    }
+
+    .scope-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      text-align: left;
+    }
+
+    .scope-table th {
+      background: var(--bg-surface-subtle);
+      padding: 12px 18px;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border-medium);
+      color: var(--text-muted);
+    }
+
+    .scope-table td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-light);
+      vertical-align: top;
+      color: var(--text-main);
+    }
+
+    .scope-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .scope-table td.dim {
+      color: var(--text-faint);
+    }
+
+    .tag-included {
+      color: var(--accent-green);
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .tag-excluded {
+      color: var(--text-faint);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* --- FAQ Section --- */
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 22px;
+    }
+
+    .faq-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-md);
+      padding: 22px 20px;
+    }
+
+    .faq-card h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+
+    .faq-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* --- Download & Specs Box --- */
+    .download-panel {
+      background: var(--text-main);
+      color: #ffffff;
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: center;
+      gap: 32px;
+      margin-bottom: 48px;
+    }
+
+    .download-info h2 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+
+    .download-info p {
+      font-size: 1rem;
+      color: #c4c1b7;
+      max-width: 520px;
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .download-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.8rem;
+      color: #b5b2aa;
+      font-family: var(--font-mono);
+    }
+
+    .download-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      min-width: 210px;
+    }
+
+    .btn-download-main {
+      background: #ffffff;
+      color: var(--text-main);
+      font-weight: 600;
+      font-size: 0.95rem;
+      padding: 13px 20px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      text-align: center;
+      transition: background 0.15s ease;
+    }
+    .btn-download-main:hover {
+      background: #eae8e1;
+      color: var(--text-main);
+    }
+
+    .btn-download-sub {
+      background: transparent;
+      color: #dedcd4;
+      border: 1px solid #484640;
+      font-size: 0.85rem;
+      padding: 9px 16px;
+      border-radius: var(--radius-md);
+      text-decoration: none;
+      text-align: center;
+      transition: border-color 0.15s ease, color 0.15s ease;
+    }
+    .btn-download-sub:hover {
+      border-color: #88857c;
+      color: #ffffff;
+    }
+
+    /* --- Footer --- */
+    footer.site-footer {
+      border-top: 1px solid var(--border-light);
+      padding: 36px 0 48px 0;
+      background: var(--bg-surface-subtle);
+      margin-top: auto;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .footer-brand p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 6px;
+      max-width: 360px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 24px;
+    }
+
+    .footer-col h4 {
+      font-size: 0.775rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .footer-col ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .footer-col a {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-decoration: none;
+    }
+    .footer-col a:hover {
+      color: var(--text-main);
+    }
+
+    .footer-bottom {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.825rem;
+      color: var(--text-muted);
+    }
+
+    .footer-bottom span {
+      color: var(--text-muted);
+    }
+
+    /* --- Responsive Queries --- */
+    @media (max-width: 860px) {
+      h1.hero-title {
+        font-size: 2.2rem;
+      }
+      .steps-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      .transparency-grid {
+        grid-template-columns: 1fr;
+      }
+      .faq-grid {
+        grid-template-columns: 1fr;
+      }
+      .download-panel {
+        grid-template-columns: 1fr;
+      }
+      nav.main-nav {
+        display: none;
+      }
+    }
+
+    @media (max-width: 580px) {
+      .steps-grid {
+        grid-template-columns: 1fr;
+      }
+      .wireframe-sidebar, .wireframe-inspector {
+        display: none;
+      }
+      .placeholder-card {
+        padding: 18px 16px;
+      }
+      .download-panel {
+        padding: 24px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Accessible Skip Link -->
+  <a href="#inhalt" class="skip-link">Direkt zum Hauptinhalt springen</a>
+
+  <!-- Header Navigation -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="#top" class="brand-group" aria-label="Pfennig Startseite">
+          <div class="brand-mark" aria-hidden="true">Pf</div>
+          <span class="brand-text">Pfennig</span>
+          <span class="concept-tag">Gemini Flash Konzept</span>
+        </a>
+
+        <nav class="main-nav" aria-label="Hauptnavigation">
+          <a href="#ablauf" class="nav-link">Ablauf</a>
+          <a href="#prinzipien" class="nav-link">Sicherheit &amp; Swift</a>
+          <a href="#datenschutz" class="nav-link">Datenschutz</a>
+          <a href="#export" class="nav-link">Steuer-Export</a>
+          <a href="#faq" class="nav-link">Fragen</a>
+        </nav>
+
+        <a href="#download" class="header-cta">Herunterladen</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="inhalt">
+    <!-- Hero Section -->
+    <section class="hero" id="top">
+      <div class="container">
+        <div class="hero-badge">
+          Lokale macOS-App für deutsche Freiberufler &amp; Einzelunternehmer
+        </div>
+
+        <h1 class="hero-title">
+          Belege ablegen. Die KI bucht.<br>Sie behalten die Kontrolle.
+        </h1>
+
+        <p class="hero-subtitle">
+          Pfennig liest Rechnungen und Kontoauszüge per Drag-and-drop, legt Buchungen direkt in einer lokalen SQLite-Datenbank ab und bereitet Ihre UStVA und EÜR vor. Kein Webdienst, kein Abomodell, kein automatischer Finanzamts-Versand: Sie prüfen jeden Beleg in einer ruhigen Mac-Tabelle.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#download" class="btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            Pfennig für macOS laden
+          </a>
+          <a href="#ablauf" class="btn-secondary">
+            Funktionsweise ansehen
+          </a>
+        </div>
+
+        <div class="hero-footnote">
+          Für macOS 15 Sequoia (Apple Silicon). Erfordert einen eigenen OpenAI-API-Schlüssel.
+        </div>
+      </div>
+    </section>
+
+    <!-- Prominent Tasteful App Screenshot Placeholder -->
+    <section class="window-preview" aria-label="Vorschau der Benutzeroberfläche">
+      <div class="container">
+        <div class="mac-window">
+          <!-- Window Title Bar -->
+          <div class="mac-window-titlebar">
+            <div class="traffic-lights" aria-hidden="true">
+              <span class="traffic-dot dot-close"></span>
+              <span class="traffic-dot dot-min"></span>
+              <span class="traffic-dot dot-zoom"></span>
+            </div>
+            <div class="window-title">
+              <span>Pfennig</span>
+              <span class="window-title-badge">Buchungen (840 × 500 pt)</span>
+            </div>
+            <div></div>
+          </div>
+
+          <!-- Stage Canvas with Tasteful Placeholder & Wireframe Background -->
+          <div class="stage-canvas">
+            <!-- Structural Wireframe: Sidebar -->
+            <div class="wireframe-sidebar" aria-hidden="true">
+              <div class="wireframe-nav-item">
+                <div class="wire-icon"></div>
+                <div class="wire-label" style="width: 45%;"></div>
+              </div>
+              <div class="wireframe-nav-item active">
+                <div class="wire-icon"></div>
+                <div class="wire-label" style="width: 70%;"></div>
+              </div>
+            </div>
+
+            <!-- Structural Wireframe: Ledger Table -->
+            <div class="wireframe-main" aria-hidden="true">
+              <div class="wireframe-toolbar">
+                <div class="wire-tool-group">
+                  <div class="wire-pill"></div>
+                  <div class="wire-pill"></div>
+                </div>
+                <div class="wire-search"></div>
+              </div>
+
+              <div class="wireframe-table">
+                <div class="wireframe-row">
+                  <div class="wire-cell" style="width: 75%;"></div>
+                  <div class="wire-cell" style="width: 50%;"></div>
+                  <div class="wire-cell" style="width: 40%;"></div>
+                  <div class="wire-cell" style="width: 60%;"></div>
+                </div>
+                <div class="wireframe-row">
+                  <div class="wire-cell" style="width: 60%;"></div>
+                  <div class="wire-cell" style="width: 55%;"></div>
+                  <div class="wire-cell" style="width: 45%;"></div>
+                  <div class="wire-cell" style="width: 70%;"></div>
+                </div>
+                <div class="wireframe-row">
+                  <div class="wire-cell" style="width: 80%;"></div>
+                  <div class="wire-cell" style="width: 45%;"></div>
+                  <div class="wire-cell" style="width: 50%;"></div>
+                  <div class="wire-cell" style="width: 65%;"></div>
+                </div>
+                <div class="wireframe-row">
+                  <div class="wire-cell" style="width: 55%;"></div>
+                  <div class="wire-cell" style="width: 60%;"></div>
+                  <div class="wire-cell" style="width: 35%;"></div>
+                  <div class="wire-cell" style="width: 50%;"></div>
+                </div>
+                <div class="wireframe-row">
+                  <div class="wire-cell" style="width: 70%;"></div>
+                  <div class="wire-cell" style="width: 40%;"></div>
+                  <div class="wire-cell" style="width: 45%;"></div>
+                  <div class="wire-cell" style="width: 60%;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Structural Wireframe: Inspector -->
+            <div class="wireframe-inspector" aria-hidden="true">
+              <div class="wire-inspector-box"></div>
+              <div class="wire-inspector-lines">
+                <div class="wire-cell" style="width: 90%;"></div>
+                <div class="wire-cell" style="width: 70%;"></div>
+                <div class="wire-cell" style="width: 80%;"></div>
+              </div>
+            </div>
+
+            <!-- Tasteful Prominent Placeholder Centerpiece -->
+            <div class="placeholder-centerpiece">
+              <div class="placeholder-card">
+                <div class="placeholder-icon" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                    <line x1="7" y1="2" x2="7" y2="22"></line>
+                    <line x1="17" y1="2" x2="17" y2="22"></line>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <line x1="2" y1="7" x2="7" y2="7"></line>
+                    <line x1="2" y1="17" x2="7" y2="17"></line>
+                    <line x1="17" y1="17" x2="22" y2="17"></line>
+                    <line x1="17" y1="7" x2="22" y2="7"></line>
+                  </svg>
+                </div>
+                <h2>Platzhalter für App-Screenshot oder Walkthrough-Video</h2>
+                <p>
+                  Hier zeigt ein nativer Screenshot oder Screencast das reale Arbeitsfenster von Pfennig: Ein einziges ruhiges Fenster mit 40-Punkt-Tabellenzeilen, Belegvorschau und dem flachen Inspector auf der rechten Seite.
+                </p>
+                <div class="placeholder-specs">
+                  <span>Standardfenster: 840 × 500 pt</span>
+                  <span>·</span>
+                  <span>SwiftUI &amp; AppKit</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="window-caption">
+          <span class="caption-item">
+            <strong>Kein AI-Dashboard:</strong> Eine aufgeräumte, standardkonforme macOS-Tabelle.
+          </span>
+          <span class="caption-item">
+            <strong>Volle Kontrolle:</strong> Jeder Eintrag wird im Inspector per Klick bestätigt.
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Workflow Section: Der Ablauf -->
+    <section class="section" id="ablauf">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow">Ablauf</div>
+          <h2 class="section-title">In vier Schritten zur fertigen Buchhaltung</h2>
+          <p class="section-desc">
+            Pfennig verzichtet auf verschachtelte Buchungsdialoge. Sie werfen Dokumente hinein, der Agent strukturiert sie, Sie behalten die Freigabehoheit.
+          </p>
+        </div>
+
+        <div class="steps-grid">
+          <div class="step-card">
+            <span class="step-number">01 / EINGANG</span>
+            <h3>Dokumente ablegen</h3>
+            <p>
+              Ziehen Sie Rechnungen, Quittungen oder Kontoauszüge per Drag-and-drop auf das Fenster. Pfennig akzeptiert PDF, Bilder (PNG, JPEG, WebP) sowie Textdateien (XML, CSV).
+            </p>
+            <div class="step-detail">
+              Lokale Inbox &amp; SHA-256 Hash
+            </div>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">02 / ERFASSUNG</span>
+            <h3>KI liest und bucht</h3>
+            <p>
+              Ein integrierter Agent liest Positionen, Steuersätze und Gegenparteien aus und schreibt die Buchung direkt über ein gesichertes SQL-Werkzeug in Ihre SQLite-Datenbank.
+            </p>
+            <div class="step-detail">
+              OpenAI Responses API Loop
+            </div>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">03 / KONTROLLE</span>
+            <h3>Im Inspector prüfen</h3>
+            <p>
+              Jede Buchung landet ungeprüft in der Tabelle. Im Inspector sehen Sie den Originalbeleg, die Cent-Beträge und bestätigen den Datensatz mit einem Klick.
+            </p>
+            <div class="step-detail">
+              Keine Blind-Automatisierung
+            </div>
+          </div>
+
+          <div class="step-card">
+            <span class="step-number">04 / AUSGANG</span>
+            <h3>UStVA &amp; EÜR exportieren</h3>
+            <p>
+              Erzeugen Sie valide XML-Dateien für den direkten Upload in Mein ELSTER sowie saubere CSV-Aufstellungen mit amtlichen Kennzahlen für Ihre Einnahmen-Überschuss-Rechnung.
+            </p>
+            <div class="step-detail">
+              XML für Mein ELSTER &amp; CSV
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Principles & Security (Drei Grenzen in Swift) -->
+    <section class="section" id="prinzipien">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow">Architektur &amp; Sicherheit</div>
+          <h2 class="section-title">Drei Grenzen in Swift. Keine Willkür der KI.</h2>
+          <p class="section-desc">
+            Die KI ist die erste Lösung zur Texterkennung und Klassifikation. Alles, was Rechengenauigkeit und Datenintegrität betrifft, wird kompromisslos durch deterministischen Swift-Code erzwungen.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3>
+              <span>1. Autorisierte SQLite-Grenzen</span>
+            </h3>
+            <p>
+              Der Agent arbeitet nicht mit freien Systemrechten. Ein nativer SQLite-Autorisierer beschränkt seine SQL-Werkzeuge ausschließlich auf SELECT, INSERT und UPDATE in der Tabelle der Buchungen.
+            </p>
+            <ul class="feature-list">
+              <li>Kein DELETE-Befehl für den Agenten</li>
+              <li>Kein Zugriff auf Einstellungen oder API-Schlüssel</li>
+              <li>Jeder Schreibvorgang läuft in einer geschützten Transaktion</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <h3>
+              <span>2. Strenge Swift-Prüfregeln</span>
+            </h3>
+            <p>
+              Jeder versuchte Schreibvorgang wird vor dem Commit durch Swift validiert. Schlägt eine Rechenregel fehl, wird der Befehl zurückgerollt und die KI muss nachbessern.
+            </p>
+            <ul class="feature-list">
+              <li>Cent-genaue Prüfung von Netto, Steuersatz und Steuerbetrag</li>
+              <li>Plausibilitätsprüfung für Reverse Charge, Inland und Kleinunternehmer</li>
+              <li>Gültige Belegdaten, Zahlungszeitpunkte und EÜR-Kategorieschlüssel</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <h3>
+              <span>3. Lückenloses Aktivitätenprotokoll</span>
+            </h3>
+            <p>
+              Pfennig protokolliert jede Änderung mit vollständigem Vorher-Nachher-Zustand. Gemäß den Grundsätzen ordnungsmäßiger Buchführung bleibt jede Modifikation nachvollziehbar.
+            </p>
+            <ul class="feature-list">
+              <li>Vollständige Historie aller Nutzer- und Agenten-Eingaben</li>
+              <li>Kein verstecktes Ändern bestehender Buchungen</li>
+              <li>Einfaches Zurückverfolgen bei Unklarheiten</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <h3>
+              <span>4. Echte Währungsumrechnung</span>
+            </h3>
+            <p>
+              Fremdwährungsbelege werden nicht geschätzt. Ein separates Werkzeug fragt historische Referenzkurse über die Frankfurter-API ab und rechnet Beträge exakt in EUR-Cent um.
+            </p>
+            <ul class="feature-list">
+              <li>Buchhaltung und UStVA verbleiben immer strikt in EUR</li>
+              <li>Exakte Speicherung der Originalbeträge im Beleg</li>
+              <li>Dokumentierte Kursquellen direkt in der Konversation</li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Transparency & Privacy Callout Box -->
+        <div class="transparency-box" id="datenschutz">
+          <div class="transparency-header">
+            <h3>Ehrlicher Datenschutz: Wo Ihre Belege und Daten verarbeitet werden</h3>
+            <span class="transparency-badge">Klartext</span>
+          </div>
+
+          <div class="transparency-grid">
+            <div class="transparency-item">
+              <h4>100% Lokale Datenhaltung</h4>
+              <p>
+                Ihre SQLite-Datenbank (`buchungen.sqlite`) und alle Originalbelege liegen im lokalen Ordner unter <code>~/Library/Application Support/Pfennig/</code>. Es gibt keine Pfennig-Cloud, kein Benutzerkonto und kein Tracking.
+              </p>
+            </div>
+
+            <div class="transparency-item">
+              <h4>Dokumentenanalyse via OpenAI</h4>
+              <p>
+                Zur Texterkennung werden die abgelegten Belege über Ihren eigenen OpenAI-API-Schlüssel an die OpenAI Responses API gesendet. Pfennig verschleiert das nicht: Die KI-Verarbeitung findet auf Servern von OpenAI statt.
+              </p>
+            </div>
+
+            <div class="transparency-item">
+              <h4>Ihr eigener API-Schlüssel</h4>
+              <p>
+                Der Schlüssel liegt verschlüsselt im sicheren macOS-Schlüsselbund. Sie wählen in den Einstellungen selbst das Modell (gpt-5.6-sol, terra oder luna) und zahlen nur Ihre tatsächlichen nutzungsabhängigen Kosten direkt an OpenAI.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tax Export Section (UStVA & EÜR) -->
+    <section class="section" id="export">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow">Steuerdaten</div>
+          <h2 class="section-title">Sauberer Export statt fehleranfälliger ELSTER-Bürokratie</h2>
+          <p class="section-desc">
+            Pfennig integriert bewusst keine proprietären ERiC-Finanzamt-Bibliotheken und keine Zertifikatsverwaltung. Sie behalten die Hoheit und laden geprüfte Standardformate hoch.
+          </p>
+        </div>
+
+        <div class="features-grid">
+          <div class="feature-card">
+            <h3>Umsatzsteuer-Voranmeldung (UStVA) als XML</h3>
+            <p>
+              Mit einem Klick auf Export erzeugt Pfennig eine amtliche XML-Datei nach dem Schema der Finanzverwaltung für den gewählten Voranmeldungszeitraum.
+            </p>
+            <ul class="feature-list">
+              <li>Rechnerisch geprüft auf Basis der Ist-Versteuerung nach Zahlungsdatum</li>
+              <li>Berücksichtigt Vorsteuer (Kz 66), Reverse Charge (Kz 67) und Privatanteile</li>
+              <li>Wird direkt in Mein ELSTER über das Formular „XML-Daten hochladen“ importiert</li>
+              <li>Sie prüfen die vorausgefüllten Felder in ELSTER und senden selbst ab</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <h3>Einnahmen-Überschuss-Rechnung (EÜR) als CSV</h3>
+            <p>
+              Zum Jahresabschluss exportiert Pfennig eine strukturierte CSV-Tabelle, die exakt den Zeilen und Kennzahlen der amtlichen Anlage EÜR entspricht.
+            </p>
+            <ul class="feature-list">
+              <li>Gliederung nach amtlichen Formularkennzahlen und Kategorien</li>
+              <li>Separater Ausweis für Wirtschaftsgüter und lineare Abschreibung (AfA)</li>
+              <li>Ideal zur schnellen Übernahme in Mein ELSTER oder für Ihren Steuerberater</li>
+              <li>Keine Abhängigkeit von teuren proprietären Steuersoftware-Formaten</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scope Table: Was gebaut wird und was bewusst nicht -->
+    <section class="section" id="umfang">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow">Funktionsumfang</div>
+          <h2 class="section-title">Klarer Fokus. Kein aufgeblasenes All-in-One-Büro.</h2>
+          <p class="section-desc">
+            Pfennig wurde gebaut, um eine einzige Aufgabe exzellent zu lösen: Belege einlesen, verbuchen und Steuerkennzahlen bereitstellen.
+          </p>
+        </div>
+
+        <div class="scope-table-wrap">
+          <table class="scope-table">
+            <thead>
+              <tr>
+                <th style="width: 50%;">In Pfennig enthalten</th>
+                <th style="width: 50%;">Bewusst nicht enthalten</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="tag-included">✓</span> Lokale macOS-App (SwiftUI &amp; AppKit)</td>
+                <td><span class="tag-excluded">✕</span> Web-App, Cloud-Sync oder Android/Windows</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> EÜR &amp; Ist-Versteuerung (Regelbesteuert &amp; Kleinunternehmer)</td>
+                <td><span class="tag-excluded">✕</span> Bilanzierung, doppelte Buchführung, Soll-Versteuerung</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> Drag-and-drop Belegeingang (PDF, PNG, JPG, WebP, XML, CSV)</td>
+                <td><span class="tag-excluded">✕</span> Automatische Bank-Schnittstelle (PSD2 / FinTS)</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> KI-gestützte Erfassung direkt in SQLite</td>
+                <td><span class="tag-excluded">✕</span> Geschwätziger KI-Chatbot oder Dialogassistent</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> UStVA-XML für den Upload in Mein ELSTER</td>
+                <td><span class="tag-excluded">✕</span> Direkte ELSTER-Übermittlung über ERiC</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> Anlagevermögen (AfA) nach amtlicher BMF-Tabelle</td>
+                <td><span class="tag-excluded">✕</span> Rechnungsstellung, Zeiterfassung, Lohnabrechnung</td>
+              </tr>
+              <tr>
+                <td><span class="tag-included">✓</span> Eigener API-Schlüssel im macOS-Schlüsselbund</td>
+                <td><span class="tag-excluded">✕</span> Monatliche Software-Abos oder Plattform-Bindung</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-header">
+          <div class="section-eyebrow">Häufige Fragen</div>
+          <h2 class="section-title">Fragen &amp; Antworten zur App</h2>
+          <p class="section-desc">
+            Transparente Antworten ohne Marketing-Floskeln.
+          </p>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-card">
+            <h3>Werden meine Belege auf fremden Servern gespeichert?</h3>
+            <p>
+              Ihre Datenbank und die Originaldateien bleiben dauerhaft lokal auf Ihrem Mac im Pfennig-Anwendungsordner. Zur Texterkennung und Extraktion werden die Dokumente an die OpenAI Responses API übertragen. Bei OpenAI gilt die Standard-API-Datenschutzrichtlinie: API-Inhalte werden nicht zum Training verwendet.
+            </p>
+          </div>
+
+          <div class="faq-card">
+            <h3>Kann Pfennig meine Steuerdaten direkt ans Finanzamt senden?</h3>
+            <p>
+              Nein, ganz bewusst nicht. Pfennig exportiert eine valide XML-Datei für die Umsatzsteuer-Voranmeldung. Sie loggen sich wie gewohnt in Mein ELSTER ein, laden die Datei hoch und klicken nach kurzer Sichtkontrolle selbst auf Senden. Das spart komplexe Zertifikatssoftware und Fehlerquellen.
+            </p>
+          </div>
+
+          <div class="faq-card">
+            <h3>Was kostet die Nutzung von Pfennig?</h3>
+            <p>
+              Pfennig ist freie Open-Source-Software unter der GPLv3. Es gibt kein monatliches Pfennig-Abonnement. Sie benötigen lediglich ein Entwicklerkonto bei OpenAI und hinterlegen Ihren eigenen API-Schlüssel. Die Abrechnung der API-Nutzung erfolgt als nutzungsabhängige Kosten direkt über OpenAI.
+            </p>
+          </div>
+
+          <div class="faq-card">
+            <h3>Welche Steuerfälle werden unterstützt?</h3>
+            <p>
+              Pfennig ist für deutsche Freiberufler und Einzelunternehmer mit Ist-Versteuerung und Einnahmen-Überschuss-Rechnung (EÜR) konzipiert. Sowohl Regelbesteuerung (19% und 7% Vorsteuer/Umsatzsteuer) als auch die Kleinunternehmerregelung nach § 19 UStG sowie Reverse-Charge-Ausgaben im Ausland werden unterstützt.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download & System Requirements Box -->
+    <section class="section" id="download">
+      <div class="container">
+        <div class="download-panel">
+          <div class="download-info">
+            <h2>Pfennig herunterladen</h2>
+            <p>
+              Die App steht als signiertes und notarisiertes ZIP-Archiv für macOS bereit. Entpacken, in den Programme-Ordner ziehen, API-Schlüssel hinterlegen und starten.
+            </p>
+            <div class="download-meta">
+              <span>Version: 1.0</span>
+              <span>·</span>
+              <span>macOS 15+ (Apple Silicon)</span>
+              <span>·</span>
+              <span>Lizenz: GPLv3</span>
+              <span>·</span>
+              <span>Notarisiert von Apple</span>
+            </div>
+          </div>
+
+          <div class="download-buttons">
+            <a href="https://github.com/pietz/pfennig/releases/latest" class="btn-download-main">
+              ZIP herunterladen
+            </a>
+            <a href="https://github.com/pietz/pfennig" class="btn-download-sub">
+              Quellcode auf GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <div class="brand-group" style="margin-bottom: 8px;">
+            <div class="brand-mark" style="width: 26px; height: 26px; font-size: 0.85rem;" aria-hidden="true">Pf</div>
+            <span class="brand-text" style="font-size: 1.05rem;">Pfennig</span>
+          </div>
+          <p>
+            Lokale Buchhaltung für Freiberufler auf macOS. Schnelle Belegverarbeitung durch KI mit strikten Grenzen in Swift.
+          </p>
+        </div>
+
+        <div class="footer-links">
+          <div class="footer-col">
+            <h4>App</h4>
+            <ul>
+              <li><a href="#ablauf">Ablauf</a></li>
+              <li><a href="#prinzipien">Architektur</a></li>
+              <li><a href="#datenschutz">Datenschutz</a></li>
+              <li><a href="#export">Steuer-Export</a></li>
+            </ul>
+          </div>
+
+          <div class="footer-col">
+            <h4>Projekt</h4>
+            <ul>
+              <li><a href="https://github.com/pietz/pfennig">GitHub Repository</a></li>
+              <li><a href="https://github.com/pietz/pfennig/blob/main/docs/specs/pfennig-neu.md">Spezifikation</a></li>
+              <li><a href="https://github.com/pietz/pfennig/blob/main/LICENSE">GPLv3 Lizenz</a></li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <span>Pfennig · Eigenständiges Konzept: Gemini Flash</span>
+        <span>Keine Steuerberatung. Für Mein ELSTER &amp; Anlage EÜR.</span>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>

@@ -1,0 +1,494 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pfennig ist eine ruhige macOS-Buchhaltung für deutsche Freiberufler: Belege ablegen, Buchungen prüfen, UStVA und EÜR vorbereiten.">
+  <title>Pfennig · Konzept GLM Flash</title>
+  <style>
+    :root {
+      --paper: #fdfdfb;
+      --ink: #1c1f1d;
+      --ink-soft: #4a504c;
+      --muted: #666d69;
+      --line: #dcdedb;
+      --line-soft: #e9eae6;
+      --wash: #f4f5f1;
+      --green: #2e6b4f;
+      --green-soft: #eaf2ed;
+      --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      --serif: ui-serif, Georgia, "Times New Roman", serif;
+      --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+    }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: var(--sans);
+      font-size: 17px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+
+    .wrap {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    a { color: var(--green); text-decoration-thickness: 1px; text-underline-offset: 3px; }
+    a:hover { text-decoration-thickness: 2px; }
+    a:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; border-radius: 2px; }
+
+    .skip {
+      position: absolute;
+      left: -9999px;
+      top: 0;
+      background: var(--paper);
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+    }
+    .skip:focus { left: 12px; top: 12px; z-index: 10; }
+
+    /* Kopf */
+    header.site {
+      border-bottom: 1px solid var(--ink);
+    }
+    .head-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 20px 0 16px;
+    }
+    .brand {
+      display: inline-flex;
+      align-items: baseline;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--ink);
+      font-family: var(--serif);
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+    .brand svg { width: 15px; height: 15px; transform: translateY(1px); }
+    .site-nav {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      letter-spacing: 0.04em;
+    }
+    .site-nav a { color: var(--ink-soft); text-decoration: none; margin-left: 22px; }
+    .site-nav a:hover { color: var(--ink); text-decoration: underline; }
+
+    /* Held */
+    .hero { padding: 84px 0 56px; }
+    .overline {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin: 0 0 26px;
+    }
+    .overline .status {
+      color: var(--green);
+    }
+    h1 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(2.5rem, 6.4vw, 4.1rem);
+      line-height: 1.08;
+      letter-spacing: -0.015em;
+      margin: 0 0 26px;
+      max-width: 15em;
+    }
+    h1 em { font-style: italic; color: var(--green); }
+    .lede {
+      font-size: 19px;
+      line-height: 1.6;
+      color: var(--ink-soft);
+      max-width: 38em;
+      margin: 0;
+    }
+    .lede strong { color: var(--ink); font-weight: 600; }
+    .hero-meta {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--muted);
+      margin-top: 30px;
+    }
+    .hero-meta a { margin-left: 14px; }
+
+    /* Platzhalter für Screenshots / Video */
+    .stage { margin: 48px 0 0; }
+    .frame {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--wash);
+      overflow: hidden;
+    }
+    .frame-bar {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 11px 14px;
+      border-bottom: 1px solid var(--line-soft);
+      background: var(--paper);
+    }
+    .frame-bar i {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--line);
+    }
+    .frame-bar span {
+      margin-left: 8px;
+      font-family: var(--mono);
+      font-size: 11.5px;
+      color: var(--muted);
+      letter-spacing: 0.05em;
+    }
+    .frame-body {
+      aspect-ratio: 16 / 8.5;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      padding: 24px;
+      background-image:
+        linear-gradient(var(--line-soft) 1px, transparent 1px),
+        linear-gradient(90deg, var(--line-soft) 1px, transparent 1px);
+      background-size: 44px 44px;
+      background-position: center;
+    }
+    .play {
+      width: 58px; height: 58px;
+      border: 1px solid var(--ink);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--paper);
+    }
+    .play svg { width: 16px; height: 16px; margin-left: 2px; fill: var(--ink); }
+    .frame-body p {
+      margin: 0;
+      max-width: 30em;
+      font-family: var(--serif);
+      font-size: 17px;
+      color: var(--ink-soft);
+    }
+    .frame-body small {
+      font-family: var(--mono);
+      font-size: 11.5px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .stage figcaption {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 12px;
+    }
+
+    /* Abschnitte */
+    section { padding: 72px 0; }
+    .sec-head {
+      display: flex;
+      align-items: baseline;
+      gap: 18px;
+      margin: 0 0 40px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 14px;
+    }
+    .sec-head .no {
+      font-family: var(--mono);
+      font-size: 13px;
+      color: var(--green);
+    }
+    h2 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: clamp(1.6rem, 3.4vw, 2.1rem);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+      margin: 0;
+    }
+    .prose { max-width: 40em; }
+    .prose p { color: var(--ink-soft); margin: 0 0 18px; }
+    .prose p:last-child { margin-bottom: 0; }
+
+    /* Ablauf */
+    ol.steps {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      counter-reset: step;
+    }
+    ol.steps li {
+      counter-increment: step;
+      display: grid;
+      grid-template-columns: 88px 200px 1fr;
+      gap: 8px 28px;
+      padding: 26px 0;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    ol.steps li:first-child { border-top: 1px solid var(--line-soft); }
+    ol.steps li::before {
+      content: counter(step, decimal-leading-zero);
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--muted);
+      padding-top: 6px;
+    }
+    ol.steps h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 21px;
+      margin: 0;
+    }
+    ol.steps p { margin: 0; color: var(--ink-soft); }
+
+    /* Funktionen */
+    ul.feats {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 56px;
+    }
+    ul.feats li {
+      padding: 22px 0 24px;
+      border-top: 1px solid var(--line);
+    }
+    ul.feats h3 {
+      font-family: var(--serif);
+      font-weight: 500;
+      font-size: 19px;
+      margin: 0 0 8px;
+    }
+    ul.feats p {
+      margin: 0;
+      font-size: 15.5px;
+      line-height: 1.6;
+      color: var(--ink-soft);
+    }
+
+    /* Offen gesagt */
+    #offen { background: var(--wash); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .open-list { margin: 0; padding: 0; list-style: none; max-width: 44em; }
+    .open-list li {
+      display: grid;
+      grid-template-columns: 14px 1fr;
+      gap: 14px;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .open-list li:last-child { border-bottom: none; }
+    .open-list .mark {
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding-top: 2px;
+    }
+    .open-list p { margin: 0; color: var(--ink-soft); }
+    .open-list strong { color: var(--ink); font-weight: 600; }
+
+    /* Fuß */
+    footer.site {
+      padding: 44px 0 56px;
+    }
+    .foot-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .foot-row p {
+      margin: 0;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+    .foot-nav a {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      color: var(--muted);
+      text-decoration: none;
+      margin-left: 20px;
+    }
+    .foot-nav a:hover { color: var(--ink); text-decoration: underline; }
+
+    /* Schmal */
+    @media (max-width: 720px) {
+      body { font-size: 16px; }
+      .hero { padding: 56px 0 40px; }
+      ol.steps li { grid-template-columns: 52px 1fr; }
+      ol.steps li p { grid-column: 2; }
+      ul.feats { grid-template-columns: 1fr; }
+      .site-nav a:first-child { margin-left: 0; }
+      section { padding: 56px 0; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#inhalt">Zum Inhalt springen</a>
+
+  <header class="site">
+    <div class="wrap head-row">
+      <a class="brand" href="#top">
+        <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <circle cx="8" cy="8" r="7" fill="none" stroke="#2e6b4f" stroke-width="1.6"/>
+          <circle cx="8" cy="8" r="3" fill="#2e6b4f"/>
+        </svg>
+        Pfennig
+      </a>
+      <nav class="site-nav" aria-label="Seitennavigation">
+        <a href="#ablauf">Ablauf</a>
+        <a href="#funktionen">Funktionen</a>
+        <a href="#offen">Offen gesagt</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="inhalt">
+    <div class="wrap hero" id="top">
+      <p class="overline">Buchhaltung für Freiberufler <span aria-hidden="true">·</span> <span class="status">Für Mac, in Entwicklung</span></p>
+      <h1>Belege hinein, <em>Buchungen</em> fertig.</h1>
+      <p class="lede">Pfennig ist eine kleine macOS-App für die EÜR mit Ist-Versteuerung. Sie ziehen Rechnungen, Belege und Kontoauszüge auf das Fenster, ein KI-Agent liest sie und legt die Buchungen an. <strong>Sie prüfen jede Zeile in einer ruhigen Tabelle</strong>, und am Ende liegen UStVA und EÜR bereit zum Export.</p>
+      <p class="hero-meta">Einnahmen und Ausgaben, Umsatzsteuer oder Kleinunternehmer.<a href="#ablauf">So läuft es&nbsp;↓</a></p>
+
+      <figure class="stage">
+        <div class="frame" role="img" aria-label="Platzhalter: Hier erscheinen später Screenshots der App und ein kurzes Video.">
+          <div class="frame-bar" aria-hidden="true">
+            <i></i><i></i><i></i>
+            <span>Pfennig</span>
+          </div>
+          <div class="frame-body">
+            <span class="play" aria-hidden="true">
+              <svg viewBox="0 0 12 14" focusable="false"><path d="M0 0 L12 7 L0 14 Z"/></svg>
+            </span>
+            <p>Hier entsteht der erste Blick: Screenshots der Buchungstabelle und ein kurzes Video vom Ablagefenster.</p>
+            <small>Platzhalter</small>
+          </div>
+        </div>
+        <figcaption>Abbildungen folgen zur Veröffentlichung.</figcaption>
+      </figure>
+    </div>
+
+    <section id="ablauf" aria-labelledby="ablauf-titel">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="no" aria-hidden="true">01</span>
+          <h2 id="ablauf-titel">Vom Beleg zur fertigen Buchung</h2>
+        </div>
+        <ol class="steps">
+          <li>
+            <h3>Ablegen</h3>
+            <p>Rechnung, Beleg oder Kontoauszug auf das Fenster ziehen. PDF und Fotos funktionieren genauso wie XML- und CSV-Dateien. Mehr müssen Sie nicht tun.</p>
+          </li>
+          <li>
+            <h3>Lesen lassen</h3>
+            <p>Der Agent erkennt Beträge, Steuersatz, Gegenpartei und Kategorie und schreibt die Buchung in Ihre Datenbank. Wo etwas unklar bleibt, sagt er es, statt zu raten.</p>
+          </li>
+          <li>
+            <h3>Prüfen</h3>
+            <p>Jede neue Buchung ist erst ungeprüft. Sie sehen den Beleg daneben im Inspector, korrigieren, wo nötig, und bestätigen mit einem Klick. Jede Änderung steht im Protokoll.</p>
+          </li>
+          <li>
+            <h3>Exportieren</h3>
+            <p>Die UStVA als XML-Datei für den Upload in Mein ELSTER, die EÜR als CSV je Formularzeile. Gesendet wird von Ihnen selbst, die App übermittelt nichts.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="funktionen" aria-labelledby="funktionen-titel">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="no" aria-hidden="true">02</span>
+          <h2 id="funktionen-titel">Was drin ist</h2>
+        </div>
+        <ul class="feats">
+          <li>
+            <h3>Ein Fenster, eine Tabelle</h3>
+            <p>Eine echte Mac-App, kein Browser und kein Dashboard. Die Buchungen stehen in einer nüchternen Tabelle mit Inspector, wie es sich fürs Handwerk gehört.</p>
+          </li>
+          <li>
+            <h3>Alles bleibt auf Ihrem Mac</h3>
+            <p>Datenbank und Archiv liegen in einem Ordner in Ihrem Benutzerverzeichnis. Zu jedem Eintrag gibt es das Original und einen lückenlosen Verlauf der Änderungen.</p>
+          </li>
+          <li>
+            <h3>Kontoauszüge verstehen</h3>
+            <p>Bewegungen auf dem Konto ordnet der Agent bestehenden Rechnungen zu oder trägt sie als offene Zahlung ein. Private Vorgänge werden erkannt und ausgeblendet.</p>
+          </li>
+          <li>
+            <h3>Anlagegüter und AfA</h3>
+            <p>Ein neuer Laptop wird zum Anlagegut, die Nutzungsdauer kommt aus der amtlichen Tabelle. Die Abschreibung landet von selbst auf der richtigen EÜR-Zeile.</p>
+          </li>
+          <li>
+            <h3>UStVA als XML</h3>
+            <p>Die Erklärung wird so vorbereitet, wie Mein ELSTER sie im Upload annimmt. Sie laden hoch, prüfen das Formular und senden selbst ab.</p>
+          </li>
+          <li>
+            <h3>EÜR als CSV</h3>
+            <p>Die Werte je Zeile des Formulars, inklusive Anlage AVEÜR fürs Anlagevermögen. Zum Abtippen oder Übertragen, ohne Zettelwirtschaft.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="offen" aria-labelledby="offen-titel">
+      <div class="wrap">
+        <div class="sec-head">
+          <span class="no" aria-hidden="true">03</span>
+          <h2 id="offen-titel">Offen gesagt</h2>
+        </div>
+        <ul class="open-list">
+          <li>
+            <span class="mark" aria-hidden="true">→</span>
+            <p><strong>Ihre Dokumente gehen an OpenAI.</strong> Der Agent läuft über die OpenAI-Schnittstelle, zum Lesen wird ein Dokument dorthin übertragen. Datenbank, Archiv und Protokoll bleiben dagegen vollständig auf Ihrem Mac.</p>
+          </li>
+          <li>
+            <span class="mark" aria-hidden="true">→</span>
+            <p><strong>Nichts wird für Sie abgegeben.</strong> Pfennig bereitet UStVA und EÜR vor. Den Upload bei ELSTER und die Abgabe machen Sie selbst, in Ihrer Verantwortung und in Ihrem Tempo.</p>
+          </li>
+          <li>
+            <span class="mark" aria-hidden="true">→</span>
+            <p><strong>Keine Automatik ohne Sie.</strong> Was der Agent anlegt, ist ungeprüft, bis Sie es bestätigen. Die App entscheidet nichts, was sie Ihnen nicht zeigt.</p>
+          </li>
+          <li>
+            <span class="mark" aria-hidden="true">→</span>
+            <p><strong>Keine Konten, kein Cloud-Zwang.</strong> Pfennig kennt keine Anmeldung und keinen Server von Pfennig. Ihr Handelsregister ist ein Ordner, Ihr Backup ist Ihr Backup.</p>
+          </li>
+        </ul>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site">
+    <div class="wrap foot-row">
+      <p>© 2026 Pfennig. In Entwicklung für macOS. Diese Seite ist ein unverbindlicher Gestaltungsentwurf.</p>
+      <nav class="foot-nav" aria-label="Fußnavigation">
+        <a href="#top">Nach oben</a>
+        <a href="#offen">Offen gesagt</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

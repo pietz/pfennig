@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pfennig, Sonnet-Konzept: Buchhaltung für Freiberufler am Mac</title>
+<meta name="description" content="Pfennig ist eine geplante native Mac-App für die Buchhaltung von Freiberuflern. Belege ablegen, ein Agent liest sie, Sie prüfen jede Zeile.">
+<style>
+  :root {
+    --bg: #f6f3ee;
+    --surface: #efe8dc;
+    --surface-line: #ddd2bf;
+    --ink: #211d19;
+    --muted: #5c554c;
+    --accent: #8a4423;
+    --accent-tint: #d9b79a;
+    --border: #ddd4c6;
+    --radius: 3px;
+    --measure: 40rem;
+    --wide: 62rem;
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1, h2, h3 {
+    font-family: Georgia, "Iowan Old Style", "Palatino Linotype", "Times New Roman", serif;
+    font-weight: 400;
+    line-height: 1.2;
+    color: var(--ink);
+    margin: 0;
+  }
+
+  p {
+    margin: 0 0 1em;
+  }
+
+  a {
+    color: var(--accent);
+  }
+
+  a:not(.btn) {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  .kicker {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 0.9em;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: -999px;
+    top: 0;
+    background: var(--ink);
+    color: #fff;
+    padding: 0.6em 1em;
+    z-index: 10;
+    border-radius: var(--radius);
+  }
+
+  .skip-link:focus {
+    left: 1em;
+    top: 1em;
+  }
+
+  .wrap {
+    max-width: var(--wide);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  header.site {
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  header.site .wrap {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: Georgia, "Iowan Old Style", serif;
+    font-size: 1.15rem;
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .coin {
+    display: inline-block;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 50%;
+    border: 1.5px solid var(--accent);
+    box-shadow: inset 0 0 0 2px var(--bg), inset 0 0 0 3px var(--accent-tint);
+    flex: none;
+  }
+
+  nav.primary {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+  }
+
+  nav.primary a {
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.94rem;
+  }
+
+  nav.primary a:hover,
+  nav.primary a:focus-visible {
+    color: var(--accent);
+  }
+
+  .btn {
+    display: inline-block;
+    background: var(--accent);
+    color: #fff;
+    text-decoration: none;
+    padding: 0.6em 1.1em;
+    border-radius: var(--radius);
+    font-size: 0.94rem;
+    border: 1px solid var(--accent);
+  }
+
+  .btn:hover,
+  .btn:focus-visible {
+    background: #723518;
+    border-color: #723518;
+  }
+
+  .btn.ghost {
+    background: transparent;
+    color: var(--accent);
+  }
+
+  .btn.ghost:hover,
+  .btn.ghost:focus-visible {
+    background: var(--surface);
+    color: #723518;
+  }
+
+  main {
+    display: block;
+  }
+
+  section {
+    padding: 4.5rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  section:last-of-type {
+    border-bottom: none;
+  }
+
+  .hero {
+    padding-top: 4rem;
+  }
+
+  .hero .lede {
+    max-width: 34rem;
+  }
+
+  h1 {
+    font-size: clamp(2rem, 1.5rem + 2vw, 2.9rem);
+    margin-bottom: 0.6em;
+  }
+
+  .hero p.sub {
+    max-width: var(--measure);
+    font-size: 1.12rem;
+    color: var(--ink);
+  }
+
+  .audience {
+    max-width: var(--measure);
+    font-size: 0.95rem;
+    color: var(--muted);
+    border-left: 2px solid var(--accent-tint);
+    padding-left: 0.9em;
+    margin: 1.4em 0 2.2em;
+  }
+
+  .cta-row {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1.8rem;
+  }
+
+  /* Preview placeholder */
+  .preview-frame {
+    margin: 3rem 0 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .preview-visual {
+    aspect-ratio: 16 / 9;
+    display: grid;
+    grid-template-columns: 84px 1fr;
+    background: #fbf9f5;
+  }
+
+  .preview-nav {
+    background: var(--surface);
+    border-right: 1px solid var(--surface-line);
+    padding: 1rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .preview-nav span {
+    display: block;
+    height: 8px;
+    border-radius: 2px;
+    background: var(--surface-line);
+  }
+
+  .preview-nav span:nth-child(1) { width: 70%; }
+  .preview-nav span:nth-child(2) { width: 55%; }
+
+  .preview-main {
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .preview-toolbar {
+    height: 10px;
+    width: 40%;
+    border-radius: 2px;
+    background: var(--surface-line);
+    margin-bottom: 0.6rem;
+  }
+
+  .preview-row {
+    height: 9px;
+    border-radius: 2px;
+    background: var(--surface-line);
+    opacity: 0.75;
+  }
+
+  .preview-row.w1 { width: 96%; }
+  .preview-row.w2 { width: 88%; }
+  .preview-row.w3 { width: 92%; }
+  .preview-row.w4 { width: 80%; }
+  .preview-row.w5 { width: 90%; }
+  .preview-row.w6 { width: 70%; }
+
+  figcaption.preview-caption {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+    padding: 0.9rem 1rem 1.1rem;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  /* Ablauf steps */
+  .steps {
+    list-style: none;
+    margin: 2.4rem 0 0;
+    padding: 0;
+    display: grid;
+    gap: 2.2rem;
+  }
+
+  .steps li {
+    display: grid;
+    grid-template-columns: 3.2rem 1fr;
+    gap: 1.1rem;
+    align-items: baseline;
+    padding-top: 1.6rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .steps li:first-child {
+    border-top: none;
+    padding-top: 0;
+  }
+
+  .step-num {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 1.6rem;
+    color: var(--accent);
+  }
+
+  .steps h3 {
+    font-size: 1.15rem;
+    margin-bottom: 0.35em;
+  }
+
+  .steps p {
+    color: var(--ink);
+    max-width: var(--measure);
+  }
+
+  .steps .note {
+    font-size: 0.92rem;
+    color: var(--muted);
+    margin-top: 0.5em;
+  }
+
+  /* Transparency section */
+  .transparency h2 {
+    font-size: 1.6rem;
+    max-width: var(--measure);
+  }
+
+  .transparency > .wrap > p {
+    max-width: var(--measure);
+  }
+
+  dl.facts {
+    margin: 2.2rem 0 0;
+    border-top: 1px solid var(--border);
+  }
+
+  dl.facts > div {
+    display: grid;
+    grid-template-columns: 12rem 1fr;
+    gap: 1.5rem;
+    padding: 1.3rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  dl.facts dt {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    padding-top: 0.15em;
+  }
+
+  dl.facts dd {
+    margin: 0;
+    max-width: var(--measure);
+  }
+
+  footer.site {
+    padding: 2.6rem 0 3rem;
+  }
+
+  footer.site .wrap {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  footer.site p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 30rem;
+    margin: 0;
+  }
+
+  footer.site .back {
+    font-size: 0.88rem;
+    text-decoration: none;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  footer.site .back:hover,
+  footer.site .back:focus-visible {
+    color: var(--accent);
+  }
+
+  @media (max-width: 640px) {
+    section { padding: 3rem 0; }
+    .hero { padding-top: 2.6rem; }
+    .preview-visual { grid-template-columns: 56px 1fr; }
+    dl.facts > div { grid-template-columns: 1fr; gap: 0.4rem; }
+    .steps li { grid-template-columns: 2.2rem 1fr; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#hauptinhalt">Zum Hauptinhalt springen</a>
+
+<header class="site" id="top">
+  <div class="wrap">
+    <a class="wordmark" href="#top">
+      <span class="coin" aria-hidden="true"></span>
+      Pfennig
+    </a>
+    <nav class="primary" aria-label="Hauptnavigation">
+      <a href="#ablauf">Ablauf</a>
+      <a href="#transparenz">Transparenz</a>
+      <a class="btn ghost" href="#ablauf">So funktioniert's</a>
+    </nav>
+  </div>
+</header>
+
+<main id="hauptinhalt">
+
+  <section class="hero">
+    <div class="wrap">
+      <p class="kicker">Buchhaltung am Mac &middot; für Freiberufler</p>
+      <h1>Belege rein. Eine ruhige Tabelle bleibt.</h1>
+      <p class="sub">Pfennig ist eine native Mac-App in Entwicklung. Sie ziehen Rechnungen, Belege und Kontoauszüge ins Fenster, ein KI-Agent liest sie und legt Buchungen an. Sie sehen jede Zeile an, korrigieren sie bei Bedarf und bestätigen sie.</p>
+      <p class="audience">Gedacht für Freiberufler und Einzelunternehmen mit Einnahmenüberschussrechnung und Ist-Versteuerung, ob regelbesteuert oder als Kleinunternehmer.</p>
+      <div class="cta-row">
+        <a class="btn" href="#ablauf">So funktioniert's</a>
+        <a class="btn ghost" href="#transparenz">Was mit Ihren Dokumenten passiert</a>
+      </div>
+
+      <figure class="preview-frame">
+        <div class="preview-visual" aria-hidden="true">
+          <div class="preview-nav">
+            <span></span>
+            <span></span>
+          </div>
+          <div class="preview-main">
+            <div class="preview-toolbar"></div>
+            <div class="preview-row w1"></div>
+            <div class="preview-row w2"></div>
+            <div class="preview-row w3"></div>
+            <div class="preview-row w4"></div>
+            <div class="preview-row w5"></div>
+            <div class="preview-row w6"></div>
+          </div>
+        </div>
+        <figcaption class="preview-caption">Bildschirmfoto oder Video folgt hier, sobald die App so weit ist. Diese Fläche zeigt bewusst noch keine Oberfläche.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section id="ablauf">
+    <div class="wrap">
+      <p class="kicker">Vom Dokument zur Buchung</p>
+      <h2 style="font-size: 1.6rem;">Drei Schritte, die man sieht</h2>
+      <ol class="steps">
+        <li>
+          <span class="step-num" aria-hidden="true">01</span>
+          <div>
+            <h3>Ablegen</h3>
+            <p>Sie ziehen eine Rechnung, einen Beleg, eine Gutschrift oder einen Kontoauszug auf das Fenster. Mehrere Dateien gehen gleichzeitig.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">02</span>
+          <div>
+            <h3>Lesen</h3>
+            <p>Ein KI-Agent liest das Dokument, erkennt Beträge, Steuersatz, Datum und Gegenpartei und legt einen Buchungsvorschlag in der lokalen Datenbank an.</p>
+            <p class="note">Dazu wird das Dokument an OpenAI übertragen. Mehr dazu unter Transparenz.</p>
+          </div>
+        </li>
+        <li>
+          <span class="step-num" aria-hidden="true">03</span>
+          <div>
+            <h3>Prüfen</h3>
+            <p>Der Vorschlag erscheint in einer schlichten, nativen Tabelle. Sie sehen ihn an, korrigieren ihn bei Bedarf und bestätigen ihn. Ohne Bestätigung bleibt er sichtbar als zu prüfen.</p>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section id="transparenz" class="transparency">
+    <div class="wrap">
+      <p class="kicker">Ehrlich zu dem, was passiert</p>
+      <h2>Was lokal bleibt, was gesendet wird</h2>
+      <p>Pfennig soll sich nicht wie eine KI-Anwendung anfühlen, sondern wie eine ruhige Tabelle, hinter der die Arbeit passiert. Damit das ehrlich bleibt, hier ohne Umschweife, was wo liegt:</p>
+      <dl class="facts">
+        <div>
+          <dt>Datenbank &amp; Archiv</dt>
+          <dd>Buchungen und die Originaldateien Ihrer Belege liegen als Datei auf Ihrem Mac. Kein Konto, kein Server, keine Cloud-Synchronisierung.</dd>
+        </div>
+        <div>
+          <dt>Dokumente lesen</dt>
+          <dd>Zum Erkennen von Beträgen, Steuersatz und Gegenpartei sendet Pfennig das jeweilige Dokument an OpenAI. Diese Verarbeitung findet dort statt, nicht ausschließlich auf Ihrem Gerät.</dd>
+        </div>
+        <div>
+          <dt>UStVA</dt>
+          <dd>Export als XML für das Formular "XML-Daten hochladen" in Mein ELSTER. Sie laden die Datei selbst hoch, prüfen das vorausgefüllte Formular und senden es selbst ab. Pfennig übermittelt nichts direkt.</dd>
+        </div>
+        <div>
+          <dt>EÜR</dt>
+          <dd>Export als CSV mit Formularzeile, Bezeichnung und Betrag. Für die Anlage EÜR gibt es keinen Upload, die Werte werden von Hand übertragen.</dd>
+        </div>
+      </dl>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <p>Pfennig befindet sich in der Entwicklung. Diese Seite beschreibt die geplante App, keine Preise, kein Anmeldeformular.</p>
+    <a class="back" href="#top">Nach oben</a>
+  </div>
+</footer>
+
+</body>
+</html>

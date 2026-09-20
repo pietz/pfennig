@@ -1,5 +1,7 @@
 # Status
 
+**Landingpage-Entwürfe.** `landing-concepts/` enthält vier eigenständige HTML-Gestaltungsentwürfe von Luna, Sonnet, GLM Flash und Gemini Flash sowie separate deutsche Inhaltsvorschläge von Fable und Astra. Ohne Build-Schritt lokal im Browser zu öffnen; App-Vorschauen sind Platzhalter. Der Eigentümer bevorzugt Geminis zentriertes Layout, monochrom und ohne Kartenfülle. Der aktuelle Arbeitsentwurf `daft.html` nutzt unverändertes DaftCSS ohne eigenes CSS oder JavaScript und die gewählte Headline „Buchhaltung ohne Buchhaltung.“ mit persönlichem Begleittext. Keine Veröffentlichung oder Änderung an der macOS-App.
+
 **Ruhiger Eingangsindikator.** Während der parallelen Dateiverarbeitung zeigt die Toolbar nur noch den Spinner. Der verzögert wirkende Textzähler und sein Fortschrittszustand sind entfernt; Sichtbarkeit und Verarbeitung bleiben unverändert.
 
 **Validierung und Kleinunternehmer-Fristen.** `privatanteil_prozent` wird beim Agentenschreiben und Bestätigen auf 0 bis 100 begrenzt; Einnahmen eines Kleinunternehmers dürfen nicht als `inland` in die steuerpflichtigen UStVA-Kennzahlen gelangen. Die Startseite zeigt Kleinunternehmern keine regelmäßige UStVA-Frist mehr, wohl aber einen Monats- oder Quartalszeitraum, in dem die bestehende UStVA-Berechnung eine unterstützte §13b-Steuer in Kz 47 oder 85 ergibt. Regelbesteuerte Profile bleiben unverändert. 177 Tests und App-Build erfolgreich, unabhängig geprüft.
