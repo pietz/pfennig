@@ -9,19 +9,29 @@
   <link rel="stylesheet" href="daft-assets/daft.min.css">
 </head>
 <body>
-  <header class="container">
-    <strong>Pfennig</strong>
+  <header class="container" id="start">
+    <nav aria-label="Hauptnavigation">
+      <ul>
+        <li><a href="#start"><strong>Pfennig</strong></a></li>
+      </ul>
+      <ul>
+        <li><a href="#ablauf">So funktioniert’s</a></li>
+        <li><a href="#daten">Deine Daten</a></li>
+        <li><a class="button" href="#download">Download</a></li>
+      </ul>
+    </nav>
   </header>
 
   <main class="container">
     <section class="text-center mt-24">
       <p class="muted">Buchhaltung für den Mac</p>
       <h1 class="text-6xl mx-auto max-w-2xl">Buchhaltung ohne Buchhaltung.</h1>
-      <p class="muted mx-auto max-w-xl">Du hast dich nicht selbstständig gemacht, um Belege abzutippen. Pfennig übernimmt die Erfassung. Du behältst den Überblick.</p>
-      <div class="cluster justify-center mt-8">
-        <a class="button" href="https://github.com/pietz/pfennig/releases/latest">Für Mac laden</a>
+      <p class="muted mx-auto max-w-3xl">Du hast dich nicht selbstständig gemacht, um Belege abzutippen.<br>Pfennig übernimmt die Erfassung. Du behältst den Überblick.</p>
+      <div class="cluster justify-center mt-8" id="download">
+        <a class="button" href="https://github.com/pietz/pfennig/releases/latest">Kostenlos für Mac laden</a>
       </div>
-      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel</small></p>
+      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon</small></p>
+      <p class="muted"><small>Pfennig ist kostenlos. Zum Auslesen brauchst du einen eigenen OpenAI-API-Schlüssel; die Nutzung wird separat bei OpenAI abgerechnet.</small></p>
     </section>
 
     <figure>
@@ -29,7 +39,7 @@
       <figcaption>Hier kommt ein Blick in die App.</figcaption>
     </figure>
 
-    <section class="text-center max-w-xl mx-auto">
+    <section class="text-center max-w-xl mx-auto" id="ablauf">
       <h2>Deine Belege hast du schon. Die Zahlen stehen drin.</h2>
       <p>Zieh Rechnungen, Belege und Kontoauszüge auf Pfennig. Die App liest die Dokumente, trägt Buchungen ein und ordnet Zahlungen zu. Das Abtippen kannst du dir sparen.</p>
     </section>
@@ -45,15 +55,15 @@
       <p class="muted"><small>Für Freiberufler mit EÜR und Ist-Versteuerung, auch Kleinunternehmer. Steuerexporte aktuell für 2026.</small></p>
     </section>
 
-    <section class="text-center max-w-xl mx-auto">
-      <h2>Auf deinem Mac. Nicht hinter deinem Rücken.</h2>
+    <section class="text-center max-w-xl mx-auto" id="daten">
+      <h2>Deine Belege. Du weißt, wo sie sind.</h2>
       <p>Deine Buchhaltung und dein Belegarchiv werden lokal auf deinem Mac gespeichert. Zum Auslesen sendet Pfennig deine Dokumente an OpenAI. Dafür nutzt du deinen eigenen API-Schlüssel und bezahlst die Verarbeitung direkt bei OpenAI nach Nutzung.</p>
       <p>Pfennig kümmert sich um deine Einnahmen und Ausgaben. Rechnungen schreiben oder dein Bankkonto anbinden gehört nicht dazu.</p>
     </section>
   </main>
 
   <footer class="container text-center">
-    <p>Pfennig · <a href="https://github.com/pietz/pfennig">Quellcode auf GitHub</a></p>
+    <p>Pfennig · Buchhaltung für den Mac.</p>
   </footer>
 </body>
 </html>
