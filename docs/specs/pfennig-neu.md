@@ -60,7 +60,9 @@ Eine Kontobewegung ohne passenden Beleg ist ein Eintrag mit `art = nur_zahlung` 
 
 Eine Tabelle für abgegebene Zeiträume kommt mit dem Export in Thema 5.
 
-**Das Dateisystem übernimmt den Rest.** Alles liegt unter `~/Library/Application Support/Pfennig/`: die Datenbank, `Archiv/` mit den Originalen als `<sha256>.<endung>` und `Inbox/`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
+**Entwicklungsumgebung (bestätigt 2026-09-21).** Debug-Builds heißen „Pfennig Dev“, haben die App-Kennung `com.pietz.pfennig.dev` und verwenden ausschließlich `~/Library/Application Support/Pfennig-Dev/` für Datenbank, Archiv und Inbox. Release-Builds behalten die bestehende Kennung und den bestehenden Datenordner. Die Wahl erfolgt beim Bauen, ohne Laufzeitumschalter. Sparkle läuft nur im Release. Entwicklungsdaten bleiben zwischen Starts erhalten; ein fiktionaler Beispieldatensatz und sein bewusst ausgelöstes Zurücksetzen werden separat vorbereitet, nicht beim App-Start. Die Oberfläche arbeitet weiterhin mit dem normalen Repository, ohne Mock-Datenpfad.
+
+**Das Dateisystem übernimmt den Rest.** In der Release-App liegt alles unter `~/Library/Application Support/Pfennig/`: die Datenbank, `Archiv/` mit den Originalen als `<sha256>.<endung>` und `Inbox/`. Abgelegte Dateien landen in `Inbox/` und wandern nach erfolgreicher Verarbeitung ins Archiv; Inbox ist Fortschritt und Wiederholung zugleich.
 
 **Bewusst nicht:** Tabellen für Zahlungen, Positionen, Gegenparteien, Kategorien, Zuordnungen, Vorschläge, Herkunft, Importläufe. Keine UUIDs. Keine Regel, die vom Nutzer bearbeitete Einträge vor dem Agenten schützt; die Aktivitäten zeigen jede Änderung. Keine Versionsprüfung; parallele Läufe könnten in seltenen Fällen dieselbe Rechnung doppelt anlegen, was der Nutzer beim Prüfen sieht. Bekannte Gegenparteien werden weder als Stammsatz noch als automatisch geladener Agentenkontext geführt.
 

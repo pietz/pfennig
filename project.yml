@@ -63,6 +63,10 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         SWIFT_EMIT_LOC_STRINGS: YES
         LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/../Frameworks"
+      configs:
+        Debug:
+          PRODUCT_NAME: Pfennig Dev
+          PRODUCT_BUNDLE_IDENTIFIER: com.pietz.pfennig.dev
 
 schemes:
   Pfennig:

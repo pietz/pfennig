@@ -5,15 +5,13 @@ import SwiftUI
 @main
 struct PfennigApp: App {
     @State private var model = AppModel()
-    private let updaterController: SPUStandardUpdaterController
-
-    init() {
-        updaterController = SPUStandardUpdaterController(
+    #if !DEBUG
+        private let updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
             userDriverDelegate: nil
         )
-    }
+    #endif
 
     var body: some Scene {
         WindowGroup {
@@ -22,9 +20,11 @@ struct PfennigApp: App {
         }
         .defaultSize(width: 840, height: 500)
         .commands {
-            CommandGroup(after: .appInfo) {
-                UpdateCommand(updater: updaterController.updater)
-            }
+            #if !DEBUG
+                CommandGroup(after: .appInfo) {
+                    UpdateCommand(updater: updaterController.updater)
+                }
+            #endif
         }
 
         Settings {

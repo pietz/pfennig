@@ -1,11 +1,9 @@
 #!/usr/bin/env bash
-# Builds the app bundle into build/Build/Products/<Configuration>/Pfennig.app
+# Builds Pfennig Dev (Debug) or Pfennig (Release) into build/Build/Products/.
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 cd "$REPO_ROOT"
 
-if [ ! -d "$PROJECT" ]; then
-  xcodegen generate --quiet
-fi
+xcodegen generate --quiet
 
 xcodebuild_run \
   -project "$PROJECT" \

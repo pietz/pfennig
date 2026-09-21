@@ -10,8 +10,14 @@ public struct ArchivePaths: Hashable, Sendable {
         self.folder = folder
     }
 
+    #if DEBUG
+        private static let folderName = "Pfennig-Dev"
+    #else
+        private static let folderName = "Pfennig"
+    #endif
+
     public static let standard = ArchivePaths(
-        folder: URL.applicationSupportDirectory.appending(path: "Pfennig", directoryHint: .isDirectory)
+        folder: URL.applicationSupportDirectory.appending(path: folderName, directoryHint: .isDirectory)
     )
 
     public var archive: URL {

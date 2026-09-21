@@ -6,7 +6,11 @@ PROJECT="$REPO_ROOT/Pfennig.xcodeproj"
 SCHEME="Pfennig"
 CONFIGURATION="${CONFIGURATION:-Debug}"
 DERIVED_DATA="$REPO_ROOT/build"
-APP_PATH="$DERIVED_DATA/Build/Products/$CONFIGURATION/Pfennig.app"
+APP_NAME="Pfennig"
+if [ "$CONFIGURATION" = Debug ]; then
+  APP_NAME="Pfennig Dev"
+fi
+APP_PATH="$DERIVED_DATA/Build/Products/$CONFIGURATION/$APP_NAME.app"
 DEVELOPMENT_TEAM="34MWWCL4H2"
 
 # Debug builds are signed with the "Apple Development" identity by its SHA-1,

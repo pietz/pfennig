@@ -26,6 +26,10 @@ scripts/build.sh       # App-Bundle bauen
 scripts/run.sh         # bauen und starten
 ```
 
+Debug-Builds heißen „Pfennig Dev“ (`com.pietz.pfennig.dev`) und liegen unter `build/Build/Products/Debug/Pfennig Dev.app`. Ihre Datenbank, Originale und Inbox liegen getrennt in `~/Library/Application Support/Pfennig-Dev/`. Release-Builds behalten Name, Kennung und Datenordner der installierten App. Es gibt keinen Umschalter; die Build-Konfiguration entscheidet. Debug-Builds haben keine Sparkle-Updates. Bestehende Daten werden weder kopiert noch zurückgesetzt; der erste Entwicklungsstart beginnt mit einem leeren Archiv.
+
+Das Profil liegt in der jeweiligen Datenbank, Darstellung und Fensterzustand gehören zur jeweiligen App-Kennung. Der OpenAI-Schlüssel bleibt im bestehenden gemeinsamen Schlüsselbund-Eintrag: Ändern oder Löschen in einer App betrifft auch die andere. Die neue App-Kennung kann eine einmalige macOS-Zugriffsbestätigung erfordern.
+
 Die Spezifikation steht in `docs/specs/pfennig-neu.md`, die Arbeitsregeln in `AGENTS.md`, der aktuelle Stand in `docs/status.md`. Releases sind in `docs/releasing.md` beschrieben.
 
 ## Lizenz
