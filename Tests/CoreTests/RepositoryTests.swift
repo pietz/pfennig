@@ -345,6 +345,38 @@ private func bestaetigungsfehler(
     #expect(try repository.fileID(sha256: "abc") == datei)
 }
 
+@Test func loeschenDurchDenNutzerNimmtVerwaisteBelegeMit() throws {
+    let repository = try Repository.inMemory()
+    let geteilt = try repository.saveFile(Datei(sha256: "aaa", dateiname: "vertrag.pdf", endung: "pdf", groesse: 10))
+    let allein = try repository.saveFile(Datei(sha256: "bbb", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10))
+    let erste = try repository.save(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 1), titel: "Strom",
+            positionen: [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
+            steuerbehandlung: .inland, belege: [geteilt, allein]
+        ),
+        akteur: .nutzer
+    )
+    try repository.save(
+        Buchung(
+            richtung: .ausgabe, art: .beleg, datum: LocalDate(jahr: 2026, monat: 9, tag: 2), titel: "Wasser",
+            positionen: [Position(netto: Cent(5000), steuersatz: 19, steuer: Cent(950))],
+            steuerbehandlung: .inland, belege: [geteilt]
+        ),
+        akteur: .nutzer
+    )
+
+    let entfernt = try repository.deleteWithReceipts(id: #require(erste.id))
+
+    // The receipt only this booking carried is gone and its hash is unknown
+    // again; the shared one stays with the other booking.
+    #expect(entfernt.map(\.id) == [allein])
+    #expect(try repository.fileID(sha256: "bbb") == nil)
+    #expect(try repository.fileID(sha256: "aaa") == geteilt)
+    #expect(try repository.allBookings().count == 1)
+    #expect(try repository.deleteWithReceipts(id: 999).isEmpty)
+}
+
 @Test func belegLaesstSichVonEinerBuchungNehmen() throws {
     let repository = try Repository.inMemory()
     let datei = try repository.saveFile(Datei(sha256: "abc", dateiname: "rechnung.pdf", endung: "pdf", groesse: 10))

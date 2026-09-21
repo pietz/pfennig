@@ -226,13 +226,16 @@ final class AppModel {
     }
 
     /// The row leaves the list before the inspector closes, so its pending
-    /// edit cannot write the booking back.
+    /// edit cannot write the booking back. Receipts no other booking carries
+    /// go with it, row and original, so the document can be dropped again.
     func delete(_ buchung: Buchung) {
         guard let id = buchung.id else { return }
         buchungen.removeAll { $0.id == id }
         selection = nil
         do {
-            try repository.delete(id: id)
+            for file in try repository.deleteWithReceipts(id: id) {
+                try? FileManager.default.removeItem(at: path.original(file))
+            }
         } catch {
             errorMessage = "\(error)"
         }

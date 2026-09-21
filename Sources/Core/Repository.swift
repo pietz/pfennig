@@ -61,16 +61,43 @@ public final class Repository: Sendable {
         }
     }
 
-    /// Removes a booking the user no longer wants and logs it, §146 Abs. 4 AO:
-    /// the last row for the booking carries its final state and no `nachher`.
-    /// Its files stay in `dateien` and in the archive.
+    /// Removes a booking and logs it, §146 Abs. 4 AO: the last row for the
+    /// booking carries its final state and no `nachher`. Its files stay in
+    /// `dateien` and in the archive; the intake uses this to clear the rows of
+    /// a failed run and keep the stored file for the retry.
     public func delete(id: Int64) throws {
+        try database.write { try Repository.delete(id: id, in: $0) }
+    }
+
+    /// The user's delete: removes the booking and, with it, every receipt no
+    /// other booking carries, so the same document runs fresh when it is
+    /// dropped again. Returns the removed files; the caller deletes their
+    /// originals in the archive.
+    public func deleteWithReceipts(id: Int64) throws -> [Datei] {
         try database.write { db in
-            guard let buchung = try Buchung.fetchOne(db, key: id) else { return }
-            try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
-            let entry = Aktivitaet(buchungId: id, zeitpunkt: Date(), akteur: .nutzer, vorher: buchung, nachher: nil)
-            try entry.insert(db)
+            guard let buchung = try Repository.delete(id: id, in: db) else { return [] }
+            let orphaned = try buchung.belege.filter { fileID in
+                try Bool.fetchOne(
+                    db,
+                    sql: "SELECT COUNT(*) = 0 FROM buchungen, json_each(buchungen.belege) WHERE json_each.value = ?",
+                    arguments: [fileID]
+                ) ?? false
+            }
+            let files = try Datei.fetchAll(db, keys: orphaned)
+            try Datei.deleteAll(db, keys: orphaned)
+            return files
         }
+    }
+
+    /// Deletes the row and writes the log entry; answers with the booking as
+    /// it was, or nil when there was none.
+    @discardableResult
+    private static func delete(id: Int64, in db: Database) throws -> Buchung? {
+        guard let buchung = try Buchung.fetchOne(db, key: id) else { return nil }
+        try db.execute(sql: "DELETE FROM buchungen WHERE id = ?", arguments: [id])
+        let entry = Aktivitaet(buchungId: id, zeitpunkt: Date(), akteur: .nutzer, vorher: buchung, nachher: nil)
+        try entry.insert(db)
+        return buchung
     }
 
     /// The one write of a booking inside an open transaction. The sql tool
