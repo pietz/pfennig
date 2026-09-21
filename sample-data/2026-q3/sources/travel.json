@@ -1,0 +1,149 @@
+[
+  {
+    "filename": "15-flugrechnung-hamburg-muenchen.pdf",
+    "datum": "2026-09-07",
+    "gegenpartei": "Muster-Luftverkehr AG",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 23800,
+        "steuersatz": 19,
+        "steuer": 4522
+      }
+    ],
+    "brutto": 28322,
+    "zahlungen": [
+      {
+        "datum": "2026-09-08",
+        "betrag": 28322
+      }
+    ],
+    "scenario": "Flug HAM–MUC am 14.09.2026 um 07:10 und Rückflug MUC–HAM am 16.09.2026 um 18:20; Rechnung vor Abflug, bezahlt."
+  },
+  {
+    "filename": "16-taxiquittung-flughafen-hotel.pdf",
+    "datum": "2026-09-14",
+    "gegenpartei": "Nordstern Mobilität GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 13200,
+        "steuersatz": 19,
+        "steuer": 2508
+      }
+    ],
+    "brutto": 15708,
+    "zahlungen": [
+      {
+        "datum": "2026-09-14",
+        "betrag": 15708
+      }
+    ],
+    "scenario": "Airport taxi am 14.09.2026 um 08:48, Strecke ausdrücklich über 50 km, bezahlt."
+  },
+  {
+    "filename": "17-hotelrechnung-lumenhof-muenchen.pdf",
+    "datum": "2026-09-16",
+    "gegenpartei": "Lumenhof Hotel München",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 27600,
+        "steuersatz": 7,
+        "steuer": 1932
+      },
+      {
+        "netto": 2200,
+        "steuersatz": 7,
+        "steuer": 154
+      },
+      {
+        "netto": 1000,
+        "steuersatz": 19,
+        "steuer": 190
+      }
+    ],
+    "brutto": 33076,
+    "zahlungen": [
+      {
+        "datum": "2026-09-16",
+        "betrag": 33076
+      }
+    ],
+    "scenario": "Aufenthalt 14.–16.09.2026; Zimmer sowie Frühstücksspeisen und -getränke getrennt ausgewiesen, Zahlung bei Abreise."
+  },
+  {
+    "filename": "18-bewirtungsbeleg-wandelpunkt-kueche.pdf",
+    "datum": "2026-09-15",
+    "gegenpartei": "Wandelpunkt Küche",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 5400,
+        "steuersatz": 7,
+        "steuer": 378
+      },
+      {
+        "netto": 1400,
+        "steuersatz": 19,
+        "steuer": 266
+      }
+    ],
+    "brutto": 7444,
+    "zahlungen": [
+      {
+        "datum": "2026-09-15",
+        "betrag": 7444
+      }
+    ],
+    "scenario": "Geschäftliches Abendessen am 15.09.2026; Mara Winter und Jonas Berg (Kunde), Anlass Projektgespräch zum Kundenworkshop und zur Website-Phase, kein Trinkgeld."
+  },
+  {
+    "filename": "19-nahverkehrsticket-hotel-workshop.pdf",
+    "datum": "2026-09-15",
+    "gegenpartei": "IsarMobil Verkehrsbetriebe GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 935,
+        "steuersatz": 7,
+        "steuer": 65
+      }
+    ],
+    "brutto": 1000,
+    "zahlungen": [
+      {
+        "datum": "2026-09-15",
+        "betrag": 1000
+      }
+    ],
+    "scenario": "Nahverkehrsticket am 15.09.2026 um 10:06 vom Hotel zum Kundenworkshop, bezahlt."
+  },
+  {
+    "filename": "20-s-bahn-ticket-zum-flughafen.pdf",
+    "datum": "2026-09-16",
+    "gegenpartei": "Morgenstern Schiene GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 1250,
+        "steuersatz": 7,
+        "steuer": 88
+      }
+    ],
+    "brutto": 1338,
+    "zahlungen": [
+      {
+        "datum": "2026-09-16",
+        "betrag": 1338
+      }
+    ],
+    "scenario": "S-Bahn-Ticket am 16.09.2026 um 15:24 zum Flughafen für den Rückflug um 18:20, bezahlt."
+  }
+]

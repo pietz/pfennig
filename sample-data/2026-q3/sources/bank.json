@@ -1,0 +1,72 @@
+{
+  "documents": [
+    {
+      "filename": "27_kontur-bank-zahlungseingaenge-juli-august.pdf",
+      "datum": "2026-08-31",
+      "transaktionen": [
+        {
+          "datum": "2026-07-28",
+          "betrag": 285600,
+          "gegenpartei": "Elbbogen Keramik",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-071",
+          "rechnung_datei": "01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf",
+          "belegnummer": "SL-2026-071"
+        },
+        {
+          "datum": "2026-08-05",
+          "betrag": 97580,
+          "gegenpartei": "Nordkante Verlag GmbH",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-072",
+          "rechnung_datei": "21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf",
+          "belegnummer": "SL-2026-072"
+        },
+        {
+          "datum": "2026-08-29",
+          "betrag": 33320,
+          "gegenpartei": "Kiesel & Kante GmbH",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-084",
+          "rechnung_datei": "24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf",
+          "belegnummer": "SL-2026-084"
+        },
+        {
+          "datum": "2026-08-31",
+          "betrag": 380800,
+          "gegenpartei": "Isarblick Innenräume",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-082",
+          "rechnung_datei": "02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf",
+          "belegnummer": "SL-2026-082"
+        }
+      ]
+    },
+    {
+      "filename": "28_kontur-bank-zahlungseingaenge-september.pdf",
+      "datum": "2026-09-21",
+      "transaktionen": [
+        {
+          "datum": "2026-09-11",
+          "betrag": 107100,
+          "gegenpartei": "Nordkante Verlag GmbH",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-083",
+          "rechnung_datei": "22_2026-08-24_SL-2026-083_nordkante-maintenance-august.pdf",
+          "belegnummer": "SL-2026-083"
+        },
+        {
+          "datum": "2026-09-20",
+          "betrag": 104720,
+          "gegenpartei": "Nordkante Verlag GmbH",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-095",
+          "rechnung_datei": "23_2026-09-18_SL-2026-095_nordkante-maintenance-september.pdf",
+          "belegnummer": "SL-2026-095"
+        },
+        {
+          "datum": "2026-09-21",
+          "betrag": 175000,
+          "gegenpartei": "Alpenfokus Bürogestaltung",
+          "verwendungszweck": "Zahlung Rechnung SL-2026-094",
+          "rechnung_datei": "04_2026-09-18_SL-2026-094_alpenfokus.pdf",
+          "belegnummer": "SL-2026-094"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,95 @@
+[
+  {
+    "filename": "11-mobile.pdf",
+    "datum": "2026-08-12",
+    "gegenpartei": "Nordlicht Mobilfunk GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 4900,
+        "steuersatz": 19,
+        "steuer": 931
+      },
+      {
+        "netto": 2579,
+        "steuersatz": 19,
+        "steuer": 490
+      }
+    ],
+    "brutto": 8900,
+    "zahlungen": [
+      {
+        "datum": "2026-08-20",
+        "betrag": 8900
+      }
+    ],
+    "scenario": "mobilfunk_bezahlt_privatanteil_prozent30"
+  },
+  {
+    "filename": "12-laptop.pdf",
+    "datum": "2026-09-04",
+    "gegenpartei": "Pixelkern Computerhaus KG",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 114900,
+        "steuersatz": 19,
+        "steuer": 21831
+      },
+      {
+        "netto": 5000,
+        "steuersatz": 19,
+        "steuer": 950
+      }
+    ],
+    "brutto": 142681,
+    "zahlungen": [
+      {
+        "datum": "2026-09-08",
+        "betrag": 142681
+      }
+    ],
+    "scenario": "laptop_bezahlt_nutzungsdauer_jahre1"
+  },
+  {
+    "filename": "13-course.pdf",
+    "datum": "2026-07-19",
+    "gegenpartei": "Lernwerk Nord GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 34900,
+        "steuersatz": 19,
+        "steuer": 6631
+      }
+    ],
+    "brutto": 41531,
+    "zahlungen": [
+      {
+        "datum": "2026-07-22",
+        "betrag": 41531
+      }
+    ],
+    "scenario": "onlinekurs_beruflich_bezahlt"
+  },
+  {
+    "filename": "14-freelancer.pdf",
+    "datum": "2026-09-10",
+    "gegenpartei": "Wortspur Freie Texte",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 78000,
+        "steuersatz": 19,
+        "steuer": 14820
+      }
+    ],
+    "brutto": 92820,
+    "zahlungen": [],
+    "scenario": "website-texte_unbezahlt_faellig_2026-09-18"
+  }
+]

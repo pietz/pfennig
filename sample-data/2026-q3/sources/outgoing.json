@@ -1,0 +1,249 @@
+[
+  {
+    "filename": "01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf",
+    "datum": "2026-07-17",
+    "gegenpartei": "Elbbogen Keramik",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 120000,
+        "steuersatz": 19,
+        "steuer": 22800
+      },
+      {
+        "netto": 80000,
+        "steuersatz": 19,
+        "steuer": 15200
+      },
+      {
+        "netto": 40000,
+        "steuersatz": 19,
+        "steuer": 7600
+      }
+    ],
+    "brutto": 285600,
+    "zahlungen": [
+      {
+        "datum": "2026-07-28",
+        "betrag": 285600
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Markenauftritt für Elbbogen Keramik; Zielzahlung im Juli."
+  },
+  {
+    "filename": "02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf",
+    "datum": "2026-08-20",
+    "gegenpartei": "Isarblick Innenräume",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 210000,
+        "steuersatz": 19,
+        "steuer": 39900
+      },
+      {
+        "netto": 110000,
+        "steuersatz": 19,
+        "steuer": 20900
+      }
+    ],
+    "brutto": 380800,
+    "zahlungen": [
+      {
+        "datum": "2026-08-31",
+        "betrag": 380800
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Abgeschlossene erste Website-Projektphase für Isarblick Innenräume, München; eigenständige Teilleistung ohne Vorauszahlung, Zielzahlung im August."
+  },
+  {
+    "filename": "03_2026-09-21_SL-2026-093_isarblick-phase-2.pdf",
+    "datum": "2026-09-21",
+    "gegenpartei": "Isarblick Innenräume",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 250000,
+        "steuersatz": 19,
+        "steuer": 47500
+      },
+      {
+        "netto": 130000,
+        "steuersatz": 19,
+        "steuer": 24700
+      }
+    ],
+    "brutto": 452200,
+    "zahlungen": [],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Abgeschlossene zweite Website-Projektphase für denselben Münchner Kunden; nur Phase 2 abgerechnet, am Datenstand 21.09. offen, Fälligkeit nach dem Datenstand."
+  },
+  {
+    "filename": "04_2026-09-18_SL-2026-094_alpenfokus.pdf",
+    "datum": "2026-09-18",
+    "gegenpartei": "Alpenfokus Bürogestaltung",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 115000,
+        "steuersatz": 0,
+        "steuer": 0
+      },
+      {
+        "netto": 60000,
+        "steuersatz": 0,
+        "steuer": 0
+      }
+    ],
+    "brutto": 175000,
+    "zahlungen": [
+      {
+        "datum": "2026-09-21",
+        "betrag": 175000
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Designleistung an Alpenfokus Bürogestaltung, Österreich; B2B Reverse Charge, Zielzahlung im September."
+  },
+  {
+    "filename": "05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf",
+    "datum": "2026-08-10",
+    "gegenpartei": "Elbbogen Keramik",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": -40000,
+        "steuersatz": 19,
+        "steuer": -7600
+      }
+    ],
+    "brutto": -47600,
+    "zahlungen": [
+      {
+        "datum": "2026-08-18",
+        "betrag": -47600
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [
+      {
+        "datum": "2026-08-18",
+        "betrag": -47600
+      }
+    ],
+    "scenario": "Teil-Stornorechnung zur Juli-Markenrechnung SL-2026-071; negative Beträge für eine Position, tatsächliche Erstattung im August, keine Gutschrift durch den Leistungsempfänger."
+  },
+  {
+    "filename": "21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf",
+    "datum": "2026-07-24",
+    "gegenpartei": "Nordkante Verlag GmbH",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 58000,
+        "steuersatz": 19,
+        "steuer": 11020
+      },
+      {
+        "netto": 24000,
+        "steuersatz": 19,
+        "steuer": 4560
+      }
+    ],
+    "brutto": 97580,
+    "zahlungen": [
+      {
+        "datum": "2026-08-05",
+        "betrag": 97580
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Website-Wartung für Nordkante Verlag GmbH im Juli; Zielzahlung Anfang August."
+  },
+  {
+    "filename": "22_2026-08-24_SL-2026-083_nordkante-maintenance-august.pdf",
+    "datum": "2026-08-24",
+    "gegenpartei": "Nordkante Verlag GmbH",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 62000,
+        "steuersatz": 19,
+        "steuer": 11780
+      },
+      {
+        "netto": 28000,
+        "steuersatz": 19,
+        "steuer": 5320
+      }
+    ],
+    "brutto": 107100,
+    "zahlungen": [
+      {
+        "datum": "2026-09-11",
+        "betrag": 107100
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Website-Wartung für denselben deutschen Kunden im August; Zielzahlung im September."
+  },
+  {
+    "filename": "23_2026-09-18_SL-2026-095_nordkante-maintenance-september.pdf",
+    "datum": "2026-09-18",
+    "gegenpartei": "Nordkante Verlag GmbH",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 60000,
+        "steuersatz": 19,
+        "steuer": 11400
+      },
+      {
+        "netto": 28000,
+        "steuersatz": 19,
+        "steuer": 5320
+      }
+    ],
+    "brutto": 104720,
+    "zahlungen": [
+      {
+        "datum": "2026-09-20",
+        "betrag": 104720
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Website-Wartung für denselben deutschen Kunden im September; Zielzahlung bis 20.09.2026."
+  },
+  {
+    "filename": "24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf",
+    "datum": "2026-08-28",
+    "gegenpartei": "Kiesel & Kante GmbH",
+    "richtung": "Ausgang",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 28000,
+        "steuersatz": 19,
+        "steuer": 5320
+      }
+    ],
+    "brutto": 33320,
+    "zahlungen": [
+      {
+        "datum": "2026-08-29",
+        "betrag": 33320
+      }
+    ],
+    "zahlungen_nach_rechnungsimport": [],
+    "scenario": "Kleine eigenständige Designleistung für Kiesel & Kante GmbH; Zielzahlung im August."
+  }
+]

@@ -1,0 +1,190 @@
+[
+  {
+    "filename": "06-klarquell-studio-pro-2026-07-08.pdf",
+    "datum": "2026-07-08",
+    "gegenpartei": "Klarquell Studio Software Ltd.",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 4200,
+        "steuersatz": 19,
+        "steuer": 0
+      }
+    ],
+    "brutto": 4200,
+    "zahlungen": [
+      {
+        "datum": "2026-07-10",
+        "betrag": 4200
+      }
+    ],
+    "scenario": "Irischer Designsoftware-Abobezug, Reverse Charge nach § 13b UStG, im Juli bezahlt."
+  },
+  {
+    "filename": "07-northstar-dev-tools-2026-08-20.pdf",
+    "datum": "2026-08-20",
+    "gegenpartei": "Northstar Dev Tools Inc.",
+    "richtung": "ausgabe",
+    "waehrung": "USD",
+    "originalbetrag": "86.40",
+    "originalwaehrung": "USD",
+    "originalpositionen": [
+      {
+        "beschreibung": "ForgeLint Team License / AUG 2026",
+        "betrag": "64.00"
+      },
+      {
+        "beschreibung": "Build Cache 500 GB / AUG 2026",
+        "betrag": "22.40"
+      }
+    ],
+    "originalsumme": "86.40 USD",
+    "karteneinzug": {
+      "datum": "2026-08-21",
+      "betrag": 7992,
+      "waehrung": "EUR"
+    },
+    "umrechnungsrelation": "86.40 USD × 0.925 = 79.92 EUR",
+    "positionen": [
+      {
+        "netto": 7992,
+        "steuersatz": 19,
+        "steuer": 0
+      }
+    ],
+    "brutto": 7992,
+    "zahlungen": [
+      {
+        "datum": "2026-08-21",
+        "betrag": 7992
+      }
+    ],
+    "scenario": "US-Entwicklerwerkzeug ohne US-Umsatzsteuer, Reverse Charge, tatsächlicher EUR-Karteneinzug am 21.08.2026."
+  },
+  {
+    "filename": "08-hafenblick-hosting-2026-07-15.pdf",
+    "datum": "2026-07-15",
+    "gegenpartei": "Hafenblick Hosting GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 2800,
+        "steuersatz": 19,
+        "steuer": 532
+      },
+      {
+        "netto": 600,
+        "steuersatz": 19,
+        "steuer": 114
+      }
+    ],
+    "brutto": 4046,
+    "zahlungen": [
+      {
+        "datum": "2026-07-18",
+        "betrag": 4046
+      }
+    ],
+    "scenario": "Deutscher Hosting- und Domainbezug mit 19 % Umsatzsteuer, im Juli bezahlt."
+  },
+  {
+    "filename": "09-papier-punkt-kassenbon-2026-08-04.pdf",
+    "datum": "2026-08-04",
+    "gegenpartei": "Papier & Punkt Fachhandel",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 2470,
+        "steuersatz": 19,
+        "steuer": 469
+      }
+    ],
+    "brutto": 2939,
+    "zahlungen": [
+      {
+        "datum": "2026-08-04",
+        "betrag": 2939
+      }
+    ],
+    "scenario": "Schmaler deutscher Kassenbon für Büromaterial und Druckerpapier, 19 % Umsatzsteuer, bezahlt."
+  },
+  {
+    "filename": "10-druckwerk-nord-portfolio-karten-2026-09-07.pdf",
+    "datum": "2026-09-07",
+    "gegenpartei": "Druckwerk Nord OHG",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 4200,
+        "steuersatz": 19,
+        "steuer": 798
+      },
+      {
+        "netto": 1200,
+        "steuersatz": 19,
+        "steuer": 228
+      },
+      {
+        "netto": 600,
+        "steuersatz": 19,
+        "steuer": 114
+      }
+    ],
+    "brutto": 7140,
+    "zahlungen": [
+      {
+        "datum": "2026-09-10",
+        "betrag": 7140
+      }
+    ],
+    "scenario": "Deutsche Druckerei für Portfolio-Karten mit 19 % Umsatzsteuer, im September bezahlt."
+  },
+  {
+    "filename": "25-wellenfeld-domain-renewal-2026-07-03.pdf",
+    "datum": "2026-07-03",
+    "gegenpartei": "Wellenfeld Domainservice GmbH",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 1800,
+        "steuersatz": 19,
+        "steuer": 342
+      }
+    ],
+    "brutto": 2142,
+    "zahlungen": [
+      {
+        "datum": "2026-07-05",
+        "betrag": 2142
+      }
+    ],
+    "scenario": "Deutscher Domainprovider, Jahresverlängerung im Juli, 19 % Umsatzsteuer, bezahlt."
+  },
+  {
+    "filename": "26-sicherpfad-berufsschutz-2026-07-01.pdf",
+    "datum": "2026-07-01",
+    "gegenpartei": "Sicherpfad Berufsschutz AG",
+    "richtung": "ausgabe",
+    "waehrung": "EUR",
+    "positionen": [
+      {
+        "netto": 57120,
+        "steuersatz": 0,
+        "steuer": 0
+      }
+    ],
+    "brutto": 57120,
+    "zahlungen": [
+      {
+        "datum": "2026-07-01",
+        "betrag": 57120
+      }
+    ],
+    "scenario": "Jahresbeitrag Berufshaftpflicht Juli 2026 bis Juni 2027, Versicherungssteuer 19 % klar als Nicht-Umsatzsteuer, steuerfrei gebucht, im Juli bezahlt."
+  }
+]
