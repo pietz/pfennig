@@ -67,6 +67,7 @@ targets:
         Debug:
           PRODUCT_NAME: Pfennig Dev
           PRODUCT_BUNDLE_IDENTIFIER: com.pietz.pfennig.dev
+          ASSETCATALOG_COMPILER_APPICON_NAME: AppIconDev
 
 schemes:
   Pfennig:

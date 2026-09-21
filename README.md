@@ -24,6 +24,8 @@ scripts/bootstrap.sh   # XcodeGen, SwiftFormat, Pakete
 scripts/test.sh        # Swift-Testing-Suiten
 scripts/build.sh       # App-Bundle bauen
 scripts/run.sh         # bauen und starten
+swift scripts/make-icon.swift       # Release-Icon neu erzeugen
+swift scripts/make-icon.swift --dev # Debug-Icon neu erzeugen
 ```
 
 Debug-Builds heißen „Pfennig Dev“ (`com.pietz.pfennig.dev`) und liegen unter `build/Build/Products/Debug/Pfennig Dev.app`. Ihre Datenbank, Originale und Inbox liegen getrennt in `~/Library/Application Support/Pfennig-Dev/`. Release-Builds behalten Name, Kennung und Datenordner der installierten App. Es gibt keinen Umschalter; die Build-Konfiguration entscheidet. Debug-Builds haben keine Sparkle-Updates. Bestehende Daten werden weder kopiert noch zurückgesetzt; der erste Entwicklungsstart beginnt mit einem leeren Archiv.

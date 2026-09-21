@@ -1,8 +1,9 @@
 #!/usr/bin/env swift
 //
-// Builds App/Resources/Assets.xcassets/AppIcon.appiconset from the coin artwork.
+// Builds an app icon asset catalog from the coin artwork.
 //
 //   swift scripts/make-icon.swift [quelle.png]
+//   swift scripts/make-icon.swift --dev [quelle.png]
 //
 // The layout follows Apple's macOS app icon template, measured on the system
 // icons of macOS 15: on a 1024 px canvas the tile is 824 x 824, centred with a
@@ -27,11 +28,16 @@ let saumAnteil = 0.02 // feathered edge of the artwork, relative to its width
 
 let repoWurzel = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
     .deletingLastPathComponent()
-let quelle = CommandLine.arguments.count > 1
-    ? URL(fileURLWithPath: CommandLine.arguments[1])
-    : repoWurzel.appendingPathComponent("scripts/icon/pfennig-white.png")
+let arguments = Array(CommandLine.arguments.dropFirst())
+let isDev = arguments.contains("--dev")
+let positionalArguments = arguments.filter { $0 != "--dev" }
+let defaultSourceName = isDev ? "pfennig-transparent.png" : "pfennig-white.png"
+let quelle = positionalArguments.isEmpty
+    ? repoWurzel.appendingPathComponent("scripts/icon/\(defaultSourceName)")
+    : URL(fileURLWithPath: positionalArguments[0])
+let assetCatalogName = isDev ? "AppIconDev" : "AppIcon"
 let ziel = repoWurzel
-    .appendingPathComponent("App/Resources/Assets.xcassets/AppIcon.appiconset")
+    .appendingPathComponent("App/Resources/Assets.xcassets/\(assetCatalogName).appiconset")
 
 func abbruch(_ text: String) -> Never {
     FileHandle.standardError.write(Data("error: \(text)\n".utf8))
@@ -78,12 +84,17 @@ for y in 0 ..< hoehe {
     }
 }
 
-let hintergrund = CGColor(
-    srgbRed: CGFloat(summe.0) / CGFloat(zaehler) / 255,
-    green: CGFloat(summe.1) / CGFloat(zaehler) / 255,
-    blue: CGFloat(summe.2) / CGFloat(zaehler) / 255,
-    alpha: 1
-)
+let hintergrund: CGColor
+if isDev {
+    hintergrund = CGColor(srgbRed: 0.33, green: 0.20, blue: 0.55, alpha: 1)
+} else {
+    hintergrund = CGColor(
+        srgbRed: CGFloat(summe.0) / CGFloat(zaehler) / 255,
+        green: CGFloat(summe.1) / CGFloat(zaehler) / 255,
+        blue: CGFloat(summe.2) / CGFloat(zaehler) / 255,
+        alpha: 1
+    )
+}
 
 /// Bounding box of the copper: the coin, without its grey drop shadow.
 var links = breite, oben = hoehe, rechts = -1, unten = -1
@@ -238,13 +249,13 @@ try! inhalt.write(
     to: ziel.appendingPathComponent("Contents.json"), atomically: true, encoding: .utf8
 )
 
-// Previews, when a directory is given as the second argument.
-if CommandLine.arguments.count > 2 {
-    let vorschau = URL(fileURLWithPath: CommandLine.arguments[2])
+// Previews, when a directory is given after the optional source argument.
+if positionalArguments.count > 1 {
+    let vorschau = URL(fileURLWithPath: positionalArguments[1])
     try? FileManager.default.createDirectory(at: vorschau, withIntermediateDirectories: true)
     schreibe(master, 1024, nach: vorschau.appendingPathComponent("preview-1024.png"))
     schreibe(master, 128, nach: vorschau.appendingPathComponent("preview-128.png"))
 }
 
-print("AppIcon.appiconset: \(eintraege.count) files, tile \(Int(kachelGroesse)) px, "
+print("\(assetCatalogName).appiconset: \(eintraege.count) files, tile \(Int(kachelGroesse)) px, "
     + "coin \(Int(muenzeAnteil * 100)) % of the tile")
