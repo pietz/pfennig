@@ -1,0 +1,956 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Pfennig · Buchhaltung ohne Buchhaltung.</title>
+<meta name="description" content="Du hast dich nicht selbstständig gemacht, um Belege abzutippen. Pfennig übernimmt die Erfassung. Du behältst den Überblick.">
+<link rel="icon" href="daft-assets/pfennig.png">
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #fafafa;
+    --raised: #ffffff;
+    --fg: #0b0b0d;
+    --fg-soft: #3f3f46;
+    --muted: #71717a;
+    --faint: #a1a1aa;
+    --border: #e6e6e9;
+    --border-strong: #d6d6da;
+    --accent: #9c5d2d;
+    --accent-soft: rgba(156, 93, 45, 0.10);
+    --btn-bg: #101013;
+    --btn-fg: #ffffff;
+    --btn-bg-hover: #2a2a30;
+    --nav-bg: rgba(255, 255, 255, 0.82);
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0a0a0c;
+      --surface: #0f0f12;
+      --raised: #121216;
+      --fg: #f4f4f5;
+      --fg-soft: #d4d4d8;
+      --muted: #9b9ba3;
+      --faint: #6e6e78;
+      --border: #26262c;
+      --border-strong: #35353d;
+      --accent: #d09159;
+      --accent-soft: rgba(208, 145, 89, 0.12);
+      --btn-bg: #f4f4f5;
+      --btn-fg: #0a0a0c;
+      --btn-bg-hover: #dcdce0;
+      --nav-bg: rgba(10, 10, 12, 0.82);
+    }
+  }
+
+  * { box-sizing: border-box; }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    letter-spacing: -0.006em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  img { display: block; max-width: 100%; height: auto; }
+
+  a { color: inherit; }
+
+  h1, h2, h3 {
+    margin: 0;
+    letter-spacing: -0.028em;
+    line-height: 1.15;
+    font-weight: 600;
+  }
+
+  p { margin: 0; }
+
+  .container {
+    width: 100%;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding-inline: 24px;
+  }
+
+  .narrow { max-width: 900px; }
+
+  /* ---------- navigation ---------- */
+
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: var(--nav-bg);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    height: 58px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 15.5px;
+    letter-spacing: -0.02em;
+  }
+
+  .brand img { width: 22px; height: 22px; border-radius: 50%; }
+
+  .nav-right {
+    display: flex;
+    align-items: center;
+    gap: 22px;
+  }
+
+  .nav-right a.nav-link {
+    text-decoration: none;
+    color: var(--muted);
+    font-size: 14px;
+    letter-spacing: -0.01em;
+    transition: color 0.15s ease;
+  }
+
+  .nav-right a.nav-link:hover { color: var(--fg); }
+
+  /* ---------- buttons ---------- */
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    background: var(--btn-bg);
+    color: var(--btn-fg);
+    text-decoration: none;
+    font-weight: 500;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    transition: background 0.15s ease, transform 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .btn:hover { background: var(--btn-bg-hover); }
+  .btn:active { transform: translateY(0.5px); }
+
+  .btn-sm {
+    height: 32px;
+    padding-inline: 13px;
+    font-size: 13.5px;
+  }
+
+  .btn-lg {
+    height: 48px;
+    padding-inline: 24px;
+    font-size: 15.5px;
+  }
+
+  .btn svg { flex: none; }
+
+  /* ---------- sections ---------- */
+
+  section { padding-block: clamp(60px, 8.5vw, 104px); }
+
+  .band {
+    background: var(--surface);
+    border-block: 1px solid var(--border);
+  }
+
+  .band--tight { padding-block: clamp(44px, 6vw, 72px); }
+
+  [id] { scroll-margin-top: 78px; }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    padding: 5px 13px 5px 11px;
+    font-size: 13px;
+    color: var(--fg-soft);
+    letter-spacing: -0.005em;
+    background: var(--raised);
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  h2 { font-size: clamp(1.6rem, 3.1vw, 2.15rem); }
+  h3 { font-size: 1.0625rem; letter-spacing: -0.018em; }
+
+  .body-text {
+    color: var(--fg-soft);
+    font-size: 16.5px;
+    line-height: 1.65;
+  }
+
+  .muted-text { color: var(--muted); }
+
+  .fine {
+    font-size: 13px;
+    color: var(--faint);
+    letter-spacing: 0;
+  }
+
+  /* ---------- hero ---------- */
+
+  .hero {
+    padding-top: clamp(56px, 8vw, 92px);
+    padding-bottom: clamp(48px, 6vw, 72px);
+    text-align: center;
+  }
+
+  .hero h1 {
+    font-size: clamp(2.25rem, 6.2vw, 3.6rem);
+    margin-top: 22px;
+    letter-spacing: -0.036em;
+  }
+
+  .hero .lead {
+    margin: 20px auto 0;
+    max-width: 620px;
+    font-size: clamp(16.5px, 1.6vw, 18.5px);
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .hero .btn-lg { margin-top: 32px; }
+
+  .hero .fine { margin-top: 14px; }
+
+  .shot {
+    margin: 0;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--surface);
+  }
+
+  .shot img { width: 100%; }
+
+  figure.framed { margin: 0; }
+
+  figcaption {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--faint);
+    line-height: 1.5;
+  }
+
+  .framed.hero-figure { margin: clamp(40px, 6vw, 64px) 0 0; }
+  .hero-figure figcaption { text-align: center; }
+
+  /* ---------- three cards ---------- */
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 26px 24px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .card .num {
+    font-size: 12.5px;
+    color: var(--faint);
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+  }
+
+  .card p {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.62;
+  }
+
+  /* ---------- feature rows ---------- */
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr);
+    gap: clamp(32px, 5vw, 72px);
+    align-items: center;
+  }
+
+  .row + .row { margin-top: clamp(60px, 8vw, 104px); }
+
+  .row-text { display: flex; flex-direction: column; gap: 18px; }
+  .row-text h2 { margin-bottom: 2px; }
+
+  @media (min-width: 861px) {
+    .row--reverse .row-media { order: -1; }
+  }
+
+  .note {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--muted);
+    border-left: 2px solid var(--border-strong);
+    padding-left: 12px;
+    line-height: 1.5;
+  }
+
+  /* ---------- privacy split ---------- */
+
+  .split {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(28px, 5vw, 72px);
+  }
+
+  .stack > * + * {
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border);
+  }
+
+  .stack p { color: var(--fg-soft); font-size: 16px; line-height: 1.65; }
+
+  /* ---------- fit table ---------- */
+
+  .fit-head { max-width: 720px; }
+  .fit-head p { margin-top: 16px; }
+
+  .fit-wrap {
+    margin-top: 36px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    background: var(--raised);
+  }
+
+  table.fit {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+  }
+
+  table.fit th {
+    text-align: left;
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 14px 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  table.fit td {
+    padding: 14px 20px;
+    font-size: 15px;
+    line-height: 1.5;
+    vertical-align: top;
+    border-bottom: 1px solid var(--border);
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  table.fit th:first-child,
+  table.fit td:first-child { width: 54%; }
+
+  table.fit tr:last-child td { border-bottom: 0; }
+
+  table.fit th + th,
+  table.fit td + td {
+    border-left: 1px solid var(--border);
+  }
+
+  table.fit td.no { color: var(--muted); }
+
+  .mark {
+    display: inline-flex;
+    align-items: flex-start;
+    gap: 9px;
+  }
+
+  .mark svg { flex: none; margin-top: 4px; }
+
+  .mark .ico-yes { color: var(--accent); }
+  .mark .ico-no { color: var(--faint); }
+
+  /* ---------- pricing ---------- */
+
+  .price-head { max-width: 760px; }
+  .price-head p { margin-top: 16px; }
+
+  .plans {
+    margin-top: 40px;
+    max-width: 880px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 20px;
+  }
+
+  .plan {
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--raised);
+    padding: 26px 24px 28px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .plan--primary { border-color: var(--border-strong); }
+
+  .plan-name {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.018em;
+  }
+
+  .plan-sub {
+    margin-top: 4px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .plan-price {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.03em;
+    line-height: 1.2;
+  }
+
+  .plan-price .unit {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--muted);
+    letter-spacing: -0.01em;
+  }
+
+  .plan ul {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 11px;
+  }
+
+  .plan li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 14.5px;
+    color: var(--fg-soft);
+    line-height: 1.5;
+  }
+
+  .plan li svg { flex: none; margin-top: 4px; color: var(--accent); }
+
+  /* ---------- faq ---------- */
+
+  .faq-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: clamp(28px, 5vw, 72px);
+    align-items: start;
+  }
+
+  .faq-list { border-top: 1px solid var(--border); }
+
+  details {
+    border-bottom: 1px solid var(--border);
+  }
+
+  summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    padding: 18px 0;
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+  }
+
+  summary::-webkit-details-marker { display: none; }
+
+  summary:hover { color: var(--muted); }
+
+  summary svg {
+    flex: none;
+    color: var(--faint);
+    transition: transform 0.18s ease;
+  }
+
+  details[open] summary svg { transform: rotate(180deg); }
+
+  .answer {
+    padding: 0 0 22px;
+    max-width: 62ch;
+    color: var(--muted);
+    font-size: 15.5px;
+    line-height: 1.65;
+  }
+
+  .answer > * + * { margin-top: 12px; }
+
+  .answer ol {
+    margin: 0;
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .answer a {
+    color: var(--fg);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    text-decoration-color: var(--border-strong);
+  }
+
+  .answer a:hover { text-decoration-color: var(--accent); }
+
+  /* ---------- closing ---------- */
+
+  .closing {
+    text-align: center;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    padding: clamp(40px, 6vw, 68px) 24px;
+  }
+
+  .closing p.body-text {
+    margin: 18px auto 0;
+    max-width: 520px;
+    color: var(--muted);
+  }
+
+  .closing .btn-lg { margin-top: 30px; }
+  .closing .fine { margin-top: 14px; }
+
+  /* ---------- footer ---------- */
+
+  footer {
+    border-top: 1px solid var(--border);
+    padding-block: 32px;
+  }
+
+  .foot-inner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .foot-inner img { width: 18px; height: 18px; border-radius: 50%; }
+
+  /* ---------- responsive ---------- */
+
+  @media (max-width: 860px) {
+    .row,
+    .split,
+    .faq-grid { grid-template-columns: minmax(0, 1fr); }
+
+    .cards { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+    .row { gap: 28px; }
+    .row + .row { margin-top: 56px; }
+
+    .faq-list { margin-top: 4px; }
+  }
+
+  @media (max-width: 640px) {
+    .container { padding-inline: 20px; }
+
+    .nav-right { gap: 14px; }
+    .nav-right .nav-link { display: none; }
+
+    .plans { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+
+    table.fit th,
+    table.fit td { padding: 12px 14px; font-size: 13.5px; }
+
+    table.fit th { font-size: 11.5px; letter-spacing: 0.05em; }
+
+    .mark { gap: 7px; }
+
+    .body-text { font-size: 16px; }
+  }
+
+  @media (max-width: 400px) {
+    .container { padding-inline: 16px; }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <a class="brand" href="#top">
+      <img src="daft-assets/pfennig.png" alt="">
+      <span>Pfennig</span>
+    </a>
+    <div class="nav-right">
+      <a class="nav-link" href="#so-funktionierts">So funktioniert&rsquo;s</a>
+      <a class="nav-link" href="#fuer-wen">F&uuml;r wen</a>
+      <a class="nav-link" href="#kosten">Kosten</a>
+      <a class="btn btn-sm" href="#download">Download</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+
+  <!-- 1 Hero -->
+  <section class="hero">
+    <div class="container">
+      <span class="eyebrow">F&uuml;r deine Selbstst&auml;ndigkeit</span>
+      <h1>Buchhaltung ohne Buchhaltung.</h1>
+      <p class="lead">
+        Du hast dich nicht selbstst&auml;ndig gemacht, um Belege abzutippen.<br>
+        Pfennig &uuml;bernimmt die Erfassung. Du beh&auml;ltst den &Uuml;berblick.
+      </p>
+      <a class="btn btn-lg" id="download" href="https://github.com/pietz/pfennig/releases/latest">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+        Kostenlos f&uuml;r Mac laden
+      </a>
+      <p class="fine">macOS 15 oder neuer &middot; Apple Silicon</p>
+
+      <figure class="framed hero-figure">
+        <div class="shot">
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Die Buchungstabelle mit ge&ouml;ffnetem Inspector.">
+        </div>
+        <figcaption>Die Buchungstabelle mit ge&ouml;ffnetem Inspector.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 2 Three cards -->
+  <section class="band band--tight" id="so-funktionierts">
+    <div class="container">
+      <div class="cards">
+        <div class="card">
+          <span class="num">01</span>
+          <h3>Ablegen statt abtippen.</h3>
+          <p>Zieh Rechnungen, Belege und Kontoausz&uuml;ge auf Pfennig. Die App erfasst deine Buchungen und ordnet Zahlungen zu.</p>
+        </div>
+        <div class="card">
+          <span class="num">02</span>
+          <h3>Die Steuer ist vorbereitet.</h3>
+          <p>Pfennig berechnet deine UStVA und E&Uuml;R. Du &uuml;bernimmst die Angaben in Mein ELSTER und sendest selbst ab.</p>
+        </div>
+        <div class="card">
+          <span class="num">03</span>
+          <h3>Du beh&auml;ltst die Kontrolle.</h3>
+          <p>Jede erfasste Buchung wartet auf deine Best&auml;tigung. Du siehst das Original daneben und korrigierst, was nicht stimmt.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3-6 Feature rows -->
+  <section>
+    <div class="container">
+
+      <div class="row">
+        <div class="row-text">
+          <h2>Aus Belegen werden Buchungen.</h2>
+          <p class="body-text">Zieh die Rechnung auf das Fenster. Pfennig liest Aussteller, Betrag, Steuer und Kategorie und tr&auml;gt die Buchung ein. Den Beleg siehst du direkt daneben und pr&uuml;fst die Angaben am Original.</p>
+          <p class="body-text muted-text">Das funktioniert auch bei den F&auml;llen, die sonst Arbeit machen: Reverse Charge aus dem Ausland, Rechnungen in Fremdw&auml;hrung, Belege mit gemischten Steuers&auml;tzen, E-Rechnungen als XML.</p>
+        </div>
+        <figure class="framed row-media">
+          <div class="shot">
+            <img src="daft-assets/preview.svg" width="1200" height="720" alt="Eine Buchung mit Originalbeleg im Inspector." loading="lazy">
+          </div>
+          <figcaption>Eine Buchung mit Originalbeleg im Inspector.</figcaption>
+        </figure>
+      </div>
+
+      <div class="row row--reverse">
+        <div class="row-text">
+          <h2>Zahlungen? Zugeordnet.</h2>
+          <p class="body-text">Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
+          <p class="body-text muted-text">Dein Bankkonto musst du daf&uuml;r nicht verbinden. Du l&auml;dst den Auszug bei deiner Bank herunter und legst ihn ab.</p>
+        </div>
+        <figure class="framed row-media">
+          <div class="shot">
+            <img src="daft-assets/preview.svg" width="1200" height="720" alt="Tabelle mit bezahlten Rechnungen und einer offenen." loading="lazy">
+          </div>
+          <figcaption>Tabelle mit bezahlten Rechnungen und einer offenen.</figcaption>
+        </figure>
+      </div>
+
+      <div class="row">
+        <div class="row-text">
+          <h2>Wissen, was noch offen ist.</h2>
+          <p class="body-text">Beim &Ouml;ffnen siehst du, wo du stehst: was reingekommen ist, was rausgegangen ist und was bleibt. Darunter stehen die Buchungen, die noch gepr&uuml;ft werden wollen, fehlende Belege und &uuml;berf&auml;llige Rechnungen. Ein Klick f&uuml;hrt zur passenden Liste.</p>
+          <p class="body-text muted-text">Die n&auml;chsten Fristen f&uuml;r UStVA und E&Uuml;R stehen gleich daneben.</p>
+        </div>
+        <figure class="framed row-media">
+          <div class="shot">
+            <img src="daft-assets/preview.svg" width="1200" height="720" alt="Startseite mit Jahreswerten, To-Dos und Fristen." loading="lazy">
+          </div>
+          <figcaption>Startseite mit Jahreswerten, To-Dos und Fristen.</figcaption>
+        </figure>
+      </div>
+
+      <div class="row row--reverse">
+        <div class="row-text">
+          <h2>Deine Zahlen sind bereit.</h2>
+          <p class="body-text">Pfennig rechnet deine Buchungen nach Zahlungsdatum zusammen, so wie es die Ist-Versteuerung verlangt. Zum Stichtag exportierst du die UStVA als Datei f&uuml;r Mein ELSTER oder die E&Uuml;R-Werte f&uuml;r das Jahr, mit AfA und Anlageverzeichnis, wenn du Anlageg&uuml;ter hast.</p>
+          <p class="body-text muted-text">Vor dem Export siehst du, ob noch unbest&auml;tigte Buchungen im Zeitraum liegen. Danach l&auml;dst du die Datei hoch, pr&uuml;fst das Formular und sendest selbst ab.</p>
+          <p class="note">Steuerexporte sind derzeit f&uuml;r 2026 verf&uuml;gbar.</p>
+        </div>
+        <figure class="framed row-media">
+          <div class="shot">
+            <img src="daft-assets/preview.svg" width="1200" height="720" alt="Exportfenster mit Zeitraum und Kennzahlen." loading="lazy">
+          </div>
+          <figcaption>Exportfenster mit Zeitraum und Kennzahlen.</figcaption>
+        </figure>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- 7 Privacy -->
+  <section class="band">
+    <div class="container">
+      <div class="split">
+        <div>
+          <h2>Deine Buchhaltung bleibt bei dir.</h2>
+        </div>
+        <div class="stack">
+          <p>Datenbank und Belegarchiv liegen auf deinem Mac, in einem Ordner, den du jederzeit kopieren kannst. Es gibt kein Konto, keine Cloud und keine Server von uns.</p>
+          <p>Pfennig nutzt OpenAI, um die Angaben aus deinen Belegen und Rechnungen zu extrahieren. Deine Datenbank bleibt lokal auf deinem Mac.</p>
+          <p>Jede Buchung best&auml;tigst du selbst. Bis dahin ist sie als ungepr&uuml;ft markiert. Ans Finanzamt geht nichts, was du nicht selbst abgeschickt hast.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 Fit -->
+  <section id="fuer-wen">
+    <div class="container">
+      <div class="fit-head">
+        <h2>Passt Pfennig zu dir?</h2>
+        <p class="body-text">Pfennig ist f&uuml;r Selbstst&auml;ndige in Deutschland, die ihren Gewinn mit der Einnahmen&uuml;berschussrechnung ermitteln: Freiberufler, Einzelunternehmer und kleine Betriebe ohne Bilanzpflicht. Was dazugeh&ouml;rt und was nicht:</p>
+      </div>
+
+      <div class="fit-wrap">
+        <table class="fit">
+          <thead>
+            <tr>
+              <th scope="col">Das kann Pfennig</th>
+              <th scope="col">Das ist nicht dabei</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Einnahmen&uuml;berschussrechnung (E&Uuml;R)</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bilanz und GuV</span></td>
+            </tr>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Ist-Versteuerung, regelbesteuert oder Kleinunternehmer</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Soll-Versteuerung</span></td>
+            </tr>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Rechnungen, Belege, Gutschriften, Kontoausz&uuml;ge</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bankanbindung</span></td>
+            </tr>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Reverse Charge, Fremdw&auml;hrung, Anlageg&uuml;ter mit AfA</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Rechnungsstellung</span></td>
+            </tr>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>UStVA als Datei f&uuml;r Mein ELSTER, E&Uuml;R-Werte f&uuml;rs Formular</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>&Uuml;bermittlung ans Finanzamt</span></td>
+            </tr>
+            <tr>
+              <td><span class="mark"><svg class="ico-yes" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Eine Person, ein Betrieb, ein Mac</span></td>
+              <td class="no"><span class="mark"><svg class="ico-no" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Mehrere Mandanten, Lohnabrechnung, Windows</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 Pricing -->
+  <section class="band" id="kosten">
+    <div class="container">
+      <div class="price-head">
+        <h2>Was Pfennig kostet.</h2>
+        <p class="body-text">Pfennig kostet nichts und braucht kein Konto. Nur das Lesen der Belege l&auml;uft &uuml;ber ein externes LLM, und daf&uuml;r gibt es zwei Wege: Du nutzt dein eigenes OpenAI-Konto, oder du machst es dir einfacher &uuml;ber uns. Der Funktionsumfang ist in beiden F&auml;llen gleich.</p>
+      </div>
+
+      <div class="plans">
+        <div class="plan plan--primary">
+          <span class="plan-name">Pfennig Abo</span>
+          <span class="plan-sub">Ab Version 1.0</span>
+          <div class="plan-price">10&nbsp;&euro; <span class="unit">im Monat</span></div>
+          <ul>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Kein Schl&uuml;ssel, keine Einrichtung</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Monatlich k&uuml;ndbar</li>
+          </ul>
+        </div>
+
+        <div class="plan">
+          <span class="plan-name">Eigener Schl&uuml;ssel</span>
+          <span class="plan-sub">Mit deinem OpenAI-Konto</span>
+          <div class="plan-price">Nach Nutzung <span class="unit">abgerechnet von OpenAI</span></div>
+          <ul>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Du richtest ein OpenAI-Konto mit API-Zugang ein</li>
+            <li><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Pfennig verlangt nichts</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 FAQ -->
+  <section>
+    <div class="container">
+      <div class="faq-grid">
+        <div>
+          <h2>Noch ein paar Fragen?</h2>
+        </div>
+
+        <div class="faq-list">
+          <details>
+            <summary>
+              Wie richte ich Pfennig ein?
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="answer">
+              <ol>
+                <li>Lade Pfennig und zieh die App in deinen Programme-Ordner.</li>
+                <li>F&uuml;lle dein Steuerprofil aus und hinterlege deinen OpenAI-API-Schl&uuml;ssel in den Einstellungen.</li>
+                <li>Zieh den ersten Beleg auf das Fenster und pr&uuml;fe die erfasste Buchung.</li>
+              </ol>
+              <p>Den <a href="https://platform.openai.com/api-keys">API-Schl&uuml;ssel erstellst du bei OpenAI</a>. Daf&uuml;r brauchst du ein OpenAI-Konto mit eingerichteter API-Abrechnung. Ein ChatGPT-Abo deckt diese Nutzung nicht ab.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Wie kommen meine Zahlen zu ELSTER?
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="answer">
+              <p>F&uuml;r die UStVA l&auml;dst du die von Pfennig erzeugte Datei in Mein ELSTER hoch, dort unter &bdquo;XML-Daten hochladen&ldquo;. Die E&Uuml;R-Werte &uuml;bertr&auml;gst du von Hand in das Formular; daf&uuml;r gibt es bei ELSTER keinen Upload. Du pr&uuml;fst die Angaben und sendest selbst ab.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Welche Dateien kann ich ablegen?
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="answer">
+              <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML, Kontoausz&uuml;ge als PDF oder CSV. Auch ein Foto vom Kassenbon reicht.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Was ist, wenn etwas falsch erkannt wird?
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="answer">
+              <p>Du siehst jede Buchung neben dem Original und korrigierst sie direkt. Best&auml;tige erst, wenn die Angaben stimmen, und pr&uuml;fe deine Steuerzahlen vor der Abgabe. Ungepr&uuml;fte Buchungen flie&szlig;en in die Berechnung ein; Pfennig weist dich vor dem Export darauf hin.</p>
+            </div>
+          </details>
+
+          <details>
+            <summary>
+              Kann ich Pfennig ohne OpenAI nutzen?
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+            </summary>
+            <div class="answer">
+              <p>Buchungen kannst du auch von Hand anlegen. Die Erkennung von Belegen und Kontoausz&uuml;gen braucht den Schl&uuml;ssel.</p>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 Closing -->
+  <section style="padding-top:0">
+    <div class="container">
+      <div class="closing">
+        <h2>Fang mit einem Beleg an.</h2>
+        <p class="body-text">Lade Pfennig, richte deinen Zugang ein und schau dir an, wie aus deinem ersten Beleg eine Buchung wird.</p>
+        <a class="btn btn-lg" href="https://github.com/pietz/pfennig/releases/latest">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          Kostenlos f&uuml;r Mac laden
+        </a>
+        <p class="fine">macOS 15 oder neuer &middot; Apple Silicon &middot; Eigener OpenAI-API-Schl&uuml;ssel</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container foot-inner">
+    <img src="daft-assets/pfennig.png" alt="">
+    <span>Pfennig &middot; Buchhaltung f&uuml;r den Mac.</span>
+  </div>
+</footer>
+
+</body>
+</html>

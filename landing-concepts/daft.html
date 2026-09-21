@@ -9,16 +9,27 @@
   <link rel="stylesheet" href="daft-assets/daft.min.css">
 </head>
 <body>
-  <header class="container" id="start">
-    <nav aria-label="Hauptnavigation">
+  <header class="sticky glass" id="start">
+    <nav class="top-nav container" aria-label="Hauptnavigation">
       <ul>
         <li><a class="cluster" href="#start"><img src="daft-assets/pfennig.png" width="32" height="32" alt=""><strong>Pfennig</strong></a></li>
       </ul>
-      <ul>
+      <ul id="hauptmenue" class="top-nav-menu" popover>
         <li><a href="#ablauf">So funktioniert’s</a></li>
         <li><a href="#fuer-wen">Für wen</a></li>
         <li><a href="#kosten">Kosten</a></li>
+      </ul>
+      <ul>
         <li><a class="button" href="#download">Download</a></li>
+        <li>
+          <button class="top-nav-toggle ghost icon" type="button" popovertarget="hauptmenue" aria-label="Menü öffnen">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 5h16"/>
+              <path d="M4 12h16"/>
+              <path d="M4 19h16"/>
+            </svg>
+          </button>
+        </li>
       </ul>
     </nav>
   </header>
@@ -30,7 +41,7 @@
       <p class="muted mx-auto max-w-3xl">Du hast dich nicht selbstständig gemacht, um Belege abzutippen.<br>Pfennig übernimmt die Erfassung. Du behältst den Überblick.</p>
       <div class="cluster justify-center mt-8" id="download">
         <a class="button large" href="https://github.com/pietz/pfennig/releases/latest">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
             <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
           </svg>
           Kostenlos für Mac laden
@@ -97,11 +108,11 @@
     </section>
 
     <section class="mt-24" aria-labelledby="belege-titel">
-      <div class="grid items-center">
+      <div class="grid items-center gap-8">
         <div>
           <h2 id="belege-titel">Aus Belegen werden Buchungen.</h2>
-          <p>Zieh die Rechnung auf das Fenster. Pfennig liest Aussteller, Betrag, Steuer und Kategorie und trägt die Buchung ein. Den Beleg siehst du direkt daneben und prüfst die Angaben am Original.</p>
-          <p>Das funktioniert auch bei den Fällen, die sonst Arbeit machen: Reverse Charge aus dem Ausland, Rechnungen in Fremdwährung, Belege mit gemischten Steuersätzen, E-Rechnungen als XML.</p>
+          <p class="muted">Zieh die Rechnung auf das Fenster. Pfennig liest Aussteller, Betrag, Steuer und Kategorie und trägt die Buchung ein. Den Beleg siehst du direkt daneben und prüfst die Angaben am Original.</p>
+          <p class="muted">Das funktioniert auch bei den Fällen, die sonst Arbeit machen: Reverse Charge aus dem Ausland, Rechnungen in Fremdwährung, Belege mit gemischten Steuersätzen, E-Rechnungen als XML.</p>
         </div>
         <figure>
           <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für eine Buchung mit Originalbeleg im Inspector">
@@ -111,25 +122,25 @@
     </section>
 
     <section class="mt-24" aria-labelledby="zahlungen-titel">
-      <div class="grid items-center">
+      <div class="grid items-center gap-8">
         <figure>
           <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für die Tabelle mit bezahlten Rechnungen und einer offenen">
           <figcaption>Welche Rechnungen bezahlt sind und welche noch offen bleiben.</figcaption>
         </figure>
         <div>
           <h2 id="zahlungen-titel">Zahlungen? Zugeordnet.</h2>
-          <p>Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
-          <p>Dein Bankkonto musst du dafür nicht verbinden. Du lädst den Auszug bei deiner Bank herunter und legst ihn ab.</p>
+          <p class="muted">Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
+          <p class="muted">Dein Bankkonto musst du dafür nicht verbinden. Du lädst den Auszug bei deiner Bank herunter und legst ihn ab.</p>
         </div>
       </div>
     </section>
 
     <section class="mt-24" aria-labelledby="ueberblick-titel">
-      <div class="grid items-center">
+      <div class="grid items-center gap-8">
         <div>
           <h2 id="ueberblick-titel">Wissen, was noch offen ist.</h2>
-          <p>Beim Öffnen siehst du, wo du stehst: was reingekommen ist, was rausgegangen ist und was bleibt. Darunter stehen die Buchungen, die noch geprüft werden wollen, fehlende Belege und überfällige Rechnungen. Ein Klick führt zur passenden Liste.</p>
-          <p>Die nächsten Fristen für UStVA und EÜR stehen gleich daneben.</p>
+          <p class="muted">Beim Öffnen siehst du, wo du stehst: was reingekommen ist, was rausgegangen ist und was bleibt. Darunter stehen die Buchungen, die noch geprüft werden wollen, fehlende Belege und überfällige Rechnungen. Ein Klick führt zur passenden Liste.</p>
+          <p class="muted">Die nächsten Fristen für UStVA und EÜR stehen gleich daneben.</p>
         </div>
         <figure>
           <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für die Startseite mit Jahreswerten, To-Dos und Fristen">
@@ -139,25 +150,31 @@
     </section>
 
     <section class="mt-24" aria-labelledby="steuer-titel">
-      <div class="grid items-center">
+      <div class="grid items-center gap-8">
         <figure>
           <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für das Exportfenster mit Zeitraum und Kennzahlen">
           <figcaption>Deine Steuerzahlen für den gewählten Zeitraum.</figcaption>
         </figure>
         <div>
           <h2 id="steuer-titel">Deine Zahlen sind bereit.</h2>
-          <p>Pfennig rechnet deine Buchungen nach Zahlungsdatum zusammen, so wie es die Ist-Versteuerung verlangt. Zum Stichtag exportierst du die UStVA als Datei für Mein ELSTER oder die EÜR-Werte für das Jahr, mit AfA und Anlageverzeichnis, wenn du Anlagegüter hast.</p>
-          <p>Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach lädst du die Datei hoch, prüfst das Formular und sendest selbst ab.</p>
+          <p class="muted">Pfennig rechnet deine Buchungen nach Zahlungsdatum zusammen, so wie es die Ist-Versteuerung verlangt. Zum Stichtag exportierst du die UStVA als Datei für Mein ELSTER oder die EÜR-Werte für das Jahr, mit AfA und Anlageverzeichnis, wenn du Anlagegüter hast.</p>
+          <p class="muted">Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach lädst du die Datei hoch, prüfst das Formular und sendest selbst ab.</p>
           <p class="muted"><small>Steuerexporte sind derzeit für 2026 verfügbar.</small></p>
         </div>
       </div>
     </section>
 
-    <section class="mt-24 max-w-2xl mx-auto" aria-labelledby="daten-titel">
-      <h2 id="daten-titel">Deine Buchhaltung bleibt bei dir.</h2>
+    <section class="mt-24" aria-labelledby="daten-titel">
+      <div class="grid gap-8">
+        <div>
+          <h2 id="daten-titel">Deine Buchhaltung bleibt bei dir.</h2>
+        </div>
+        <div class="span-2">
       <p>Datenbank und Belegarchiv liegen auf deinem Mac, in einem Ordner, den du jederzeit kopieren kannst. Es gibt kein Konto, keine Cloud und keine Server von uns.</p>
       <p>Pfennig nutzt OpenAI, um die Angaben aus deinen Belegen und Rechnungen zu extrahieren. Deine Datenbank bleibt lokal auf deinem Mac.</p>
       <p>Jede Buchung bestätigst du selbst. Bis dahin ist sie als ungeprüft markiert. Ans Finanzamt geht nichts, was du nicht selbst abgeschickt hast.</p>
+        </div>
+      </div>
     </section>
 
     <section class="mt-24 max-w-3xl mx-auto" id="fuer-wen" aria-labelledby="zielgruppe-titel">
@@ -214,10 +231,12 @@
       </div>
     </section>
 
-    <section class="mt-24 max-w-2xl mx-auto" aria-labelledby="fragen-titel">
-      <header class="text-center mb-8">
-        <h2 id="fragen-titel">Noch ein paar Fragen?</h2>
-      </header>
+    <section class="mt-24" aria-labelledby="fragen-titel">
+      <div class="grid gap-8">
+        <div>
+          <h2 id="fragen-titel">Noch ein paar Fragen?</h2>
+        </div>
+        <div class="span-2">
       <details>
         <summary>Wie richte ich Pfennig ein?</summary>
         <ol>
@@ -243,6 +262,8 @@
         <summary>Kann ich Pfennig ohne OpenAI nutzen?</summary>
         <p>Buchungen kannst du auch von Hand anlegen. Die Erkennung von Belegen und Kontoauszügen braucht den Schlüssel.</p>
       </details>
+        </div>
+      </div>
     </section>
 
     <section class="text-center mt-24" aria-labelledby="loslegen-titel">
@@ -255,8 +276,11 @@
     </section>
   </main>
 
-  <footer class="container text-center">
-    <p>Pfennig · Buchhaltung für den Mac.</p>
+  <footer class="container mt-24 border-t">
+    <div class="flex items-center justify-between gap-4">
+      <a class="cluster" href="#start"><img src="daft-assets/pfennig.png" width="24" height="24" alt=""><strong>Pfennig</strong></a>
+      <p class="muted text-sm m-0">Buchhaltung für den Mac.</p>
+    </div>
   </footer>
 </body>
 </html>
