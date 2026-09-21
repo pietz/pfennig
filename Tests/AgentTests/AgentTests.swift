@@ -821,3 +821,31 @@ private actor Zaehler {
     #expect(try repository.allBookings().count == 1)
     #expect(try repository.allRequests().first?.status == nil)
 }
+
+@Test func abgelegteOrdnerWerdenBisZurLetztenZugelassenenDateiAufgeloest() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let jahr = folder.appending(path: "2026")
+    let quartal = jahr.appending(path: "Q3")
+    let zweiter = folder.appending(path: "Auszuege")
+    try FileManager.default.createDirectory(at: quartal, withIntermediateDirectories: true)
+    try FileManager.default.createDirectory(at: zweiter, withIntermediateDirectories: true)
+    for name in ["2026/rechnung.pdf", "2026/Q3/bon.jpg", "2026/Q3/notiz.docx", "2026/.DS_Store", "Auszuege/konto.csv"] {
+        try Data("x".utf8).write(to: folder.appending(path: name))
+    }
+    let einzeln = folder.appending(path: "einzeln.png")
+    try Data("x".utf8).write(to: einzeln)
+    // A Numbers document is a folder on disk with a preview image inside; it
+    // must count as one unsupported file, not be opened.
+    let paket = jahr.appending(path: "Aufstellung.numbers")
+    try FileManager.default.createDirectory(at: paket, withIntermediateDirectories: true)
+    try Data("x".utf8).write(to: paket.appending(path: "preview.jpg"))
+
+    // Two folders, a subfolder of the first and one file in one drop: folders
+    // open down to every allowed file, each file once, the unsupported and
+    // hidden ones fall away, files pass.
+    let files = FileIntake.files(in: [jahr, quartal, zweiter, einzeln, folder.appending(path: "fehlt.pdf")])
+    #expect(files.map(\.lastPathComponent) == ["bon.jpg", "rechnung.pdf", "konto.csv", "einzeln.png", "fehlt.pdf"])
+    #expect(files[0].deletingLastPathComponent().lastPathComponent == "Q3")
+    #expect(files[1].deletingLastPathComponent().lastPathComponent == "2026")
+}

@@ -33,7 +33,7 @@ struct MainWindow: View {
         ) { buchung in
             Button("Löschen", role: .destructive) { model.delete(buchung) }
         } message: { buchung in
-            Text("„\(buchung.titel)“ wird endgültig entfernt.")
+            Text("„\(buchung.titel)“ wird endgültig entfernt, mit Belegen, die keine andere Buchung trägt.")
         }
         .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
             Button("OK") {}

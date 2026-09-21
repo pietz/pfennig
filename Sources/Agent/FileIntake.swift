@@ -68,6 +68,29 @@ public struct FileIntake: Sendable {
         FileInput.isAllowed(extension: url.pathExtension)
     }
 
+    /// The files behind a drop: allowed files as they are, folders opened
+    /// down to every allowed file inside them. Hidden files and folders are
+    /// skipped, packages such as a Numbers document count as files, and a
+    /// file reached twice (a folder and its subfolder in one drop) goes in
+    /// once. Anything else falls away.
+    public static func files(in urls: [URL]) -> [URL] {
+        var seen = Set<URL>()
+        return urls.flatMap { url -> [URL] in
+            let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isPackageKey])
+            let isFolder = values?.isDirectory == true && values?.isPackage != true
+            guard isFolder else { return isAllowed(url) ? [url] : [] }
+            let content = FileManager.default.enumerator(
+                at: url, includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles, .skipsPackageDescendants]
+            )
+            return (content?.allObjects as? [URL] ?? [])
+                .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == false }
+                .filter(isAllowed)
+                .sorted { $0.path < $1.path }
+        }
+        .filter { seen.insert($0).inserted }
+    }
+
     /// What is still waiting in the inbox, oldest name first. The app works
     /// through it on start and after every drop.
     public func inbox() -> [URL] {

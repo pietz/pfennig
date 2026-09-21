@@ -82,7 +82,7 @@ Der Status ist abgeleitet: Fehlt bei `art = rechnung`, `beleg` oder `gutschrift`
 
 **Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Dropdown Alle Status / Zu prüfen / Ohne Beleg / Überfällig, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge sowie Export, Einstellungen und Inspector.
 
-**Drag-and-drop** gilt für das ganze Fenster.
+**Drag-and-drop** gilt für das ganze Fenster. Ein abgelegter Ordner zählt wie seine Dateien: Er wird bis in alle Unterordner nach zugelassenen Dateien durchsucht, versteckte Dateien und Ordner ausgenommen; Pakete wie ein Numbers-Dokument gelten als Dateien und werden nicht geöffnet (Ergänzung 2026-09-21).
 
 **Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, Zahnrad in der Toolbar): Profil, KI-Zugang (Schlüssel, Verbindungstest, Modell, Aufwand, schnellere Verarbeitung), Erscheinungsbild.
 

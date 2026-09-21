@@ -60,10 +60,10 @@ final class AppModel {
 
     // MARK: - FileIntake
 
-    /// The files the user dropped. Everything the agent cannot read is dropped
-    /// silently; the window accepts only the allowed types in the first place.
+    /// The files the user dropped, folders included down to their last
+    /// allowed file. Everything the agent cannot read is dropped silently.
     func acceptFiles(_ urls: [URL]) {
-        enqueue(urls.filter(FileIntake.isAllowed))
+        enqueue(FileIntake.files(in: urls))
     }
 
     /// A non-empty inbox is worked through when the app starts, once.
