@@ -47,7 +47,7 @@
           Kostenlos für Mac laden
         </a>
       </div>
-      <p class="muted text-xs mt-4">macOS 15 oder neuer · Apple Silicon</p>
+      <p class="muted text-sm mt-6">macOS 15 oder neuer · Apple Silicon</p>
     </section>
 
     <figure>
@@ -108,17 +108,19 @@
     </section>
 
     <section class="mt-24" aria-labelledby="belege-titel">
-      <div class="grid items-center gap-8">
+      <div class="grid gap-8">
         <div>
           <h2 id="belege-titel">Aus Belegen werden Buchungen.</h2>
+        </div>
+        <div class="span-2">
           <p class="muted">Zieh die Rechnung auf das Fenster. Pfennig liest Aussteller, Betrag, Steuer und Kategorie und trägt die Buchung ein. Den Beleg siehst du direkt daneben und prüfst die Angaben am Original.</p>
           <p class="muted">Das funktioniert auch bei den Fällen, die sonst Arbeit machen: Reverse Charge aus dem Ausland, Rechnungen in Fremdwährung, Belege mit gemischten Steuersätzen, E-Rechnungen als XML.</p>
         </div>
-        <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für eine Buchung mit Originalbeleg im Inspector">
-          <figcaption>Die erfassten Angaben neben dem Original.</figcaption>
-        </figure>
       </div>
+      <figure class="mt-8">
+        <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für eine Buchung mit Originalbeleg im Inspector">
+        <figcaption>Die erfassten Angaben neben dem Original.</figcaption>
+      </figure>
     </section>
 
     <section class="mt-24" aria-labelledby="zahlungen-titel">
@@ -150,18 +152,20 @@
     </section>
 
     <section class="mt-24" aria-labelledby="steuer-titel">
-      <div class="grid items-center gap-8">
-        <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für das Exportfenster mit Zeitraum und Kennzahlen">
-          <figcaption>Deine Steuerzahlen für den gewählten Zeitraum.</figcaption>
-        </figure>
+      <h2 id="steuer-titel">Deine Zahlen sind bereit.</h2>
+      <div class="grid gap-8">
         <div>
-          <h2 id="steuer-titel">Deine Zahlen sind bereit.</h2>
           <p class="muted">Pfennig rechnet deine Buchungen nach Zahlungsdatum zusammen, so wie es die Ist-Versteuerung verlangt. Zum Stichtag exportierst du die UStVA als Datei für Mein ELSTER oder die EÜR-Werte für das Jahr, mit AfA und Anlageverzeichnis, wenn du Anlagegüter hast.</p>
-          <p class="muted">Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach lädst du die Datei hoch, prüfst das Formular und sendest selbst ab.</p>
           <p class="muted"><small>Steuerexporte sind derzeit für 2026 verfügbar.</small></p>
         </div>
+        <div>
+          <p class="muted">Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach lädst du die Datei hoch, prüfst das Formular und sendest selbst ab.</p>
+        </div>
       </div>
+      <figure class="mt-8">
+        <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für das Exportfenster mit Zeitraum und Kennzahlen">
+        <figcaption>Deine Steuerzahlen für den gewählten Zeitraum.</figcaption>
+      </figure>
     </section>
 
     <section class="mt-24" aria-labelledby="daten-titel">
@@ -185,17 +189,17 @@
         <table>
           <thead>
             <tr>
-              <th scope="col" class="text-base font-semibold">Das kann Pfennig</th>
-              <th scope="col" class="text-base font-semibold">Das ist nicht dabei</th>
+              <th scope="col" class="text-xs">DAS KANN PFENNIG</th>
+              <th scope="col" class="text-xs">DAS IST NICHT DABEI</th>
             </tr>
           </thead>
           <tbody>
-            <tr><td>Einnahmenüberschussrechnung (EÜR)</td><td>Bilanz und GuV</td></tr>
-            <tr><td>Ist-Versteuerung, regelbesteuert oder Kleinunternehmer</td><td>Soll-Versteuerung</td></tr>
-            <tr><td>Rechnungen, Belege, Gutschriften, Kontoauszüge</td><td>Bankanbindung</td></tr>
-            <tr><td>Reverse Charge, Fremdwährung, Anlagegüter mit AfA</td><td>Rechnungsstellung</td></tr>
-            <tr><td>UStVA als Datei für Mein ELSTER, EÜR-Werte fürs Formular</td><td>Übermittlung ans Finanzamt</td></tr>
-            <tr><td>Eine Person, ein Betrieb, ein Mac</td><td>Mehrere Mandanten, Lohnabrechnung, Windows</td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Einnahmenüberschussrechnung (EÜR)</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bilanz und GuV</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Ist-Versteuerung, regelbesteuert oder Kleinunternehmer</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Soll-Versteuerung</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Rechnungen, Belege, Gutschriften, Kontoauszüge</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bankanbindung</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Reverse Charge, Fremdwährung, Anlagegüter mit AfA</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Rechnungsstellung</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>UStVA als Datei für Mein ELSTER, EÜR-Werte fürs Formular</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Übermittlung ans Finanzamt</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Eine Person, ein Betrieb, ein Mac</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Mehrere Mandanten, Lohnabrechnung, Windows</span></td></tr>
           </tbody>
         </table>
         </div>
@@ -268,19 +272,24 @@
       </div>
     </section>
 
-    <section class="text-center mt-24" aria-labelledby="loslegen-titel">
-      <h2 id="loslegen-titel">Fang mit einem Beleg an.</h2>
-      <p class="muted mx-auto max-w-xl">Lade Pfennig, richte deinen Zugang ein und schau dir an, wie aus deinem ersten Beleg eine Buchung wird.</p>
+    <section class="text-center mt-24 mb-8" aria-labelledby="loslegen-titel">
+      <h2 id="loslegen-titel" class="text-5xl mt-16">Fang mit einem Beleg an.</h2>
+      <p class="muted text-lg mx-auto max-w-xl">Lade Pfennig, richte deinen Zugang ein und schau dir an, wie aus deinem ersten Beleg eine Buchung wird.</p>
       <div class="cluster justify-center mt-8">
-        <a class="button large" href="https://github.com/pietz/pfennig/releases/latest">Kostenlos für Mac laden</a>
+        <a class="button large" href="https://github.com/pietz/pfennig/releases/latest">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/>
+          </svg>
+          Kostenlos für Mac laden
+        </a>
       </div>
-      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel</small></p>
+      <p class="muted text-sm mt-6">macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel</p>
     </section>
   </main>
 
   <footer class="container mt-24 border-t">
     <div class="flex items-center justify-between gap-4">
-      <a class="cluster" href="#start"><img src="daft-assets/pfennig.png" width="24" height="24" alt=""><strong>Pfennig</strong></a>
+      <span class="cluster"><img src="daft-assets/pfennig.png" width="24" height="24" alt=""><strong>Pfennig</strong></span>
       <p class="muted text-sm m-0">Buchhaltung für den Mac.</p>
     </div>
   </footer>
