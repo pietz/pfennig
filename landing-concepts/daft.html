@@ -17,6 +17,7 @@
       <ul>
         <li><a href="#ablauf">So funktioniert’s</a></li>
         <li><a href="#fuer-wen">Für wen</a></li>
+        <li><a href="#kosten">Kosten</a></li>
         <li><a class="button" href="#download">Download</a></li>
       </ul>
     </nav>
@@ -39,7 +40,7 @@
     </section>
 
     <figure>
-      <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für einen Screenshot von Pfennig">
+      <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für einen Screenshot der Buchungstabelle mit geöffnetem Inspector">
       <figcaption>Hier kommt ein Blick in die App.</figcaption>
     </figure>
 
@@ -77,7 +78,7 @@
               Die Steuer ist vorbereitet.
             </h3>
           </header>
-          <p>Pfennig berechnet deine Umsatzsteuervoranmeldung und EÜR. Du übernimmst die Angaben in Mein ELSTER und sendest selbst ab.</p>
+          <p>Pfennig berechnet deine UStVA und EÜR. Du übernimmst die Angaben in Mein ELSTER und sendest selbst ab.</p>
         </article>
         <article>
           <header>
@@ -90,7 +91,7 @@
               Du behältst die Kontrolle.
             </h3>
           </header>
-          <p>Belege ansehen, Buchungen prüfen, Angaben korrigieren. Du siehst, was Pfennig eingetragen hat, und kannst es jederzeit bearbeiten.</p>
+          <p>Jede erfasste Buchung wartet auf deine Bestätigung. Du siehst das Original daneben und korrigierst, was nicht stimmt.</p>
         </article>
       </div>
     </section>
@@ -99,11 +100,11 @@
       <div class="grid items-center">
         <div>
           <h2 id="belege-titel">Aus Belegen werden Buchungen.</h2>
-          <p>Zieh die Rechnung auf das Fenster. Pfennig erkennt Aussteller, Betrag, Steuer und Kategorie und trägt die Buchung ein. Den Beleg kannst du direkt daneben ansehen.</p>
-          <p>Du kannst die erkannten Angaben direkt am Beleg kontrollieren. So wird aus der Rechnung eine Buchung, ohne dass du sie erst abtippen musst.</p>
+          <p>Zieh die Rechnung auf das Fenster. Pfennig liest Aussteller, Betrag, Steuer und Kategorie und trägt die Buchung ein. Den Beleg siehst du direkt daneben und prüfst die Angaben am Original.</p>
+          <p>Das funktioniert auch bei den Fällen, die sonst Arbeit machen: Reverse Charge aus dem Ausland, Rechnungen in Fremdwährung, Belege mit gemischten Steuersätzen, E-Rechnungen als XML.</p>
         </div>
         <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für eine Buchung mit geöffnetem Originalbeleg">
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für eine Buchung mit Originalbeleg im Inspector">
           <figcaption>Die erfassten Angaben neben dem Original.</figcaption>
         </figure>
       </div>
@@ -112,13 +113,13 @@
     <section class="mt-24" aria-labelledby="zahlungen-titel">
       <div class="grid items-center">
         <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für Buchungen mit zugeordneten Zahlungen und einer offenen Rechnung">
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für die Tabelle mit bezahlten Rechnungen und einer offenen">
           <figcaption>Welche Rechnungen bezahlt sind und welche noch offen bleiben.</figcaption>
         </figure>
         <div>
           <h2 id="zahlungen-titel">Zahlungen? Zugeordnet.</h2>
-          <p>Zieh deinen Kontoauszug auf Pfennig. Die App ordnet Zahlungen deinen Rechnungen zu und berücksichtigt auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
-          <p>Dafür musst du dein Bankkonto nicht mit Pfennig verbinden.</p>
+          <p>Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
+          <p>Dein Bankkonto musst du dafür nicht verbinden. Du lädst den Auszug bei deiner Bank herunter und legst ihn ab.</p>
         </div>
       </div>
     </section>
@@ -131,7 +132,7 @@
           <p>Die nächsten Fristen für UStVA und EÜR stehen gleich daneben.</p>
         </div>
         <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für einen Screenshot der Pfennig-Startseite">
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für die Startseite mit Jahreswerten, To-Dos und Fristen">
           <figcaption>Jahresüberblick, offene Aufgaben und Fristen.</figcaption>
         </figure>
       </div>
@@ -140,22 +141,77 @@
     <section class="mt-24" aria-labelledby="steuer-titel">
       <div class="grid items-center">
         <figure>
-          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für das Exportfenster mit Zeitraum und vorbereiteten Steuerzahlen">
+          <img src="daft-assets/preview.svg" width="1200" height="720" alt="Platzhalter für das Exportfenster mit Zeitraum und Kennzahlen">
           <figcaption>Deine Steuerzahlen für den gewählten Zeitraum.</figcaption>
         </figure>
         <div>
           <h2 id="steuer-titel">Deine Zahlen sind bereit.</h2>
-          <p>Pfennig berechnet deine Steuerzahlen aus den erfassten Buchungen. Zum Stichtag exportierst du die Angaben für deine Umsatzsteuervoranmeldung oder EÜR im passenden Format.</p>
-          <p>Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach übernimmst du die Angaben in Mein ELSTER, prüfst sie und sendest selbst ab.</p>
+          <p>Pfennig rechnet deine Buchungen nach Zahlungsdatum zusammen, so wie es die Ist-Versteuerung verlangt. Zum Stichtag exportierst du die UStVA als Datei für Mein ELSTER oder die EÜR-Werte für das Jahr, mit AfA und Anlageverzeichnis, wenn du Anlagegüter hast.</p>
+          <p>Vor dem Export siehst du, ob noch unbestätigte Buchungen im Zeitraum liegen. Danach lädst du die Datei hoch, prüfst das Formular und sendest selbst ab.</p>
           <p class="muted"><small>Steuerexporte sind derzeit für 2026 verfügbar.</small></p>
         </div>
       </div>
     </section>
 
-    <section class="mt-24 max-w-2xl mx-auto" id="fuer-wen" aria-labelledby="zielgruppe-titel">
-      <h2 id="zielgruppe-titel">Gemacht für Freiberufler mit EÜR.</h2>
-      <p>Pfennig ist für Freiberufler und Einzelunternehmer in Deutschland mit EÜR und Ist-Versteuerung, auch für Kleinunternehmer. Es sammelt, was du ohnehin hast, und bereitet daraus deine Steuerzahlen vor. Rechnungsstellung, Bankanbindung, Bilanz und Lohnabrechnung gehören nicht dazu.</p>
-      <p>Pfennig ist kostenlos. Deine Buchhaltung und dein Belegarchiv liegen auf deinem Mac. Zum Lesen der Belege nutzt Pfennig OpenAI. Dafür werden die Belege und benötigte Angaben aus deinem Profil und deinen Buchungen dorthin gesendet. Du verwendest deinen eigenen API-Schlüssel und bezahlst die Nutzung direkt bei OpenAI.</p>
+    <section class="mt-24 max-w-2xl mx-auto" aria-labelledby="daten-titel">
+      <h2 id="daten-titel">Deine Buchhaltung bleibt bei dir.</h2>
+      <p>Datenbank und Belegarchiv liegen auf deinem Mac, in einem Ordner, den du jederzeit kopieren kannst. Es gibt kein Konto, keine Cloud und keine Server von uns.</p>
+      <p>Pfennig nutzt OpenAI, um die Angaben aus deinen Belegen und Rechnungen zu extrahieren. Deine Datenbank bleibt lokal auf deinem Mac.</p>
+      <p>Jede Buchung bestätigst du selbst. Bis dahin ist sie als ungeprüft markiert. Ans Finanzamt geht nichts, was du nicht selbst abgeschickt hast.</p>
+    </section>
+
+    <section class="mt-24 max-w-3xl mx-auto" id="fuer-wen" aria-labelledby="zielgruppe-titel">
+      <h2 id="zielgruppe-titel">Passt Pfennig zu dir?</h2>
+      <p>Pfennig ist für Selbstständige in Deutschland, die ihren Gewinn mit der Einnahmenüberschussrechnung ermitteln: Freiberufler, Einzelunternehmer und kleine Betriebe ohne Bilanzpflicht. Was dazugehört und was nicht:</p>
+      <figure>
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Das kann Pfennig</th>
+              <th scope="col">Das ist nicht dabei</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Einnahmenüberschussrechnung (EÜR)</td><td>Bilanz und GuV</td></tr>
+            <tr><td>Ist-Versteuerung, regelbesteuert oder Kleinunternehmer</td><td>Soll-Versteuerung</td></tr>
+            <tr><td>Rechnungen, Belege, Gutschriften, Kontoauszüge</td><td>Bankanbindung</td></tr>
+            <tr><td>Reverse Charge, Fremdwährung, Anlagegüter mit AfA</td><td>Rechnungsstellung</td></tr>
+            <tr><td>UStVA als Datei für Mein ELSTER, EÜR-Werte fürs Formular</td><td>Übermittlung ans Finanzamt</td></tr>
+            <tr><td>Eine Person, ein Betrieb, ein Mac</td><td>Mehrere Mandanten, Lohnabrechnung, Windows</td></tr>
+          </tbody>
+        </table>
+      </figure>
+    </section>
+
+    <section class="mt-24" id="kosten" aria-labelledby="kosten-titel">
+      <header class="text-center mx-auto max-w-2xl mb-8">
+        <h2 id="kosten-titel">Was Pfennig kostet.</h2>
+        <p class="muted">Pfennig kostet nichts und braucht kein Konto. Nur das Lesen der Belege läuft über ein externes LLM, und dafür gibt es zwei Wege: Du nutzt dein eigenes OpenAI-Konto, oder du machst es dir einfacher über uns. Der Funktionsumfang ist in beiden Fällen gleich.</p>
+      </header>
+      <div class="grid max-w-3xl mx-auto">
+        <article>
+          <header>
+            <strong>Pfennig Abo</strong>
+            <p class="muted">Ab Version 1.0</p>
+          </header>
+          <p class="text-4xl"><strong>10 €</strong> <small class="muted">im Monat</small></p>
+          <ul>
+            <li>Kein Schlüssel, keine Einrichtung</li>
+            <li>Monatlich kündbar</li>
+          </ul>
+        </article>
+        <article>
+          <header>
+            <strong>Eigener Schlüssel</strong>
+            <p class="muted">Mit deinem OpenAI-Konto</p>
+          </header>
+          <p class="text-4xl"><strong>Nach Nutzung</strong> <small class="muted">abgerechnet von OpenAI</small></p>
+          <ul>
+            <li>Du richtest ein OpenAI-Konto mit API-Zugang ein</li>
+            <li>Pfennig verlangt nichts</li>
+          </ul>
+        </article>
+      </div>
     </section>
 
     <section class="mt-24 max-w-2xl mx-auto" aria-labelledby="fragen-titel">
@@ -173,19 +229,19 @@
       </details>
       <details>
         <summary>Wie kommen meine Zahlen zu ELSTER?</summary>
-        <p>Für die UStVA lädst du die von Pfennig vorbereitete Datei in Mein ELSTER hoch. Die EÜR-Werte überträgst du von Hand in das Formular. Du prüfst die Angaben und sendest selbst ab; Pfennig übermittelt nichts an das Finanzamt.</p>
+        <p>Für die UStVA lädst du die von Pfennig erzeugte Datei in Mein ELSTER hoch, dort unter „XML-Daten hochladen“. Die EÜR-Werte überträgst du von Hand in das Formular; dafür gibt es bei ELSTER keinen Upload. Du prüfst die Angaben und sendest selbst ab.</p>
       </details>
       <details>
-        <summary>Welche Dokumente kann ich ablegen?</summary>
-        <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML und Kontoauszüge als PDF oder CSV. Eine Bankanbindung brauchst du dafür nicht: Du lädst den Auszug bei deiner Bank herunter und legst ihn auf Pfennig ab.</p>
+        <summary>Welche Dateien kann ich ablegen?</summary>
+        <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML, Kontoauszüge als PDF oder CSV. Auch ein Foto vom Kassenbon reicht.</p>
       </details>
       <details>
         <summary>Was ist, wenn etwas falsch erkannt wird?</summary>
-        <p>Du kannst jede Buchung ansehen und korrigieren. Vergleiche die Angaben mit dem Original, bevor du sie bestätigst. Prüfe auch deine Steuerzahlen vor der Abgabe: Ungeprüfte Buchungen werden nicht automatisch aus der Berechnung ausgeschlossen.</p>
+        <p>Du siehst jede Buchung neben dem Original und korrigierst sie direkt. Bestätige erst, wenn die Angaben stimmen, und prüfe deine Steuerzahlen vor der Abgabe. Ungeprüfte Buchungen fließen in die Berechnung ein; Pfennig weist dich vor dem Export darauf hin.</p>
       </details>
       <details>
-        <summary>Was kostet die Verarbeitung?</summary>
-        <p>Die Kosten bei OpenAI hängen vom gewählten Modell und deinen Dokumenten ab. Du bezahlst die API-Nutzung direkt dort, unabhängig von der kostenlosen Pfennig-App. Die aktuellen Preise findest du <a href="https://openai.com/api/pricing/">bei OpenAI</a>.</p>
+        <summary>Kann ich Pfennig ohne OpenAI nutzen?</summary>
+        <p>Buchungen kannst du auch von Hand anlegen. Die Erkennung von Belegen und Kontoauszügen braucht den Schlüssel.</p>
       </details>
     </section>
 
@@ -195,7 +251,7 @@
       <div class="cluster justify-center mt-8">
         <a class="button large" href="https://github.com/pietz/pfennig/releases/latest">Kostenlos für Mac laden</a>
       </div>
-      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel<br>OpenAI-Nutzung wird separat abgerechnet.</small></p>
+      <p class="muted mt-4"><small>macOS 15 oder neuer · Apple Silicon · Eigener OpenAI-API-Schlüssel</small></p>
     </section>
   </main>
 
