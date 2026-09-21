@@ -82,7 +82,7 @@ Der Status ist abgeleitet: Fehlt bei `art = rechnung`, `beleg` oder `gutschrift`
 
 **Toolbar.** Ein Dropdown Alle / Einnahmen / Ausgaben, ein Dropdown Alle Status / Zu prüfen / Ohne Beleg / Überfällig, ein Suchfeld, das ausgewählte Spalten in Echtzeit durchsucht, ein Fortschrittsanzeiger, während der Agent arbeitet, ein Plus für manuelle Einträge sowie Export, Einstellungen und Inspector.
 
-**Drag-and-drop** gilt für das ganze Fenster. Ein abgelegter Ordner zählt wie seine Dateien: Er wird bis in alle Unterordner nach zugelassenen Dateien durchsucht, versteckte Dateien und Ordner ausgenommen; Pakete wie ein Numbers-Dokument gelten als Dateien und werden nicht geöffnet (Ergänzung 2026-09-21).
+**Drag-and-drop** gilt für das ganze Fenster. Ein abgelegter Ordner zählt wie seine Dateien: Er wird bis in alle Unterordner nach zugelassenen Dateien durchsucht, versteckte Dateien und Ordner ausgenommen; Pakete wie ein Numbers-Dokument gelten als Dateien und werden nicht geöffnet. Ein Drop übernimmt höchstens 50 Dateien, die ersten in Reihenfolge; sind es mehr, sagt die Leiste über der Tabelle, wie viele übernommen wurden; die übrigen bleiben liegen und werden vom Nutzer einzeln ausgewählt, ein erneutes Ablegen desselben Ordners nimmt wieder dieselben ersten 50. Weiterhin laufen höchstens zehn Dateien gleichzeitig (Ergänzung 2026-09-21).
 
 **Einstellungen** sind das normale macOS-Einstellungsfenster (Menü und Tastenkürzel, Zahnrad in der Toolbar): Profil, KI-Zugang (Schlüssel, Verbindungstest, Modell, Aufwand, schnellere Verarbeitung), Erscheinungsbild.
 
