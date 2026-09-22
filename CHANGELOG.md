@@ -1,5 +1,16 @@
 # Änderungen
 
+## 0.9.0 (2026-09-22)
+
+- Fehlende Steuerbehandlung ist eine leere Auswahl statt „Unklar“; der Agent bekommt dafür keine zusätzliche Promptanweisung
+- Bestätigen setzt vollständige, gültige Pflichtangaben voraus. Entwürfe bleiben speicherbar
+- Startaufgaben, Buchungsliste und Inspector nutzen dieselben Prüfregeln; alte unvollständige Bestätigungen verschwinden nicht mehr aus „Zu prüfen“
+- Fehlende oder ungültige Angaben werden bei agentenerstellten Buchungen direkt am Feld rot hervorgehoben. Manuelle Entwürfe zeigen neutrale Hinweise
+- Neue manuelle Buchungen starten unbestätigt; ungültig machende Änderungen erfordern erneute Bestätigung
+- Leeren der Steuerbehandlung erhält vorhandene Beträge. Berechnungen und Exportpolitik bleiben erhalten
+
+**Vor dem Update:** Bestehende 0.8.0-Datenbanken brauchen auf jedem Rechner eine [einmalige manuelle Korrektur](docs/maintenance/0.9.0.md). Buchungen müssen nicht gelöscht werden; Löschen allein ändert das alte Schema nicht. Die App enthält keine automatische Migration. Neue Archive verwenden sofort die neue Form. Steuerexporte bleiben auf 2026 begrenzt.
+
 ## 0.8.0 (2026-09-22)
 
 - Steuerpflichtige EU-Warenkäufe haben eine eigene Steuerbehandlung mit Kz 89/93 und 61 statt der Kennzahlen für Reverse-Charge-Dienstleistungen
