@@ -49,8 +49,8 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ### Arbeiten mit vorhandenen Daten
 
-- **Aktivitätsverlauf anzeigen [#18](https://github.com/pietz/pfennig/issues/18), offen.** Übernommene unerfüllte Anforderung aus dem Neuaufbau: vorhandene Änderungen lesbar anzeigen, ohne Undo oder Agentenzugriff. Noch kein Implementierungsplan.
+- **Aktivitätsverlauf anzeigen [#18](https://github.com/pietz/pfennig/issues/18), nicht geplant.** Eigentümerentscheidung vom 22. September: keine Kernfunktion, deshalb aus dem aktuellen Produktumfang gestrichen. Die bestehende Protokollierung bleibt für einen möglichen späteren Bedarf erhalten; keine UI dafür bauen.
 - **Anfragekosten berechnen [#19](https://github.com/pietz/pfennig/issues/19), offen.** Übernommene unerfüllte Anforderung: gespeicherte Tokens mit einer Preistabelle im Code auswerten. Kein Dashboard oder Abrechnungssystem, noch kein Implementierungsplan.
-- Agentenzugriff auf Aktivitäten und Rückgängigmachen bleiben separate, nicht beschlossene Ideen, ausdrücklich nicht Teil von #18.
+- Agentenzugriff auf Aktivitäten und Rückgängigmachen bleiben nicht beschlossene Ideen.
 - Übergabe an den Steuerberater: Jahresordner mit Belegen, Buchungsliste und Steuerwerten; Nutzen eines etablierten Formats vorab klären.
 - Erwartete wiederkehrende Belege: zurückgestellt; ein Hinweis ersetzt die fehlende Rechnung nicht.

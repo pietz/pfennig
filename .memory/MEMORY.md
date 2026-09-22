@@ -13,6 +13,7 @@ Stand: 2026-09-22. Kurze Begründungen für getroffene Entscheidungen, keine neu
 
 ## Bewusste Vereinfachungen
 
+- **Kein Aktivitätsverlauf in der UI (#18):** Am 22. September aus dem aktuellen Produktumfang gestrichen, weil keine Kernfunktion. Bestehende Änderungsprotokollierung bleibt erhalten, falls sie später benötigt wird; derzeit keine Anzeige, kein Undo und kein neuer Umsetzungsauftrag.
 - **Agent zuerst, Prompt schlank:** Dokumentverständnis und Zuordnung bleiben beim Agenten. Neue Anweisungen möglichst mit vorhandenen Regeln verbinden oder diese ersetzen, nicht fortlaufend Sonderfälle anhängen. Seltene Fälle lieber manuell korrigieren.
 - **Import muss etwas buchen:** `noBooking` bleibt. Eine Abschlussnachricht ohne Buchungsänderung führt zum bestehenden Fehler mit Wiederholen/Verwerfen. Das hält einen erfolglosen oder ungeeigneten Import sichtbar; kein neues Ignorieren-Tool oder Abschlussstatus. Für einen späteren Chat gilt diese Importbedingung nicht.
 - **Notizen und Unsicherheiten (#5):** `notizen` nur für relevante Zusatzinformationen oder konkrete Unsicherheiten mit Grund/Prüfhinweis, nicht als Zusammenfassung anderer Felder; neue Buchungen sonst ohne Notiz. Inhaltliche Nutzernotizen erhalten. Übliche Zahlungs-/Nutzungsannahmen sind keine Unsicherheiten; tatsächlich unbekannte Steuerzuordnung bleibt `unklar`. Keine neuen Felder, Warnstufen oder Rückfragesysteme.
