@@ -1,5 +1,19 @@
 # Änderungen
 
+## 0.8.0 (2026-09-22)
+
+- Steuerpflichtige EU-Warenkäufe haben eine eigene Steuerbehandlung mit Kz 89/93 und 61 statt der Kennzahlen für Reverse-Charge-Dienstleistungen
+- Eine festgesetzte Sondervorauszahlung lässt sich je Jahr im Profil hinterlegen und wird bei monatlicher UStVA mit Dauerfristverlängerung im Dezember angerechnet
+- Exporte weisen zusätzlich auf unklare Steuerbehandlungen hin; bereits anderweitig erledigte Zeiträume lassen sich ohne Dateiexport markieren
+- Ordner lassen sich rekursiv ablegen. Pro Drop werden höchstens 50 Dateien übernommen; die Suche läuft im Hintergrund
+- Das Löschen von Buchungen entfernt auch ihre nicht mehr verwendeten Belege. Während laufender Importe bleibt das Löschen gesperrt
+- Ein erfolgreicher Import wird dauerhaft gespeichert, bevor die Inbox-Kopie entfernt wird; Fehler bei der Diagnoseprotokollierung ändern diesen Erfolg nicht
+- Der automatische Eingang verarbeitet Rechnungen, Belege und Gutschriften. Ausgangsrechnungen bleiben ohne Zahlungsnachweis unbezahlt; Kontoauszüge werden beim Ablegen nicht abgeglichen
+- Ein Dokument kann mehrere eigenständige Geschäftsvorgänge belegen. Notizen beschränken sich auf Zusatzinformationen und konkrete Unsicherheiten
+- Entwicklungs-App, Icon und Datenordner sind von der installierten Release-App getrennt
+
+Hinweise: Steuerexporte bleiben auf 2026 begrenzt. Die neuen Kennzahlen sind rechnerisch getestet, aber noch nicht mit einem eigenen ELSTER-Testupload geprüft. Die neue EU-Warenbehandlung erweitert die Datenbankdefinition; bestehende Release-Archive benötigen vor der Nutzung eine gesondert abgestimmte, datenerhaltende Anpassung. Die App führt keine automatische Migration oder Datenrücksetzung aus.
+
 ## 0.7.2 (2026-09-20)
 
 - Dateien der unterstützten Formate lassen sich aus dem Finder oder mit `open -a Pfennig …` in Pfennig öffnen und gehen durch denselben Eingang wie abgelegte Dateien. Pfennig steht dafür als alternative App bereit, übernimmt aber keine Standardzuordnungen
