@@ -12,8 +12,8 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. Ungeklärte Zahlungen im Export (#20). EU-Warenkäufe aus #12 sind umgesetzt; eigene EU-Warenlieferungen bleiben außerhalb des freigegebenen Umfangs.
-2. Plattformauszahlungen (#6), Übernahme bestehender Buchhaltung (#2), Unsicherheiten/Warnungen einschließlich Dubletten (#5).
+1. Plattformauszahlungen (#6), danach Übernahme bestehender Buchhaltung (#2) und Unsicherheiten/Warnungen einschließlich Dubletten (#5).
+2. EU-Warenkäufe aus #12 und die Exportpolitik #20 sind umgesetzt; eigene EU-Warenlieferungen bleiben außerhalb des freigegebenen Umfangs.
 3. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten. Keine pauschale Umsetzung aller Issues und keine neuen größeren Funktionen vor den Bestandsthemen.
 
 ## Größere Funktionen zurückgestellt
@@ -35,7 +35,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ### Steuerlicher Umfang und Übernahme
 
-- **Ungeklärte Zahlungen im Export [#20](https://github.com/pietz/pfennig/issues/20), offen.** EÜR kann `nur_zahlung` und `unklar` berücksichtigen, UStVA schließt `unklar` aus. Gewünschte Exportpolitik separat entscheiden, keine neue Agentenregel im aktuellen Import.
+- **Ungeklärte Zahlungen im Export [#20](https://github.com/pietz/pfennig/issues/20), entschieden und umgesetzt.** Ungeprüfte Buchungen und ausreichend eingeordnete `nur_zahlung` bleiben enthalten. EÜR nutzt vorhandene Angaben; bei `unklar` fehlt der UStVA die Zuordnung. Beide Exporte zeigen dazu einen zusätzlichen Hinweis unabhängig vom Prüfstatus, UStVA nennt die nicht berücksichtigten Buchungen ausdrücklich. Export bleibt möglich, keine Berechnungsänderung, kein neues Feld oder Warnsystem.
 
 - **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
 - **Einkommensteuerzahlungen [#3](https://github.com/pietz/pfennig/issues/3), geschlossen als außerhalb des Umfangs.** Keine neue Kategorie oder Sonderlogik. Begründung und bewusste Grenze stehen in `.memory/MEMORY.md`.

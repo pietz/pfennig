@@ -187,8 +187,9 @@ struct ExportSheet: View {
 
     @ViewBuilder private var hints: some View {
         let offen = zeitraum.ungeprueft(model.buchungen)
+        let unklar = zeitraum.unklareSteuerbehandlungen(model.buchungen)
         let exportiert = model.exportedPeriods[zeitraum]
-        if offen > 0 || exportiert != nil {
+        if offen > 0 || unklar > 0 || exportiert != nil {
             Section {
                 if offen > 0 {
                     Label(
@@ -197,6 +198,22 @@ struct ExportSheet: View {
                             : "\(offen) Buchungen im Zeitraum sind noch ungeprüft.",
                         systemImage: "exclamationmark.triangle"
                     )
+                    .foregroundStyle(.orange)
+                }
+                if unklar > 0 {
+                    Label {
+                        VStack(alignment: .leading) {
+                            Text(unklar == 1
+                                ? "Bei einer Buchung ist die Steuerbehandlung unklar."
+                                : "Bei \(unklar) Buchungen ist die Steuerbehandlung unklar.")
+                            Text(art == .ustva
+                                ? "Nicht in den UStVA-Werten enthalten. Vor der Abgabe prüfen."
+                                : "EÜR-Werte basieren auf den vorhandenen Angaben. Vor der Abgabe prüfen.")
+                                .font(.caption)
+                        }
+                    } icon: {
+                        Image(systemName: "exclamationmark.triangle")
+                    }
                     .foregroundStyle(.orange)
                 }
                 if let exportiert {

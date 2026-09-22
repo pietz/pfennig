@@ -201,6 +201,12 @@ public struct Zeitraum: Hashable, Sendable {
             || (art == .euer && AfA.betrag(buchung, jahr: jahr, brutto: false) > .null)
     }
 
+    public func unklareSteuerbehandlungen(_ buchungen: [Buchung]) -> Int {
+        buchungen.filter {
+            $0.art != .ignoriert && beruehrt($0) && $0.steuerbehandlung == .unklar
+        }.count
+    }
+
     /// How many bookings of the period the user has not confirmed yet.
     public func ungeprueft(_ buchungen: [Buchung]) -> Int {
         buchungen.filter { buchung in
