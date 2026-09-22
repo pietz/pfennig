@@ -12,8 +12,9 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
-2. Übrige offene Bestandsthemen durchgehen und priorisieren, bevor neue größere Funktionen beginnen. Keine pauschale Umsetzung aller Issues.
+1. EU-Warenkäufe und Lieferungen (#12), danach ungeklärte Zahlungen im Export (#20).
+2. Plattformauszahlungen (#6), Übernahme bestehender Buchhaltung (#2), Unsicherheiten/Warnungen einschließlich Dubletten (#5).
+3. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten. Keine pauschale Umsetzung aller Issues und keine neuen größeren Funktionen vor den Bestandsthemen.
 
 ## Größere Funktionen zurückgestellt
 
@@ -38,7 +39,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 - **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
 - **Einkommensteuerzahlungen [#3](https://github.com/pietz/pfennig/issues/3), geschlossen als außerhalb des Umfangs.** Keine neue Kategorie oder Sonderlogik. Begründung und bewusste Grenze stehen in `.memory/MEMORY.md`.
-- **Sondervorauszahlung [#8](https://github.com/pietz/pfennig/issues/8), offen.** Kz 39 im Dezember bei monatlicher UStVA mit Dauerfristverlängerung berücksichtigen.
+- **Sondervorauszahlung [#8](https://github.com/pietz/pfennig/issues/8), umgesetzt.** Festgesetzten Betrag je Jahr im Profil hinterlegen; Kz 39 mindert im Dezember die Zahllast bei monatlicher UStVA mit Dauerfristverlängerung. Keine Berechnung/Anmeldung oder automatische Zahlungsbuchung; andere letzte Meldezeiträume manuell in ELSTER korrigieren.
 - **Innergemeinschaftliche Waren [#12](https://github.com/pietz/pfennig/issues/12), offen.** Erwerbe auf Kz 89/93 und 61 statt Dienstleistungs-§13b; ebenso fehlt Kz 41 für innergemeinschaftliche Lieferungen.
 - Zusammenfassende Meldung; Umsatzsteuer-Jahreserklärung; Kleinunternehmer-Grenzen; Einkommensteuerschätzung und Rücklage. Jeweils eigener Umfang und amtliche Prüfung nötig.
 - Wertabgaben, Kleinunternehmer-Hinweis bei §13b, regionale Feiertage über ein Bundesland und Storno statt Löschen bereits exportierter Buchungen bleiben geparkt. §13b mit 7 Prozent ist umgesetzt (#10 geschlossen).

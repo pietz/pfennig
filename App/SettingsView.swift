@@ -26,6 +26,7 @@ struct SettingsView: View {
 private struct ProfileSettings: View {
     let model: AppModel
     @State private var profile = Profil()
+    @State private var specialPaymentYear = LocalDate.today().jahr
 
     var body: some View {
         Form {
@@ -40,10 +41,39 @@ private struct ProfileSettings: View {
                 Text("Vierteljährlich").tag(Rhythmus.vierteljaehrlich)
             }
             Toggle("Dauerfristverlängerung", isOn: $profile.dauerfristverlaengerung)
+            if profile.kleinunternehmer == false, profile.rhythmus == .monatlich,
+               profile.dauerfristverlaengerung
+            {
+                Section("Sondervorauszahlung") {
+                    Picker("Jahr", selection: $specialPaymentYear) {
+                        ForEach((LocalDate.today().jahr - 3 ... LocalDate.today().jahr).reversed(), id: \.self) {
+                            Text(String($0)).tag($0)
+                        }
+                    }
+                    TextField(
+                        "Festgesetzter Betrag",
+                        value: specialPaymentAmount(for: specialPaymentYear),
+                        format: .euro
+                    )
+                    .id(specialPaymentYear)
+                    Text(
+                        "Anrechnung im Dezember, keine Berechnung oder Anmeldung. Andere letzte Meldezeiträume bitte in ELSTER korrigieren."
+                    )
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                }
+            }
         }
         .formStyle(.grouped)
         .onAppear { profile = model.profile() }
         .onChange(of: profile) { model.saveProfile(profile) }
+    }
+
+    private func specialPaymentAmount(for year: Int) -> Binding<Cent> {
+        Binding(
+            get: { profile.sondervorauszahlungen[year] ?? .null },
+            set: { profile.sondervorauszahlungen[year] = $0 > .null ? $0 : nil }
+        )
     }
 }
 

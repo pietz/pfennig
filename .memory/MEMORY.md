@@ -18,6 +18,7 @@ Stand: 2026-09-22. Kurze Begründungen für getroffene Entscheidungen, keine neu
 - **Duplikate:** Identische Dateien werden vor dem Agenten per Hash abgefangen. Für denselben Beleg in einer anderen Datei keine neue Swift-Prüfung oder verpflichtende zusätzliche Agentenabfrage beschlossen. Belegnummern sind weder Primärschlüssel noch eindeutig über verschiedene Aussteller hinweg.
 - **Zahlungen:** Eigene Ausgangsrechnungen bleiben ohne Zahlungsnachweis unbezahlt; Ausgaben gelten ohne gegenteilige Angabe als bezahlt. Zahlungssummen entsprechen dem Geldfluss, Beträge sind relativ zur Buchung. Keine zusätzliche Sonderregel für negative Gutschriften.
 - **Ungeklärte Zahlungen:** Eine neue `nur_zahlung`-Anweisung ist ohne automatischen Kontoauszugsimport zurückgestellt. Die unterschiedliche Exportbehandlung von EÜR und UStVA ist weiterhin offen (#20), nicht mitentschieden.
+- **Sondervorauszahlung:** Bereits festgesetzten Betrag je Jahr manuell im Profil hinterlegen; bei monatlicher UStVA mit Dauerfristverlängerung im Dezember als Kz 39 anrechnen. Keine Berechnung oder Anmeldung, keine automatische Zahlungsbuchung. Ein abweichender letzter Meldezeitraum wird in ELSTER korrigiert. Grund: den angebotenen Regelfall korrekt abbilden, ohne das ganze Antragsverfahren nachzubauen.
 
 ## Zusammenarbeit
 

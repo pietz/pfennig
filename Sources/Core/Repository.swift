@@ -313,14 +313,17 @@ public final class Repository: Sendable {
             let value: String = row["wert"]
             values[key] = value
         }
-        return Profil(
+        return try Profil(
             name: values["name"] ?? "",
             adresse: values["adresse"] ?? "",
             steuernummer: values["steuernummer"] ?? "",
             ustid: values["ustid"] ?? "",
             kleinunternehmer: values["kleinunternehmer"] == "true",
             rhythmus: values["ustva_rhythmus"].flatMap(Rhythmus.init) ?? .vierteljaehrlich,
-            dauerfristverlaengerung: values["dauerfristverlaengerung"] == "true"
+            dauerfristverlaengerung: values["dauerfristverlaengerung"] == "true",
+            sondervorauszahlungen: values["sondervorauszahlungen"].map {
+                try JSONDecoder().decode([Int: Cent].self, from: Data($0.utf8))
+            } ?? [:]
         )
     }
 
@@ -350,14 +353,17 @@ public final class Repository: Sendable {
     }
 
     public func saveProfile(_ profile: Profil) throws {
-        let values = [
+        let values = try [
             "name": profile.name,
             "adresse": profile.adresse,
             "steuernummer": profile.steuernummer,
             "ustid": profile.ustid,
             "kleinunternehmer": String(profile.kleinunternehmer),
             "ustva_rhythmus": profile.rhythmus.rawValue,
-            "dauerfristverlaengerung": String(profile.dauerfristverlaengerung)
+            "dauerfristverlaengerung": String(profile.dauerfristverlaengerung),
+            "sondervorauszahlungen": String(
+                decoding: JSONEncoder().encode(profile.sondervorauszahlungen), as: UTF8.self
+            )
         ]
         try database.write { db in
             for (key, value) in values {

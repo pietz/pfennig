@@ -143,3 +143,10 @@ Die angenommene Datei begann mit:
 ```
 
 Damit ist die offene Frage aus Abschnitt 1 beantwortet: Namensraum und `version` folgen dem Jahr des Besteuerungszeitraums, nicht der auf der Hilfeseite gezeigten 2023. Der Zeichensatz ISO-8859-15 und die Zeitraumcodes 01-12 / 41-44 (hier `43`) sind damit ebenfalls praktisch bestätigt.
+
+## Nachtrag 2026-09-22: Sondervorauszahlung, Kz 39
+
+- [§48 Abs. 4 UStDV](https://www.gesetze-im-internet.de/ustdv_1980/__48.html) verlangt die Anrechnung der festgesetzten Sondervorauszahlung im letzten Voranmeldungszeitraum, für den die Fristverlängerung gilt. Die [ELSTER-Anleitung 2026](https://www.elster.de/eportal/helpGlobal?themaGlobal=help_ustva_2026) sagt: „Die festgesetzte Sondervorauszahlung ziehen Sie bitte grundsätzlich in der Voranmeldung für Dezember ab.“
+- Das [BMF-Vordruckmuster USt 1 A 2026](https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/2025-12-29-vordruckmuster-USt-voranmeldung-2026.pdf?__blob=publicationFile&v=7) trägt in Zeile 49 die Kz 39 „Abzug der festgesetzten Sondervorauszahlung für Dauerfristverlängerung“. Es ist ein Steuerbetrag in Euro und Cent, positiv eingetragen und von der verbleibenden Vorauszahlung (Kz 83) abzuziehen.
+- Pfennig unterstützt bewusst nur den regulären Dezemberfall: manuell je Jahr hinterlegter Betrag, monatlicher Rhythmus, Dauerfristverlängerung und Regelbesteuerung. Keine Berechnung oder Anmeldung der Sondervorauszahlung und keine automatische Zahlungsbuchung. Die tatsächliche Zahlung wird für die EÜR wie bisher separat als Umsatzsteuerzahlung erfasst. Abweichende letzte Meldezeiträume bleiben zur manuellen Korrektur in ELSTER.
+- Der vorhandene XML-Exporter schreibt `<Kz39>` mit zwei Nachkommastellen wie andere Steuerbeträge; `<Kz83>` enthält die bereits geminderte Zahllast, gegebenenfalls negativ. Berechnung, Centformat und Jahres-/Zeitraumgrenzen sind durch automatisierte Tests geprüft. Ein echter ELSTER-Testupload mit Kz 39 wurde noch nicht durchgeführt; der frühere Q3-Upload belegt dieses neue Feld nicht.

@@ -15,6 +15,8 @@ public struct Profil: Hashable, Sendable {
     public var kleinunternehmer: Bool
     public var rhythmus: Rhythmus
     public var dauerfristverlaengerung: Bool
+    /// The manually entered assessment per calendar year, credited in December.
+    public var sondervorauszahlungen: [Int: Cent]
 
     public init(
         name: String = "",
@@ -23,7 +25,8 @@ public struct Profil: Hashable, Sendable {
         ustid: String = "",
         kleinunternehmer: Bool = false,
         rhythmus: Rhythmus = .vierteljaehrlich,
-        dauerfristverlaengerung: Bool = false
+        dauerfristverlaengerung: Bool = false,
+        sondervorauszahlungen: [Int: Cent] = [:]
     ) {
         self.name = name
         self.adresse = adresse
@@ -32,5 +35,6 @@ public struct Profil: Hashable, Sendable {
         self.kleinunternehmer = kleinunternehmer
         self.rhythmus = rhythmus
         self.dauerfristverlaengerung = dauerfristverlaengerung
+        self.sondervorauszahlungen = sondervorauszahlungen
     }
 }

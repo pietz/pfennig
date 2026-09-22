@@ -53,6 +53,15 @@ public struct UStVA: Hashable, Sendable {
             }
         }
 
+        // §48 Abs. 4 UStDV: credit the assessed special advance in the last
+        // reporting period. This app supports the regular December case only.
+        if profile.kleinunternehmer == false, profile.rhythmus == .monatlich,
+           profile.dauerfristverlaengerung, zeitraum.einteilung == .monat(12),
+           let betrag = profile.sondervorauszahlungen[zeitraum.jahr], betrag > .null
+        {
+            buchen(39, betrag, in: &werte)
+        }
+
         // Only filled lines, in the order of the form.
         let rows = Kennzahl.alle.compactMap { kennzahl -> Zeile? in
             guard let betrag = werte[kennzahl.nummer], betrag != .null else { return nil }
@@ -182,7 +191,7 @@ public struct UStVA: Hashable, Sendable {
             if Kennzahl.steuerKennzahlen.contains(nummer) {
                 return summe + zeile.betrag
             }
-            if Kennzahl.vorsteuerKennzahlen.contains(nummer) {
+            if Kennzahl.abzugsKennzahlen.contains(nummer) {
                 return summe - zeile.betrag
             }
             return summe

@@ -103,6 +103,12 @@ public struct Kennzahl: Hashable, Sendable {
         ),
 
         // H. Vorauszahlung oder Überschuss
+        // USt 1 A 2026, line 49; §48 Abs. 4 UStDV.
+        Kennzahl(
+            nummer: 39,
+            titel: "Abzug der festgesetzten Sondervorauszahlung für Dauerfristverlängerung",
+            istBemessung: false
+        ),
         Kennzahl(
             nummer: 83,
             titel: "Verbleibende Umsatzsteuer-Vorauszahlung / Verbleibender Überschuss",
@@ -177,8 +183,8 @@ public struct Kennzahl: Hashable, Sendable {
     /// The tax Kennzahlen that raise the Zahllast.
     public static let steuerKennzahlen: Set<Int> = [47, 85]
 
-    /// The Vorsteuer Kennzahlen that lower it.
-    public static let vorsteuerKennzahlen: Set<Int> = [66, 67]
+    /// Input VAT and the special advance payment lower the Zahllast.
+    public static let abzugsKennzahlen: Set<Int> = [66, 67, 39]
 
     /// A Bemessungsgrundlage is entered in whole euros with the cents cut off.
     /// Integer division truncates towards zero, so -1999 becomes -19.

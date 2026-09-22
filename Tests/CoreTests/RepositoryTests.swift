@@ -461,16 +461,26 @@ private func bestaetigungsfehler(
         ustid: "DE123456789",
         kleinunternehmer: true,
         rhythmus: .monatlich,
-        dauerfristverlaengerung: true
+        dauerfristverlaengerung: true,
+        sondervorauszahlungen: [2025: Cent(50000), 2026: Cent(10025)]
     )
     try repository.saveProfile(profile)
     #expect(try repository.profile() == profile)
+
+    var updated = try repository.profile()
+    updated.sondervorauszahlungen[2026] = Cent(20025)
+    try repository.saveProfile(updated)
+    #expect(try repository.profile().sondervorauszahlungen == [2025: Cent(50000), 2026: Cent(20025)])
+    updated.sondervorauszahlungen[2026] = nil
+    try repository.saveProfile(updated)
+    #expect(try repository.profile().sondervorauszahlungen == [2025: Cent(50000)])
 
     try repository.saveProfile(Profil(steuernummer: "neu"))
     #expect(try repository.profile().steuernummer == "neu")
     #expect(try repository.profile().kleinunternehmer == false)
     #expect(try repository.profile().name.isEmpty)
     #expect(try repository.profile().adresse.isEmpty)
+    #expect(try repository.profile().sondervorauszahlungen.isEmpty)
 }
 
 @Test(.timeLimit(.minutes(1)))
