@@ -2,7 +2,7 @@ import Foundation
 
 /// The values of one Umsatzsteuer-Voranmeldung, computed from the bookings.
 ///
-/// Ist-Versteuerung, as decided in `docs/specs/pfennig-neu.md`, section 5:
+/// Ist-Versteuerung and the current tax treatment:
 ///
 /// - **Umsatzsteuer auf Einnahmen** arises per payment, in the period of the
 ///   payment date. A partial payment carries its proportional share of the

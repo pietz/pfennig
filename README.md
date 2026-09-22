@@ -32,7 +32,7 @@ Debug-Builds heißen „Pfennig Dev“ (`com.pietz.pfennig.dev`) und liegen unte
 
 Das Profil liegt in der jeweiligen Datenbank, Darstellung und Fensterzustand gehören zur jeweiligen App-Kennung. Der OpenAI-Schlüssel bleibt im bestehenden gemeinsamen Schlüsselbund-Eintrag: Ändern oder Löschen in einer App betrifft auch die andere. Die neue App-Kennung kann eine einmalige macOS-Zugriffsbestätigung erfordern.
 
-Die Spezifikation steht in `docs/specs/pfennig-neu.md`, die Arbeitsregeln in `AGENTS.md`, der aktuelle Stand in `docs/status.md`. Releases sind in `docs/releasing.md` beschrieben.
+Die Arbeitsregeln stehen in `AGENTS.md`, der aktuelle Stand in `docs/status.md` und die nächsten sowie geparkten Themen in `docs/backlog.md` und den GitHub-Issues. Releases sind in `docs/releasing.md` beschrieben.
 
 ## Lizenz
 

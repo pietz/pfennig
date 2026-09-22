@@ -1,43 +1,50 @@
-# Backlog
+# Aktuell und später
 
-Ideen aus der Produktdiskussion am 2026-09-16, vom Eigentümer als lohnend eingestuft. Nichts hier ist beschlossen oder spezifiziert; jeder Punkt braucht vor dem Bau eine Ergänzung der Spec in `specs/pfennig-neu.md`. Die Reihenfolge innerhalb eines Themas ist eine Empfehlung.
+Stand 2026-09-22. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Der aktuelle Schritt bleibt von nächsten und geparkten Themen getrennt. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang, keine neue Gesamtspezifikation.
 
-## 1. Genauigkeit des Eingangs
+## Abgeschlossener Schritt
 
-Was hier besser wird, verbessert jede Zahl dahinter.
+Automatischer Dateieingang nur für Rechnungen, Quittungen und Gutschriften. Kontoauszüge und andere kontextbedürftige Unterlagen kommen später über den Chat. `noBooking` bleibt: ohne geänderte Buchung endet der Lauf mit dem bestehenden Fehler. Prompt und Landingpage sind darauf begrenzt; Tests, Build und Review sind abgeschlossen.
 
-- **Textformate im Eingang.** Entschieden am 2026-09-16, siehe Ergänzung Dateiformate in der Spec: Textdateien gehen als Klartext an den Agenten, ohne Parser. Damit liest der Agent XRechnungen und beliebige CSV- oder JSON-Exporte. Umgesetzt.
-- **ZUGFeRD-XML auslesen.** Zurückgestellt. Ein ZUGFeRD-PDF trägt das XML als Anhang; heute liest der Agent nur das Bild. Rechtlich gilt das XML, praktisch stimmen beide fast immer überein. Falls Ziffernfehler aus dem Bild auftreten, den Anhang über CGPDF holen und als Text neben das PDF legen, etwa fünfzig Zeilen.
-- **Kontoauszüge und Abgleich.** Begonnen am 2026-09-16 als Absatz in der Anleitung (siehe Ergänzung Dateien); noch ungetestet mit echten Auszügen. Anders als ein Beleg ist eine Kontobewegung kein eigenes Dokument, sondern muss gegen bestehende Buchungen abgeglichen werden: Zahlungsdatum und Betrag an die passende Rechnung, Rest als `nur_zahlung` oder `ignoriert`. Braucht ein eigenes Konzept für den Agentenlauf mit Zugriff auf die offenen Buchungen. Größte Lücke im Kernablauf, weil die Ist-Versteuerung am Zahlungsdatum hängt.
-- **Bewirtung.** Nur 70 Prozent der Bewirtungskosten sind Betriebsausgabe, die Vorsteuer bleibt voll abziehbar; der Beleg braucht Anlass und Teilnehmer. Heute setzt der Agent meist einen Privatanteil, was die Vorsteuer falsch kürzt. Eigene Behandlung in der EÜR plus Abfrage der fehlenden Angaben.
+Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
-## 2. Steuerliche Vollständigkeit
+## Danach
 
-Pflichten und Fehler, die die Zielgruppe regelmäßig treffen.
+- **Chat [#16](https://github.com/pietz/pfennig/issues/16).** Als Produktfunktion entschieden, erster Umfang noch abzustimmen. Unterlagen mit Auftrag bearbeiten, Fragen und Rückfragen ermöglichen. Keine zweite Buchhaltungslogik.
+- **Dateienübersicht [#17](https://github.com/pietz/pfennig/issues/17).** Gespeicherte Dateien und ihre Buchungsverknüpfungen sichtbar machen, auch ohne zugehörige Buchung. Platz und Aktionen noch abzustimmen.
 
-- **Zusammenfassende Meldung.** Wer Kz-21-Umsätze hat, schuldet quartalsweise eine ZM an das BZSt: je EU-Kunde USt-IdNr und Summe, fällig am 25. des Folgemonats. Alle Felder liegen in den Buchungen; im Kern ein zweiter Export plus Frist auf der Startseite.
-- **Umsatzsteuer-Jahreserklärung.** Dieselben Kennzahlen über das Jahr summiert, als XML für Mein ELSTER wie die UStVA. Aufbau muss wie bei der UStVA aus öffentlichen Quellen rekonstruiert und per Testupload geprüft werden.
-- **Anlagevermögen und AfA.** Anschaffungen über 800 Euro netto sind keine Ausgabe, sondern werden über die Nutzungsdauer abgeschrieben. Heute zieht die EÜR sie voll ab. Konzept gewünscht: Kennzeichnung an der Buchung, Nutzungsdauer aus der AfA-Tabelle, lineare Jahresbeträge in der EÜR, Anlageverzeichnis als Export. Offene Fragen: monatsgenaue Abschreibung im ersten Jahr, Abgang und Privatentnahme, Verhältnis zur festen Kategorienliste.
-- **Kleinunternehmer-Grenzen.** Einnahmen des Vorjahres gegen 25.000 Euro und des laufenden Jahres gegen 100.000 Euro auf der Startseite. Das Überschreiten der zweiten Grenze wirkt sofort, nicht erst zum Jahreswechsel.
-- **Steuerschätzung und Rücklage.** Offene UStVA-Zahllast plus geschätzte Einkommensteuer auf den Jahresgewinn, als eine Zahl auf der Startseite: was vom Kontostand nicht dem Nutzer gehört. Braucht Grundfreibetrag, Tarif und ein paar Annahmen (Familienstand, Kirchensteuer, sonstige Einkünfte), die ehrlich als Schätzung ausgewiesen werden.
+## Geparkt
 
-## 3. Arbeiten mit den Daten
+### Eingang und Prüfung
 
-- **Agent zum Sprechen.** Ein Gespräch mit dem Agenten über die Buchhaltung: Fragen zu Buchungen und Zeiträumen, Nachfragen, Dokumente im Gespräch ablegen. Die Spec schließt Chat in Abschnitt 7 aus; das ist eine Grundsatzentscheidung des Eigentümers und braucht eine Spec-Änderung. Offene Fragen: eigener Bereich oder Teil der Buchungsansicht, welche Werkzeuge der Gesprächsagent bekommt, ob er schreiben darf.
-- **Aktivitäten lesen und rückgängig machen.** Der Agent bekommt Lesezugriff auf `aktivitaeten`, um frühere Änderungen zu verstehen. Der Nutzer kann eine Aktivität auf `vorher` zurücksetzen; das JSON liegt bereits vor.
-- **Übergabe an den Steuerberater.** Ein Jahresordner mit Belegen nach Datum und Gegenpartei benannt, Buchungsliste und EÜR-Werte als CSV. Prüfen, ob ein etabliertes Format lohnt (DATEV-Buchungsstapel, CSV-Konventionen der gängigen Kanzleisoftware) oder ob ein sauberer Ordner reicht.
-- **Live-API-Tests.** Ein kleiner Testsatz, der mit echtem Schlüssel gegen Luna bei niedrigem Aufwand läuft: ein PDF, eine XRechnung, ein Kontoauszug, jeweils Ende zu Ende durch den Eingang. Nicht Teil von `swift test`, sondern ein eigener Aufruf, der den Schlüssel aus dem Schlüsselbund nimmt und wenige Cent kostet. Hätte den HTTP/3-Fehler vom 2026-09-16 vor dem Nutzer gefunden.
+- Warnungen und Duplikaterkennung: als eigenes Thema klären, nicht in den aktuellen Importumbau aufnehmen.
+- Angenommene Prompt-Präzisierungen, noch nicht umgesetzt:
+  - „Eigene Ausgangsrechnungen bleiben unbezahlt, solange keine Zahlung belegt ist.“
+  - „Die Zahlungen einer Buchung sollen zusammen dem tatsächlich geflossenen Geld entsprechen.“ „Lege nichts doppelt an“ bleibt.
+  - „Zahlungsbeträge sind relativ zur Buchung: eine Zahlung positiv, eine Erstattung negativ, unabhängig vom Vorzeichen auf dem Kontoauszug.“
+  - Erlaubten SQL-Zugriff einschließlich lesendem Zugriff auf `afa_tabelle` klar benennen.
+  - `noBooking` bleibt. Eine besondere Regel für negative Gutschriften ist verworfen; Darstellung und Exportpolitik von `nur_zahlung` bleiben vertagt.
+- **Unsicherheiten und Rückfragen [#5](https://github.com/pietz/pfennig/issues/5), offen.** Unsichere Angaben sichtbar machen; konkrete Verbindung mit Chat #16 noch klären.
+- **Kontoabgleich [#7](https://github.com/pietz/pfennig/issues/7), offen.** Sammelüberweisungen, Mahnungen, Korrekturen, Raten und Erstattungen; Kontoabdeckung vor einer Aussage „abgeglichen“. Künftig im Chat-Kontext, nicht automatisch beim Ablegen.
+- **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), offen.** Umsatz, Gebühren und tatsächliche Auszahlung aus Abrechnungen unterscheiden, nicht aus dem Plattformnamen ableiten.
+- ZUGFeRD-XML auslesen: heute nur PDF-Bild; eingebettetes XML bewusst nicht extrahiert. Textformate einschließlich eigenständiger XML-Rechnungen sind bereits unterstützt.
+- Bewirtung: Anlass und Teilnehmer sowie fehlende Angaben klären. Die 70-Prozent-Kürzung und Vorsteuerbehandlung sind bereits umgesetzt.
+- Live-API-Tests mit fiktionalen Dokumenten als separater, ausdrücklich freigegebener Lauf, nicht Teil der normalen Tests.
 
-- **Reste aus dem Steuer-Review (2026-09-17).** Kleinunternehmer mit §13b-Eingang schulden die Steuer, ohne dass Pfennig die EÜR daran erinnert; Kz 87 (§13b-Eingang zu 7 Prozent) fehlt; unentgeltliche Wertabgaben bei nachträglicher Privatnutzung; regionale Feiertage bei Fristen (Fronleichnam, Reformationstag) über ein Bundesland im Profil; Storno statt Löschen für bereits exportierte Zeiträume.
+### Steuerlicher Umfang und Übernahme
 
-## Verworfen oder zurückgestellt
+- **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
+- **Einkommensteuer-Vorauszahlungen [#3](https://github.com/pietz/pfennig/issues/3), offen.** Dürfen den EÜR-Gewinn nicht mindern; passende Abbildung ohne EÜR-/UStVA-Wirkung klären.
+- **Sondervorauszahlung [#8](https://github.com/pietz/pfennig/issues/8), offen.** Kz 39 im Dezember bei monatlicher UStVA mit Dauerfristverlängerung berücksichtigen.
+- **Innergemeinschaftliche Waren [#12](https://github.com/pietz/pfennig/issues/12), offen.** Erwerbe auf Kz 89/93 und 61 statt Dienstleistungs-§13b; ebenso fehlt Kz 41 für innergemeinschaftliche Lieferungen.
+- Zusammenfassende Meldung; Umsatzsteuer-Jahreserklärung; Kleinunternehmer-Grenzen; Einkommensteuerschätzung und Rücklage. Jeweils eigener Umfang und amtliche Prüfung nötig.
+- Wertabgaben, Kleinunternehmer-Hinweis bei §13b, regionale Feiertage über ein Bundesland und Storno statt Löschen bereits exportierter Buchungen bleiben geparkt. §13b mit 7 Prozent ist umgesetzt (#10 geschlossen).
+- Anlagevermögen, lineare AfA und AVEÜR sind gebaut (#1 geschlossen). Weitere Anlagefälle bleiben außerhalb des heutigen Umfangs: Fahrzeuge, Gebäude/Grundstücke, immaterielle Anlagen, Verkauf/Privatentnahme, degressive AfA, §7g, Sammelposten und nachträgliche Anschaffungskosten.
 
-- **Erwartete wiederkehrende Belege.** Für Abos fehlt am Ende trotzdem die Rechnung; der Hinweis allein spart wenig. Zurückgestellt.
+### Arbeiten mit vorhandenen Daten
 
-## Empfohlene Reihenfolge
-
-1. Textformate im Eingang: umgesetzt.
-2. Kontoauszüge und Abgleich: die größte Lücke im Kernablauf. Das Konzept dafür klärt zugleich, wie ein Agentenlauf mit Kontext auf bestehende Buchungen aussieht, und bereitet damit den Gesprächsagenten vor.
-3. Anlagevermögen und AfA: verhindert einen echten Fehler in der EÜR, Konzept ausstehend.
-4. Kleinunternehmer-Grenzen, ZM und Jahreserklärung: kleine Exporte und Anzeigen auf vorhandenen Daten.
-5. Gesprächsagent: als Spec-Entscheidung, sobald 2 steht.
+- **Aktivitätsverlauf anzeigen [#18](https://github.com/pietz/pfennig/issues/18), offen.** Übernommene unerfüllte Anforderung aus dem Neuaufbau: vorhandene Änderungen lesbar anzeigen, ohne Undo oder Agentenzugriff. Noch kein Implementierungsplan.
+- **Anfragekosten berechnen [#19](https://github.com/pietz/pfennig/issues/19), offen.** Übernommene unerfüllte Anforderung: gespeicherte Tokens mit einer Preistabelle im Code auswerten. Kein Dashboard oder Abrechnungssystem, noch kein Implementierungsplan.
+- Agentenzugriff auf Aktivitäten und Rückgängigmachen bleiben separate, nicht beschlossene Ideen, ausdrücklich nicht Teil von #18.
+- Übergabe an den Steuerberater: Jahresordner mit Belegen, Buchungsliste und Steuerwerten; Nutzen eines etablierten Formats vorab klären.
+- Erwartete wiederkehrende Belege: zurückgestellt; ein Hinweis ersetzt die fehlende Rechnung nicht.

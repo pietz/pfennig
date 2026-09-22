@@ -69,7 +69,7 @@
               Ablegen statt abtippen.
             </h3>
           </header>
-          <p>Zieh Rechnungen, Belege und Kontoauszüge auf Pfennig. Die App erfasst deine Buchungen und ordnet Zahlungen zu.</p>
+          <p>Zieh Rechnungen und Belege auf Pfennig. Die App erfasst daraus deine Buchungen.</p>
         </article>
         <article>
           <header>
@@ -130,9 +130,9 @@
           <figcaption>Welche Rechnungen bezahlt sind und welche noch offen bleiben.</figcaption>
         </figure>
         <div>
-          <h2 id="zahlungen-titel">Zahlungen? Zugeordnet.</h2>
-          <p class="muted">Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.</p>
-          <p class="muted">Dein Bankkonto musst du dafür nicht verbinden. Du lädst den Auszug bei deiner Bank herunter und legst ihn ab.</p>
+          <h2 id="zahlungen-titel">Bezahlt oder noch offen?</h2>
+          <p class="muted">In der Tabelle siehst du, welche Rechnungen bezahlt sind und welche noch offen bleiben. Mit einem Klick markierst du eine Rechnung als bezahlt. Einzelne Zahlungen und ihr Datum kannst du im Inspector eintragen.</p>
+          <p class="muted">Ausgaben gelten beim Import als bezahlt, sofern der Beleg nichts anderes erkennen lässt. Fehlt das Zahlungsdatum, verwendet Pfennig das Belegdatum. Prüfe und korrigiere die Angaben bei Bedarf.</p>
         </div>
       </div>
     </section>
@@ -196,7 +196,7 @@
           <tbody>
             <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Einnahmenüberschussrechnung (EÜR)</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bilanz und GuV</span></td></tr>
             <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Ist-Versteuerung, regelbesteuert oder Kleinunternehmer</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Soll-Versteuerung</span></td></tr>
-            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Rechnungen, Belege, Gutschriften, Kontoauszüge</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bankanbindung</span></td></tr>
+            <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Rechnungen, Belege, Gutschriften</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Bankanbindung</span></td></tr>
             <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Reverse Charge, Fremdwährung, Anlagegüter mit AfA</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Rechnungsstellung</span></td></tr>
             <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>UStVA als Datei für Mein ELSTER, EÜR-Werte fürs Formular</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Übermittlung ans Finanzamt</span></td></tr>
             <tr><td><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Eine Person, ein Betrieb, ein Mac</span></td><td class="muted"><span class="flex items-center gap-2"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>Mehrere Mandanten, Lohnabrechnung, Windows</span></td></tr>
@@ -258,7 +258,7 @@
       </details>
       <details>
         <summary>Welche Dateien kann ich ablegen?</summary>
-        <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML, Kontoauszüge als PDF oder CSV. Auch ein Foto vom Kassenbon reicht.</p>
+        <p>Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML. Auch ein Foto vom Kassenbon reicht. Kontoauszüge und andere Unterlagen werden beim Ablegen nicht verarbeitet.</p>
       </details>
       <details>
         <summary>Was ist, wenn etwas falsch erkannt wird?</summary>
@@ -266,7 +266,7 @@
       </details>
       <details>
         <summary>Kann ich Pfennig ohne OpenAI nutzen?</summary>
-        <p>Buchungen kannst du auch von Hand anlegen. Die Erkennung von Belegen und Kontoauszügen braucht den Schlüssel.</p>
+        <p>Buchungen kannst du auch von Hand anlegen. Die Erkennung von Rechnungen und Belegen braucht den Schlüssel.</p>
       </details>
         </div>
       </div>

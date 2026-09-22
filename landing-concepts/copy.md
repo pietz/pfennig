@@ -1,6 +1,6 @@
 # Landingpage-Text Pfennig
 
-Arbeitsstand 2026-09-21. Reiner Inhalt, keine Gestaltung. Struktur wie am 2026-09-21 mit dem Eigentümer abgestimmt. Grundlage: `docs/specs/pfennig-neu.md`, `docs/status.md` (0.6.0), bestehender Entwurf `daft.html`.
+Arbeitsstand 2026-09-21. Reiner Inhalt, keine Gestaltung. Struktur wie am 2026-09-21 mit dem Eigentümer abgestimmt. Grundlage: aktueller Funktionsumfang, Eigentümerentscheidungen, `docs/status.md` und bestehender Entwurf `daft.html`.
 
 Mit **[?]** markierte Stellen brauchen eine Entscheidung oder Prüfung des Eigentümers.
 
@@ -26,7 +26,7 @@ Screenshot: die Buchungstabelle mit geöffnetem Inspector.
 ## 2. Drei Karten
 
 **Ablegen statt abtippen.**
-Zieh Rechnungen, Belege und Kontoauszüge auf Pfennig. Die App erfasst deine Buchungen und ordnet Zahlungen zu.
+Zieh Rechnungen und Belege auf Pfennig. Die App erfasst daraus deine Buchungen.
 
 **Die Steuer ist vorbereitet.**
 Pfennig berechnet deine UStVA und EÜR. Du übernimmst die Angaben in Mein ELSTER und sendest selbst ab.
@@ -50,11 +50,11 @@ Screenshot: eine Buchung mit Originalbeleg im Inspector.
 
 ## 4. Zahlungen
 
-## Zahlungen? Zugeordnet.
+## Bezahlt oder noch offen?
 
-Zieh deinen Kontoauszug auf Pfennig. Die App ordnet die Zahlungen deinen Rechnungen zu, auch Teilzahlungen und Erstattungen. Zahlungen ohne passenden Beleg bleiben sichtbar, damit du ihn nachreichen kannst.
+In der Tabelle siehst du, welche Rechnungen bezahlt sind und welche noch offen bleiben. Mit einem Klick markierst du eine Rechnung als bezahlt. Einzelne Zahlungen und ihr Datum kannst du im Inspector eintragen.
 
-Dein Bankkonto musst du dafür nicht verbinden. Du lädst den Auszug bei deiner Bank herunter und legst ihn ab.
+Ausgaben gelten beim Import als bezahlt, sofern der Beleg nichts anderes erkennen lässt. Fehlt das Zahlungsdatum, verwendet Pfennig das Belegdatum. Prüfe und korrigiere die Angaben bei Bedarf.
 
 Screenshot: Tabelle mit bezahlten Rechnungen und einer offenen.
 
@@ -108,7 +108,7 @@ Pfennig ist für Selbstständige in Deutschland, die ihren Gewinn mit der Einnah
 | --- | --- |
 | Einnahmenüberschussrechnung (EÜR) | Bilanz und GuV |
 | Ist-Versteuerung, regelbesteuert oder Kleinunternehmer | Soll-Versteuerung |
-| Rechnungen, Belege, Gutschriften, Kontoauszüge | Bankanbindung |
+| Rechnungen, Belege, Gutschriften | Bankanbindung |
 | Reverse Charge, Fremdwährung, Anlagegüter mit AfA | Rechnungsstellung |
 | UStVA als Datei für Mein ELSTER, EÜR-Werte fürs Formular | Übermittlung ans Finanzamt |
 | Eine Person, ein Betrieb, ein Mac | Mehrere Mandanten, Lohnabrechnung, Windows |
@@ -148,13 +148,13 @@ Den API-Schlüssel erstellst du bei OpenAI. Dafür brauchst du ein OpenAI-Konto 
 Für die UStVA lädst du die von Pfennig erzeugte Datei in Mein ELSTER hoch, dort unter „XML-Daten hochladen“. Die EÜR-Werte überträgst du von Hand in das Formular; dafür gibt es bei ELSTER keinen Upload. Du prüfst die Angaben und sendest selbst ab.
 
 **Welche Dateien kann ich ablegen?**
-Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML, Kontoauszüge als PDF oder CSV. Auch ein Foto vom Kassenbon reicht.
+Rechnungen und Belege als PDF oder Bild, E-Rechnungen als XML. Auch ein Foto vom Kassenbon reicht. Kontoauszüge und andere Unterlagen werden beim Ablegen nicht verarbeitet.
 
 **Was ist, wenn etwas falsch erkannt wird?**
 Du siehst jede Buchung neben dem Original und korrigierst sie direkt. Bestätige erst, wenn die Angaben stimmen, und prüfe deine Steuerzahlen vor der Abgabe. Ungeprüfte Buchungen fließen in die Berechnung ein; Pfennig weist dich vor dem Export darauf hin.
 
 **Kann ich Pfennig ohne OpenAI nutzen?**
-Buchungen kannst du auch von Hand anlegen. Die Erkennung von Belegen und Kontoauszügen braucht den Schlüssel.
+Buchungen kannst du auch von Hand anlegen. Die Erkennung von Rechnungen und Belegen braucht den Schlüssel.
 
 ---
 

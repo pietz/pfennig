@@ -19,7 +19,7 @@ Erfundener Betrieb, erfundene Gegenparteien, Beträge zwischen 20 und 5.000 Euro
 - Bezahlt-Spalte gemischt: die meisten bezahlt, zwei offen, davon eine überfällig.
 - Eine Reverse-Charge-Rechnung eines ausländischen Anbieters, eine Fremdwährungsrechnung, ein Anlagegut (Laptop) mit Nutzungsdauer.
 - Belege als echte PDFs, damit die Vorschau im Inspector etwas zeigt: schlichte, glaubwürdige Rechnungen ohne echte Firmennamen und Logos.
-- Ein Kontoauszug als CSV, der zu den Rechnungen passt, mit einer Teilzahlung und einer Bewegung ohne Beleg.
+- Eine Rechnung mit einer im Inspector eingetragenen Teilzahlung.
 
 ## Die fünf Slots
 
@@ -39,9 +39,9 @@ Erfundener Betrieb, erfundene Gegenparteien, Beträge zwischen 20 und 5.000 Euro
 
 **Aufnahme:** 15 bis 20 Sekunden fertig geschnitten. Die Wartezeit auf den Agenten hart kürzen: Spinner zwei Sekunden zeigen, dann Schnitt auf das Ergebnis. Der Finder darf am Rand ins Bild ragen, aber nur die drei Dateien, kein Schreibtisch. Cursor sichtbar, ruhige Bewegungen. Letztes Bild zwei Sekunden halten, bevor die Schleife neu startet. Poster: das letzte Bild.
 
-### 3. Zahlungen? Zugeordnet: Bild, 554 px breit
+### 3. Bezahlt oder noch offen: Bild, 554 px breit
 
-**Zeigt:** Einen Ausschnitt der Tabelle, nicht das ganze Fenster. Sechs bis acht Zeilen mit den Spalten Unternehmen, Datum, Betrag, Bezahlt. Bezahlt-Spalte gemischt: bezahlt, bezahlt, offen, bezahlt, überfällig. Eine Zeile mit Titel aus einem Verwendungszweck (`nur_zahlung`), damit „Zahlung ohne Beleg bleibt sichtbar“ ein Bild hat.
+**Zeigt:** Einen Ausschnitt der Tabelle, nicht das ganze Fenster. Sechs bis acht Zeilen mit den Spalten Unternehmen, Datum, Betrag, Bezahlt. Bezahlt-Spalte gemischt: mehrere Rechnungen bezahlt, eine offen. Die Zahlungen sind manuell eingetragen, nicht aus einem Kontoauszug importiert.
 
 **Warum:** Halbe Breite verträgt kein ganzes Fenster; die Schrift würde unlesbar. Der Ausschnitt zeigt genau die eine Spalte, um die es im Text geht.
 
@@ -65,7 +65,7 @@ Erfundener Betrieb, erfundene Gegenparteien, Beträge zwischen 20 und 5.000 Euro
 
 ## Was nicht aufgenommen wird
 
-- Kein Video für Zahlungen, Überblick oder Export. Wenn das Belege-Video sitzt und noch Luft ist, wäre der Kontoauszug-Import (CSV ablegen, Bezahlt-Spalte füllt sich) der zweite Kandidat, an derselben Stelle wie Bild 3.
+- Kein Video für Zahlungen, Überblick oder Export. Slot 3 bleibt ein Screenshot des Zahlungsstands.
 - Keine Einstellungen, kein KI-Zugang, kein Schlüsselfeld. Technik steht im Text bei Kosten, nicht in Bildern.
 - Keine Fehlerzustände, keine gescheiterten Läufe.
 
