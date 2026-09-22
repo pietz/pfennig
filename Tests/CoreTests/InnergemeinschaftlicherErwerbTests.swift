@@ -65,6 +65,36 @@ func euWarenkaufVorsteuerBeachtetPrivatanteilUndZehnProzentGrenze(privatanteil: 
     #expect(ustva.zahllast == Cent(19000 - vorsteuer))
 }
 
+@Test func kleinerBetrieblicherAnteilUnterscheidetInlandsleistungUndEUWare() {
+    let telefon = buchung(
+        richtung: .ausgabe, datum: datum(2026, 7, 2), kategorie: "telekommunikation",
+        privatanteil: 95, positionen: [position(100_000, 19)],
+        zahlungen: [zahlung(2026, 7, 2, 119_000)]
+    )
+    var kauf = euWarenkauf()
+    kauf.privatanteilProzent = 95
+    let ustva = UStVA.calculate([telefon, kauf], zeitraum: q3, profile: regel)
+    #expect(ustva.betrag(66) == 950)
+    #expect(ustva.betrag(61) == 0)
+    #expect(ustva.betrag(89) == 100_000)
+}
+
+@Test func euWarenkaufMitRechnungssteuerKannNichtBestaetigtWerden() throws {
+    let repository = try Repository.inMemory()
+    var kauf = euWarenkauf()
+    kauf.positionen = [position(100_000, 19)]
+    let saved = try repository.save(kauf, akteur: .agent)
+    let id = try #require(saved.id)
+    #expect(ValidationRules.steuerPasstZumSatz(saved, regel) == nil)
+    do {
+        try repository.confirm(id: id)
+        Issue.record("Eine Erwerbsbuchung mit Rechnungssteuer darf nicht bestätigt werden.")
+    } catch let CoreError.validierungFehlgeschlagen(messages) {
+        #expect(messages.contains { $0.contains("steuer 0") })
+    }
+    #expect(try repository.allBookings().first?.geprueftAm == nil)
+}
+
 @Test func euWarenkaufBeimKleinunternehmerOhneVorsteuerAberMitFrist() {
     let kauf = euWarenkauf()
     let ustva = UStVA.calculate([kauf], zeitraum: q3, profile: klein)

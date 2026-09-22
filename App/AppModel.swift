@@ -11,7 +11,7 @@ final class AppModel {
     let intake: FileIntake
 
     var buchungen: [Buchung] = []
-    var selection: Int64?
+    var selection: Set<Int64> = []
     var filter: BookingFilter = .alle
     var reviewFilter: ReviewFilter = .alle
     var search = ""
@@ -173,8 +173,14 @@ final class AppModel {
     }
 
     var selected: Buchung? {
-        guard let selection else { return nil }
-        return buchungen.first { $0.id == selection }
+        guard selection.count == 1, let id = selection.first else { return nil }
+        return buchungen.first { $0.id == id }
+    }
+
+    var selectedBookings: [Buchung] {
+        buchungen.filter { buchung in
+            buchung.id.map(selection.contains) ?? false
+        }
     }
 
     /// The saved row goes into the list right away so the table shows the
@@ -213,7 +219,7 @@ final class AppModel {
         }
         reviewFilter = .alle
         search = ""
-        selection = saved.id
+        selection = Set(saved.id.map { [$0] } ?? [])
         inspectorVisible = true
     }
 
@@ -242,17 +248,22 @@ final class AppModel {
     }
 
     /// The row leaves the list before the inspector closes, so its pending
-    /// edit cannot write the booking back. Receipts no other booking carries
+    /// edit cannot write the booking back. Receipts no surviving booking carries
     /// go with it, row and original, so the document can be dropped again.
-    func delete(_ buchung: Buchung) {
-        guard let id = buchung.id else { return }
-        buchungen.removeAll { $0.id == id }
-        selection = nil
+    func delete(_ bookings: [Buchung]) {
+        let ids = Set(bookings.compactMap(\.id))
+        guard ids.isEmpty == false else { return }
+        let previousBookings = buchungen
+        let previousSelection = selection
+        buchungen.removeAll { $0.id.map(ids.contains) ?? false }
+        selection.subtract(ids)
         do {
-            for file in try repository.deleteWithReceipts(id: id) {
+            for file in try repository.deleteWithReceipts(ids: ids) {
                 try? FileManager.default.removeItem(at: path.original(file))
             }
         } catch {
+            buchungen = previousBookings
+            selection = previousSelection
             errorMessage = "\(error)"
         }
     }

@@ -8,6 +8,8 @@ Automatischer Dateieingang nur für Rechnungen, Quittungen und Gutschriften. Kon
 
 Die fünf Handoff-Vorschläge sind abgeschlossen oder entschieden: Zahlungs-Default für eigene Ausgangsrechnungen, tatsächlich geflossene Zahlungssumme, relative Vorzeichen und SQL-Beschreibung des lesenden AfA-Zugriffs sind umgesetzt. `noBooking` bleibt, keine Sonderregel für negative Gutschriften. Die `nur_zahlung`-Anweisung ist ohne automatischen Kontoauszugsimport zurückgestellt; die Exportpolitik ist separat in #20 entschieden und umgesetzt.
 
+Mehrfachauswahl samt Belegbereinigung, Öffnen über Finder/„Öffnen mit“ und dauerhafter Importabschluss aus dem parallelen Entwicklungsstand sind integriert. Der automatische Eingang bleibt dabei auf Belege begrenzt; die Entwicklungs-App behält ihre eigene Kennung und ihr eigenes Archiv.
+
 Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
 ## Nächste Schritte
@@ -31,7 +33,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 - **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), mit vorhandenen Primitiven umgesetzt.** Belegte Einnahmen und einbehaltene Gebühren können getrennte bezahlte Buchungen mit derselben Belegdatei sein; die Nettoüberweisung ist keine zusätzliche Einnahme. Keine dedizierten Integrationen oder automatische Abstimmung, auch nicht für gelegentliche Hyperwallet-Auszahlungen. Bloße Auszahlungsbestätigungen liefern nicht zwingend alle Buchungsangaben; kein pauschales Hochrechnen bei Wiederverkäufern/Merchants of Record. Keine Erweiterung auf automatischen Kontoauszugsimport.
 - ZUGFeRD-XML auslesen: heute nur PDF-Bild; eingebettetes XML bewusst nicht extrahiert. Textformate einschließlich eigenständiger XML-Rechnungen sind bereits unterstützt.
 - Bewirtung: Anlass und Teilnehmer sowie fehlende Angaben klären. Die 70-Prozent-Kürzung und Vorsteuerbehandlung sind bereits umgesetzt.
-- Live-API-Tests mit fiktionalen Dokumenten als separater, ausdrücklich freigegebener Lauf, nicht Teil der normalen Tests.
+- **Live-API-Tests:** `scripts/test-live.sh` bietet einen optionalen Lauf mit synthetischer PDF-Rechnung, Rechnungs-Doppelimport und unverändert abgewiesenem CSV-Kontoauszug. Noch nicht live ausgeführt; braucht eine separate ausdrückliche Freigabe für API-/Schlüsselbundzugriff. Normale Tests und CI überspringen ihn. XRechnung als weiterer Live-Fall bleibt offen.
 
 ### Steuerlicher Umfang und Übernahme
 

@@ -166,26 +166,28 @@ public struct AgentRun: Sendable {
         let request = try repository.startRequest(dateiId: file.id, modell: ai.model.rawValue)
         var trace = Trace()
         var result = RunResult()
+        defer {
+            // Diagnostics may fail without changing the durable run outcome.
+            try? repository.recordRequestTrace(
+                id: request, eingabeTokens: trace.inputTokens,
+                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
+            )
+        }
         do {
             try await loop(file, ai: ai, instructions: instructions, result: &result, trace: &trace)
             guard result.touched.isEmpty == false else {
                 throw AgentError.noBooking
             }
-            // The log is metadata. A failure to write it must not turn a
-            // finished run into an abort that removes the committed bookings.
-            try? repository.finishRequest(
-                id: request, status: .erfolg, eingabeTokens: trace.inputTokens,
-                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
-            )
-            return result
         } catch {
             trace.steps.append(["fehler": error.localizedDescription])
-            try? repository.finishRequest(
-                id: request, status: .fehler, eingabeTokens: trace.inputTokens,
-                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
-            )
+            try? repository.finishRequest(id: request, status: .fehler)
             throw RunAbort(created: result.created, reason: error)
         }
+        // Completion is required before intake removes the inbox copy. Keep
+        // this outside the abort handler: bookings are already committed and
+        // must survive a failure to persist the completion status.
+        try repository.finishRequest(id: request, status: .erfolg)
+        return result
     }
 
     private func loop(

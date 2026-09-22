@@ -2,7 +2,7 @@
 
 Pfennig welcomes focused bug fixes, tests, documentation, and features that fit its German, local-first bookkeeping scope.
 
-Before starting substantial work, open or comment on a GitHub issue so the product behavior can be agreed before implementation. The principles in [`AGENTS.md`](AGENTS.md) and the specification in [`docs/specs/pfennig-neu.md`](docs/specs/pfennig-neu.md) guide scope decisions.
+Before starting substantial work, agree the product behavior with the owner in the conversation or a GitHub issue. The principles in [`AGENTS.md`](AGENTS.md) guide scope decisions. No separate specification is required.
 
 ## Development setup
 

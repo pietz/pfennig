@@ -186,6 +186,20 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(try repository.allBookings().isEmpty)
 }
 
+/// Die Leseregeln gelten nur für den Agenten: die Steuer zum Satz weist schon
+/// der Test darüber zurück, das Datum hier. Der Nutzer darf beides bestätigen.
+@Test func werkzeugMachtEinenLesefehlerDesAgentenRueckgaengig() throws {
+    let (repository, tool) = try tool()
+    let result = tool.execute("""
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung)
+    VALUES ('ausgabe', 'beleg', '2099-09-01', 'Später', 'software',
+        '[{"netto": 10000, "steuersatz": 19, "steuer": 1900}]', 'inland')
+    """)
+    #expect(result.text.contains("liegt zu weit in der Zukunft"))
+    #expect(result.touched.isEmpty)
+    #expect(try repository.allBookings().isEmpty)
+}
+
 @Test func werkzeugSchreibtEineAktivitaetUndLaesstGeprueftAmLeer() throws {
     let (repository, tool) = try tool()
     let result = tool.execute(gueltigeBuchung)
@@ -295,10 +309,18 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     #expect(ValidationRules.kleinunternehmerNurBeiEigenenEinnahmen(einnahme, Profil()) != nil)
 
     let ohneSteuer = [Position(netto: Cent(10000), steuersatz: 0, steuer: .null)]
-    let sechzehn = [Position(netto: Cent(10000), steuersatz: 16, steuer: Cent(1600))]
+    let pauschal = [Position(netto: Cent(10000), steuersatz: Decimal(78) / 10, steuer: Cent(780))]
     let sieben = [Position(netto: Cent(10000), steuersatz: 7, steuer: Cent(700))]
     #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: ohneSteuer), profile) != nil)
-    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sechzehn), profile)?.contains("16") == true)
+    #expect(ValidationRules.inlandNurMit19Oder7(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: ohneSteuer), profile
+    ) != nil)
+    // Der Pauschalsatz nach §24 UStG steht auf einer Eingangsrechnung; Kz 66
+    // nimmt die ausgewiesene Steuer. Pfennig unterstützt diesen Satz nicht für Einnahmen.
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: pauschal), profile) == nil)
+    #expect(ValidationRules.inlandNurMit19Oder7(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: pauschal), profile
+    ) != nil)
     #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sieben), profile) == nil)
     #expect(ValidationRules
         .inlandNurMit19Oder7(basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile) == nil)
@@ -339,6 +361,40 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     umsatz.nutzungsdauerJahre = 13
     #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(umsatz, profile) != nil)
     #expect(ValidationRules.nutzungsdauerNurBeiAusgaben(basis(), profile) == nil)
+}
+
+@Test func inlandsEingangsrechnungMitDezimalemPauschalsatzBleibtInBeidenExporten() throws {
+    let (repository, tool) = try tool()
+    let result = tool.execute("""
+    INSERT INTO buchungen (richtung, art, datum, titel, kategorie, positionen, steuerbehandlung, zahlungen)
+    VALUES ('ausgabe', 'beleg', '2026-07-02', 'Testmaterial', 'buerobedarf',
+        '[{"netto":10000,"steuersatz":7.8,"steuer":780}]', 'inland',
+        '[{"datum":"2026-07-02","betrag":10780}]')
+    """)
+    #expect(result.text.hasPrefix("ok"))
+    let saved = try #require(try repository.allBookings().first)
+    #expect(saved.positionen.first?.steuersatz == Decimal(78) / 10)
+    #expect(UStVA.calculate([saved], zeitraum: q3, profile: regel).betrag(66) == 780)
+    let euer = EUeR.calculate([saved], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.first { $0.zeile == 52 }?.betrag == Cent(10000))
+    #expect(euer.zeilen.first { $0.zeile == EUeR.zeileGezahlteVorsteuer }?.betrag == Cent(780))
+    #expect(euer.ausgaben == Cent(10780))
+
+    let id = try #require(saved.id)
+    let income = tool.execute("""
+    UPDATE buchungen SET richtung = 'einnahme', kategorie = 'umsatz_waren' WHERE id = \(id)
+    """)
+    #expect(income.text.contains("19 oder 7"))
+    #expect(income.touched.isEmpty)
+    for treatment in ["innergemeinschaftlicher_erwerb", "reverse_charge"] {
+        let recipientTax = tool.execute("""
+        UPDATE buchungen SET steuerbehandlung = '\(treatment)', gegenpartei_land = 'NL',
+            positionen = '[{"netto":10000,"steuersatz":7.8,"steuer":0}]' WHERE id = \(id)
+        """)
+        #expect(recipientTax.text.contains("19 oder 7"))
+        #expect(recipientTax.touched.isEmpty)
+    }
+    #expect(try repository.allBookings().first == saved)
 }
 
 @Test func privatanteilProzentGrenzen() {

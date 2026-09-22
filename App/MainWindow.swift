@@ -6,7 +6,7 @@ import SwiftUI
 /// totals footer below. The inspector beside it belongs to `WorkspaceView`.
 struct MainWindow: View {
     @Bindable var model: AppModel
-    @State private var toDelete: Buchung?
+    @State private var toDelete: [Buchung] = []
     @SceneStorage("columns") private var columns: TableColumnCustomization<Buchung>
 
     var body: some View {
@@ -25,15 +25,14 @@ struct MainWindow: View {
         // The table shrinks with the inspector; only the Unternehmen column gives.
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
-        .onDeleteCommand { toDelete = model.selected }
+        .onDeleteCommand { toDelete = model.selectedBookings }
         .confirmationDialog(
-            "Buchung löschen?",
-            isPresented: deleteConfirmationPresented,
-            presenting: toDelete
-        ) { buchung in
-            Button("Löschen", role: .destructive) { model.delete(buchung) }
-        } message: { buchung in
-            Text("„\(buchung.titel)“ wird endgültig entfernt, mit Belegen, die keine andere Buchung trägt.")
+            deleteConfirmationTitle,
+            isPresented: deleteConfirmationPresented
+        ) {
+            Button("Löschen", role: .destructive) { model.delete(toDelete) }
+        } message: {
+            Text(deleteConfirmationMessage)
         }
         .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
             Button("OK") {}
@@ -136,33 +135,45 @@ struct MainWindow: View {
                 .defaultVisibility(.hidden)
         }
         .contextMenu(forSelectionType: Buchung.ID.self) { ids in
-            if let id = ids.compactMap(\.self).first {
+            let selectedIDs = Set(ids.compactMap(\.self))
+            if selectedIDs.isEmpty == false {
                 Button("Löschen", role: .destructive) {
-                    model.selection = id
-                    toDelete = model.buchungen.first { $0.id == id }
+                    model.selection = selectedIDs
+                    toDelete = model.selectedBookings
                 }
             }
         }
     }
 
-    /// `Buchung.ID` is the optional row id of the record, the table selection
-    /// therefore one optional deeper than the id the app works with.
-    private var selectionBinding: Binding<Buchung.ID?> {
+    /// Stored rows always have an id. The table still sees the optional id from
+    /// `Buchung`, so selection drops the impossible nil value at the boundary.
+    private var selectionBinding: Binding<Set<Buchung.ID>> {
         Binding(
-            get: { model.selection.map { Optional($0) } },
-            set: { model.selection = $0 ?? nil }
+            get: { Set(model.selection.map { Optional($0) }) },
+            set: { model.selection = Set($0.compactMap(\.self)) }
         )
     }
 
     private var deleteConfirmationPresented: Binding<Bool> {
         Binding(
-            get: { toDelete != nil },
+            get: { toDelete.isEmpty == false },
             set: {
                 if $0 == false {
-                    toDelete = nil
+                    toDelete = []
                 }
             }
         )
+    }
+
+    private var deleteConfirmationTitle: String {
+        toDelete.count == 1 ? "Buchung löschen?" : "Buchungen löschen?"
+    }
+
+    private var deleteConfirmationMessage: String {
+        if let buchung = toDelete.first, toDelete.count == 1 {
+            return "„\(buchung.titel)“ wird endgültig entfernt, mit Belegen, die keine andere Buchung trägt."
+        }
+        return "\(toDelete.count) Buchungen werden endgültig entfernt, mit Belegen, die keine verbleibende Buchung trägt."
     }
 
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {

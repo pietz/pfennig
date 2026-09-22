@@ -1,7 +1,7 @@
 import GRDB
 import GRDBSQLite
 
-/// The first of the three limits from spec section 4: what the agent's sql
+/// The authorization boundary: what the agent's sql
 /// tool may compile at all. SQLite asks this function once per action while it
 /// compiles a statement, so a denied action fails the statement before a single
 /// row is read or written.
@@ -31,7 +31,8 @@ public enum SQLAuthorizer {
     /// The decision for one action code and its first argument, usually the
     /// table name. Everything the table below does not name is denied: DELETE,
     /// DROP, ALTER, CREATE, PRAGMA, ATTACH, transactions of the agent's own
-    /// and every access outside `buchungen`, including `sqlite_master`.
+    /// and every access outside `readable` and `writable`, including
+    /// `sqlite_master`.
     static func allows(action: CInt, name: String?) -> Bool {
         switch action {
         case SQLITE_SELECT, SQLITE_FUNCTION: true

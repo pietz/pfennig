@@ -37,3 +37,16 @@ Die Arbeitsregeln stehen in `AGENTS.md`, der aktuelle Stand in `docs/status.md` 
 ## Lizenz
 
 GNU General Public License, Version 3. Siehe `LICENSE`.
+
+## Optionaler Agenten-Akzeptanztest
+
+`scripts/test-live.sh` prüft mit Luna und niedrigem Denkaufwand eine synthetische
+PDF-Rechnung samt erneutem Import sowie die Ablehnung eines CSV-Kontoauszugs
+ohne Buchungsänderung. Der Aufruf verwendet den in der App eingerichteten API-Schlüssel aus dem
+Schlüsselbund und verursacht API-Kosten. Er arbeitet ausschließlich mit erzeugten
+Testdokumenten und einem temporären Archiv, das danach entfernt wird.
+
+Normale Tests und CI führen diesen Test nicht aus. Der Live-Test bewertet die
+resultierenden Buchungen statt einer bestimmten Antwort oder SQL-Abfolge. Ein
+Fehlschlag ist zu untersuchen; ein einzelner erfolgreicher Lauf belegt keine
+allgemeine Importgenauigkeit. Private Belege werden nie als Testdaten verwendet.

@@ -11,7 +11,7 @@ public struct SQLResult: Sendable {
 }
 
 /// The agent's one tool. It runs a single SQL statement against the app
-/// database inside the three limits of spec section 4: the authorizer decides
+/// database inside three limits: the authorizer decides
 /// what may be compiled, the statement runs in a transaction whose commit
 /// depends on the validation rules, and every touched booking leaves a row in
 /// `aktivitaeten`.
@@ -20,7 +20,7 @@ public final class SQLTool: Sendable {
     public static let rowLimit = 50
 
     /// What the authorizer lets through, in one sentence. The tool says it in
-    /// its refusals, the instructions and the tool description repeat it.
+    /// its refusals and the tool description repeats it.
     public static let allowed = "Erlaubt sind SELECT, INSERT und UPDATE auf buchungen sowie SELECT auf afa_tabelle."
 
     private let repository: Repository
@@ -137,7 +137,10 @@ public final class SQLTool: Sendable {
             // id, geprueft_am und Zeitstempel setzt Swift.
             // Eine neue Zeile und jede Agentenänderung bleiben damit ungeprüft.
             let saved = try Repository.save(buchung, akteur: .agent, before: previous, in: db)
+            // Der Agent bekommt zusätzlich die Leseregeln, damit er ein
+            // missverstandenes Dokument im selben Lauf noch einmal ansieht.
             var messages = ValidationRules.validate(saved, profile: profile)
+                + ValidationRules.leseregeln.compactMap { $0(saved, profile) }
             // belege gehört dem Agenten, aber nur mit Dateien, die es gibt.
             let unknown = try Repository.unknownFiles(saved.belege, in: db)
             if unknown.isEmpty == false {

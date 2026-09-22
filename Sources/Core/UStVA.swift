@@ -2,7 +2,7 @@ import Foundation
 
 /// The values of one Umsatzsteuer-Voranmeldung, computed from the bookings.
 ///
-/// Ist-Versteuerung and the current tax treatment:
+/// Ist-Versteuerung with the following supported rules:
 ///
 /// - **Umsatzsteuer auf Einnahmen** arises per payment, in the period of the
 ///   payment date. A partial payment carries its proportional share of the
@@ -132,7 +132,7 @@ public struct UStVA: Hashable, Sendable {
             for (stelle, zahlung) in zahlungen.enumerated() {
                 guard zeitraum.enthaelt(max(buchung.datum, zahlung.datum)) else { continue }
                 let steuer = anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }
-                buchen(66, abziehbar(steuer, privatanteil: buchung.privatanteilProzent), in: &werte)
+                buchen(66, EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent), in: &werte)
             }
 
         case .reverseCharge:
@@ -146,9 +146,6 @@ public struct UStVA: Hashable, Sendable {
             buchen(rows.bemessung, buchung.netto, in: &werte)
             buchen(rows.steuer, steuer, in: &werte)
             if profile.kleinunternehmer == false {
-                // §15 Abs. 1 Satz 2's ten-percent rule is limited to goods.
-                // This supported RC flow is for services, so Kz 67 keeps the
-                // business share even when business use is below ten percent.
                 buchen(
                     67,
                     EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent),
@@ -169,8 +166,14 @@ public struct UStVA: Hashable, Sendable {
                 buchen(kennzahl, position.netto, in: &werte)
                 erwerbsteuer = erwerbsteuer + Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
             }
-            if profile.kleinunternehmer == false {
-                buchen(61, abziehbar(erwerbsteuer, privatanteil: buchung.privatanteilProzent), in: &werte)
+            // This treatment identifies goods: §15 Abs. 1 Satz 2 excludes
+            // input VAT below ten percent business use, unlike services.
+            if profile.kleinunternehmer == false, buchung.privatanteilProzent <= 90 {
+                buchen(
+                    61,
+                    EUeR.ohnePrivatanteil(erwerbsteuer, prozent: buchung.privatanteilProzent),
+                    in: &werte
+                )
             }
 
         case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, .unklar:
@@ -186,12 +189,6 @@ public struct UStVA: Hashable, Sendable {
         buchung.zahlungen.enumerated()
             .sorted { ($0.element.datum, $0.offset) < ($1.element.datum, $1.offset) }
             .map(\.element)
-    }
-
-    /// The deductible share of the input VAT: none below ten percent of
-    /// business use, §15 Abs. 1 Satz 2 UStG, otherwise the business share.
-    static func abziehbar(_ steuer: Cent, privatanteil: Int) -> Cent {
-        privatanteil > 90 ? .null : EUeR.ohnePrivatanteil(steuer, prozent: privatanteil)
     }
 
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {

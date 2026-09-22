@@ -46,7 +46,8 @@ public final class Repository: Sendable {
     }
 
     /// Marks a booking as reviewed by the user after checking the current
-    /// persisted row against the same rules the agent uses.
+    /// persisted row against the rules that make a booking invalid. The
+    /// reading rules are the agent's alone; the user has the document.
     public func confirm(id: Int64) throws {
         try database.write { db in
             guard var buchung = try Buchung.fetchOne(db, key: id) else {
@@ -69,14 +70,18 @@ public final class Repository: Sendable {
         try database.write { try Repository.delete(id: id, in: $0) }
     }
 
-    /// The user's delete: removes the booking and, with it, every receipt no
-    /// other booking carries, so the same document runs fresh when it is
-    /// dropped again. Returns the removed files; the caller deletes their
-    /// originals in the archive.
-    public func deleteWithReceipts(id: Int64) throws -> [Datei] {
-        try database.write { db in
-            guard let buchung = try Repository.delete(id: id, in: db) else { return [] }
-            let orphaned = try buchung.belege.filter { fileID in
+    /// Deletes the selected bookings and their now-unreferenced receipts in one
+    /// transaction. The caller removes the returned archive originals afterward.
+    public func deleteWithReceipts(ids: Set<Int64>) throws -> [Datei] {
+        guard ids.isEmpty == false else { return [] }
+        return try database.write { db in
+            var receipts = Set<Int64>()
+            for id in ids.sorted() {
+                if let booking = try Repository.delete(id: id, in: db) {
+                    receipts.formUnion(booking.belege)
+                }
+            }
+            let orphaned = try receipts.sorted().filter { fileID in
                 try Bool.fetchOne(
                     db,
                     sql: "SELECT COUNT(*) = 0 FROM buchungen, json_each(buchungen.belege) WHERE json_each.value = ?",
@@ -209,9 +214,18 @@ public final class Repository: Sendable {
         try database.read { try Anfrage.fetchAll($0, sql: "SELECT * FROM anfragen ORDER BY id") }
     }
 
-    public func finishRequest(
+    /// Durable outcome used by intake deduplication, independent of diagnostics.
+    public func finishRequest(id: Int64, status: Anfragestatus) throws {
+        try database.write { db in
+            try db.execute(
+                sql: "UPDATE anfragen SET beendet_am = ?, status = ? WHERE id = ?",
+                arguments: [Date(), status, id]
+            )
+        }
+    }
+
+    public func recordRequestTrace(
         id: Int64,
-        status: Anfragestatus,
         eingabeTokens: Int,
         ausgabeTokens: Int,
         konversation: String
@@ -220,10 +234,10 @@ public final class Repository: Sendable {
             try db.execute(
                 sql: """
                 UPDATE anfragen
-                SET beendet_am = ?, status = ?, eingabe_tokens = ?, ausgabe_tokens = ?, konversation = ?
+                SET eingabe_tokens = ?, ausgabe_tokens = ?, konversation = ?
                 WHERE id = ?
                 """,
-                arguments: [Date(), status, eingabeTokens, ausgabeTokens, konversation, id]
+                arguments: [eingabeTokens, ausgabeTokens, konversation, id]
             )
         }
     }

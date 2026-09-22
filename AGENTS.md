@@ -2,7 +2,7 @@
 
 ## Orientation
 
-Pfennig is a native, local macOS bookkeeping app for one German freelancer or sole proprietor using EÜR and Ist-Versteuerung, with regular VAT or Kleinunternehmer status. It prepares UStVA XML and EÜR values; the user checks and submits them outside the app. No multi-user or multi-client mode, no cloud sync.
+Pfennig is a native, local macOS bookkeeping app for one German freelancer or sole proprietor using EÜR and Ist-Versteuerung, with regular VAT or Kleinunternehmer status. It prepares UStVA XML and EÜR values; the user checks and submits them outside the app. No multi-user or multi-client mode, no cloud sync. No bank connections, invoice creation, balance-sheet accounting or payroll.
 
 - Read `.memory/MEMORY.md` at session start for owner decisions, scope boundaries and their reasons.
 - `docs/status.md` records completed work; `docs/backlog.md` and GitHub issues hold priorities and open questions. An issue is not an implementation mandate.

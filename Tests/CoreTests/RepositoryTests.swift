@@ -244,6 +244,25 @@ private func bestaetigungsfehler(
     try bestaetigungsfehler(repository, buchung: buchung, erwartet: "kategorie fehlt")
 }
 
+/// Eine mehrzeilige Rechnung rundet je Zeile und weicht dadurch stärker ab, als
+/// die Toleranz erlaubt. Der Nutzer hat den Beleg vor sich und darf bestätigen.
+@Test func bestaetigungLaesstEineSteuerAbweichungZu() throws {
+    let repository = try Repository.inMemory()
+    let schief = [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1895))]
+    let saved = try repository.save(beispiel(positionen: schief), akteur: .agent)
+    try repository.confirm(id: #require(saved.id))
+    #expect(try repository.allBookings().first?.geprueftAm != nil)
+}
+
+@Test func bestaetigungLaesstEinKuenftigesDatumZu() throws {
+    let repository = try Repository.inMemory()
+    var buchung = beispiel()
+    buchung.datum = LocalDate(Date().addingTimeInterval(30 * 86400))
+    let saved = try repository.save(buchung, akteur: .agent)
+    try repository.confirm(id: #require(saved.id))
+    #expect(try repository.allBookings().first?.geprueftAm != nil)
+}
+
 @Test func nutzerAenderungErhaeltBestaetigung() throws {
     let repository = try Repository.inMemory()
     var buchung = try repository.save(beispiel(), akteur: .nutzer)
@@ -366,7 +385,7 @@ private func bestaetigungsfehler(
         akteur: .nutzer
     )
 
-    let entfernt = try repository.deleteWithReceipts(id: #require(erste.id))
+    let entfernt = try repository.deleteWithReceipts(ids: [#require(erste.id)])
 
     // The receipt only this booking carried is gone and its hash is unknown
     // again; the shared one stays with the other booking.
@@ -374,7 +393,63 @@ private func bestaetigungsfehler(
     #expect(try repository.fileID(sha256: "bbb") == nil)
     #expect(try repository.fileID(sha256: "aaa") == geteilt)
     #expect(try repository.allBookings().count == 1)
-    #expect(try repository.deleteWithReceipts(id: 999).isEmpty)
+    #expect(try repository.deleteWithReceipts(ids: [999]).isEmpty)
+}
+
+@Test func bulkDeleteRetainsSharedReceiptsUntilLastBooking() throws {
+    let repository = try Repository.inMemory()
+    let shared = try repository.saveFile(Datei(sha256: "shared", dateiname: "shared.txt", endung: "txt", groesse: 1))
+    let orphan = try repository.saveFile(Datei(sha256: "orphan", dateiname: "orphan.txt", endung: "txt", groesse: 1))
+    var booking = beispiel()
+    booking.belege = [shared, orphan]
+    let first = try #require(repository.save(booking, akteur: .nutzer).id)
+    let second = try #require(repository.save(booking, akteur: .nutzer).id)
+    booking.belege = [shared]
+    let survivor = try #require(repository.save(booking, akteur: .nutzer).id)
+
+    let removed = try repository.deleteWithReceipts(ids: [first, second, 999])
+    #expect(removed.map(\.id) == [orphan])
+    #expect(try repository.fileID(sha256: "orphan") == nil)
+    #expect(try repository.fileID(sha256: "shared") == shared)
+    #expect(try repository.deleteWithReceipts(ids: []).isEmpty)
+    #expect(try repository.deleteWithReceipts(ids: [999]).isEmpty)
+    #expect(try repository.deleteWithReceipts(ids: [survivor]).map(\.id) == [shared])
+    #expect(try repository.fileID(sha256: "shared") == nil)
+}
+
+@Test func bulkDeleteRollsBackBookingsReceiptsAndLogsOnFailure() throws {
+    let repository = try Repository.inMemory()
+    let receipt = try repository.saveFile(Datei(
+        sha256: "rollback",
+        dateiname: "receipt.txt",
+        endung: "txt",
+        groesse: 1
+    ))
+    var booking = beispiel()
+    booking.belege = [receipt]
+    let first = try #require(repository.save(booking, akteur: .nutzer).id)
+    let second = try #require(repository.save(booking, akteur: .nutzer).id)
+    try repository.database.write { db in
+        try db.execute(sql: """
+        CREATE TRIGGER prevent_receipt_delete BEFORE DELETE ON dateien
+        BEGIN SELECT RAISE(ABORT, 'synthetic failure'); END
+        """)
+    }
+    #expect(throws: (any Error).self) {
+        _ = try repository.deleteWithReceipts(ids: [first, second])
+    }
+    #expect(try repository.allBookings().count == 2)
+    #expect(try repository.fileID(sha256: "rollback") == receipt)
+    let deletionCount = try repository.database.read { db in
+        try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM aktivitaeten WHERE nachher IS NULL")
+    }
+    #expect(deletionCount == 0)
+
+    // Import rollback uses the plain delete and must keep the file and hash.
+    try repository.delete(id: first)
+    try repository.delete(id: second)
+    #expect(try repository.allBookings().isEmpty)
+    #expect(try repository.fileID(sha256: "rollback") == receipt)
 }
 
 @Test func belegLaesstSichVonEinerBuchungNehmen() throws {
@@ -417,9 +492,9 @@ private func bestaetigungsfehler(
 @Test func anfragenWerdenGestartetUndBeendet() throws {
     let repository = try Repository.inMemory()
     let id = try repository.startRequest(dateiId: 1, modell: "gpt-5")
-    try repository.finishRequest(
+    try repository.finishRequest(id: id, status: .erfolg)
+    try repository.recordRequestTrace(
         id: id,
-        status: .erfolg,
         eingabeTokens: 1200,
         ausgabeTokens: 300,
         konversation: "[{\"rolle\":\"agent\"}]"
@@ -448,6 +523,29 @@ private func bestaetigungsfehler(
     #expect(eintraege.last?.vorher?.titel == saved.titel)
     #expect(eintraege.last?.nachher == nil)
     #expect(eintraege.last?.akteur == .nutzer)
+}
+
+@Test func mehrereBuchungenWerdenGemeinsamGeloeschtUndProtokolliert() throws {
+    let repository = try Repository.inMemory()
+    let erste = try repository.save(beispiel(), akteur: .nutzer)
+    var zweiteBuchung = beispiel()
+    zweiteBuchung.titel = "Monitor"
+    let zweite = try repository.save(zweiteBuchung, akteur: .nutzer)
+    var bleibendeBuchung = beispiel()
+    bleibendeBuchung.titel = "Tastatur"
+    let bleibende = try repository.save(bleibendeBuchung, akteur: .nutzer)
+    let ids = try Set([#require(erste.id), #require(zweite.id)])
+
+    _ = try repository.deleteWithReceipts(ids: ids)
+
+    #expect(try repository.allBookings().map(\.id) == [bleibende.id])
+    let loeschungen = try repository.database.read { db in
+        try Aktivitaet.fetchAll(db, sql: "SELECT * FROM aktivitaeten WHERE nachher IS NULL ORDER BY id")
+    }
+    #expect(loeschungen.count == 2)
+    #expect(Set(loeschungen.map(\.buchungId)) == ids)
+    #expect(Set(loeschungen.compactMap { $0.vorher?.titel }) == ["Bürostuhl", "Monitor"])
+    #expect(loeschungen.allSatisfy { $0.akteur == .nutzer })
 }
 
 @Test func profilUeberstehtDenRundlauf() throws {

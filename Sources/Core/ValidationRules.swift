@@ -3,24 +3,24 @@ import Foundation
 /// What the schema cannot express. The CHECK constraints guarantee form and
 /// types, these rules guarantee content. Every rule is one small function that
 /// answers with a German sentence when the booking does not hold; a new rule
-/// is a new function in `alle`.
+/// is a new function in `alle` or, if it only catches a misread document, in
+/// `leseregeln`.
 public enum ValidationRules {
     /// A rate is met when net times rate and the written tax differ by at most
     /// one cent, which is the rounding the document itself may have used.
     public static let toleranz = Cent(1)
 
-    /// A document dated a few days ahead is a normal invoice; anything beyond
-    /// that is a misread year or day.
+    /// A document dated a few days ahead needs no rereading; beyond that,
+    /// the agent should check for a misread year or day.
     public static let vorlaufTage = 3
 
     public typealias Regel = @Sendable (Buchung, Profil) -> String?
 
+    /// What makes a booking invalid, no matter who wrote it.
     public static let alle: [Regel] = [
         mindestensEinePosition,
-        steuerPasstZumSatz,
         kategorieIstBekannt,
         privatanteilIstGueltig,
-        datumLiegtNichtWeitInDerZukunft,
         reverseChargeNurBeiAuslaendischerGegenpartei,
         innergemeinschaftlicherErwerbNurBeiEUAusgaben,
         kleinunternehmerNurBeiEigenenEinnahmen,
@@ -30,6 +30,15 @@ public enum ValidationRules {
         empfaengersteuerAusgabeBrauchtSatz,
         zahlungenSindPlausibel,
         nutzungsdauerNurBeiAusgaben
+    ]
+
+    /// What catches the agent misreading a document. A booking that breaks one
+    /// of these may still be true: an invoice rounds its lines differently than
+    /// the total, or it really is dated ahead. The user who confirms has the
+    /// document in front of them, so only the agent's writes run these.
+    public static let leseregeln: [Regel] = [
+        steuerPasstZumSatz,
+        datumLiegtNichtWeitInDerZukunft
     ]
 
     /// All complaints about one booking, empty when it passes.
@@ -52,7 +61,8 @@ public enum ValidationRules {
             guard abweichung > toleranz else { continue }
             return """
             Position \(nummer + 1): steuer \(position.steuer.value) passt nicht zu netto \
-            \(position.netto.value) bei \(position.steuersatz) Prozent, erwartet \(erwartet.value) Cent.
+            \(position.netto.value) bei \(position.steuersatz) Prozent. Lies die Beträge im Beleg noch \
+            einmal und lege für jeden Steuersatz und jede Rechnungszeile eine eigene Position an.
             """
         }
         return nil
@@ -122,15 +132,19 @@ public enum ValidationRules {
         return "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
     }
 
-    /// The 2026 form has lines for 19 and 7 percent only. Anything else would
-    /// fall out of the UStVA without a word, so it is refused here instead.
+    /// Zero-rate bookings use another treatment in either direction. Pfennig
+    /// supports domestic income at 19 or 7 percent only. Purchase invoices may
+    /// carry other rates, including the average rates of §24 UStG; Kz 66 takes
+    /// the written invoice tax.
     static let inlandNurMit19Oder7: Regel = { buchung, _ in
         guard buchung.steuerbehandlung == .inland else { return nil }
-        guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+        if buchung.positionen.contains(where: { $0.steuersatz == 0 }) {
+            return "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
+        }
+        guard buchung.richtung == .einnahme,
+              let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
         else { return nil }
-        return fremd.steuersatz == 0
-            ? "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
-            : "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
+        return "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
     }
 
     static let empfaengersteuerOhneRechnungssteuer: Regel = { buchung, _ in
