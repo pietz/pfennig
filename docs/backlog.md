@@ -8,12 +8,18 @@ Automatischer Dateieingang nur für Rechnungen, Quittungen und Gutschriften. Kon
 
 Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
-## Danach
+## Nächste Schritte
 
-- **Chat [#16](https://github.com/pietz/pfennig/issues/16).** Als Produktfunktion entschieden, erster Umfang noch abzustimmen. Unterlagen mit Auftrag bearbeiten, Fragen und Rückfragen ermöglichen. Keine zweite Buchhaltungslogik.
-- **Dateienübersicht [#17](https://github.com/pietz/pfennig/issues/17).** Gespeicherte Dateien und ihre Buchungsverknüpfungen sichtbar machen, auch ohne zugehörige Buchung. Platz und Aktionen noch abzustimmen.
+1. Die fünf Vorschläge aus dem Handoff abschließen: angenommene Prompt-Präzisierungen umsetzen, verworfene Regeln nicht bauen, offene `nur_zahlung`-Frage entscheiden oder ausdrücklich vertagen.
+2. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #3, #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
+3. Übrige offene Bestandsthemen durchgehen und priorisieren, bevor neue größere Funktionen beginnen. Keine pauschale Umsetzung aller Issues.
 
-## Geparkt
+## Größere Funktionen zurückgestellt
+
+- **Chat [#16](https://github.com/pietz/pfennig/issues/16).** Kommt grundsätzlich, aber erst nach den Bestandsthemen. Besprochene Richtung: nativer Chatbereich, Gesprächsmenü ohne zweite Sidebar, neues Gespräch und manuelles Löschen, dauerhafter nötiger Verlauf als JSON ohne Dateibytes, bestehende Tools und gemeinsamer Prompt. Details im Issue. Noch keine Implementierung, Schemaänderung oder Archivumstellung.
+- **Dateienübersicht [#17](https://github.com/pietz/pfennig/issues/17).** Gespeicherte Dateien und ihre Buchungsverknüpfungen sichtbar machen, auch ohne zugehörige Buchung. Platz und Aktionen noch abzustimmen. Ebenfalls kein aktueller Umsetzungsauftrag.
+
+## Weitere offene Themen
 
 ### Eingang und Prüfung
 
