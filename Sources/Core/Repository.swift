@@ -53,7 +53,7 @@ public final class Repository: Sendable {
             guard var buchung = try Buchung.fetchOne(db, key: id) else {
                 throw CoreError.buchungNichtGefunden(id)
             }
-            let messages = try ValidationRules.validate(buchung, profile: Repository.profile(db))
+            let messages = try ValidationRules.issues(buchung, profile: Repository.profile(db)).map(\.message)
             guard messages.isEmpty else {
                 throw CoreError.validierungFehlgeschlagen(messages)
             }
@@ -122,6 +122,14 @@ public final class Repository: Sendable {
         if akteur == .agent {
             // Agent writes require fresh user confirmation; no-op tool calls never save here.
             updated.geprueftAm = nil
+        } else if updated.geprueftAm != nil {
+            let profile = try Repository.profile(db)
+            let incompleteBefore = before.map {
+                $0.geprueftAm != nil && ValidationRules.issues($0, profile: profile).isEmpty == false
+            } ?? false
+            if incompleteBefore || ValidationRules.issues(updated, profile: profile).isEmpty == false {
+                updated.geprueftAm = nil
+            }
         }
         updated.geaendertAm = now
         updated.erstelltAm = before?.erstelltAm ?? now
@@ -135,6 +143,18 @@ public final class Repository: Sendable {
 
     public func allBookings() throws -> [Buchung] {
         try database.read { try Repository.allBookings($0) }
+    }
+
+    /// Creation provenance already lives in the change log. Later manual edits
+    /// must not hide missing input on an agent-created draft.
+    public func agentCreatedBookingIDs() throws -> Set<Int64> {
+        try database.read { db in
+            try Set(Int64.fetchAll(db, sql: """
+            SELECT buchung_id FROM aktivitaeten
+            WHERE vorher IS NULL AND nachher IS NOT NULL AND akteur = 'agent'
+            AND buchung_id IN (SELECT id FROM buchungen)
+            """))
+        }
     }
 
     /// Feeds the table: a fresh list after every change of `buchungen`.

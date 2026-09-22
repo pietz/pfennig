@@ -21,6 +21,7 @@ private func eintrag(
         richtung: richtung,
         art: art,
         datum: belegdatum,
+        kategorie: richtung == .ausgabe ? "software" : "umsatz_dienstleistung",
         positionen: [position(netto, 19)],
         zahlungen: zahlungen
     )
@@ -45,7 +46,7 @@ struct StartTests {
         ]
         let aufgaben = Start.aufgaben(buchungen)
         for aufgabe in aufgaben {
-            #expect(aufgabe.anzahl == buchungen.filter(aufgabe.art.filter.includes).count)
+            #expect(aufgabe.anzahl == buchungen.filter { aufgabe.art.filter.includes($0) }.count)
         }
         // 1 und 3 haben keinen Beleg, 1 und 2 sind ungeprüft, 4 ist überfällig.
         #expect(anzahl(aufgaben, .belege) == 2)

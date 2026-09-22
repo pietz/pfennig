@@ -34,7 +34,7 @@ public enum Schema {
         waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
         originalbetrag TEXT,                        -- nur bei Fremdwährung, exakte Dezimalzahl in Haupteinheiten
         -- reverse_charge: grenzüberschreitende Dienstleistungen; innergemeinschaftlicher_erwerb: in Deutschland steuerpflichtiger Warenbezug aus einem anderen EU-Staat
-        steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'innergemeinschaftlicher_erwerb', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
+        steuerbehandlung TEXT CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'innergemeinschaftlicher_erwerb', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar')),
         -- JSON-Liste, vorzeichenbehaftete Beträge in EUR-Cent (negativ = Erstattung):
         -- [{"datum": "2026-09-14", "betrag": 11900}]
         zahlungen TEXT NOT NULL DEFAULT '[]',

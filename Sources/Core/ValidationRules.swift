@@ -1,8 +1,26 @@
 import Foundation
 
+/// The existing rules identify the control that can resolve each finding.
+public struct ValidationIssue: Hashable, Sendable {
+    public enum Field: Hashable, Sendable {
+        case title, category, taxTreatment, country, privateShare, usefulLife
+        case positions, rate(Int), tax(Int), payment(Int), currency, originalAmount
+    }
+
+    public let field: Field
+    public let message: String
+    /// Missing input can be saved as a draft, but never confirmed.
+    public let isMissing: Bool
+
+    init(_ field: Field, _ message: String, isMissing: Bool = false) {
+        self.field = field
+        self.message = message
+        self.isMissing = isMissing
+    }
+}
+
 /// What the schema cannot express. The CHECK constraints guarantee form and
-/// types, these rules guarantee content. Every rule is one small function that
-/// answers with a German sentence when the booking does not hold; a new rule
+/// types, these rules identify missing or invalid content at its field. A new rule
 /// is a new function in `alle` or, if it only catches a misread document, in
 /// `leseregeln`.
 public enum ValidationRules {
@@ -14,47 +32,85 @@ public enum ValidationRules {
     /// the agent should check for a misread year or day.
     public static let vorlaufTage = 3
 
-    public typealias Regel = @Sendable (Buchung, Profil) -> String?
+    public typealias Regel = @Sendable (Buchung, Profil) -> ValidationIssue?
 
-    /// What makes a booking invalid, no matter who wrote it.
+    /// What a complete, confirmable booking requires, regardless of its author.
     public static let alle: [Regel] = [
+        titelIstVorhanden,
+        steuerbehandlungIstVorhanden,
         mindestensEinePosition,
         kategorieIstBekannt,
         privatanteilIstGueltig,
         reverseChargeNurBeiAuslaendischerGegenpartei,
         innergemeinschaftlicherErwerbNurBeiEUAusgaben,
+        nichtSteuerbareEinnahmeBrauchtLand,
         kleinunternehmerNurBeiEigenenEinnahmen,
         kleinunternehmerKeineInlandseinnahmen,
         inlandNurMit19Oder7,
         empfaengersteuerOhneRechnungssteuer,
         empfaengersteuerAusgabeBrauchtSatz,
         zahlungenSindPlausibel,
-        nutzungsdauerNurBeiAusgaben
+        nutzungsdauerNurBeiAusgaben,
+        originalbetragHatWaehrung,
+        waehrungHatOriginalbetrag
     ]
 
     /// What catches the agent misreading a document. A booking that breaks one
     /// of these may still be true: an invoice rounds its lines differently than
     /// the total, or it really is dated ahead. The user who confirms has the
     /// document in front of them, so only the agent's writes run these.
-    public static let leseregeln: [Regel] = [
+    public static let leseregeln: [@Sendable (Buchung, Profil) -> String?] = [
         steuerPasstZumSatz,
         datumLiegtNichtWeitInDerZukunft
     ]
 
-    /// All complaints about one booking, empty when it passes.
+    /// Draft writes reject invalid values, but allow missing required input.
     public static func validate(_ buchung: Buchung, profile: Profil) -> [String] {
+        issues(buchung, profile: profile).filter { !$0.isMissing }.map(\.message)
+    }
+
+    /// Confirmation, review queues and field feedback use exactly these findings.
+    public static func issues(_ buchung: Buchung, profile: Profil) -> [ValidationIssue] {
         alle.compactMap { $0(buchung, profile) }
     }
 
     // MARK: - Die Regeln
 
     static let mindestensEinePosition: Regel = { buchung, _ in
-        buchung.positionen.isEmpty ? "Die Buchung braucht mindestens eine Position." : nil
+        buchung.positionen.isEmpty
+            ? ValidationIssue(.positions, "Mindestens eine Position mit den Belegbeträgen hinzufügen.", isMissing: true)
+            : nil
+    }
+
+    static let titelIstVorhanden: Regel = { buchung, _ in
+        buchung.titel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            ? ValidationIssue(.title, "Titel ergänzen.", isMissing: true) : nil
+    }
+
+    static let steuerbehandlungIstVorhanden: Regel = { buchung, _ in
+        buchung.steuerbehandlung == nil
+            ? ValidationIssue(
+                .taxTreatment,
+                "Steuerbehandlung auswählen, um die Buchung zu bestätigen.",
+                isMissing: true
+            ) : nil
+    }
+
+    static let originalbetragHatWaehrung: Regel = { buchung, _ in
+        guard buchung.originalbetrag != nil,
+              buchung.waehrung?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false else { return nil }
+        return ValidationIssue(.currency, "Währung des Originalbetrags ergänzen.", isMissing: true)
+    }
+
+    static let waehrungHatOriginalbetrag: Regel = { buchung, _ in
+        guard buchung.waehrung?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false,
+              buchung.originalbetrag == nil else { return nil }
+        return ValidationIssue(.originalAmount, "Originalbetrag in der angegebenen Währung ergänzen.", isMissing: true)
     }
 
     /// Recipient-tax positions carry the applicable rate, not invoice VAT.
-    static let steuerPasstZumSatz: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer == false else { return nil }
+    static let steuerPasstZumSatz: @Sendable (Buchung, Profil) -> String? = { buchung, _ in
+        guard buchung.steuerbehandlung?.empfaengerSchuldetSteuer != true else { return nil }
         for (nummer, position) in buchung.positionen.enumerated() {
             let erwartet = Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
             let abweichung = Cent(abs((position.steuer - erwartet).value))
@@ -70,25 +126,25 @@ public enum ValidationRules {
 
     static let kategorieIstBekannt: Regel = { buchung, _ in
         guard let kategorie = buchung.kategorie, kategorie.isEmpty == false else {
-            return "kategorie fehlt; sie muss ein Schlüssel aus der Kategorienliste sein."
+            return ValidationIssue(.category, "Kategorie auswählen.", isMissing: true)
         }
         guard let bekannt = Kategorie.alle.first(where: { $0.schluessel == kategorie }) else {
-            return "kategorie \"\(kategorie)\" steht nicht in der Kategorienliste."
+            return ValidationIssue(.category, "kategorie \"\(kategorie)\" steht nicht in der Kategorienliste.")
         }
         guard bekannt.richtung == buchung.richtung else {
-            return "Kategorie passt nicht zur Richtung."
+            return ValidationIssue(.category, "Kategorie passt nicht zur Richtung.")
         }
         return nil
     }
 
     static let privatanteilIstGueltig: Regel = { buchung, _ in
         guard (0 ... 100).contains(buchung.privatanteilProzent) else {
-            return "privatanteil_prozent muss zwischen 0 und 100 liegen."
+            return ValidationIssue(.privateShare, "privatanteil_prozent muss zwischen 0 und 100 liegen.")
         }
         return nil
     }
 
-    static let datumLiegtNichtWeitInDerZukunft: Regel = { buchung, _ in
+    static let datumLiegtNichtWeitInDerZukunft: @Sendable (Buchung, Profil) -> String? = { buchung, _ in
         let grenze = LocalDate(Date().addingTimeInterval(Double(vorlaufTage) * 86400))
         guard buchung.datum > grenze else { return nil }
         return "datum \(buchung.datum) liegt zu weit in der Zukunft."
@@ -96,9 +152,13 @@ public enum ValidationRules {
 
     static let reverseChargeNurBeiAuslaendischerGegenpartei: Regel = { buchung, _ in
         guard buchung.steuerbehandlung == .reverseCharge else { return nil }
-        let land = buchung.gegenparteiLand?.uppercased() ?? ""
+        let land = buchung.gegenparteiLand?.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() ?? ""
         guard land.isEmpty || land == "DE" else { return nil }
-        return "steuerbehandlung reverse_charge setzt eine ausländische Gegenpartei mit gegenpartei_land voraus."
+        return ValidationIssue(
+            .country,
+            "Reverse Charge braucht das Land der ausländischen Gegenpartei.",
+            isMissing: land.isEmpty
+        )
     }
 
     static let innergemeinschaftlicherErwerbNurBeiEUAusgaben: Regel = { buchung, _ in
@@ -107,7 +167,13 @@ public enum ValidationRules {
               let land = buchung.gegenparteiLand, land.isEmpty == false,
               Kennzahl.istEUStaat(land)
         else {
-            return "innergemeinschaftlicher_erwerb gilt nur für Ausgaben mit gegenpartei_land eines anderen EU-Staates."
+            let missing = buchung.richtung == .ausgabe
+                && buchung.gegenparteiLand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+            return ValidationIssue(
+                buchung.richtung == .ausgabe ? .country : .taxTreatment,
+                "Innergemeinschaftlicher Erwerb gilt nur für Ausgaben mit Gegenpartei in einem anderen EU-Staat.",
+                isMissing: missing
+            )
         }
         return nil
     }
@@ -115,12 +181,28 @@ public enum ValidationRules {
     static let kleinunternehmerNurBeiEigenenEinnahmen: Regel = { buchung, profile in
         guard buchung.steuerbehandlung == .kleinunternehmer else { return nil }
         guard buchung.richtung == .einnahme else {
-            return "steuerbehandlung kleinunternehmer gilt nur für eigene Einnahmen."
+            return ValidationIssue(.taxTreatment, "steuerbehandlung kleinunternehmer gilt nur für eigene Einnahmen.")
         }
         guard profile.kleinunternehmer else {
-            return "steuerbehandlung kleinunternehmer passt nicht, das Profil ist regelbesteuert."
+            return ValidationIssue(
+                .taxTreatment,
+                "steuerbehandlung kleinunternehmer passt nicht, das Profil ist regelbesteuert."
+            )
         }
         return nil
+    }
+
+    /// Kz 45 depends on whether the counterparty is abroad. Missing country
+    /// must not silently mean domestic when confirming non-taxable income.
+    static let nichtSteuerbareEinnahmeBrauchtLand: Regel = { buchung, _ in
+        guard buchung.richtung == .einnahme, buchung.steuerbehandlung == .nichtSteuerbar,
+              buchung.gegenparteiLand?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+        else { return nil }
+        return ValidationIssue(
+            .country,
+            "Land der Gegenpartei ergänzen, damit die UStVA-Zuordnung feststeht.",
+            isMissing: true
+        )
     }
 
     /// Taxable domestic income would populate UStVA fields that a
@@ -129,7 +211,10 @@ public enum ValidationRules {
         guard profile.kleinunternehmer,
               buchung.richtung == .einnahme,
               buchung.steuerbehandlung == .inland else { return nil }
-        return "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
+        return ValidationIssue(
+            .taxTreatment,
+            "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
+        )
     }
 
     /// Zero-rate bookings use another treatment in either direction. Pfennig
@@ -138,31 +223,41 @@ public enum ValidationRules {
     /// the written invoice tax.
     static let inlandNurMit19Oder7: Regel = { buchung, _ in
         guard buchung.steuerbehandlung == .inland else { return nil }
-        if buchung.positionen.contains(where: { $0.steuersatz == 0 }) {
-            return "steuerbehandlung inland mit Steuersatz 0 gehört auf steuerfrei oder nicht_steuerbar."
+        if let index = buchung.positionen.firstIndex(where: { $0.steuersatz == 0 }) {
+            return ValidationIssue(
+                .rate(index),
+                "Inland braucht einen positiven Steuersatz; andernfalls die Steuerbehandlung berichtigen."
+            )
         }
         guard buchung.richtung == .einnahme,
-              let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+              let index = buchung.positionen.firstIndex(where: { [19, 7].contains($0.steuersatz) == false })
         else { return nil }
-        return "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
+        return ValidationIssue(
+            .rate(index),
+            "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(buchung.positionen[index].steuersatz)."
+        )
     }
 
     static let empfaengersteuerOhneRechnungssteuer: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer else { return nil }
-        guard buchung.positionen.contains(where: { $0.steuer != .null }) else { return nil }
-        return "Bei \(buchung.steuerbehandlung.rawValue) steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
+        guard let treatment = buchung.steuerbehandlung, treatment.empfaengerSchuldetSteuer else { return nil }
+        guard let index = buchung.positionen.firstIndex(where: { $0.steuer != .null }) else { return nil }
+        return ValidationIssue(
+            .tax(index),
+            "Bei \(treatment.rawValue) steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
+        )
     }
 
     /// Own services abroad retain the foreign recipient's rate; only purchases
     /// require a supported German rate.
     static let empfaengersteuerAusgabeBrauchtSatz: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer, buchung.richtung == .ausgabe else { return nil }
-        guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
+        guard let treatment = buchung.steuerbehandlung, treatment.empfaengerSchuldetSteuer,
+              buchung.richtung == .ausgabe else { return nil }
+        guard let index = buchung.positionen.firstIndex(where: { [19, 7].contains($0.steuersatz) == false })
         else { return nil }
-        return """
-        Bei \(buchung.steuerbehandlung.rawValue) trägt jede Position den Steuersatz, den du als Leistungsempfänger schuldest: \
-        19 oder 7, nicht \(fremd.steuersatz).
-        """
+        return ValidationIssue(.rate(index), """
+        Bei \(treatment.rawValue) trägt jede Position den Steuersatz, den du als Leistungsempfänger schuldest: \
+        19 oder 7, nicht \(buchung.positionen[index].steuersatz).
+        """)
     }
 
     /// Eine Nutzungsdauer macht die Buchung zum Anlagegut; eine Einnahme kann
@@ -170,14 +265,17 @@ public enum ValidationRules {
     static let nutzungsdauerNurBeiAusgaben: Regel = { buchung, _ in
         guard let jahre = buchung.nutzungsdauerJahre else { return nil }
         guard buchung.richtung == .ausgabe else {
-            return "nutzungsdauer_jahre gibt es nur bei Ausgaben."
+            return ValidationIssue(.usefulLife, "nutzungsdauer_jahre gibt es nur bei Ausgaben.")
         }
-        return jahre > 0 ? nil : "nutzungsdauer_jahre muss größer als null sein."
+        return jahre > 0 ? nil : ValidationIssue(.usefulLife, "nutzungsdauer_jahre muss größer als null sein.")
     }
 
     static let zahlungenSindPlausibel: Regel = { buchung, _ in
-        for zahlung in buchung.zahlungen where zahlung.betrag == .null {
-            return "Eine Zahlung hat den Betrag 0; Zahlungen brauchen einen Betrag ungleich null."
+        for (index, zahlung) in buchung.zahlungen.enumerated() where zahlung.betrag == .null {
+            return ValidationIssue(
+                .payment(index),
+                "Eine Zahlung hat den Betrag 0; Zahlungen brauchen einen Betrag ungleich null."
+            )
         }
         return nil
     }

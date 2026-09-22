@@ -6,8 +6,10 @@ import SwiftUI
 struct StartView: View {
     @Bindable var model: AppModel
     @Binding var workspace: Workspace
-    /// Read once when the page appears; the deadlines depend on the rhythm.
-    @State private var profil = Profil()
+    private var profil: Profil {
+        model.currentProfile
+    }
+
     /// Only the three tiles follow this; To Dos and deadlines are about today.
     @State private var jahr = LocalDate.today().jahr
 
@@ -23,7 +25,6 @@ struct StartView: View {
             }
             .padding(20)
         }
-        .task { profil = model.profile() }
         .toolbar { toolbarItems }
     }
 
@@ -67,7 +68,7 @@ struct StartView: View {
 
     private var aufgabenCard: some View {
         Card("To Dos") {
-            CardRows(Start.aufgaben(model.buchungen)) { aufgabe in
+            CardRows(Start.aufgaben(model.buchungen, profile: profil)) { aufgabe in
                 Button { open(aufgabe) } label: { TaskRow(aufgabe: aufgabe) }
                     .disabled(aufgabe.erledigt)
             }

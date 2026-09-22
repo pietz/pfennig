@@ -26,7 +26,7 @@ public enum Start {
 
         public var erklaerung: String {
             switch self {
-            case .pruefen: "Vom Agenten angelegt oder geändert"
+            case .pruefen: "Unbestätigt oder unvollständig"
             case .belege: "Rechnung oder Beleg ohne Dokument"
             case .ueberfaellig: "Zahlungsziel überschritten"
             }
@@ -60,10 +60,10 @@ public enum Start {
     /// All three kinds, always and in the same order. A kind without bookings
     /// keeps its row and reads as done. Ignored bookings never count, as in the
     /// table.
-    public static func aufgaben(_ buchungen: [Buchung]) -> [Aufgabe] {
+    public static func aufgaben(_ buchungen: [Buchung], profile: Profil = Profil()) -> [Aufgabe] {
         let sichtbar = buchungen.filter { $0.art != .ignoriert }
         return Aufgabenart.allCases.map { art in
-            Aufgabe(art: art, anzahl: sichtbar.filter(art.filter.includes).count)
+            Aufgabe(art: art, anzahl: sichtbar.filter { art.filter.includes($0, profile: profile) }.count)
         }
     }
 

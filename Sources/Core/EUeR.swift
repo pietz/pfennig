@@ -264,7 +264,7 @@ public struct EUeR: Hashable, Sendable {
         }
         switch buchung.steuerbehandlung {
         case .reverseCharge, .steuerfrei, .nichtSteuerbar: return 16
-        case .inland, .kleinunternehmer, .innergemeinschaftlicherErwerb, .unklar: return kategorie.euerZeile
+        case .inland, .kleinunternehmer, .innergemeinschaftlicherErwerb, nil: return kategorie.euerZeile
         }
     }
 

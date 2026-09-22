@@ -141,7 +141,7 @@ public struct Kennzahl: Hashable, Sendable {
     /// foreign country stays out of the form; the Anleitung zu Zeile 36 keeps
     /// the domestic ones, among them Geschäftsveräußerungen und Innenumsätze,
     /// off that line.
-    public static func einnahme(behandlung: Steuerbehandlung, steuersatz: Decimal, land: String?) -> Int? {
+    public static func einnahme(behandlung: Steuerbehandlung?, steuersatz: Decimal, land: String?) -> Int? {
         switch behandlung {
         case .inland:
             switch steuersatz {
@@ -153,7 +153,7 @@ public struct Kennzahl: Hashable, Sendable {
         case .kleinunternehmer, .steuerfrei: 48
         case .reverseCharge: istEUStaat(land) ? 21 : 45
         case .nichtSteuerbar: istAusland(land) ? 45 : nil
-        case .innergemeinschaftlicherErwerb, .unklar: nil
+        case .innergemeinschaftlicherErwerb, nil: nil
         }
     }
 

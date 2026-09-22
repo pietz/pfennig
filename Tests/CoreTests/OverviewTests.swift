@@ -17,6 +17,7 @@ private func zeile(
         art: art,
         datum: LocalDate(jahr: 2026, monat: 9, tag: 14),
         titel: titel,
+        kategorie: richtung == .ausgabe ? "software" : "umsatz_dienstleistung",
         notizen: notizen,
         gegenparteiName: gegenpartei,
         positionen: [Position(
@@ -75,18 +76,18 @@ private let bestand = [
         Zahlung(datum: .today(), betrag: unreviewedAttached.brutto)
     ]
     #expect(unreviewedAttached.zahlungsstand == .bezahlt)
-    #expect(unreviewedAttached.reviewStatus == .zuPruefen)
+    #expect(unreviewedAttached.reviewStatus(profile: Profil()) == .zuPruefen)
 
     var reviewedMissing = zeile(id: 11, richtung: .ausgabe, art: .beleg, titel: "Beleg", netto: 1000)
     reviewedMissing.geprueftAm = Date(timeIntervalSince1970: 1)
-    #expect(reviewedMissing.reviewStatus == .belegFehlt)
+    #expect(reviewedMissing.reviewStatus(profile: Profil()) == .belegFehlt)
 
     let steuerzahlung = zeile(id: 12, richtung: .ausgabe, art: .steuerzahlung, titel: "USt", netto: 1000)
-    #expect(steuerzahlung.reviewStatus == .zuPruefen)
+    #expect(steuerzahlung.reviewStatus(profile: Profil()) == .zuPruefen)
 
     var nurZahlung = zeile(id: 13, richtung: .ausgabe, art: .nurZahlung, titel: "Konto", netto: 1000)
     nurZahlung.geprueftAm = Date(timeIntervalSince1970: 1)
-    #expect(nurZahlung.reviewStatus == .geprueft)
+    #expect(nurZahlung.reviewStatus(profile: Profil()) == .geprueft)
 }
 
 @Test func reviewFilterSeparatesUnreviewedAndMissingReceipts() {
@@ -142,8 +143,8 @@ private let bestand = [
         netto: 1000
     )
 
-    #expect(sonstiges.reviewStatus == .zuPruefen)
-    #expect(ignoriert.reviewStatus == .zuPruefen)
+    #expect(sonstiges.reviewStatus(profile: Profil()) == .zuPruefen)
+    #expect(ignoriert.reviewStatus(profile: Profil()) == .zuPruefen)
     #expect(
         Overview.visible(
             [sonstiges, ausgabe, ignoriert, anderesSuchergebnis],

@@ -27,9 +27,9 @@ public struct Position: Codable, Hashable, Sendable {
     public static func steuer(
         netto: Cent,
         steuersatz: Decimal,
-        steuerbehandlung: Steuerbehandlung
+        steuerbehandlung: Steuerbehandlung?
     ) -> Cent {
-        steuerbehandlung.empfaengerSchuldetSteuer
+        steuerbehandlung?.empfaengerSchuldetSteuer == true
             ? .null
             : steuer(netto: netto, steuersatz: steuersatz)
     }
@@ -75,7 +75,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
     /// The original amount in the foreign currency's exact major units. It is
     /// stored as decimal text and is never reduced to two decimal places.
     public var originalbetrag: Decimal?
-    public var steuerbehandlung: Steuerbehandlung
+    public var steuerbehandlung: Steuerbehandlung?
     public var zahlungen: [Zahlung]
     public var belege: [Int64]
     public var geprueftAm: Date?
@@ -100,7 +100,7 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         positionen: [Position] = [],
         waehrung: String? = nil,
         originalbetrag: Decimal? = nil,
-        steuerbehandlung: Steuerbehandlung,
+        steuerbehandlung: Steuerbehandlung? = nil,
         zahlungen: [Zahlung] = [],
         belege: [Int64] = [],
         geprueftAm: Date? = nil,
@@ -171,12 +171,20 @@ public struct Buchung: Codable, Hashable, Sendable, Identifiable, FetchableRecor
         return faelligkeit < .today() && zahlungsstand != .bezahlt
     }
 
-    /// A receipt is required only for document bookings whose art carries one.
-    /// This is an attachment signal, not a legal completeness judgement.
-    public var reviewStatus: ReviewStatus {
-        if [.rechnung, .beleg, .gutschrift].contains(art), belege.isEmpty {
+    /// Attachment task, separate from completeness of the accounting fields.
+    public var missingReceipt: Bool {
+        [.rechnung, .beleg, .gutschrift].contains(art) && belege.isEmpty
+    }
+
+    /// A historical timestamp never makes an incomplete booking all-clear.
+    public func needsReview(profile: Profil) -> Bool {
+        geprueftAm == nil || ValidationRules.issues(self, profile: profile).isEmpty == false
+    }
+
+    public func reviewStatus(profile: Profil) -> ReviewStatus {
+        if missingReceipt {
             return .belegFehlt
         }
-        return geprueftAm == nil ? .zuPruefen : .geprueft
+        return needsReview(profile: profile) ? .zuPruefen : .geprueft
     }
 }

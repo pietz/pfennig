@@ -26,7 +26,7 @@ func buchung(
     nutzungsdauer: Int? = nil,
     land: String? = nil,
     positionen: [Position],
-    behandlung: Steuerbehandlung = .inland,
+    behandlung: Steuerbehandlung? = .inland,
     zahlungen: [Zahlung] = []
 ) -> Buchung {
     Buchung(

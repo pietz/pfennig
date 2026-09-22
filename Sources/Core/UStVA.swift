@@ -80,10 +80,10 @@ public struct UStVA: Hashable, Sendable {
 
     /// A booking marked `ignoriert` is private or an internal transfer, a
     /// `steuerzahlung` is the settlement of this very tax, and a booking whose
-    /// treatment is `unklar` has nothing the form could take. None of the
+    /// treatment is missing has nothing the form could take. None of the
     /// three is an Umsatz.
     private static func zaehlt(_ buchung: Buchung) -> Bool {
-        buchung.art != .ignoriert && buchung.art != .steuerzahlung && buchung.steuerbehandlung != .unklar
+        buchung.art != .ignoriert && buchung.art != .steuerzahlung && buchung.steuerbehandlung != nil
     }
 
     /// Income counts per payment in the period of its date, with the
@@ -176,7 +176,7 @@ public struct UStVA: Hashable, Sendable {
                 )
             }
 
-        case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, .unklar:
+        case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, nil:
             // The supplier charged no deductible tax; there is nothing to report.
             return
         }

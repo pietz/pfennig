@@ -37,13 +37,11 @@ public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable
         }
     }
 
-    public func includes(_ buchung: Buchung) -> Bool {
+    public func includes(_ buchung: Buchung, profile: Profil = Profil()) -> Bool {
         switch self {
         case .alle: true
-        // This deliberately uses the timestamp, so an unreviewed missing
-        // receipt appears in both review queues.
-        case .zuPruefen: buchung.geprueftAm == nil
-        case .ohneBeleg: buchung.reviewStatus == .belegFehlt
+        case .zuPruefen: buchung.needsReview(profile: profile)
+        case .ohneBeleg: buchung.missingReceipt
         case .ueberfaellig: buchung.istUeberfaellig
         }
     }
@@ -68,12 +66,13 @@ public enum Overview {
         _ buchungen: [Buchung],
         filter: BookingFilter,
         reviewFilter: ReviewFilter = .alle,
-        search: String
+        search: String,
+        profile: Profil = Profil()
     ) -> [Buchung] {
         let term = search.trimmingCharacters(in: .whitespaces).lowercased()
         return buchungen.filter { buchung in
             guard buchung.art != .ignoriert else { return false }
-            guard reviewFilter.includes(buchung) else { return false }
+            guard reviewFilter.includes(buchung, profile: profile) else { return false }
             let matches = switch filter {
             case .alle: true
             case .einnahmen: buchung.richtung == .einnahme

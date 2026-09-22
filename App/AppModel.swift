@@ -11,6 +11,8 @@ final class AppModel {
     let intake: FileIntake
 
     var buchungen: [Buchung] = []
+    private(set) var agentCreatedBookingIDs: Set<Int64> = []
+    private(set) var currentProfile = Profil()
     var selection: Set<Int64> = []
     var filter: BookingFilter = .alle
     var reviewFilter: ReviewFilter = .alle
@@ -55,6 +57,7 @@ final class AppModel {
             try path.create()
             repository = try Repository(path: path.databaseFile)
             intake = try FileIntake(repository: repository, path: path)
+            currentProfile = try repository.profile()
         } catch {
             fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
         }
@@ -165,6 +168,7 @@ final class AppModel {
         loadExported()
         do {
             for try await incoming in repository.observeBookings() {
+                agentCreatedBookingIDs = try repository.agentCreatedBookingIDs()
                 buchungen = incoming
             }
         } catch {
@@ -173,7 +177,8 @@ final class AppModel {
     }
 
     var visible: [Buchung] {
-        Overview.visible(buchungen, filter: filter, reviewFilter: reviewFilter, search: search).sorted(using: sortOrder)
+        Overview.visible(buchungen, filter: filter, reviewFilter: reviewFilter, search: search, profile: currentProfile)
+            .sorted(using: sortOrder)
     }
 
     var selected: Buchung? {
@@ -204,7 +209,7 @@ final class AppModel {
         }
     }
 
-    /// A new expense of today with one empty position, selected in the table.
+    /// A new, incomplete expense of today, selected in the table.
     /// The toolbar must not hide it, so a running search or an income filter
     /// steps aside.
     func createBooking() {
@@ -213,9 +218,7 @@ final class AppModel {
             art: .beleg,
             datum: .today(),
             titel: "",
-            positionen: [Position(netto: .null, steuersatz: 19, steuer: .null)],
-            steuerbehandlung: .inland,
-            geprueftAm: Date()
+            positionen: []
         )
         guard let saved = save(buchung) else { return }
         if filter == .einnahmen {
@@ -311,12 +314,7 @@ final class AppModel {
     }
 
     func profile() -> Profil {
-        do {
-            return try repository.profile()
-        } catch {
-            errorMessage = "\(error)"
-            return Profil()
-        }
+        currentProfile
     }
 
     func aiSettings() -> AISettings {
@@ -339,6 +337,7 @@ final class AppModel {
     func saveProfile(_ profile: Profil) {
         do {
             try repository.saveProfile(profile)
+            currentProfile = profile
         } catch {
             errorMessage = "\(error)"
         }

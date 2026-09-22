@@ -263,7 +263,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         kategorie: String? = "software",
         datum: LocalDate = LocalDate(jahr: 2026, monat: 9, tag: 1),
         positionen: [Position] = [Position(netto: Cent(10000), steuersatz: 19, steuer: Cent(1900))],
-        steuerbehandlung: Steuerbehandlung = .inland,
+        steuerbehandlung: Steuerbehandlung? = .inland,
         land: String? = "DE",
         zahlungen: [Zahlung] = []
     ) -> Buchung {
@@ -292,7 +292,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     ) == nil)
     #expect(ValidationRules.kategorieIstBekannt(
         basis(richtung: .einnahme, kategorie: "software"), profile
-    ) == "Kategorie passt nicht zur Richtung.")
+    )?.message == "Kategorie passt nicht zur Richtung.")
 
     #expect(ValidationRules.datumLiegtNichtWeitInDerZukunft(basis(datum: spaeter), profile) != nil)
     #expect(ValidationRules.datumLiegtNichtWeitInDerZukunft(basis(datum: morgen), profile) == nil)
@@ -434,7 +434,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     let fehler = "steuerbehandlung inland ist bei Einnahmen eines Kleinunternehmers nicht zulässig."
 
     func einnahme(
-        behandlung: Steuerbehandlung,
+        behandlung: Steuerbehandlung?,
         land: String?,
         position: Position
     ) -> Buchung {
@@ -451,7 +451,7 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
     }
 
     let inland = einnahme(behandlung: .inland, land: "DE", position: steuerpflichtigePosition)
-    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(inland, profile) == fehler)
+    #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(inland, profile)?.message == fehler)
     #expect(ValidationRules.validate(inland, profile: profile).contains(fehler))
     #expect(ValidationRules.kleinunternehmerKeineInlandseinnahmen(inland, Profil()) == nil)
 

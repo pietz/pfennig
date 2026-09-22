@@ -14,7 +14,7 @@ func ungepruefteBuchungenBleibenInBeidenExporten(art: Art) {
         let euer = EUeR.calculate([eintrag], jahr: 2026, profile: regel)
         #expect(eintrag.geprueftAm == nil)
         #expect(q3.ungeprueft([eintrag]) == 1)
-        #expect(q3.unklareSteuerbehandlungen([eintrag]) == 0)
+        #expect(q3.fehlendeSteuerbehandlungen([eintrag]) == 0)
         #expect(ustva.betrag(richtung == .einnahme ? 81 : 66) == (richtung == .einnahme ? 10000 : 1900))
         #expect(euer.ergebnis == Cent(richtung == .einnahme ? 11900 : -11900))
         eintrag.geprueftAm = Date()
@@ -27,39 +27,39 @@ func ungepruefteBuchungenBleibenInBeidenExporten(art: Art) {
 func unklareSteuerBleibtSichtbarAuchNachBestaetigung(art: Art) {
     var eintrag = buchung(
         richtung: .ausgabe, art: art, datum: datum(2026, 7, 1), kategorie: "buerobedarf",
-        positionen: [position(10000, 0)], behandlung: .unklar,
+        positionen: [position(10000, 0)], behandlung: nil,
         zahlungen: [zahlung(2026, 7, 2, 10000)]
     )
     let jahr = Zeitraum(jahr: 2026, einteilung: .jahr)
     for geprueftAm: Date? in [nil, Date()] {
         eintrag.geprueftAm = geprueftAm
-        #expect(q3.unklareSteuerbehandlungen([eintrag]) == 1)
-        #expect(jahr.unklareSteuerbehandlungen([eintrag]) == 1)
+        #expect(q3.fehlendeSteuerbehandlungen([eintrag]) == 1)
+        #expect(jahr.fehlendeSteuerbehandlungen([eintrag]) == 1)
         #expect(UStVA.calculate([eintrag], zeitraum: q3, profile: regel).zeilen.isEmpty)
         #expect(EUeR.calculate([eintrag], jahr: 2026, profile: regel).ausgaben == Cent(10000))
     }
 }
 
-@Test func unklareSteuerbehandlungenZaehlenNurImBetroffenenZeitraumUndNieIgnorierte() {
+@Test func fehlendeSteuerbehandlungenZaehlenNurImBetroffenenZeitraumUndNieIgnorierte() {
     var eintrag = buchung(
         richtung: .ausgabe, datum: datum(2026, 7, 1), kategorie: "buerobedarf",
-        positionen: [position(10000, 0)], behandlung: .unklar,
+        positionen: [position(10000, 0)], behandlung: nil,
         zahlungen: [zahlung(2026, 10, 2, 10000), zahlung(2026, 10, 3, -1000)]
     )
-    #expect(q3.unklareSteuerbehandlungen([eintrag]) == 1)
-    #expect(q4.unklareSteuerbehandlungen([eintrag]) == 1)
-    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).unklareSteuerbehandlungen([eintrag]) == 1)
-    #expect(Zeitraum(jahr: 2025, einteilung: .jahr).unklareSteuerbehandlungen([eintrag]) == 0)
+    #expect(q3.fehlendeSteuerbehandlungen([eintrag]) == 1)
+    #expect(q4.fehlendeSteuerbehandlungen([eintrag]) == 1)
+    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).fehlendeSteuerbehandlungen([eintrag]) == 1)
+    #expect(Zeitraum(jahr: 2025, einteilung: .jahr).fehlendeSteuerbehandlungen([eintrag]) == 0)
     eintrag.art = .ignoriert
-    #expect(q3.unklareSteuerbehandlungen([eintrag]) == 0)
+    #expect(q3.fehlendeSteuerbehandlungen([eintrag]) == 0)
 }
 
 @Test func unklareSteuerbehandlungEinerAnlageBleibtInSpaeterenAfaJahrenSichtbar() {
     let anlage = buchung(
         richtung: .ausgabe, datum: datum(2025, 7, 1), kategorie: "hardware", nutzungsdauer: 3,
-        positionen: [position(300_000, 0)], behandlung: .unklar
+        positionen: [position(300_000, 0)], behandlung: nil
     )
-    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).unklareSteuerbehandlungen([anlage]) == 1)
-    #expect(q3.unklareSteuerbehandlungen([anlage]) == 0)
-    #expect(Zeitraum(jahr: 2029, einteilung: .jahr).unklareSteuerbehandlungen([anlage]) == 0)
+    #expect(Zeitraum(jahr: 2026, einteilung: .jahr).fehlendeSteuerbehandlungen([anlage]) == 1)
+    #expect(q3.fehlendeSteuerbehandlungen([anlage]) == 0)
+    #expect(Zeitraum(jahr: 2029, einteilung: .jahr).fehlendeSteuerbehandlungen([anlage]) == 0)
 }

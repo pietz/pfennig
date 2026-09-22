@@ -115,8 +115,12 @@ struct MainWindow: View {
             .customizationID("zahlung")
 
             TableColumn("Status") { buchung in
-                ReviewStatusLabel(status: buchung.reviewStatus)
-                    .ledgerCell()
+                ReviewStatusLabel(
+                    status: buchung.reviewStatus(profile: model.currentProfile),
+                    highlightsMissingInput: buchung.id.map { model.agentCreatedBookingIDs.contains($0) } == true
+                        && ValidationRules.issues(buchung, profile: model.currentProfile).isEmpty == false
+                )
+                .ledgerCell()
             }
             .width(84)
             .customizationID("status")
@@ -278,12 +282,13 @@ private struct PaymentLabel: View {
 
 private struct ReviewStatusLabel: View {
     let status: ReviewStatus
+    let highlightsMissingInput: Bool
 
     var body: some View {
         HStack(spacing: 5) {
             Image(systemName: status.symbol)
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(status.color)
+                .foregroundStyle(status == .geprueft ? Color.green : highlightsMissingInput ? .red : .secondary)
             Text(status.name)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
@@ -305,14 +310,6 @@ private extension ReviewStatus {
         case .geprueft: "Geprüft"
         case .zuPruefen: "Zu prüfen"
         case .belegFehlt: "Beleg fehlt"
-        }
-    }
-
-    var color: Color {
-        switch self {
-        case .geprueft: .green
-        case .zuPruefen: .yellow
-        case .belegFehlt: .red
         }
     }
 }

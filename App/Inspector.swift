@@ -36,6 +36,18 @@ struct Inspector: View {
         case notizen
     }
 
+    private var issues: [ValidationIssue] {
+        ValidationRules.issues(draft, profile: model.currentProfile)
+    }
+
+    private func feedback(_ field: ValidationIssue.Field, showsMessages: Bool = true) -> FieldFeedback {
+        FieldFeedback(
+            messages: issues.filter { $0.field == field }.map(\.message),
+            highlighted: draft.id.map { model.agentCreatedBookingIDs.contains($0) } == true,
+            showsMessages: showsMessages
+        )
+    }
+
     init(model: AppModel, buchung: Buchung) {
         self.model = model
         self.buchung = buchung
@@ -87,6 +99,10 @@ struct Inspector: View {
         .onChange(of: draft.nutzungsdauerJahre) { save() }
         .onChange(of: draft.positionen) { save() }
         .onChange(of: draft.steuerbehandlung) { _, treatment in
+            guard let treatment else {
+                save()
+                return
+            }
             for i in draft.positionen.indices {
                 draft.positionen[i].steuer = Position.steuer(
                     netto: draft.positionen[i].netto,
@@ -129,6 +145,7 @@ struct Inspector: View {
             TextField("Datum", value: $draft.datum, format: .deutsch)
             TextField("Titel", text: $draft.titel)
                 .focused($focus, equals: .titel)
+                .modifier(feedback(.title))
             TextField("Belegnummer", text: text(\.belegnummer))
                 .focused($focus, equals: .belegnummer)
             HStack {
@@ -144,11 +161,12 @@ struct Inspector: View {
                 .focused($focus, equals: .gegenpartei)
             TextField("Land", text: text(\.gegenparteiLand))
                 .focused($focus, equals: .land)
+                .modifier(feedback(.country))
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
                 .focused($focus, equals: .ustid)
 
             Picker("Kategorie", selection: $draft.kategorie) {
-                Text("Keine").tag(String?.none)
+                Text("Bitte auswählen").tag(String?.none)
                 ForEach(Kategorie.fuer(draft.richtung)) { Text($0.name).tag(String?.some($0.schluessel)) }
                 // A key that is not in the list still needs an entry, otherwise
                 // choosing anything else would drop it silently.
@@ -156,10 +174,13 @@ struct Inspector: View {
                     Text(Kategorie.name(fremde)).tag(String?.some(fremde))
                 }
             }
+            .modifier(feedback(.category))
 
             TextField("Privatanteil in Prozent", value: $draft.privatanteilProzent, format: .number)
-            if draft.richtung == .ausgabe {
+                .modifier(feedback(.privateShare))
+            if draft.richtung == .ausgabe || draft.nutzungsdauerJahre != nil {
                 TextField("Nutzungsdauer in Jahren", value: $draft.nutzungsdauerJahre, format: .number)
+                    .modifier(feedback(.usefulLife))
             }
         }
     }
@@ -211,19 +232,25 @@ struct Inspector: View {
                         Text("%").foregroundStyle(.secondary)
                     }
                     .frame(width: 70)
+                    .modifier(feedback(.rate(i), showsMessages: false))
                     TextField("Steuer", value: position(i, \.steuer, fallback: .null), format: .euro)
                         .labelsHidden()
-                        .disabled(draft.steuerbehandlung.empfaengerSchuldetSteuer)
+                        .disabled(draft.steuerbehandlung?.empfaengerSchuldetSteuer == true && draft.positionen[i]
+                            .steuer == .null)
+                        .modifier(feedback(.tax(i), showsMessages: false))
                     Button("Position entfernen", systemImage: "minus.circle") { removePosition(i) }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                         .disabled(draft.positionen.count == 1)
                 }
+                feedback(.rate(i)).messageView
+                feedback(.tax(i)).messageView
             }
 
             Button("Position hinzufügen", systemImage: "plus") {
                 draft.positionen.append(Position(netto: .null, steuersatz: 19, steuer: .null))
             }
+            .modifier(feedback(.positions))
 
             if draft.waehrung != nil || draft.originalbetrag != nil || foreignCurrency {
                 LabeledContent("Original") {
@@ -231,12 +258,16 @@ struct Inspector: View {
                         TextField("Betrag", text: $originalAmountText)
                             .labelsHidden()
                             .focused($focus, equals: .originalbetrag)
+                            .modifier(feedback(.originalAmount, showsMessages: false))
                         TextField("Währung", text: text(\.waehrung))
                             .labelsHidden()
                             .focused($focus, equals: .waehrung)
                             .frame(width: 60)
+                            .modifier(feedback(.currency, showsMessages: false))
                     }
                 }
+                feedback(.originalAmount).messageView
+                feedback(.currency).messageView
             } else {
                 Button("Fremdwährung…") { foreignCurrency = true }
             }
@@ -315,8 +346,10 @@ struct Inspector: View {
     private var steuer: some View {
         Section("Steuer") {
             Picker("Behandlung", selection: $draft.steuerbehandlung) {
-                ForEach(Steuerbehandlung.allCases, id: \.self) { Text($0.name).tag($0) }
+                Text("Bitte auswählen").tag(Steuerbehandlung?.none)
+                ForEach(Steuerbehandlung.allCases, id: \.self) { Text($0.name).tag(Steuerbehandlung?.some($0)) }
             }
+            .modifier(feedback(.taxTreatment))
             LabeledContent("davon USt", value: draft.steuer.formatted)
         }
     }
@@ -332,6 +365,7 @@ struct Inspector: View {
                         .frame(width: 90)
                     TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
                         .labelsHidden()
+                        .modifier(feedback(.payment(i), showsMessages: false))
                     Text(draft.zahlungen[i].betrag < .null ? "Erstattung" : "Zahlung")
                         .foregroundStyle(.secondary)
                         .frame(width: 80, alignment: .leading)
@@ -339,6 +373,7 @@ struct Inspector: View {
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                 }
+                feedback(.payment(i)).messageView
             }
 
             Button("Zahlung hinzufügen", systemImage: "plus") {
@@ -377,7 +412,7 @@ struct Inspector: View {
     // MARK: - Bestätigen
 
     @ViewBuilder private var confirmBar: some View {
-        if draft.geprueftAm == nil {
+        if draft.needsReview(profile: model.currentProfile) {
             VStack(spacing: 0) {
                 Divider()
                 Button {
@@ -388,6 +423,7 @@ struct Inspector: View {
                 }
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
+                .disabled(issues.isEmpty == false)
                 .padding(12)
             }
             .background(.bar)
@@ -442,7 +478,39 @@ extension Steuerbehandlung {
         case .kleinunternehmer: "Kleinunternehmer"
         case .steuerfrei: "Steuerfrei"
         case .nichtSteuerbar: "Nicht steuerbar"
-        case .unklar: "Unklar"
+        }
+    }
+}
+
+/// Standard form controls keep their behavior; findings sit next to the input.
+private struct FieldFeedback: ViewModifier {
+    let messages: [String]
+    let highlighted: Bool
+    let showsMessages: Bool
+
+    var messageView: some View {
+        ForEach(messages, id: \.self) { message in
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(highlighted ? Color.red : .secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    func body(content: Content) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            content
+                .overlay {
+                    if highlighted, messages.isEmpty == false {
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.red, lineWidth: 1)
+                            .padding(-3)
+                            .allowsHitTesting(false)
+                    }
+                }
+            if showsMessages {
+                messageView
+            }
         }
     }
 }

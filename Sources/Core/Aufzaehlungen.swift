@@ -26,7 +26,6 @@ public enum Steuerbehandlung: String, CaseIterable, Codable, Hashable, Sendable,
     case kleinunternehmer
     case steuerfrei
     case nichtSteuerbar = "nicht_steuerbar"
-    case unklar
 
     /// The invoice carries no VAT; the recipient's tax is calculated separately.
     /// This does not change the amount owed to the supplier.
@@ -51,7 +50,7 @@ public enum Zahlungsstand: String, Hashable, Sendable {
     case bezahlt
 }
 
-/// Derived from the review timestamp and the receipt attachments, never stored.
+/// Derived from confirmation, required input and attachments, never stored.
 public enum ReviewStatus: String, Hashable, Sendable {
     case geprueft
     case zuPruefen

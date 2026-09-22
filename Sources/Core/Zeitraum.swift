@@ -201,9 +201,9 @@ public struct Zeitraum: Hashable, Sendable {
             || (art == .euer && AfA.betrag(buchung, jahr: jahr, brutto: false) > .null)
     }
 
-    public func unklareSteuerbehandlungen(_ buchungen: [Buchung]) -> Int {
+    public func fehlendeSteuerbehandlungen(_ buchungen: [Buchung]) -> Int {
         buchungen.filter {
-            $0.art != .ignoriert && beruehrt($0) && $0.steuerbehandlung == .unklar
+            $0.art != .ignoriert && beruehrt($0) && $0.steuerbehandlung == nil
         }.count
     }
 

@@ -206,7 +206,7 @@ private func bestaetigungsfehler(
     }
 
     let geladen = try #require(try repository.allBookings().first)
-    #expect(geladen.geprueftAm == timestamp)
+    #expect(geladen.geprueftAm == nil)
     let aktivitaetenDanach = try repository.database.read { db in
         try Int.fetchOne(db, sql: "SELECT COUNT(*) FROM aktivitaeten") ?? 0
     }
@@ -241,7 +241,7 @@ private func bestaetigungsfehler(
     let repository = try Repository.inMemory()
     var buchung = beispiel()
     buchung.kategorie = nil
-    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "kategorie fehlt")
+    try bestaetigungsfehler(repository, buchung: buchung, erwartet: "Kategorie auswählen")
 }
 
 /// Eine mehrzeilige Rechnung rundet je Zeile und weicht dadurch stärker ab, als
