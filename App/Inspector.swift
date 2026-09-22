@@ -47,9 +47,9 @@ struct Inspector: View {
 
     var body: some View {
         Form {
-            // An edit after the values of the period went to the tax office.
+            // An edit after the period was exported or manually marked handled.
             if model.changedAfterExport(buchung) {
-                Label("Nach dem Export des Zeitraums geändert", systemImage: "exclamationmark.triangle")
+                Label("Nach Export oder Erledigt-Markierung geändert", systemImage: "exclamationmark.triangle")
                     .font(.callout)
                     .foregroundStyle(.orange)
             }

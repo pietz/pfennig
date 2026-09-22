@@ -276,7 +276,7 @@ final class AppModel {
         }
     }
 
-    /// Notes that the values of the period left the app.
+    /// Records a file export or a manual marker that the period was handled elsewhere.
     func markExported(_ zeitraum: Zeitraum) {
         do {
             try repository.markExported(zeitraum)
@@ -286,9 +286,8 @@ final class AppModel {
         }
     }
 
-    /// True when the booking was changed after the values of one of its
-    /// periods left the app. Only then does the inspector have something to
-    /// say; a booking that has not moved since the export is fine.
+    /// True when the booking changed after one of its periods was exported
+    /// or manually marked handled. The inspector warns for either event.
     func changedAfterExport(_ buchung: Buchung) -> Bool {
         exportedPeriods.contains { zeitraum, exportiertAm in
             zeitraum.beruehrt(buchung) && buchung.geaendertAm > exportiertAm

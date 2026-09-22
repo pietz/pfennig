@@ -157,6 +157,35 @@ private func mehrjaehrigesAnlagegut() -> Buchung {
     #expect(try repository.exportedPeriods().count == 3)
 }
 
+@Test(arguments: [q3, Zeitraum(jahr: 2026, einteilung: .jahr)])
+func erledigterZeitraumEntferntNurSeineErinnerungUndAendertKeineSteuerwerte(zeitraum: Zeitraum) throws {
+    let repository = try Repository.inMemory()
+    try repository.save(buchung(
+        richtung: .einnahme, datum: datum(2026, 8, 1), kategorie: "umsatz_dienstleistung",
+        positionen: [position(10000, 19)], zahlungen: [zahlung(2026, 8, 2, 11900)]
+    ), akteur: .nutzer)
+    let buchungen = try repository.allBookings()
+    let today = datum(2026, 9, 14)
+    let vorher = try Start.fristen(buchungen, exportiert: repository.exportedPeriods(), profil: regel, today: today)
+    let ustva = UStVA.calculate(buchungen, zeitraum: q3, profile: regel)
+    let euer = EUeR.calculate(buchungen, jahr: 2026, profile: regel)
+    #expect(vorher.contains { $0.zeitraum == zeitraum })
+    #expect(ustva.betrag(81) == 10000)
+    #expect(euer.ergebnis == Cent(11900))
+
+    // The manual action uses the same persistence as a file export, without generating a file.
+    try repository.markExported(zeitraum)
+    let gespeichert = try repository.exportedPeriods()
+    #expect(gespeichert.count == 1)
+    #expect(gespeichert[zeitraum] != nil)
+    let unveraendert = try repository.allBookings()
+    #expect(unveraendert == buchungen)
+    let nachher = Start.fristen(unveraendert, exportiert: gespeichert, profil: regel, today: today)
+    #expect(nachher == vorher.filter { $0.zeitraum != zeitraum })
+    #expect(UStVA.calculate(unveraendert, zeitraum: q3, profile: regel) == ustva)
+    #expect(EUeR.calculate(unveraendert, jahr: 2026, profile: regel) == euer)
+}
+
 @Test func fristenWeichenWochenendeUndBundesweitenFeiertagenAus() {
     // Pfingstmontag 2030 fällt auf den 10. Juni.
     #expect(Werktag.ostersonntag(2030).formatted == "21.04.2030")

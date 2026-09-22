@@ -62,6 +62,14 @@ struct ExportSheet: View {
                     }
                 }
                 hints
+                Section {
+                    Button("Zeitraum als anderweitig erledigt markieren") {
+                        model.markExported(zeitraum)
+                    }
+                    .help(
+                        "Entfernt die Erinnerung für diesen Zeitraum. Erstellt keine Datei und übermittelt keine Steuererklärung."
+                    )
+                }
             }
             .formStyle(.grouped)
             Divider()
@@ -218,7 +226,7 @@ struct ExportSheet: View {
                 }
                 if let exportiert {
                     Label(
-                        "Bereits exportiert am \(LocalDate(exportiert).formatted).",
+                        "Exportiert oder als erledigt markiert am \(LocalDate(exportiert).formatted).",
                         systemImage: "clock.arrow.circlepath"
                     )
                     .foregroundStyle(.secondary)
