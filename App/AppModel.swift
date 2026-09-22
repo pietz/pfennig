@@ -67,19 +67,23 @@ final class AppModel {
     /// A drop takes at most `maxDrop` files, each one a paid run; the rest
     /// stays where it is and the strip says so.
     func acceptFiles(_ urls: [URL]) {
-        let files = FileIntake.files(in: urls)
-        enqueue(Array(files.prefix(AppModel.maxDrop)))
-        guard files.count > AppModel.maxDrop, let first = urls.first else { return }
-        // Named after where the drop came from: the folder itself, or the
-        // folder of the first file. Never a file, so a finished run cannot
-        // clear the note.
-        let origin = files.contains(first) ? first.deletingLastPathComponent() : first
-        let message = IntakeMessage(
-            id: origin, kind: .info,
-            text: "Nur die ersten \(AppModel.maxDrop) von \(files.count) Dateien wurden übernommen; die übrigen blieben liegen."
-        )
-        messages.removeAll { $0.id == message.id }
-        messages.append(message)
+        Task {
+            let files = await Task.detached(priority: .userInitiated) {
+                FileIntake.files(in: urls)
+            }.value
+            enqueue(Array(files.prefix(AppModel.maxDrop)))
+            guard files.count > AppModel.maxDrop, let first = urls.first else { return }
+            // Named after where the drop came from: the folder itself, or the
+            // folder of the first file. Never a file, so a finished run cannot
+            // clear the note.
+            let origin = files.contains(first) ? first.deletingLastPathComponent() : first
+            let message = IntakeMessage(
+                id: origin, kind: .info,
+                text: "Nur die ersten \(AppModel.maxDrop) von \(files.count) Dateien wurden übernommen; die übrigen blieben liegen."
+            )
+            messages.removeAll { $0.id == message.id }
+            messages.append(message)
+        }
     }
 
     /// A non-empty inbox is worked through when the app starts, once.
@@ -251,6 +255,7 @@ final class AppModel {
     /// edit cannot write the booking back. Receipts no surviving booking carries
     /// go with it, row and original, so the document can be dropped again.
     func delete(_ bookings: [Buchung]) {
+        guard progress.running == false else { return }
         let ids = Set(bookings.compactMap(\.id))
         guard ids.isEmpty == false else { return }
         let previousBookings = buchungen

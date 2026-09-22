@@ -25,12 +25,16 @@ struct MainWindow: View {
         // The table shrinks with the inspector; only the Unternehmen column gives.
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
-        .onDeleteCommand { toDelete = model.selectedBookings }
+        .onDeleteCommand {
+            guard model.progress.running == false else { return }
+            toDelete = model.selectedBookings
+        }
         .confirmationDialog(
             deleteConfirmationTitle,
             isPresented: deleteConfirmationPresented
         ) {
             Button("Löschen", role: .destructive) { model.delete(toDelete) }
+                .disabled(model.progress.running)
         } message: {
             Text(deleteConfirmationMessage)
         }
@@ -138,9 +142,11 @@ struct MainWindow: View {
             let selectedIDs = Set(ids.compactMap(\.self))
             if selectedIDs.isEmpty == false {
                 Button("Löschen", role: .destructive) {
+                    guard model.progress.running == false else { return }
                     model.selection = selectedIDs
                     toDelete = model.selectedBookings
                 }
+                .disabled(model.progress.running)
             }
         }
     }
