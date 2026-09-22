@@ -21,10 +21,18 @@ public enum Art: String, CaseIterable, Codable, Hashable, Sendable, DatabaseValu
 public enum Steuerbehandlung: String, CaseIterable, Codable, Hashable, Sendable, DatabaseValueConvertible {
     case inland
     case reverseCharge = "reverse_charge"
+    /// Taxable goods acquisition in Germany from another EU member state (§1a UStG).
+    case innergemeinschaftlicherErwerb = "innergemeinschaftlicher_erwerb"
     case kleinunternehmer
     case steuerfrei
     case nichtSteuerbar = "nicht_steuerbar"
     case unklar
+
+    /// The invoice carries no VAT; the recipient's tax is calculated separately.
+    /// This does not change the amount owed to the supplier.
+    public var empfaengerSchuldetSteuer: Bool {
+        self == .reverseCharge || self == .innergemeinschaftlicherErwerb
+    }
 }
 
 public enum Akteur: String, Codable, Hashable, Sendable, DatabaseValueConvertible {

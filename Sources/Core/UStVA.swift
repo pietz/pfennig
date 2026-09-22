@@ -13,14 +13,17 @@ import Foundation
 /// - **§13b** arises with the service, in practice with the Belegdatum, and in
 ///   full, at the rate of its positions; the payment date does not matter. A
 ///   Kleinunternehmer owes the tax without the matching Vorsteuer.
+/// - **Innergemeinschaftlicher Erwerb** uses the invoice date (§13 Abs. 1
+///   Nr. 6 UStG), independent of payment, for ordinary completed acquisitions.
+///   Different acquisition/invoice timing needs manual adjustment in ELSTER.
 /// - **Kz 21**, an own service to a business in another member state, follows
 ///   the same clock: the whole net in the period of the Belegdatum and no
 ///   Anzahlungen (Anleitung USt 1 E 2026 zu Zeile 35, §18b Satz 3 UStG). The
 ///   Belegdatum stands in for the day of the service, which Pfennig does not
 ///   keep. Kz 45 stays with the payments.
 /// - A **Kleinunternehmer** has no Kz 81/86/66 and does not report the §19
-///   income in Kz 48 either: the Voranmeldung exists only because of §13b
-///   (§18 Abs. 4a UStG) and reports only that.
+///   income in Kz 48 either: only supported recipient taxes (§13b or taxable
+///   intra-community acquisitions) enter that return (§18 Abs. 4a UStG).
 /// - A **Gutschrift** carries negative positions and a **Erstattung** is a
 ///   payment in the opposite direction; both lower the period their money
 ///   moved in.
@@ -151,6 +154,23 @@ public struct UStVA: Hashable, Sendable {
                     EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent),
                     in: &werte
                 )
+            }
+
+        case .innergemeinschaftlicherErwerb:
+            guard zeitraum.enthaelt(buchung.datum) else { return }
+            var erwerbsteuer = Cent.null
+            for position in buchung.positionen {
+                let kennzahl: Int
+                switch position.steuersatz {
+                case 19: kennzahl = 89
+                case 7: kennzahl = 93
+                default: continue
+                }
+                buchen(kennzahl, position.netto, in: &werte)
+                erwerbsteuer = erwerbsteuer + Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
+            }
+            if profile.kleinunternehmer == false {
+                buchen(61, abziehbar(erwerbsteuer, privatanteil: buchung.privatanteilProzent), in: &werte)
             }
 
         case .kleinunternehmer, .steuerfrei, .nichtSteuerbar, .unklar:

@@ -26,6 +26,8 @@ import Testing
     #expect(text.contains("\"betrag\": 11900"))
     #expect(text.contains("ids aus dateien"))
     #expect(text.contains("'reverse_charge'"))
+    #expect(text.contains("'innergemeinschaftlicher_erwerb'"))
+    #expect(text.contains("in Deutschland steuerpflichtiger Warenbezug"))
     #expect(text.contains("belegnummer TEXT"))
     #expect(text.contains("faelligkeit TEXT"))
 }

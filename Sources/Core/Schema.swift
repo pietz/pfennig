@@ -29,11 +29,12 @@ public enum Schema {
         gegenpartei_ustid TEXT,
         -- JSON-Liste, mindestens ein Element, Beträge in EUR-Cent:
         -- [{"netto": 10000, "steuersatz": 19, "steuer": 1900}]
-        -- bei reverse_charge steht in steuersatz der Satz, den du als Leistungsempfänger schuldest (19 oder 7), und in steuer 0
+        -- bei reverse_charge und innergemeinschaftlicher_erwerb: geschuldeter Satz (19 oder 7) in steuersatz, steuer 0
         positionen TEXT NOT NULL DEFAULT '[]',
         waehrung TEXT,                              -- nur bei Fremdwährung, leer heißt EUR
         originalbetrag TEXT,                        -- nur bei Fremdwährung, exakte Dezimalzahl in Haupteinheiten
-        steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
+        -- reverse_charge: grenzüberschreitende Dienstleistungen; innergemeinschaftlicher_erwerb: in Deutschland steuerpflichtiger Warenbezug aus einem anderen EU-Staat
+        steuerbehandlung TEXT NOT NULL CHECK (steuerbehandlung IN ('inland', 'reverse_charge', 'innergemeinschaftlicher_erwerb', 'kleinunternehmer', 'steuerfrei', 'nicht_steuerbar', 'unklar')),
         -- JSON-Liste, vorzeichenbehaftete Beträge in EUR-Cent (negativ = Erstattung):
         -- [{"datum": "2026-09-14", "betrag": 11900}]
         zahlungen TEXT NOT NULL DEFAULT '[]',

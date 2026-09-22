@@ -12,7 +12,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. EU-Warenkäufe und Lieferungen (#12), danach ungeklärte Zahlungen im Export (#20).
+1. Ungeklärte Zahlungen im Export (#20). EU-Warenkäufe aus #12 sind umgesetzt; eigene EU-Warenlieferungen bleiben außerhalb des freigegebenen Umfangs.
 2. Plattformauszahlungen (#6), Übernahme bestehender Buchhaltung (#2), Unsicherheiten/Warnungen einschließlich Dubletten (#5).
 3. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten. Keine pauschale Umsetzung aller Issues und keine neuen größeren Funktionen vor den Bestandsthemen.
 
@@ -40,7 +40,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 - **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
 - **Einkommensteuerzahlungen [#3](https://github.com/pietz/pfennig/issues/3), geschlossen als außerhalb des Umfangs.** Keine neue Kategorie oder Sonderlogik. Begründung und bewusste Grenze stehen in `.memory/MEMORY.md`.
 - **Sondervorauszahlung [#8](https://github.com/pietz/pfennig/issues/8), umgesetzt.** Festgesetzten Betrag je Jahr im Profil hinterlegen; Kz 39 mindert im Dezember die Zahllast bei monatlicher UStVA mit Dauerfristverlängerung. Keine Berechnung/Anmeldung oder automatische Zahlungsbuchung; andere letzte Meldezeiträume manuell in ELSTER korrigieren.
-- **Innergemeinschaftliche Waren [#12](https://github.com/pietz/pfennig/issues/12), offen.** Erwerbe auf Kz 89/93 und 61 statt Dienstleistungs-§13b; ebenso fehlt Kz 41 für innergemeinschaftliche Lieferungen.
+- **Innergemeinschaftliche Waren [#12](https://github.com/pietz/pfennig/issues/12), teilweise umgesetzt.** Steuerpflichtige EU-Warenkäufe mit eigenem Enumwert auf Kz 89/93 und 61 statt Dienstleistungs-§13b. Keine neuen Felder, Kategorienableitung oder Schwellenautomatik. Gemischte Steuerbehandlungen und abweichende Erwerbs-/Rechnungszeitpunkte bleiben manuell. Eigene EU-Warenlieferungen (Kz 41) sind ausdrücklich zurückgestellt; deshalb bleibt das Issue offen.
 - Zusammenfassende Meldung; Umsatzsteuer-Jahreserklärung; Kleinunternehmer-Grenzen; Einkommensteuerschätzung und Rücklage. Jeweils eigener Umfang und amtliche Prüfung nötig.
 - Wertabgaben, Kleinunternehmer-Hinweis bei §13b, regionale Feiertage über ein Bundesland und Storno statt Löschen bereits exportierter Buchungen bleiben geparkt. §13b mit 7 Prozent ist umgesetzt (#10 geschlossen).
 - Anlagevermögen, lineare AfA und AVEÜR sind gebaut (#1 geschlossen). Weitere Anlagefälle bleiben außerhalb des heutigen Umfangs: Fahrzeuge, Gebäude/Grundstücke, immaterielle Anlagen, Verkauf/Privatentnahme, degressive AfA, §7g, Sammelposten und nachträgliche Anschaffungskosten.

@@ -3,9 +3,8 @@ import Foundation
 /// The yearly values of the Anlage EÜR: one line of the form per category
 /// group, with the amounts of the year.
 ///
-/// Zufluss and Abfluss, §11 EStG, the same way the UStVA counts: only what was
-/// paid in the year counts, a partial payment with its proportional share of
-/// the positions, a refund against it. The Belegdatum decides nothing here.
+/// Zufluss and Abfluss, §11 EStG: ordinary income and expenses follow payments,
+/// including partial payments and refunds. Assets follow their AfA schedule.
 ///
 /// The Umsatzsteuer follows the method of the official form, not the net
 /// shortcut. A regularly taxed business books the net amounts on the category
@@ -15,13 +14,11 @@ import Foundation
 /// payments to and refunds from the Finanzamt they make the four VAT lines of
 /// the form, and the Gewinn comes out right. A Kleinunternehmer deducts no
 /// Vorsteuer, books gross on the category lines and has no VAT lines; the
-/// payments he makes under §13b stay on their own category line.
+/// tax payments to the Finanzamt stay on their own category line.
 ///
-/// Only the Vorsteuer that is deductible under §15 UStG reaches line 58. Tax
-/// that is not deductible stays with its expense and goes gross on the
-/// category line, Anleitung zu Zeile 58: foreign or tax-free invoices, the
-/// §13b tax that was never paid to the supplier, and the tax of an expense
-/// used less than ten percent for the business.
+/// Only deductible invoice VAT reaches line 58; non-deductible invoice VAT
+/// stays with the expense. Recipient tax (§13b or acquisition) is not paid to
+/// the supplier and creates no additional payment or input-VAT expense here.
 ///
 /// The Privatanteil of an expense is taken off its own amount before it
 /// reaches the line, and off its Vorsteuer the same way. Income has no private
@@ -267,7 +264,7 @@ public struct EUeR: Hashable, Sendable {
         }
         switch buchung.steuerbehandlung {
         case .reverseCharge, .steuerfrei, .nichtSteuerbar: return 16
-        case .inland, .kleinunternehmer, .unklar: return kategorie.euerZeile
+        case .inland, .kleinunternehmer, .innergemeinschaftlicherErwerb, .unklar: return kategorie.euerZeile
         }
     }
 

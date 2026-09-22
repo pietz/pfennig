@@ -19,12 +19,9 @@ import Foundation
 /// the input VAT out of §13b services. Kz 81, 86 and 87 have no tax column;
 /// ELSTER derives their tax from the whole euro base, and so does `zahllast`.
 ///
-/// Also verified on the same form but not reachable from this data model, so
-/// they are not in the table: Kz 41 (innergemeinschaftliche Lieferungen),
-/// Kz 43 (Ausfuhrlieferungen), Kz 89/93 (innergemeinschaftliche Erwerbe),
-/// Kz 61 (Vorsteuer daraus) and Kz 62 (Einfuhrumsatzsteuer). `Steuerbehandlung`
-/// has no value that tells any of them apart from a plain steuerfreier or
-/// nicht steuerbarer Umsatz.
+/// Kz 89/93 carry taxable intra-community acquisitions at 19/7 percent;
+/// their tax is derived from whole euros too. Kz 61 is the deductible input VAT.
+/// Not supported: Kz 41 (EU goods sales), Kz 43 (exports), Kz 62 (import VAT).
 public struct Kennzahl: Hashable, Sendable {
     public let nummer: Int
     public let titel: String
@@ -52,6 +49,18 @@ public struct Kennzahl: Hashable, Sendable {
         Kennzahl(
             nummer: 48,
             titel: "Steuerfreie Umsätze ohne Vorsteuerabzug (z. B. § 4 Nummer 8 bis 29 oder § 19 Absatz 1 UStG)",
+            istBemessung: true
+        ),
+
+        // C. Innergemeinschaftliche Erwerbe
+        Kennzahl(
+            nummer: 89,
+            titel: "Steuerpflichtige innergemeinschaftliche Erwerbe zum Steuersatz von 19 %",
+            istBemessung: true
+        ),
+        Kennzahl(
+            nummer: 93,
+            titel: "Steuerpflichtige innergemeinschaftliche Erwerbe zum Steuersatz von 7 %",
             istBemessung: true
         ),
 
@@ -97,6 +106,11 @@ public struct Kennzahl: Hashable, Sendable {
             istBemessung: false
         ),
         Kennzahl(
+            nummer: 61,
+            titel: "Vorsteuerbeträge aus dem innergemeinschaftlichen Erwerb von Gegenständen (§ 15 Absatz 1 Satz 1 Nummer 3 UStG)",
+            istBemessung: false
+        ),
+        Kennzahl(
             nummer: 67,
             titel: "Vorsteuerbeträge aus Leistungen im Sinne des § 13b UStG (§ 15 Absatz 1 Satz 1 Nummer 4 UStG)",
             istBemessung: false
@@ -139,7 +153,7 @@ public struct Kennzahl: Hashable, Sendable {
         case .kleinunternehmer, .steuerfrei: 48
         case .reverseCharge: istEUStaat(land) ? 21 : 45
         case .nichtSteuerbar: istAusland(land) ? 45 : nil
-        case .unklar: nil
+        case .innergemeinschaftlicherErwerb, .unklar: nil
         }
     }
 
@@ -178,13 +192,13 @@ public struct Kennzahl: Hashable, Sendable {
     // MARK: - Zahllast
 
     /// The bases without a tax column and the rate ELSTER derives their tax at.
-    public static let abgeleiteteSaetze: [Int: Int64] = [81: 19, 86: 7, 87: 0]
+    public static let abgeleiteteSaetze: [Int: Int64] = [81: 19, 86: 7, 87: 0, 89: 19, 93: 7]
 
     /// The tax Kennzahlen that raise the Zahllast.
     public static let steuerKennzahlen: Set<Int> = [47, 85]
 
     /// Input VAT and the special advance payment lower the Zahllast.
-    public static let abzugsKennzahlen: Set<Int> = [66, 67, 39]
+    public static let abzugsKennzahlen: Set<Int> = [66, 61, 67, 39]
 
     /// A Bemessungsgrundlage is entered in whole euros with the cents cut off.
     /// Integer division truncates towards zero, so -1999 becomes -19.

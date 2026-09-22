@@ -22,11 +22,12 @@ public enum ValidationRules {
         privatanteilIstGueltig,
         datumLiegtNichtWeitInDerZukunft,
         reverseChargeNurBeiAuslaendischerGegenpartei,
+        innergemeinschaftlicherErwerbNurBeiEUAusgaben,
         kleinunternehmerNurBeiEigenenEinnahmen,
         kleinunternehmerKeineInlandseinnahmen,
         inlandNurMit19Oder7,
-        reverseChargeOhneSteuer,
-        reverseChargeAusgabeBrauchtSatz,
+        empfaengersteuerOhneRechnungssteuer,
+        empfaengersteuerAusgabeBrauchtSatz,
         zahlungenSindPlausibel,
         nutzungsdauerNurBeiAusgaben
     ]
@@ -42,10 +43,9 @@ public enum ValidationRules {
         buchung.positionen.isEmpty ? "Die Buchung braucht mindestens eine Position." : nil
     }
 
-    /// The positions of a reverse charge booking carry the rate the recipient
-    /// owes and no tax at all, so there is nothing here to compare.
+    /// Recipient-tax positions carry the applicable rate, not invoice VAT.
     static let steuerPasstZumSatz: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung != .reverseCharge else { return nil }
+        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer == false else { return nil }
         for (nummer, position) in buchung.positionen.enumerated() {
             let erwartet = Position.steuer(netto: position.netto, steuersatz: position.steuersatz)
             let abweichung = Cent(abs((position.steuer - erwartet).value))
@@ -91,6 +91,17 @@ public enum ValidationRules {
         return "steuerbehandlung reverse_charge setzt eine ausländische Gegenpartei mit gegenpartei_land voraus."
     }
 
+    static let innergemeinschaftlicherErwerbNurBeiEUAusgaben: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung == .innergemeinschaftlicherErwerb else { return nil }
+        guard buchung.richtung == .ausgabe,
+              let land = buchung.gegenparteiLand, land.isEmpty == false,
+              Kennzahl.istEUStaat(land)
+        else {
+            return "innergemeinschaftlicher_erwerb gilt nur für Ausgaben mit gegenpartei_land eines anderen EU-Staates."
+        }
+        return nil
+    }
+
     static let kleinunternehmerNurBeiEigenenEinnahmen: Regel = { buchung, profile in
         guard buchung.steuerbehandlung == .kleinunternehmer else { return nil }
         guard buchung.richtung == .einnahme else {
@@ -122,24 +133,20 @@ public enum ValidationRules {
             : "steuerbehandlung inland gilt nur für 19 oder 7 Prozent, nicht für \(fremd.steuersatz)."
     }
 
-    /// A §13b invoice carries no German VAT; the app computes the owed tax and
-    /// the matching Vorsteuer itself. Tax in a position would count twice.
-    static let reverseChargeOhneSteuer: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung == .reverseCharge else { return nil }
+    static let empfaengersteuerOhneRechnungssteuer: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer else { return nil }
         guard buchung.positionen.contains(where: { $0.steuer != .null }) else { return nil }
-        return "Bei reverse_charge steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
+        return "Bei \(buchung.steuerbehandlung.rawValue) steht in jeder Position steuer 0; die geschuldete Steuer rechnet Pfennig selbst."
     }
 
-    /// On a §13b purchase the rate is the one the recipient owes, and Pfennig
-    /// computes Kz 47 or 85 from it, so it has to be a German rate. On an own
-    /// service abroad the recipient owes their own country's tax, which the
-    /// form never asks for, so there the rate stays free.
-    static let reverseChargeAusgabeBrauchtSatz: Regel = { buchung, _ in
-        guard buchung.steuerbehandlung == .reverseCharge, buchung.richtung == .ausgabe else { return nil }
+    /// Own services abroad retain the foreign recipient's rate; only purchases
+    /// require a supported German rate.
+    static let empfaengersteuerAusgabeBrauchtSatz: Regel = { buchung, _ in
+        guard buchung.steuerbehandlung.empfaengerSchuldetSteuer, buchung.richtung == .ausgabe else { return nil }
         guard let fremd = buchung.positionen.first(where: { [19, 7].contains($0.steuersatz) == false })
         else { return nil }
         return """
-        Bei reverse_charge trägt jede Position den Steuersatz, den du als Leistungsempfänger schuldest: \
+        Bei \(buchung.steuerbehandlung.rawValue) trägt jede Position den Steuersatz, den du als Leistungsempfänger schuldest: \
         19 oder 7, nicht \(fremd.steuersatz).
         """
     }

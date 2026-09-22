@@ -64,7 +64,9 @@ Aus dem BMF-Vordruckmuster 2026 (USt 1 A, per PDF-Auswertung, Wortlaut nicht Zei
 |---|---|
 | 81 | Umsätze zu 19 % |
 | 86 | Umsätze zu 7 % |
-| 66 | Abziehbare Vorsteuerbeträge |
+| 66 | Abziehbare Vorsteuerbeträge aus inländischen Rechnungen |
+| 89 / 93 | Bemessungsgrundlagen steuerpflichtiger innergemeinschaftlicher Erwerbe zu 19 / 7 Prozent |
+| 61 | Abziehbare Vorsteuer aus innergemeinschaftlichen Erwerben |
 | 46 | Bemessungsgrundlage: sonstige Leistungen eines im übrigen Gemeinschaftsgebiet ansässigen Unternehmers (§13b Abs. 1 UStG, Leistungsort nach §3a Abs. 2 UStG) |
 | 47 | Steuer auf die Umsätze der Kz 46 |
 | 84 | Bemessungsgrundlage: andere Leistungen (§13b Abs. 2 Nr. 1, 2, 4 bis 12 UStG), darunter der Bezug von einem außerhalb der EU ansässigen Unternehmer, also der Drittlands-SaaS-Fall |
@@ -73,7 +75,7 @@ Aus dem BMF-Vordruckmuster 2026 (USt 1 A, per PDF-Auswertung, Wortlaut nicht Zei
 | 83 | Verbleibende Umsatzsteuer-Vorauszahlung/Zahllast bzw. Überschuss, wird beim XML-Upload als vom Nutzer berechneter Wert übernommen |
 | 500 | Neu ab Besteuerungszeitraum 2026: ergänzende Angaben zur Steueranmeldung, ersetzt die bisherige pauschale Kz 23 (z. B. Kz 500 = 2 für abweichende Rechtsauffassung, Kz 500 = 3 für Antrag auf personelle Prüfung) |
 
-Kz 46/47 und Kz 84/85 sind also kein inhaltlicher Gegensatz, sondern dieselbe Reverse-Charge-Logik, getrennt nach dem Sitz des Leistenden: EU-Ausland auf 46/47, alles übrige auf 84/85. Pfennig ordnet in `Kennzahl.reverseCharge` genau danach zu. Für Kleinunternehmer mit reiner §13b-Zahllast sind praktisch nur Kz 46/47 bzw. 84/85 sowie Kz 67/83 und ggf. Kz 500 relevant, keine Kz 81/86/66. Quelle: BMF-Vordruckmuster 2026 (siehe Quellenliste); eine wortgetreue Ausfüllanleitung (USt 1 E 2026) wurde als PDF gefunden, aber inhaltlich nicht Zeile für Zeile im Volltext extrahiert, daher als "recherchiert, nicht wortwörtlich verifiziert" markiert.
+Kz 46/47 und Kz 84/85 sind also kein inhaltlicher Gegensatz, sondern dieselbe Reverse-Charge-Logik, getrennt nach dem Sitz des Leistenden: EU-Ausland auf 46/47, alles übrige auf 84/85. Pfennig ordnet in `Kennzahl.reverseCharge` genau danach zu. Für Kleinunternehmer mit reiner §13b-Zahllast sind Kz 46/47 bzw. 84/85 sowie Kz 83 und ggf. Kz 500 relevant, keine Vorsteuerkennzahlen. Steuerpflichtige innergemeinschaftliche Erwerbe kommen seit dem unten dokumentierten Schritt über Kz 89/93 hinzu. Quelle: BMF-Vordruckmuster 2026 (siehe Quellenliste); eine wortgetreue Ausfüllanleitung (USt 1 E 2026) wurde als PDF gefunden, aber inhaltlich nicht Zeile für Zeile im Volltext extrahiert, daher als "recherchiert, nicht wortwörtlich verifiziert" markiert.
 
 ## 5. Fristen (§18 UStG, §19 UStG, §46-48 UStDV)
 
@@ -150,3 +152,12 @@ Damit ist die offene Frage aus Abschnitt 1 beantwortet: Namensraum und `version`
 - Das [BMF-Vordruckmuster USt 1 A 2026](https://www.bundesfinanzministerium.de/Content/DE/Downloads/BMF_Schreiben/Steuerarten/Umsatzsteuer/2025-12-29-vordruckmuster-USt-voranmeldung-2026.pdf?__blob=publicationFile&v=7) trägt in Zeile 49 die Kz 39 „Abzug der festgesetzten Sondervorauszahlung für Dauerfristverlängerung“. Es ist ein Steuerbetrag in Euro und Cent, positiv eingetragen und von der verbleibenden Vorauszahlung (Kz 83) abzuziehen.
 - Pfennig unterstützt bewusst nur den regulären Dezemberfall: manuell je Jahr hinterlegter Betrag, monatlicher Rhythmus, Dauerfristverlängerung und Regelbesteuerung. Keine Berechnung oder Anmeldung der Sondervorauszahlung und keine automatische Zahlungsbuchung. Die tatsächliche Zahlung wird für die EÜR wie bisher separat als Umsatzsteuerzahlung erfasst. Abweichende letzte Meldezeiträume bleiben zur manuellen Korrektur in ELSTER.
 - Der vorhandene XML-Exporter schreibt `<Kz39>` mit zwei Nachkommastellen wie andere Steuerbeträge; `<Kz83>` enthält die bereits geminderte Zahllast, gegebenenfalls negativ. Berechnung, Centformat und Jahres-/Zeitraumgrenzen sind durch automatisierte Tests geprüft. Ein echter ELSTER-Testupload mit Kz 39 wurde noch nicht durchgeführt; der frühere Q3-Upload belegt dieses neue Feld nicht.
+
+## Nachtrag 2026-09-22: Innergemeinschaftlicher Erwerb
+
+- [§1a UStG](https://www.gesetze-im-internet.de/ustg_1980/__1a.html) unterscheidet den Warenbezug aus einem anderen EU-Staat von Dienstleistungen nach §13b. Das BMF-Formular 2026 (Quelle oben) ordnet steuerpflichtige Erwerbe zu 19/7 Prozent den Bemessungsgrundlagen Kz 89/93 zu; die abziehbare Erwerbsteuer gehört in Kz 61, nicht 67. Die Zahllast folgt den auf volle Euro gekürzten Bemessungsgrundlagen, der Vorsteuerabzug bleibt centgenau.
+- [§13 Abs. 1 Nr. 6 UStG](https://www.gesetze-im-internet.de/ustg_1980/__13.html): Steuerentstehung mit Rechnungsausstellung, spätestens Ende des auf den Erwerb folgenden Monats. Pfennig bildet nur den gewöhnlichen abgeschlossenen Erwerb zum Belegdatum ab, unabhängig von Zahlungen. Vorausrechnungen oder verspätete Rechnungen, die andere Meldezeiträume erfordern, werden manuell in ELSTER korrigiert; das Belegdatum soll dafür nicht verfälscht werden.
+- [§15 Abs. 1 Nr. 3 und Satz 2 UStG](https://www.gesetze-im-internet.de/ustg_1980/__15.html): Vorsteuerabzug für den Erwerb im Inland; unter zehn Prozent unternehmerischer Nutzung kein Abzug. Pfennig nimmt den bestehenden betrieblichen Anteil, beim Kleinunternehmer keinen Vorsteuerabzug. Die Erwerbsbehandlung setzt eine feststehende Erwerbsteuerpflicht voraus. Die Erwerbsschwelle (12.500 Euro) und der Verzicht darauf (§1a Abs. 3/4, darunter Verwendung einer USt-ID) werden nicht automatisch verfolgt.
+- `steuerbehandlung = innergemeinschaftlicher_erwerb`, Positionen mit deutschem Satz und `steuer = 0`: Die berechnete Erwerbsteuer erhöht weder die Lieferantenverbindlichkeit noch Zahlungen oder die EÜR-Zeile für tatsächlich gezahlte Vorsteuer. EÜR-Zahlungs- und AfA-Logik bleiben unverändert; die bereits dokumentierten Grenzen nicht abziehbarer Steuer bei Anlagegütern sind damit nicht behoben.
+- Eine Behandlung je Buchung bleibt die Grenze. Gemischte eigenständige Waren-/Dienstleistungsbezüge brauchen manuelle Steuerkorrektur; eigene EU-Warenlieferungen, Drittlandsimporte und Sonderfälle wie neue Fahrzeuge sind nicht Teil dieses Schritts. Kein zusätzliches Feld, keine Kategorienheuristik und keine automatische Schwellenentscheidung.
+- Rechen-, Validierungs-, Persistenz-, Inspector-Arithmetik-, Fristen- und XML-Tests decken den neuen Wert ab. Ein echter ELSTER-Testupload mit Kz 89/93/61 wurde nicht durchgeführt.

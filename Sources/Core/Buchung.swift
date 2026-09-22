@@ -23,14 +23,13 @@ public struct Position: Codable, Hashable, Sendable {
         return Cent(NSDecimalNumber(decimal: rounded).int64Value)
     }
 
-    /// The invoice tax shown by the Inspector. Reverse-charge positions keep
-    /// their applicable rate, but never carry invoice tax.
+    /// The invoice tax, not the tax calculated separately for the recipient.
     public static func steuer(
         netto: Cent,
         steuersatz: Decimal,
         steuerbehandlung: Steuerbehandlung
     ) -> Cent {
-        steuerbehandlung == .reverseCharge
+        steuerbehandlung.empfaengerSchuldetSteuer
             ? .null
             : steuer(netto: netto, steuersatz: steuersatz)
     }

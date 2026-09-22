@@ -87,23 +87,12 @@ struct Inspector: View {
         .onChange(of: draft.nutzungsdauerJahre) { save() }
         .onChange(of: draft.positionen) { save() }
         .onChange(of: draft.steuerbehandlung) { _, treatment in
-            if treatment == .reverseCharge {
-                for i in draft.positionen.indices {
-                    draft.positionen[i].steuer = Position.steuer(
-                        netto: draft.positionen[i].netto,
-                        steuersatz: draft.positionen[i].steuersatz,
-                        steuerbehandlung: treatment
-                    )
-                }
-            } else {
-                // Leaving reverse charge recalculates the invoice tax from the
-                // rates it left standing, like a net or rate edit does.
-                for i in draft.positionen.indices {
-                    draft.positionen[i].steuer = Position.steuer(
-                        netto: draft.positionen[i].netto,
-                        steuersatz: draft.positionen[i].steuersatz
-                    )
-                }
+            for i in draft.positionen.indices {
+                draft.positionen[i].steuer = Position.steuer(
+                    netto: draft.positionen[i].netto,
+                    steuersatz: draft.positionen[i].steuersatz,
+                    steuerbehandlung: treatment
+                )
             }
             save()
         }
@@ -224,7 +213,7 @@ struct Inspector: View {
                     .frame(width: 70)
                     TextField("Steuer", value: position(i, \.steuer, fallback: .null), format: .euro)
                         .labelsHidden()
-                        .disabled(draft.steuerbehandlung == .reverseCharge)
+                        .disabled(draft.steuerbehandlung.empfaengerSchuldetSteuer)
                     Button("Position entfernen", systemImage: "minus.circle") { removePosition(i) }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
@@ -449,6 +438,7 @@ extension Steuerbehandlung {
         switch self {
         case .inland: "Inland"
         case .reverseCharge: "Reverse Charge"
+        case .innergemeinschaftlicherErwerb: "Innergemeinschaftlicher Erwerb"
         case .kleinunternehmer: "Kleinunternehmer"
         case .steuerfrei: "Steuerfrei"
         case .nichtSteuerbar: "Nicht steuerbar"

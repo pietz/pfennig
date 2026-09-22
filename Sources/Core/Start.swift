@@ -110,11 +110,12 @@ public enum Start {
                 guard profil.kleinunternehmer, zeitraum.art == .ustva else { return true }
                 let unterstuetzt = sichtbar.filter { buchung in
                     ValidationRules.reverseChargeNurBeiAuslaendischerGegenpartei(buchung, profil) == nil
-                        && ValidationRules.reverseChargeOhneSteuer(buchung, profil) == nil
-                        && ValidationRules.reverseChargeAusgabeBrauchtSatz(buchung, profil) == nil
+                        && ValidationRules.innergemeinschaftlicherErwerbNurBeiEUAusgaben(buchung, profil) == nil
+                        && ValidationRules.empfaengersteuerOhneRechnungssteuer(buchung, profil) == nil
+                        && ValidationRules.empfaengersteuerAusgabeBrauchtSatz(buchung, profil) == nil
                 }
                 return UStVA.calculate(unterstuetzt, zeitraum: zeitraum, profile: profil).zeilen.contains {
-                    [47, 85].contains($0.kennzahl.nummer)
+                    [47, 85, 89, 93].contains($0.kennzahl.nummer)
                 }
             }
 
