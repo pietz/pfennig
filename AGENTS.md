@@ -2,7 +2,7 @@
 
 ## Where we are
 
-The rebuild is complete. Current code and tests, these working principles, and owner-approved scope guide development. GitHub issues hold open work; `docs/backlog.md` separates the current step, next topics and parked ideas. `docs/status.md` records the current state and completed steps; keep it current. Keep current work distinct from parked topics rather than treating the backlog as an implementation commitment.
+The rebuild is complete. Current code and tests, these working principles, and owner-approved scope guide development. GitHub issues hold open work; `docs/backlog.md` separates the current step, next topics and parked ideas. `docs/status.md` records the current state and completed steps; keep it current. Keep current work distinct from parked topics rather than treating the backlog as an implementation commitment. Read `.memory/MEMORY.md` at session start for scope decisions and their rationale; keep it short and do not duplicate the backlog.
 
 The previous codebase is archived as the git tag `legacy-2026-09-14`. It is a quarry, not a foundation: copy and adapt only Money, LocalDate, UStVA calculation and 2026 Kennzahlen, EÜR lines, XML exporter, category list, Responses client, Keychain access and PDF preview; do not look at the rest. Do not reintroduce its structure, tables or abstractions.
 

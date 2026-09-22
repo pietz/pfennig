@@ -12,7 +12,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #3, #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
+1. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
 2. Übrige offene Bestandsthemen durchgehen und priorisieren, bevor neue größere Funktionen beginnen. Keine pauschale Umsetzung aller Issues.
 
 ## Größere Funktionen zurückgestellt
@@ -37,7 +37,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 - **Ungeklärte Zahlungen im Export [#20](https://github.com/pietz/pfennig/issues/20), offen.** EÜR kann `nur_zahlung` und `unklar` berücksichtigen, UStVA schließt `unklar` aus. Gewünschte Exportpolitik separat entscheiden, keine neue Agentenregel im aktuellen Import.
 
 - **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
-- **Einkommensteuer-Vorauszahlungen [#3](https://github.com/pietz/pfennig/issues/3), offen.** Dürfen den EÜR-Gewinn nicht mindern; passende Abbildung ohne EÜR-/UStVA-Wirkung klären.
+- **Einkommensteuerzahlungen [#3](https://github.com/pietz/pfennig/issues/3), geschlossen als außerhalb des Umfangs.** Keine neue Kategorie oder Sonderlogik. Begründung und bewusste Grenze stehen in `.memory/MEMORY.md`.
 - **Sondervorauszahlung [#8](https://github.com/pietz/pfennig/issues/8), offen.** Kz 39 im Dezember bei monatlicher UStVA mit Dauerfristverlängerung berücksichtigen.
 - **Innergemeinschaftliche Waren [#12](https://github.com/pietz/pfennig/issues/12), offen.** Erwerbe auf Kz 89/93 und 61 statt Dienstleistungs-§13b; ebenso fehlt Kz 41 für innergemeinschaftliche Lieferungen.
 - Zusammenfassende Meldung; Umsatzsteuer-Jahreserklärung; Kleinunternehmer-Grenzen; Einkommensteuerschätzung und Rücklage. Jeweils eigener Umfang und amtliche Prüfung nötig.
