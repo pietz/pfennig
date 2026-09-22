@@ -12,7 +12,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. Als Nächstes Übernahme bestehender Buchhaltung (#2) besprechen, danach Unsicherheiten/Warnungen einschließlich Dubletten (#5). #6 ist über gewöhnliche Buchungen gelöst; dedizierte Plattformintegrationen und automatischer Abgleich bleiben außerhalb des Umfangs.
+1. Freigegeben und in Umsetzung: ausgewählte Zeiträume als bereits anderweitig erledigt markieren (#2), ohne Startdatum, Migration oder neue Felder. Notiz-/Unsicherheitsanweisung (#5) ist getestet und geprüft. #6 ist über gewöhnliche Buchungen gelöst; dedizierte Plattformintegrationen und automatischer Abgleich bleiben außerhalb des Umfangs.
 2. EU-Warenkäufe aus #12 und die Exportpolitik #20 sind umgesetzt; eigene EU-Warenlieferungen bleiben außerhalb des freigegebenen Umfangs.
 3. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten. Keine pauschale Umsetzung aller Issues und keine neuen größeren Funktionen vor den Bestandsthemen.
 
@@ -26,7 +26,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 ### Eingang und Prüfung
 
 - Warnungen und Duplikaterkennung: als eigenes Thema klären, nicht in den aktuellen Importumbau aufnehmen.
-- **Unsicherheiten und Rückfragen [#5](https://github.com/pietz/pfennig/issues/5), offen.** Unsichere Angaben sichtbar machen; konkrete Verbindung mit Chat #16 noch klären.
+- **Unsicherheiten und Rückfragen [#5](https://github.com/pietz/pfennig/issues/5), umgesetzt.** Prompt nutzt bestehende `notizen` für relevante Zusatzinformationen oder konkrete Unsicherheiten mit Grund/Prüfhinweis, ohne Feldwiederholungen; echte unbekannte Steuerzuordnung bleibt `unklar`. Defaults nicht problematisieren, inhaltliche Nutzernotizen erhalten. Implementiert, getestet und unabhängig geprüft. Keine neue UI oder Rückfragelogik; ein späterer Fragekanal gehört zum Chat #16.
 - **Kontoabgleich [#7](https://github.com/pietz/pfennig/issues/7), offen.** Sammelüberweisungen, Mahnungen, Korrekturen, Raten und Erstattungen; Kontoabdeckung vor einer Aussage „abgeglichen“. Künftig im Chat-Kontext, nicht automatisch beim Ablegen.
 - **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), mit vorhandenen Primitiven umgesetzt.** Belegte Einnahmen und einbehaltene Gebühren können getrennte bezahlte Buchungen mit derselben Belegdatei sein; die Nettoüberweisung ist keine zusätzliche Einnahme. Keine dedizierten Integrationen oder automatische Abstimmung, auch nicht für gelegentliche Hyperwallet-Auszahlungen. Bloße Auszahlungsbestätigungen liefern nicht zwingend alle Buchungsangaben; kein pauschales Hochrechnen bei Wiederverkäufern/Merchants of Record. Keine Erweiterung auf automatischen Kontoauszugsimport.
 - ZUGFeRD-XML auslesen: heute nur PDF-Bild; eingebettetes XML bewusst nicht extrahiert. Textformate einschließlich eigenständiger XML-Rechnungen sind bereits unterstützt.
