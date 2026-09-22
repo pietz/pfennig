@@ -47,7 +47,9 @@ VALUES ('ausgabe', 'beleg', '2026-09-01', 'Strom', 'sonstige_ausgabe', 'Stadtwer
 ])
 func autorisiererWeistAllesAndereAb(sql: String) throws {
     let (_, tool) = try tool()
-    #expect(tool.execute(sql).text.hasPrefix("Nicht erlaubt"))
+    let text = tool.execute(sql).text
+    #expect(text.hasPrefix("Nicht erlaubt"))
+    #expect(text.contains("Erlaubt sind SELECT, INSERT und UPDATE auf buchungen sowie SELECT auf afa_tabelle."))
 }
 
 /// The cases that reach past a table of action codes: `VACUUM` never asks the

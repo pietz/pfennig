@@ -21,7 +21,7 @@ public final class SQLTool: Sendable {
 
     /// What the authorizer lets through, in one sentence. The tool says it in
     /// its refusals, the instructions and the tool description repeat it.
-    public static let allowed = "Erlaubt sind SELECT, INSERT und UPDATE auf buchungen."
+    public static let allowed = "Erlaubt sind SELECT, INSERT und UPDATE auf buchungen sowie SELECT auf afa_tabelle."
 
     private let repository: Repository
     /// An empty copy of the schema with the authorizer on it. It compiles the

@@ -2,17 +2,18 @@
 
 Stand 2026-09-22. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Der aktuelle Schritt bleibt von nächsten und geparkten Themen getrennt. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang, keine neue Gesamtspezifikation.
 
-## Abgeschlossener Schritt
+## Abgeschlossene Schritte
 
 Automatischer Dateieingang nur für Rechnungen, Quittungen und Gutschriften. Kontoauszüge und andere kontextbedürftige Unterlagen kommen später über den Chat. `noBooking` bleibt: ohne geänderte Buchung endet der Lauf mit dem bestehenden Fehler. Prompt und Landingpage sind darauf begrenzt; Tests, Build und Review sind abgeschlossen.
+
+Die fünf Handoff-Vorschläge sind abgeschlossen oder entschieden: Zahlungs-Default für eigene Ausgangsrechnungen, tatsächlich geflossene Zahlungssumme, relative Vorzeichen und SQL-Beschreibung des lesenden AfA-Zugriffs sind umgesetzt. `noBooking` bleibt, keine Sonderregel für negative Gutschriften. Die `nur_zahlung`-Anweisung ist ohne automatischen Kontoauszugsimport zurückgestellt; die Exportpolitik bleibt separat offen in #20.
 
 Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
 ## Nächste Schritte
 
-1. Die fünf Vorschläge aus dem Handoff abschließen: angenommene Prompt-Präzisierungen umsetzen, verworfene Regeln nicht bauen, offene `nur_zahlung`-Frage entscheiden oder ausdrücklich vertagen.
-2. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #3, #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
-3. Übrige offene Bestandsthemen durchgehen und priorisieren, bevor neue größere Funktionen beginnen. Keine pauschale Umsetzung aller Issues.
+1. Bestehende Korrektheitsfragen einzeln behandeln, zuerst die Steuer-Issues #3, #8 und #12. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten.
+2. Übrige offene Bestandsthemen durchgehen und priorisieren, bevor neue größere Funktionen beginnen. Keine pauschale Umsetzung aller Issues.
 
 ## Größere Funktionen zurückgestellt
 
@@ -24,12 +25,6 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 ### Eingang und Prüfung
 
 - Warnungen und Duplikaterkennung: als eigenes Thema klären, nicht in den aktuellen Importumbau aufnehmen.
-- Angenommene Prompt-Präzisierungen, noch nicht umgesetzt:
-  - „Eigene Ausgangsrechnungen bleiben unbezahlt, solange keine Zahlung belegt ist.“
-  - „Die Zahlungen einer Buchung sollen zusammen dem tatsächlich geflossenen Geld entsprechen.“ „Lege nichts doppelt an“ bleibt.
-  - „Zahlungsbeträge sind relativ zur Buchung: eine Zahlung positiv, eine Erstattung negativ, unabhängig vom Vorzeichen auf dem Kontoauszug.“
-  - Erlaubten SQL-Zugriff einschließlich lesendem Zugriff auf `afa_tabelle` klar benennen.
-  - `noBooking` bleibt. Eine besondere Regel für negative Gutschriften ist verworfen; Darstellung und Exportpolitik von `nur_zahlung` bleiben vertagt.
 - **Unsicherheiten und Rückfragen [#5](https://github.com/pietz/pfennig/issues/5), offen.** Unsichere Angaben sichtbar machen; konkrete Verbindung mit Chat #16 noch klären.
 - **Kontoabgleich [#7](https://github.com/pietz/pfennig/issues/7), offen.** Sammelüberweisungen, Mahnungen, Korrekturen, Raten und Erstattungen; Kontoabdeckung vor einer Aussage „abgeglichen“. Künftig im Chat-Kontext, nicht automatisch beim Ablegen.
 - **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), offen.** Umsatz, Gebühren und tatsächliche Auszahlung aus Abrechnungen unterscheiden, nicht aus dem Plattformnamen ableiten.
@@ -38,6 +33,8 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 - Live-API-Tests mit fiktionalen Dokumenten als separater, ausdrücklich freigegebener Lauf, nicht Teil der normalen Tests.
 
 ### Steuerlicher Umfang und Übernahme
+
+- **Ungeklärte Zahlungen im Export [#20](https://github.com/pietz/pfennig/issues/20), offen.** EÜR kann `nur_zahlung` und `unklar` berücksichtigen, UStVA schließt `unklar` aus. Gewünschte Exportpolitik separat entscheiden, keine neue Agentenregel im aktuellen Import.
 
 - **Bestehende Finanzen übernehmen [#2](https://github.com/pietz/pfennig/issues/2), offen.** Extern gemeldete Zeiträume, offene Rechnungen mit unbekanntem Zahlungsstand und alte Anlagebestände ohne doppelte Zahlungen übernehmen. Kontextbedürftige Unterlagen künftig im Chat; kein automatischer Import eines Anlageverzeichnisses im aktuellen Schritt.
 - **Einkommensteuer-Vorauszahlungen [#3](https://github.com/pietz/pfennig/issues/3), offen.** Dürfen den EÜR-Gewinn nicht mindern; passende Abbildung ohne EÜR-/UStVA-Wirkung klären.
