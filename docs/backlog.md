@@ -12,7 +12,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 
 ## Nächste Schritte
 
-1. Als Nächstes Übernahme bestehender Buchhaltung (#2) besprechen, danach Unsicherheiten/Warnungen einschließlich Dubletten (#5). Automatische Plattformabrechnungen (#6) bleiben geparkt.
+1. Als Nächstes Übernahme bestehender Buchhaltung (#2) besprechen, danach Unsicherheiten/Warnungen einschließlich Dubletten (#5). #6 ist über gewöhnliche Buchungen gelöst; dedizierte Plattformintegrationen und automatischer Abgleich bleiben außerhalb des Umfangs.
 2. EU-Warenkäufe aus #12 und die Exportpolitik #20 sind umgesetzt; eigene EU-Warenlieferungen bleiben außerhalb des freigegebenen Umfangs.
 3. Jeweils Umfang klären, dann bauen oder die Grenze ausdrücklich festhalten. Keine pauschale Umsetzung aller Issues und keine neuen größeren Funktionen vor den Bestandsthemen.
 
@@ -28,7 +28,7 @@ Landingpage-Medien bleiben ausstehend: fünf vorgesehene Plätze, Integration na
 - Warnungen und Duplikaterkennung: als eigenes Thema klären, nicht in den aktuellen Importumbau aufnehmen.
 - **Unsicherheiten und Rückfragen [#5](https://github.com/pietz/pfennig/issues/5), offen.** Unsichere Angaben sichtbar machen; konkrete Verbindung mit Chat #16 noch klären.
 - **Kontoabgleich [#7](https://github.com/pietz/pfennig/issues/7), offen.** Sammelüberweisungen, Mahnungen, Korrekturen, Raten und Erstattungen; Kontoabdeckung vor einer Aussage „abgeglichen“. Künftig im Chat-Kontext, nicht automatisch beim Ablegen.
-- **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), geparkt, Issue bleibt offen.** Gelegentliche Hyperwallet-Auszahlungen rechtfertigen für den Eigentümer keine komplexe Abrechnungsautomatik. Aussagekräftige Einnahme-/Zahlungsbelege bleiben im bestehenden Ablauf; eine Überweisungsbestätigung allein belegt nicht automatisch vollständigen Umsatz, Gebühren und Umsatzsteuer. Keine neue Importregel oder Hyperwallet-Sonderlogik.
+- **Plattformauszahlungen [#6](https://github.com/pietz/pfennig/issues/6), mit vorhandenen Primitiven umgesetzt.** Belegte Einnahmen und einbehaltene Gebühren können getrennte bezahlte Buchungen mit derselben Belegdatei sein; die Nettoüberweisung ist keine zusätzliche Einnahme. Keine dedizierten Integrationen oder automatische Abstimmung, auch nicht für gelegentliche Hyperwallet-Auszahlungen. Bloße Auszahlungsbestätigungen liefern nicht zwingend alle Buchungsangaben; kein pauschales Hochrechnen bei Wiederverkäufern/Merchants of Record. Keine Erweiterung auf automatischen Kontoauszugsimport.
 - ZUGFeRD-XML auslesen: heute nur PDF-Bild; eingebettetes XML bewusst nicht extrahiert. Textformate einschließlich eigenständiger XML-Rechnungen sind bereits unterstützt.
 - Bewirtung: Anlass und Teilnehmer sowie fehlende Angaben klären. Die 70-Prozent-Kürzung und Vorsteuerbehandlung sind bereits umgesetzt.
 - Live-API-Tests mit fiktionalen Dokumenten als separater, ausdrücklich freigegebener Lauf, nicht Teil der normalen Tests.
