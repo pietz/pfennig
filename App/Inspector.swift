@@ -159,7 +159,7 @@ struct Inspector: View {
             }
             TextField("Gegenpartei", text: text(\.gegenparteiName))
                 .focused($focus, equals: .gegenpartei)
-            TextField("Land", text: text(\.gegenparteiLand))
+            TextField("Land", text: text(\.gegenparteiLand), prompt: Text("z. B. US"))
                 .focused($focus, equals: .land)
                 .modifier(feedback(.country))
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
@@ -415,15 +415,28 @@ struct Inspector: View {
         if draft.needsReview(profile: model.currentProfile) {
             VStack(spacing: 0) {
                 Divider()
-                Button {
-                    guard save() else { return }
-                    model.confirm(draft)
-                } label: {
-                    Text("Bestätigen").frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    // One choice can open findings in several sections at once,
+                    // so the button names all of them.
+                    if issues.isEmpty == false {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(issues.map(\.message), id: \.self) { Text($0) }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Button {
+                        guard save() else { return }
+                        model.confirm(draft)
+                    } label: {
+                        Text("Bestätigen").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(issues.isEmpty == false)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(issues.isEmpty == false)
                 .padding(12)
             }
             .background(.bar)
