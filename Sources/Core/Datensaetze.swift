@@ -66,15 +66,17 @@ public struct Aktivitaet: Codable, Hashable, Sendable, FetchableRecord, Persista
     }
 }
 
-/// One agent run for one file. `konversation` holds the raw JSON of the run
-/// without file bytes; its shape belongs to the agent.
+/// One agent run: the import of one file or one round of a conversation.
+/// `konversation` holds the items of the run without file bytes; their shape
+/// belongs to the agent.
 public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, PersistableRecord {
     public static let databaseTableName = "anfragen"
     public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
     public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
 
     public var id: Int64?
-    public var dateiId: Int64
+    public var dateiId: Int64?
+    public var gespraechId: Int64?
     public var modell: String
     public var gestartetAm: Date = .init()
     public var beendetAm: Date?
@@ -82,4 +84,29 @@ public struct Anfrage: Codable, Hashable, Sendable, FetchableRecord, Persistable
     public var eingabeTokens: Int?
     public var ausgabeTokens: Int?
     public var konversation: String?
+}
+
+/// One chat conversation. `verlauf` is the JSON item list the agent continues;
+/// its shape belongs to the agent.
+public struct Gespraech: Codable, Hashable, Sendable, Identifiable, FetchableRecord, MutablePersistableRecord {
+    public static let databaseTableName = "gespraeche"
+    public static let databaseColumnEncodingStrategy = DatabaseColumnEncodingStrategy.convertToSnakeCase
+    public static let databaseColumnDecodingStrategy = DatabaseColumnDecodingStrategy.convertFromSnakeCase
+
+    public var id: Int64?
+    public var titel: String
+    public var erstelltAm: Date
+    public var geaendertAm: Date
+    public var verlauf: String
+
+    public init(titel: String, verlauf: String = "[]") {
+        self.titel = titel
+        erstelltAm = Date()
+        geaendertAm = erstelltAm
+        self.verlauf = verlauf
+    }
+
+    public mutating func didInsert(_ inserted: InsertionSuccess) {
+        id = inserted.rowID
+    }
 }

@@ -222,9 +222,10 @@ public final class Repository: Sendable {
 
     // MARK: - Anfragen
 
-    public func startRequest(dateiId: Int64, modell: String) throws -> Int64 {
+    /// Starts the log row of a run, for a file or for a conversation.
+    public func startRequest(dateiId: Int64? = nil, gespraechId: Int64? = nil, modell: String) throws -> Int64 {
         try database.write { db in
-            let request = Anfrage(dateiId: dateiId, modell: modell)
+            let request = Anfrage(dateiId: dateiId, gespraechId: gespraechId, modell: modell)
             try request.insert(db)
             return db.lastInsertedRowID
         }
@@ -260,6 +261,35 @@ public final class Repository: Sendable {
                 arguments: [eingabeTokens, ausgabeTokens, konversation, id]
             )
         }
+    }
+
+    // MARK: - Gespräche
+
+    /// Inserts or updates the conversation; answers with the stored row.
+    public func saveConversation(_ gespraech: Gespraech) throws -> Gespraech {
+        try database.write { db in
+            var updated = gespraech
+            updated.geaendertAm = Date()
+            try updated.save(db)
+            return updated
+        }
+    }
+
+    /// Newest first, the order the history menu shows.
+    public func conversations() throws -> [Gespraech] {
+        try database.read {
+            try Gespraech.fetchAll($0, sql: "SELECT * FROM gespraeche ORDER BY geaendert_am DESC, id DESC")
+        }
+    }
+
+    public func conversation(id: Int64) throws -> Gespraech? {
+        try database.read { try Gespraech.fetchOne($0, key: id) }
+    }
+
+    /// Removes the conversation only. Its files stay, and so do the rows in
+    /// `anfragen` that record what its rounds cost.
+    public func deleteConversation(id: Int64) throws {
+        _ = try database.write { try Gespraech.deleteOne($0, key: id) }
     }
 
     // MARK: - Zeiträume

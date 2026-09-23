@@ -26,7 +26,7 @@ struct MainWindow: View {
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
         // The Delete key and the context menu take the same way out.
         .onDeleteCommand {
-            guard model.progress.running == false else { return }
+            guard model.deleteLocked == false else { return }
             toDelete = model.selectedBookings
         }
         .confirmationDialog(
@@ -34,7 +34,7 @@ struct MainWindow: View {
             isPresented: deleteConfirmationPresented
         ) {
             Button("Löschen", role: .destructive) { model.delete(toDelete) }
-                .disabled(model.progress.running)
+                .disabled(model.deleteLocked)
         } message: {
             Text(deleteConfirmationMessage)
         }
@@ -146,11 +146,11 @@ struct MainWindow: View {
             let selectedIDs = Set(ids.compactMap(\.self))
             if selectedIDs.isEmpty == false {
                 Button("Löschen", role: .destructive) {
-                    guard model.progress.running == false else { return }
+                    guard model.deleteLocked == false else { return }
                     model.selection = selectedIDs
                     toDelete = model.selectedBookings
                 }
-                .disabled(model.progress.running)
+                .disabled(model.deleteLocked)
             }
         }
     }

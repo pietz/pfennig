@@ -32,7 +32,7 @@ public struct FileIntake: Sendable {
     let tool: SQLTool
     let path: ArchivePaths
     let transport: Transport
-    private let key: String?
+    let key: String?
     private let inFlight = InFlight()
 
     public init(
@@ -155,10 +155,10 @@ public struct FileIntake: Sendable {
                 throw AgentError.missingKey
             }
 
-            let id = try known ?? store(inbox, data: data, hash: hash)
+            let id = try known ?? store(name: inbox.lastPathComponent, data: data, hash: hash)
             let input = FileInput(id: id, name: inbox.lastPathComponent, fileExtension: fileExtension, data: data)
             let run = AgentRun(
-                repository: repository, tool: tool, key: key, transport: transport
+                repository: repository, tool: tool, key: key, transport: transport, path: path
             )
             _ = try await run.start(input)
             // The run is committed. A cleanup failure must not turn a
@@ -191,17 +191,31 @@ public struct FileIntake: Sendable {
         return destination
     }
 
+    /// A file attached in the chat: stored like a dropped one, or the stored
+    /// row reused, but no import runs and nothing has to be booked.
+    public func attach(_ url: URL) throws -> FileInput {
+        let data = try Data(contentsOf: url)
+        let fileExtension = url.pathExtension.lowercased()
+        guard FileInput.textExtensions.contains(fileExtension) == false || data.count <= FileInput.maxTextBytes else {
+            throw AgentError.textTooLarge
+        }
+        let hash = FileIntake.hash(data)
+        try path.create()
+        let id = try repository.fileID(sha256: hash) ?? store(name: url.lastPathComponent, data: data, hash: hash)
+        return FileInput(id: id, name: url.lastPathComponent, fileExtension: fileExtension, data: data)
+    }
+
     /// Archive copy first, row second: a leftover copy without a row is
     /// harmless and the next attempt finds it in place.
-    private func store(_ inbox: URL, data: Data, hash: String) throws -> Int64 {
-        let endung = inbox.pathExtension.lowercased()
+    private func store(name: String, data: Data, hash: String) throws -> Int64 {
+        let endung = (name as NSString).pathExtension.lowercased()
         let destination = path.archive.appending(path: "\(hash).\(endung)")
         if FileManager.default.fileExists(atPath: destination.path) == false {
-            try FileManager.default.copyItem(at: inbox, to: destination)
+            try data.write(to: destination)
         }
         return try repository.saveFile(Datei(
             sha256: hash,
-            dateiname: inbox.lastPathComponent,
+            dateiname: name,
             endung: endung,
             groesse: Int64(data.count),
             seiten: endung == "pdf" ? PDFDocument(data: data)?.pageCount : nil

@@ -9,6 +9,7 @@ final class AppModel {
     let repository: Repository
     let path = ArchivePaths.standard
     let intake: FileIntake
+    let chat: Chat
 
     var buchungen: [Buchung] = []
     private(set) var agentCreatedBookingIDs: Set<Int64> = []
@@ -38,6 +39,21 @@ final class AppModel {
     /// The inbox is read on the first look at the window, not on every one.
     private var inboxRead = false
 
+    /// The open conversation, nil for a new one, and the message on its way.
+    private(set) var conversation: Gespraech? {
+        didSet { chatMessages = conversation.map { Conversation.messages($0.verlauf) } ?? [] }
+    }
+
+    private(set) var chatMessages: [ChatMessage] = []
+    private(set) var conversations: [Gespraech] = []
+    private(set) var pendingMessage: String?
+
+    /// A running agent, from the inbox or the chat, may still hang a receipt on
+    /// a booking; deleting waits until it is done.
+    var deleteLocked: Bool {
+        progress.running || pendingMessage != nil
+    }
+
     var showsError: Bool {
         get { errorMessage != nil }
         set {
@@ -57,6 +73,7 @@ final class AppModel {
             try path.create()
             repository = try Repository(path: path.databaseFile)
             intake = try FileIntake(repository: repository, path: path)
+            chat = Chat(intake: intake)
             currentProfile = try repository.profile()
         } catch {
             fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
@@ -258,7 +275,7 @@ final class AppModel {
     /// edit cannot write the booking back. Receipts no surviving booking carries
     /// go with it, row and original, so the document can be dropped again.
     func delete(_ bookings: [Buchung]) {
-        guard progress.running == false else { return }
+        guard deleteLocked == false else { return }
         let ids = Set(bookings.compactMap(\.id))
         guard ids.isEmpty == false else { return }
         let previousBookings = buchungen
@@ -280,6 +297,53 @@ final class AppModel {
     func removeReceipt(_ fileID: Int64, from id: Int64) {
         do {
             try repository.removeReceipt(fileID, from: id)
+        } catch {
+            errorMessage = "\(error)"
+        }
+    }
+
+    // MARK: - Chat
+
+    /// Answers whether the message went through; on failure the view keeps
+    /// the text so the user can send it again.
+    func send(_ text: String, files: [URL]) async -> Bool {
+        guard pendingMessage == nil else { return false }
+        pendingMessage = text
+        defer { pendingMessage = nil }
+        do {
+            conversation = try await chat.send(text, files: files, to: conversation)
+            loadConversations()
+            return true
+        } catch {
+            errorMessage = error.localizedDescription
+            return false
+        }
+    }
+
+    func newConversation() {
+        conversation = nil
+    }
+
+    func open(_ gespraech: Gespraech) {
+        conversation = gespraech
+    }
+
+    func deleteConversation(_ gespraech: Gespraech) {
+        guard let id = gespraech.id else { return }
+        do {
+            try repository.deleteConversation(id: id)
+            if conversation?.id == id {
+                conversation = nil
+            }
+            loadConversations()
+        } catch {
+            errorMessage = "\(error)"
+        }
+    }
+
+    func loadConversations() {
+        do {
+            conversations = try repository.conversations()
         } catch {
             errorMessage = "\(error)"
         }

@@ -60,7 +60,7 @@ struct LiveAcceptanceTests {
         #expect(FileManager.default.fileExists(atPath: inbox.path))
         let failedRequest = try #require(try repository.allRequests().last)
         #expect(failedRequest.status == .fehler)
-        #expect(try repository.hasSuccessfulRun(dateiId: failedRequest.dateiId) == false)
+        #expect(try repository.hasSuccessfulRun(dateiId: #require(failedRequest.dateiId)) == false)
         try intake.discard(inbox)
         #expect(intake.inbox().isEmpty)
         #expect(FileManager.default.fileExists(atPath: statement.path))

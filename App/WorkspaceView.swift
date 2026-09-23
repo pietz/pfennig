@@ -4,6 +4,7 @@ import SwiftUI
 enum Workspace: String, CaseIterable, Identifiable {
     case start
     case buchungen
+    case chat
 
     var id: String {
         rawValue
@@ -13,6 +14,7 @@ enum Workspace: String, CaseIterable, Identifiable {
         switch self {
         case .start: "Start"
         case .buchungen: "Buchungen"
+        case .chat: "Chat"
         }
     }
 
@@ -20,6 +22,7 @@ enum Workspace: String, CaseIterable, Identifiable {
         switch self {
         case .start: "house"
         case .buchungen: "list.bullet"
+        case .chat: "bubble.left.and.bubble.right"
         }
     }
 }
@@ -46,6 +49,8 @@ struct WorkspaceView: View {
                     inspectorPane.frame(width: WorkspaceView.inspectorWidth)
                 }
             }
+        case .chat:
+            ChatView(model: model)
         }
     }
 
@@ -96,7 +101,7 @@ struct WorkspaceView: View {
 
     private var minimumWindowWidth: CGFloat {
         switch workspace {
-        case .start:
+        case .start, .chat:
             Self.sidebarWidth + Self.startMinimumWidth
         case .buchungen:
             Self.sidebarWidth + Self.tableMinimumWidth

@@ -595,3 +595,28 @@ func beobachtungLiefertJedeAenderung() async throws {
     _ = try repository.save(geaendert, akteur: .nutzer)
     #expect(try await werte.next()?.first?.titel == "Stehpult")
 }
+
+@Test func gespraecheWerdenAngelegtFortgesetztUndGeloescht() throws {
+    let repository = try Repository.inMemory()
+    let first = try repository.saveConversation(Gespraech(titel: "Erstes"))
+    let second = try repository.saveConversation(Gespraech(titel: "Zweites"))
+    #expect(try repository.conversations().map(\.titel) == ["Zweites", "Erstes"])
+
+    var continued = first
+    continued.verlauf = "[{\"role\":\"user\"}]"
+    continued = try repository.saveConversation(continued)
+    #expect(continued.id == first.id)
+    #expect(try repository.conversation(id: #require(first.id))?.verlauf == "[{\"role\":\"user\"}]")
+
+    // A round keeps its cost row after its conversation is gone.
+    let request = try repository.startRequest(gespraechId: #require(second.id), modell: "gpt-5")
+    try repository.deleteConversation(id: #require(second.id))
+    #expect(try repository.conversations().map(\.titel) == ["Erstes"])
+    #expect(try repository.allRequests().map(\.id) == [request])
+}
+
+@Test func eineAnfrageGehoertGenauEinerDateiOderEinemGespraech() throws {
+    let repository = try Repository.inMemory()
+    #expect(throws: (any Error).self) { try repository.startRequest(modell: "gpt-5") }
+    #expect(throws: (any Error).self) { try repository.startRequest(dateiId: 1, gespraechId: 1, modell: "gpt-5") }
+}

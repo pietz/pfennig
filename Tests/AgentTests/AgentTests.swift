@@ -193,7 +193,9 @@ private func input() -> FileInput {
     let erste = gesehen[0]
     #expect(erste["model"] as? String == "gpt-5.6-luna")
     #expect((erste["reasoning"] as? [String: Any])?["effort"] as? String == "medium")
-    #expect(erste["previous_response_id"] as? String == nil)
+    // Stateless: nothing stored at OpenAI, the reasoning comes back encrypted.
+    #expect(erste["store"] as? Bool == false)
+    #expect(erste["include"] as? [String] == ["reasoning.encrypted_content"])
     // Priority processing is off unless the user asks for it.
     #expect(erste["service_tier"] as? String == nil)
     let werkzeuge = try #require(erste["tools"] as? [[String: Any]])
@@ -214,12 +216,18 @@ private func input() -> FileInput {
     #expect(content[1]["type"] as? String == "input_text")
     #expect(content[1]["text"] as? String == "Datei 1 hinzugefügt: rechnung.pdf")
 
+    // The second request repeats everything: system, file, reasoning, call and its output.
     let zweite = gesehen[1]
-    #expect(zweite["previous_response_id"] as? String == "resp_1")
+    #expect(zweite["previous_response_id"] == nil)
     let antwortteile = try #require(zweite["input"] as? [[String: Any]])
-    #expect(antwortteile[0]["type"] as? String == "function_call_output")
-    #expect(antwortteile[0]["call_id"] as? String == "call_1")
-    #expect((antwortteile[0]["output"] as? String)?.hasPrefix("ok") == true)
+    #expect(antwortteile.count == 5)
+    #expect(antwortteile[0]["role"] as? String == "system")
+    #expect((antwortteile[1]["content"] as? [[String: Any]])?.first?["type"] as? String == "input_file")
+    #expect(antwortteile[2]["type"] as? String == "reasoning")
+    #expect(antwortteile[3]["type"] as? String == "function_call")
+    #expect(antwortteile[4]["type"] as? String == "function_call_output")
+    #expect(antwortteile[4]["call_id"] as? String == "call_1")
+    #expect((antwortteile[4]["output"] as? String)?.hasPrefix("ok") == true)
 }
 
 @Test func laufNimmtModellAufwandUndSchnellAusDenEinstellungen() async throws {
@@ -374,25 +382,23 @@ private func input() -> FileInput {
     #expect(buchungsnotiz.contains("Kurs 0.9"))
     let request = try #require(try repository.allRequests().first)
     let konversation = try #require(request.konversation)
-    #expect(konversation.contains("\"werkzeug\":\"umrechnen\""))
     #expect(konversation.contains(CurrencyConverter.source))
     #expect(konversation.contains("eur_cent"))
     #expect(konversation.contains("Kurs 0.9"))
     #expect(konversation.contains("kursdatum"))
-    #expect(konversation.contains("\"werkzeug\":\"sql\""))
     #expect(konversation.contains("INSERT INTO buchungen"))
+    // The log is the native item list: both calls and both answers.
     let protokoll = try #require(
-        JSONSerialization.jsonObject(with: Data(konversation.utf8)) as? [[String: String]]
+        JSONSerialization.jsonObject(with: Data(konversation.utf8)) as? [[String: Any]]
     )
-    let werkzeugschritte = protokoll.filter { $0["werkzeug"] != nil }
-    #expect(werkzeugschritte.allSatisfy { $0["sql"] == nil })
-    #expect(werkzeugschritte.allSatisfy { Set($0.keys) == ["werkzeug", "argumente", "ergebnis"] })
+    #expect(protokoll.compactMap { $0["name"] as? String } == ["umrechnen", "sql"])
+    #expect(protokoll.filter { $0["type"] as? String == "function_call_output" }.count == 2)
     let urls = await skript.urls
     #expect(urls.contains { $0.host == "api.frankfurter.dev" })
     #expect(urls.filter { $0.host == "api.openai.com" }.count == 3)
 }
 
-@Test func laufMeldetEinenFehlerUndSchreibtIhnInDieAnfrage() async throws {
+@Test func laufMeldetEinenFehlerUndHaeltDieAnfrageFest() async throws {
     let repository = try Repository.inMemory()
     let skript = Skript([object([
         "id": "resp_1", "status": "incomplete", "incomplete_details": ["reason": "max_output_tokens"]
@@ -406,7 +412,7 @@ private func input() -> FileInput {
     await #expect(throws: RunAbort.self) { try await run.start(input()) }
     let request = try #require(try repository.allRequests().first)
     #expect(request.status == .fehler)
-    #expect(request.konversation?.contains("max_output_tokens") == true)
+    #expect(request.konversation?.contains("Datei 1 hinzugefügt") == true)
 }
 
 /// A transport that refuses every request, so a run ends without the network
@@ -816,7 +822,7 @@ private actor Zaehler {
     let expected = """
     Du bist der Buchhaltungsassistent in Pfennig, einer lokalen Anwendung für deutsche Selbstständige mit EÜR und Ist-Versteuerung.
 
-    Du pflegst die Buchhaltungsdaten des Unternehmens anhand von Dokumenten und Nutzerangaben in der Datenbank. Pfennig zeigt diese Daten dem Nutzer an, der sie prüfen und bearbeiten kann.
+    Du pflegst die Buchhaltungsdaten des Unternehmens anhand von Dokumenten und Nutzerangaben in der Datenbank und beantwortest Fragen des Nutzers dazu. Pfennig zeigt diese Daten dem Nutzer an, der sie prüfen und bearbeiten kann.
 
     Eine Buchung fasst einen Geschäftsvorgang mit seinen Belegen, Positionen und Zahlungen zusammen. Mit deinen Werkzeugen kannst du vorhandene Buchungen nachschlagen und bearbeiten. Änderungen werden automatisch protokolliert und dem Nutzer zur Prüfung vorgelegt.
 
@@ -875,7 +881,7 @@ private actor Zaehler {
     let request = try #require(try repository.allRequests().first)
     #expect(request.status == .erfolg)
     #expect(request.konversation == nil)
-    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId))
+    #expect(try repository.hasSuccessfulRun(dateiId: #require(request.dateiId)))
     #expect(intake.inbox().isEmpty)
     guard case .alreadyPresent = await intake.process(file) else {
         Issue.record("Die Datei muss trotz fehlender Diagnose dauerhaft erkannt werden.")
@@ -907,7 +913,7 @@ private actor Zaehler {
     #expect(try repository.allBookings().count == 1)
     let request = try #require(try repository.allRequests().first)
     #expect(request.status == nil)
-    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId) == false)
+    #expect(try repository.hasSuccessfulRun(dateiId: #require(request.dateiId)) == false)
     #expect(request.konversation != nil)
 
     // Once storage works again, the agent can complete the retained booking
@@ -924,7 +930,7 @@ private actor Zaehler {
         return
     }
     #expect(try repository.allBookings().count == 1)
-    #expect(try repository.hasSuccessfulRun(dateiId: request.dateiId))
+    #expect(try repository.hasSuccessfulRun(dateiId: #require(request.dateiId)))
     #expect(retry.inbox().isEmpty)
 }
 
@@ -954,4 +960,96 @@ private actor Zaehler {
     #expect(files.map(\.lastPathComponent) == ["bon.jpg", "rechnung.pdf", "konto.csv", "einzeln.png", "fehlt.pdf"])
     #expect(files[0].deletingLastPathComponent().lastPathComponent == "Q3")
     #expect(files[1].deletingLastPathComponent().lastPathComponent == "2026")
+}
+
+// MARK: - Chat
+
+/// An answer without tool call: encrypted reasoning, then the message.
+private func chatantwort(_ text: String, encrypted: String) -> String {
+    object([
+        "id": "resp_\(encrypted)",
+        "status": "completed",
+        "output": [
+            ["type": "reasoning", "id": "rs_\(encrypted)", "summary": [], "encrypted_content": encrypted],
+            ["type": "message", "role": "assistant", "content": [["type": "output_text", "text": text]]]
+        ],
+        "usage": ["input_tokens": 10, "output_tokens": 5]
+    ])
+}
+
+private func letzteAnfrage(_ skript: Skript) async throws -> [[String: Any]] {
+    let body = try #require(
+        await skript.gesehen.last.flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+    )
+    return try #require(body["input"] as? [[String: Any]])
+}
+
+@Test func chatSetztDasGespraechMitReasoningFortOhneDateibytesZuSpeichern() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "auszug.pdf")
+    try Data("%PDF synthetisch".utf8).write(to: file)
+    let skript = Skript([
+        chatantwort("Ein Kontoauszug.", encrypted: "enc_1"),
+        chatantwort("Nichts weiter.", encrypted: "enc_2"),
+        chatantwort("Die Datei fehlt.", encrypted: "enc_3")
+    ])
+    let intake = try await FileIntake(repository: repository, path: path, transport: skript.transport, key: "test")
+    let chat = Chat(intake: intake)
+
+    let first = try await chat.send("Was ist das?\nZweite Zeile", files: [file], to: nil)
+    let id = try #require(first.id)
+    #expect(first.titel == "Was ist das?")
+    #expect(first.verlauf.contains("base64") == false)
+    #expect(Conversation.fileIDs(Conversation.items(first.verlauf)) == [1])
+    #expect(first.verlauf.contains("enc_1"))
+    // Attached, not imported: the file is stored, no run for it, nothing booked.
+    #expect(try repository.fileID(sha256: FileIntake.hash(Data(contentsOf: file))) == 1)
+    #expect(try repository.hasSuccessfulRun(dateiId: 1) == false)
+    #expect(try repository.allBookings().isEmpty)
+    let request = try #require(try repository.allRequests().first)
+    #expect(request.gespraechId == id)
+    #expect(request.dateiId == nil)
+    #expect(request.status == .erfolg)
+    #expect(request.eingabeTokens == 10)
+
+    let second = try await chat.send("Und weiter?", files: [], to: first)
+    let input = try await letzteAnfrage(skript)
+    // System, first question with the file filled in again, reasoning, answer, new question.
+    #expect(input.count == 5)
+    let firstContent = try #require(input[1]["content"] as? [[String: Any]])
+    #expect(firstContent[0]["type"] as? String == "input_file")
+    #expect(firstContent[1]["text"] as? String == "Datei 1 angehängt: auszug.pdf")
+    #expect(input[2]["encrypted_content"] as? String == "enc_1")
+    #expect(input[3]["type"] as? String == "message")
+    #expect(((input[4]["content"] as? [[String: Any]])?.last?["text"] as? String) == "Und weiter?")
+    #expect(Conversation.messages(second.verlauf).map(\.fromUser) == [true, false, true, false])
+    #expect(Conversation.messages(second.verlauf).last?.text == "Nichts weiter.")
+    #expect(try repository.conversations().map(\.id) == [id])
+
+    // A file gone from the archive is named, not sent.
+    let datei = try #require(try repository.files(for: [1]).first)
+    try FileManager.default.removeItem(at: path.original(datei))
+    _ = try await chat.send("Noch da?", files: [], to: second)
+    let missing = try #require(try await letzteAnfrage(skript)[1]["content"] as? [[String: Any]])
+    #expect(missing[0]["text"] as? String == "Datei 1 ist nicht mehr vorhanden.")
+    #expect(try repository.allRequests().count == 3)
+}
+
+@Test func chatVerwirftEinNeuesGespraechWennDieErsteRundeScheitert() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "test")
+    await #expect(throws: RunAbort.self) {
+        try await Chat(intake: intake).send("Hallo", files: [], to: nil)
+    }
+    #expect(try repository.conversations().isEmpty)
+    #expect(try repository.allRequests().first?.status == .fehler)
+}
+
+@Test func chatTitelWirdGekuerzt() {
+    let title = Chat.title(String(repeating: "a", count: 100), files: [])
+    #expect(title.count == Chat.titleLength)
+    #expect(title.hasSuffix("…"))
+    #expect(Chat.title("", files: [input()]) == "rechnung.pdf")
 }

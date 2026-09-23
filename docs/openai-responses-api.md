@@ -435,6 +435,15 @@ has to be repeated on every turn:
 `output` is a plain string; a tool that fails answers with its error text there, and the model
 corrects from it. The loop ends with the response whose `output` holds no `function_call` any more.
 
+**Stateless conversations (what Pfennig uses).** Verified 2026-09-23 against
+https://developers.openai.com/api/docs/guides/reasoning: with `store: false`, reasoning items in
+`output` carry `encrypted_content`; to continue, "preserve every output item, append the next user
+message, and replay the complete history". `include: ["reasoning.encrypted_content"]` is described
+as the older, still accepted way to ask for it; Pfennig sends it anyway. Pfennig therefore sends
+`store: false` with the whole item list on every request, no `previous_response_id`, and keeps the
+items locally (`gespraeche.verlauf`, `anfragen.konversation`), so a conversation continues later
+without anything stored at OpenAI. Not yet confirmed with a live request.
+
 **Priority processing (`service_tier`).** Verified 2026-09-14 against
 https://developers.openai.com/api/docs/guides/priority-processing (the guide is titled "Fast mode"
 since the feature was renamed on 2026-07-30) and the flex-processing guide. It is a top-level

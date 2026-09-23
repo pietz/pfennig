@@ -88,8 +88,8 @@ public struct RunAbort: Error, LocalizedError {
     }
 }
 
-/// One file, one run: the tool loop over the Responses API. The model is fixed
-/// in the code, there is no choice in the settings.
+/// The agent: one tool loop over the Responses API, started by the import of
+/// a file or by a round of a conversation.
 public struct AgentRun: Sendable {
     public static let maxToolCalls = 60
 
@@ -98,17 +98,21 @@ public struct AgentRun: Sendable {
     /// Read once per run from the Keychain, never kept anywhere else.
     let key: String
     let transport: Transport
+    /// Where the originals of earlier files in a conversation are read from.
+    let path: ArchivePaths
 
     public init(
         repository: Repository,
         tool: SQLTool,
         key: String,
-        transport: @escaping Transport = Responses.network
+        transport: @escaping Transport = Responses.network,
+        path: ArchivePaths = .standard
     ) {
         self.repository = repository
         self.tool = tool
         self.key = key
         self.transport = transport
+        self.path = path
     }
 
     /// The SQL tool the agent gets, in the shape the Responses API expects.
@@ -159,27 +163,72 @@ public struct AgentRun: Sendable {
         ]
     }
 
-    /// Runs the loop and records it in `anfragen`, whatever the outcome.
+    /// A dropped file without further instruction: the import. It must change
+    /// a booking, or the run counts as failed.
     public func start(_ file: FileInput) async throws -> RunResult {
+        let message: [[String: Any]] = [
+            Conversation.reference(file.id),
+            ["type": "input_text", "text": "Datei \(file.id) hinzugefügt: \(file.name)"]
+        ]
+        return try await run(history: [], message: message, files: [file], dateiId: file.id).result
+    }
+
+    /// One round of a stored conversation: the user's text with the files
+    /// attached to it. It may end without touching a booking. Answers with the
+    /// conversation grown by the round; the caller stores it.
+    public func chat(_ gespraech: Gespraech, text: String, files: [FileInput]) async throws -> Gespraech {
+        guard let id = gespraech.id else { preconditionFailure("the conversation is stored before its first round") }
+        let history = Conversation.items(gespraech.verlauf)
+        var message: [[String: Any]] = files.flatMap { file -> [[String: Any]] in
+            [
+                Conversation.reference(file.id),
+                ["type": "input_text", "text": "Datei \(file.id) angehängt: \(file.name)"]
+            ]
+        }
+        if text.isEmpty == false {
+            message.append(["type": "input_text", "text": text])
+        }
+        let items = try await run(history: history, message: message, files: files, gespraechId: id).items
+        var updated = gespraech
+        updated.verlauf = Conversation.json(history + items)
+        return updated
+    }
+
+    /// The one tool loop of import and chat. It continues `history` with the
+    /// user message until the agent answers and records the run in
+    /// `anfragen`, whatever the outcome. Answers with the new items, file
+    /// bytes replaced by their reference.
+    private func run(
+        history: [[String: Any]],
+        message: [[String: Any]],
+        files: [FileInput],
+        dateiId: Int64? = nil,
+        gespraechId: Int64? = nil
+    ) async throws -> (result: RunResult, items: [[String: Any]]) {
         let instructions = try AgentInstructions.build(repository)
         let ai = try repository.aiSettings()
-        let request = try repository.startRequest(dateiId: file.id, modell: ai.model.rawValue)
-        var trace = Trace()
+        let request = try repository.startRequest(dateiId: dateiId, gespraechId: gespraechId, modell: ai.model.rawValue)
+        var items: [[String: Any]] = [["role": "user", "content": message]]
+        var usage = Usage()
         var result = RunResult()
         defer {
             // Diagnostics may fail without changing the durable run outcome.
             try? repository.recordRequestTrace(
-                id: request, eingabeTokens: trace.inputTokens,
-                ausgabeTokens: trace.outputTokens, konversation: trace.asJSON()
+                id: request, eingabeTokens: usage.input,
+                ausgabeTokens: usage.output, konversation: Conversation.json(items)
             )
         }
         do {
-            try await loop(file, ai: ai, instructions: instructions, result: &result, trace: &trace)
-            guard result.touched.isEmpty == false else {
+            let known = resolve(Conversation.fileIDs(history), given: files)
+            try await loop(
+                history: history, items: &items, files: known, ai: ai, instructions: instructions,
+                result: &result, usage: &usage
+            )
+            // Only the import has to book something; a conversation need not.
+            guard dateiId == nil || result.touched.isEmpty == false else {
                 throw AgentError.noBooking
             }
         } catch {
-            trace.steps.append(["fehler": error.localizedDescription])
             try? repository.finishRequest(id: request, status: .fehler)
             throw RunAbort(created: result.created, reason: error)
         }
@@ -187,50 +236,58 @@ public struct AgentRun: Sendable {
         // this outside the abort handler: bookings are already committed and
         // must survive a failure to persist the completion status.
         try repository.finishRequest(id: request, status: .erfolg)
-        return result
+        return (result, items)
     }
 
+    /// The files the conversation refers to, read once per run: the ones of
+    /// this round as handed in, earlier ones from the archive. A file that is
+    /// gone is left out, and the model reads that it is gone.
+    private func resolve(_ ids: [Int64], given: [FileInput]) -> [Int64: FileInput] {
+        var files = Dictionary(given.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        let missing = ids.filter { files[$0] == nil }
+        for datei in (try? repository.files(for: missing)) ?? [] {
+            guard let id = datei.id, let data = try? Data(contentsOf: path.original(datei)) else { continue }
+            files[id] = FileInput(id: id, name: datei.dateiname, fileExtension: datei.endung, data: data)
+        }
+        return files
+    }
+
+    /// Stateless on OpenAI's side: every request carries the whole item list
+    /// and nothing is stored there. The encrypted reasoning comes back with
+    /// the output, so a conversation continues later from the local copy.
     private func loop(
-        _ file: FileInput,
+        history: [[String: Any]],
+        items: inout [[String: Any]],
+        files: [Int64: FileInput],
         ai: AISettings,
         instructions: String,
         result: inout RunResult,
-        trace: inout Trace
+        usage: inout Usage
     ) async throws {
         let client = Responses(key: key, transport: transport)
         var calls = 0
-        var previousResponse: String?
-        var input: [[String: Any]] = [
-            ["role": "system", "content": instructions],
-            ["role": "user", "content": [
-                file.content,
-                ["type": "input_text", "text": "Datei \(file.id) hinzugefügt: \(file.name)"]
-            ]]
-        ]
-
         while true {
             var body: [String: Any] = [
                 "model": ai.model.rawValue,
                 "reasoning": ["effort": ai.effort.rawValue],
                 "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription],
-                "input": input
+                "store": false,
+                "include": ["reasoning.encrypted_content"],
+                "input": [["role": "system", "content": instructions]]
+                    + Conversation.expand(history + items, files: files)
             ]
             if ai.fast {
                 // OpenAI's priority processing, about twice the price.
                 body["service_tier"] = "priority"
             }
-            if let previousResponse {
-                body["previous_response_id"] = previousResponse
-            }
             let response = try await client.send(body)
-            trace.count(response)
-            previousResponse = response["id"] as? String
+            usage.count(response)
             try AgentRun.validateStatus(response)
+            items.append(contentsOf: AgentRun.outputItems(response))
 
             let callsThisRound = AgentRun.toolCalls(response)
             guard callsThisRound.isEmpty == false else {
                 result.summary = AgentRun.text(response)
-                trace.steps.append(["agent": result.summary])
                 return
             }
             calls += callsThisRound.count
@@ -238,13 +295,11 @@ public struct AgentRun: Sendable {
                 throw AgentError.tooManyToolCalls
             }
 
-            input = []
             for call in callsThisRound {
                 let text: String
                 switch call.name {
                 case "sql":
-                    let sql = AgentRun.sql(call.arguments)
-                    let toolResult = tool.execute(sql)
+                    let toolResult = tool.execute(AgentRun.sql(call.arguments))
                     result.touched = Array(Set(result.touched).union(toolResult.touched)).sorted()
                     result.created = Array(Set(result.created).union(toolResult.created)).sorted()
                     text = toolResult.text
@@ -253,13 +308,7 @@ public struct AgentRun: Sendable {
                 default:
                     text = "Fehler: Unbekanntes Werkzeug \(call.name). Verwende sql oder umrechnen."
                 }
-                let step = [
-                    "werkzeug": call.name,
-                    "argumente": call.arguments,
-                    "ergebnis": text
-                ]
-                trace.steps.append(step)
-                input.append([
+                items.append([
                     "type": "function_call_output",
                     "call_id": call.callId,
                     "output": text
@@ -318,27 +367,19 @@ public struct AgentRun: Sendable {
         return sql
     }
 
-    private static func outputItems(_ response: [String: Any]) -> [[String: Any]] {
+    static func outputItems(_ response: [String: Any]) -> [[String: Any]] {
         response["output"] as? [[String: Any]] ?? []
     }
 }
 
-/// What goes into `anfragen.konversation`: the text and the tool exchange,
-/// never the bytes of the file.
-struct Trace {
-    var steps: [[String: String]] = []
-    var inputTokens = 0
-    var outputTokens = 0
+/// The tokens of a run, summed over its requests.
+struct Usage {
+    var input = 0
+    var output = 0
 
     mutating func count(_ response: [String: Any]) {
         guard let usage = response["usage"] as? [String: Any] else { return }
-        inputTokens += usage["input_tokens"] as? Int ?? 0
-        outputTokens += usage["output_tokens"] as? Int ?? 0
-    }
-
-    func asJSON() -> String {
-        guard let data = try? JSONSerialization.data(withJSONObject: steps, options: [.withoutEscapingSlashes])
-        else { return "[]" }
-        return String(decoding: data, as: UTF8.self)
+        input += usage["input_tokens"] as? Int ?? 0
+        output += usage["output_tokens"] as? Int ?? 0
     }
 }

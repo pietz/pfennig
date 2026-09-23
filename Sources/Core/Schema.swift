@@ -66,14 +66,25 @@ public enum Schema {
 
     CREATE TABLE anfragen (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        datei_id INTEGER NOT NULL,
+        datei_id INTEGER,                           -- Import einer Datei
+        gespraech_id INTEGER,                       -- oder eine Runde eines Gesprächs
         modell TEXT NOT NULL,
         gestartet_am TEXT NOT NULL,
         beendet_am TEXT,
         status TEXT CHECK (status IN ('erfolg', 'fehler')),
         eingabe_tokens INTEGER,
         ausgabe_tokens INTEGER,
-        konversation TEXT                           -- JSON des Agentenlaufs ohne Dateibytes: Text, Werkzeugaufrufe, Antworten
+        konversation TEXT,                          -- JSON-Liste der Eingabe- und Ausgabeelemente des Laufs ohne Dateibytes
+        CHECK ((datei_id IS NULL) <> (gespraech_id IS NULL))
+    );
+
+    CREATE TABLE gespraeche (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        titel TEXT NOT NULL,                        -- gekürzte erste Nutzernachricht
+        erstellt_am TEXT NOT NULL,
+        geaendert_am TEXT NOT NULL,
+        -- JSON-Liste der Responses-Elemente ohne Dateibytes; eine Datei steht als {"type": "datei", "id": 3}
+        verlauf TEXT NOT NULL DEFAULT '[]'
     );
 
     CREATE TABLE einstellungen (

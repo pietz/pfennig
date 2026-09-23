@@ -3,7 +3,7 @@ import Foundation
 import GRDB
 import Testing
 
-@Test func schemaLegtDieFuenfTabellenAn() throws {
+@Test func schemaLegtDieTabellenAn() throws {
     let repository = try Repository.inMemory()
     let tabellen = try repository.database.read { db in
         try String.fetchAll(db, sql: "SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name")
@@ -13,6 +13,7 @@ import Testing
     #expect(tabellen.contains("aktivitaeten"))
     #expect(tabellen.contains("anfragen"))
     #expect(tabellen.contains("einstellungen"))
+    #expect(tabellen.contains("gespraeche"))
 }
 
 @Test func schemaBleibtDemAgentenLesbar() throws {
