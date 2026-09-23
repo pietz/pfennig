@@ -7,6 +7,7 @@ let package = Package(
     products: [
         .library(name: "Core", targets: ["Core"]),
         .library(name: "Agent", targets: ["Agent"]),
+        .executable(name: "PfennigEval", targets: ["PfennigEval"]),
     ],
     dependencies: [
         .package(url: "https://github.com/groue/GRDB.swift.git", from: "7.11.1"),
@@ -24,7 +25,8 @@ let package = Package(
         .testTarget(name: "CoreTests", dependencies: ["Core"]),
         // Responses client, agent instructions, tool loop and file intake.
         .target(name: "Agent", dependencies: ["Core"]),
-        .testTarget(name: "AgentTests", dependencies: ["Agent"], resources: [.copy("Fixtures")]),
+        .executableTarget(name: "PfennigEval", dependencies: ["Agent", "Core"], path: "evals/runner"),
+        .testTarget(name: "AgentTests", dependencies: ["Agent", "PfennigEval"], resources: [.copy("Fixtures")]),
     ],
     swiftLanguageModes: [.v6]
 )

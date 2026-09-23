@@ -1,0 +1,315 @@
+import Agent
+import Core
+import CryptoKit
+import Darwin
+import Foundation
+
+private struct Options {
+    var root = URL(fileURLWithPath: "evals/2026-q3")
+    var truthFile: URL?
+    var model: Model?
+    var effort: ReasoningEffort?
+    var caseIDs: Set<String>?
+    var repeats = 1
+    var rulesFile: URL?
+    var output: URL?
+    var rescoreFile: URL?
+    var validateOnly = false
+
+    init(_ arguments: [String]) throws {
+        var index = 0
+        while index < arguments.count {
+            let flag = arguments[index]
+            if flag == "--validate-only" {
+                validateOnly = true
+            } else if flag == "--all" {
+                caseIDs = []
+            } else {
+                index += 1
+                guard index < arguments.count else { throw EvalError.invalid("Missing value for \(flag)") }
+                let value = arguments[index]
+                switch flag {
+                case "--root": root = URL(fileURLWithPath: value)
+                case "--truth": truthFile = URL(fileURLWithPath: value)
+                case "--model": model = Model(rawValue: value)
+                case "--effort": effort = ReasoningEffort(rawValue: value)
+                case "--cases": caseIDs = Set(value.split(separator: ",").map(String.init))
+                case "--repeats": repeats = Int(value) ?? 0
+                case "--rules": rulesFile = URL(fileURLWithPath: value)
+                case "--output": output = URL(fileURLWithPath: value)
+                case "--rescore": rescoreFile = URL(fileURLWithPath: value)
+                default: throw EvalError.invalid("Unknown option: \(flag)")
+                }
+            }
+            index += 1
+        }
+        guard (1 ... 5).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...5") }
+        if validateOnly == false, rescoreFile == nil {
+            guard model != nil, effort != nil, caseIDs != nil else {
+                throw EvalError.invalid("Choose --model, --effort and either --cases or --all.")
+            }
+        }
+    }
+}
+
+private struct CaseResult: Codable {
+    let id: String
+    let repetition: Int
+    let outcome: String
+    let error: String?
+    let agentEvaluated: Bool
+    let seconds: Double
+    let inputTokens: Int?
+    let outputTokens: Int?
+    let trace: String?
+    let promptFile: String
+    let promptSHA256: String
+    let fileSHA256: String
+    var mismatches: [String]
+    let bookings: [Buchung]
+
+    var passed: Bool {
+        mismatches.isEmpty
+    }
+}
+
+private struct Report: Codable {
+    var generatedAt: String
+    let model: String
+    let effort: String
+    let rulesFile: String?
+    let rulesSHA256: String?
+    var truthSHA256: String
+    var passed: Int
+    let total: Int
+    let plannedTotal: Int?
+    var agentPassed: Int
+    let agentTotal: Int
+    var cases: [CaseResult]
+    var rescoreOf: String?
+}
+
+@main
+enum PfennigEval {
+    static func main() async {
+        do {
+            try await execute()
+        } catch {
+            fputs("Eval error: \(error.localizedDescription)\n", stderr)
+            exit(1)
+        }
+    }
+
+    private static func execute() async throws {
+        let options = try Options(Array(CommandLine.arguments.dropFirst()))
+        let root = options.root.standardizedFileURL
+        let truthURL = options.truthFile ?? root.appending(path: "ground-truth.json")
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        let truthData = try Data(contentsOf: truthURL)
+        let truth = try decoder.decode(GroundTruth.self, from: truthData)
+        try truth.validate(at: root)
+        if options.validateOnly {
+            print(
+                "Valid ground truth: \(truth.cases.filter { $0.expected != nil }.count) bookable, \(truth.cases.filter { $0.expected == nil }.count) controls"
+            )
+            return
+        }
+        if let sourceReport = options.rescoreFile {
+            try rescore(sourceReport, truth: truth, truthData: truthData, root: root)
+            return
+        }
+        let selected = truth.cases
+            .filter { options.caseIDs?.isEmpty == true || options.caseIDs?.contains($0.id) == true }
+        guard selected.isEmpty == false,
+              selected.count == options.caseIDs?.count || options.caseIDs?.isEmpty == true
+        else {
+            throw EvalError.invalid("Unknown or empty case selection.")
+        }
+        guard Keychain.exists else { throw EvalError.invalid("Pfennig API key not found in Keychain.") }
+        let model = try require(options.model, "model")
+        let effort = try require(options.effort, "effort")
+        let rules = try options.rulesFile.map { try String(contentsOf: $0, encoding: .utf8) }
+        if let rules, rules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            throw EvalError.invalid("Rules file is empty.")
+        }
+        let stamp = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        let output = (options
+            .output ?? URL(fileURLWithPath: "evals/results/\(stamp)-\(model.rawValue)-\(effort.rawValue)"))
+            .standardizedFileURL
+        guard FileManager.default.fileExists(atPath: output.path) == false else {
+            throw EvalError.invalid("Output directory already exists: \(output.path)")
+        }
+        try FileManager.default.createDirectory(at: output, withIntermediateDirectories: true)
+        try truthData.write(to: output.appending(path: "truth-snapshot.json"), options: .atomic)
+        var results: [CaseResult] = []
+        func saveReport() throws -> Report {
+            let report = Report(
+                generatedAt: ISO8601DateFormatter().string(from: Date()),
+                model: model.rawValue,
+                effort: effort.rawValue,
+                rulesFile: options.rulesFile?.path,
+                rulesSHA256: rules.map { digest(Data($0.utf8)) },
+                truthSHA256: digest(truthData),
+                passed: results.filter(\.passed).count,
+                total: results.count,
+                plannedTotal: selected.count * options.repeats,
+                agentPassed: results.filter { $0.agentEvaluated && $0.passed }.count,
+                agentTotal: results.filter(\.agentEvaluated).count,
+                cases: results,
+                rescoreOf: nil
+            )
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            encoder.dateEncodingStrategy = .iso8601
+            try encoder.encode(report).write(to: output.appending(path: "report.json"), options: .atomic)
+            return report
+        }
+        for item in selected {
+            for repetition in 1 ... options.repeats {
+                let result = try await run(
+                    item,
+                    repetition: repetition,
+                    root: root,
+                    output: output,
+                    profile: truth.profile,
+                    model: model,
+                    effort: effort,
+                    rules: rules
+                )
+                results.append(result)
+                _ = try saveReport()
+                let fields = result.mismatches.map { String($0.split(separator: ":", maxSplits: 1).first ?? "") }
+                print(
+                    "\(item.id) #\(repetition): \(result.passed ? "PASS" : "FAIL") \(fields.joined(separator: ", "))"
+                )
+                fflush(stdout)
+            }
+        }
+        let report = try saveReport()
+        print(
+            "\(report.passed)/\(results.count) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.appending(path: "report.json").path)"
+        )
+    }
+
+    private static func require<T>(_ value: T?, _ label: String) throws -> T {
+        guard let value else { throw EvalError.invalid("Missing \(label)") }
+        return value
+    }
+
+    private static func digest(_ data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL) throws {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        var report = try decoder.decode(Report.self, from: Data(contentsOf: source))
+        let items = Dictionary(uniqueKeysWithValues: truth.cases.map { ($0.id, $0) })
+        for index in report.cases.indices {
+            let recorded = report.cases[index]
+            guard let item = items[recorded.id] else {
+                throw EvalError.invalid("Case missing from ground truth: \(recorded.id)")
+            }
+            let sourceHash = try FileIntake.hash(Data(contentsOf: root.appending(path: item.file)))
+            guard sourceHash == recorded.fileSHA256 else {
+                throw EvalError.invalid("Source file changed: \(item.file)")
+            }
+            report.cases[index].mismatches = EvalScoring.mismatches(
+                item,
+                outcome: recorded.outcome,
+                error: recorded.error,
+                bookings: recorded.bookings,
+                fileID: recorded.bookings.first?.belege.first
+            )
+        }
+        report.generatedAt = ISO8601DateFormatter().string(from: Date())
+        report.truthSHA256 = digest(truthData)
+        report.passed = report.cases.filter(\.passed).count
+        report.agentPassed = report.cases.filter { $0.agentEvaluated && $0.passed }.count
+        report.rescoreOf = source.path
+        let suffix = String(report.truthSHA256.prefix(12))
+        let output = source.deletingLastPathComponent().appending(path: "rescore-\(suffix).json")
+        try truthData.write(
+            to: source.deletingLastPathComponent().appending(path: "truth-\(suffix).json"),
+            options: .atomic
+        )
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(report).write(to: output, options: .atomic)
+        print(
+            "Rescored \(report.passed)/\(report.total); agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.path)"
+        )
+    }
+
+    private static func run(
+        _ item: EvalCase, repetition: Int, root: URL, output: URL,
+        profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?
+    ) async throws -> CaseResult {
+        let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-eval-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: folder) }
+        let archive = ArchivePaths(folder: folder)
+        try archive.create()
+        let repository = try Repository(path: archive.databaseFile)
+        try repository.saveProfile(Profil(
+            name: profile.name,
+            ustid: profile.ustid,
+            kleinunternehmer: profile.kleinunternehmer
+        ))
+        try repository.saveAISettings(AISettings(model: model, effort: effort))
+        let prompt = try AgentInstructions.build(repository, rulesOverride: rules)
+        let promptSHA256 = digest(Data(prompt.utf8))
+        let promptFile = "prompt-\(promptSHA256).txt"
+        let promptURL = output.appending(path: promptFile)
+        if FileManager.default.fileExists(atPath: promptURL.path) == false {
+            try prompt.write(to: promptURL, atomically: true, encoding: .utf8)
+        }
+        let intake = try FileIntake(repository: repository, path: archive, rulesOverride: rules)
+        let started = Date()
+        let intakeResult = await intake.process(root.appending(path: item.file))
+        let seconds = Date().timeIntervalSince(started)
+        let (outcome, error): (String, String?) = switch intakeResult {
+        case .booked: ("booked", nil)
+        case .alreadyPresent: ("alreadyPresent", nil)
+        case let .failed(_, message): ("failed", message)
+        }
+        let bookings = try repository.allBookings()
+        let request = try repository.allRequests().last
+        let agentEvaluated = request != nil && (error.map {
+            !$0.hasPrefix("OpenAI hat mit ")
+                && !$0.hasPrefix("Die Verbindung zu OpenAI kam nicht zustande:")
+                && !$0.hasPrefix("Kein API-Schlüssel hinterlegt.")
+        } ?? true)
+        let hash = try FileIntake.hash(Data(contentsOf: root.appending(path: item.file)))
+        let fileID = try repository.fileID(sha256: hash)
+        let mismatches = EvalScoring.mismatches(
+            item,
+            outcome: outcome,
+            error: error,
+            bookings: bookings,
+            fileID: fileID
+        )
+        var trace: String?
+        if let conversation = request?.konversation {
+            trace = "\(item.id)-\(repetition)-trace.json"
+            try conversation.write(to: output.appending(path: trace!), atomically: true, encoding: .utf8)
+        }
+        return CaseResult(
+            id: item.id,
+            repetition: repetition,
+            outcome: outcome,
+            error: error,
+            agentEvaluated: agentEvaluated,
+            seconds: seconds,
+            inputTokens: request?.eingabeTokens,
+            outputTokens: request?.ausgabeTokens,
+            trace: trace,
+            promptFile: promptFile,
+            promptSHA256: promptSHA256,
+            fileSHA256: hash,
+            mismatches: mismatches,
+            bookings: bookings
+        )
+    }
+}

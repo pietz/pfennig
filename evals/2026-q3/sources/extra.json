@@ -1,0 +1,280 @@
+[
+  {
+    "filename": "29-veldlicht-eu-display.pdf",
+    "scenario": "eu_goods_acquisition_paid",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "ausgabe",
+      "art": "rechnung",
+      "datum": "2026-07-14",
+      "belegnummer": "VH-260714-029",
+      "gegenpartei_name": "Veldlicht Handel B.V.",
+      "gegenpartei_land": "NL",
+      "kategorie": "hardware",
+      "steuerbehandlung": "innergemeinschaftlicher_erwerb",
+      "netto_cents": 28800,
+      "steuer_cents": 0,
+      "brutto_cents": 28800,
+      "zahlungen": [
+        {
+          "datum": "2026-07-16",
+          "betrag": 28800
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 28800,
+          "steuer_cents": 0
+        }
+      ]
+    }
+  },
+  {
+    "filename": "30-slatepeak-cloud-service.pdf",
+    "scenario": "us_b2b_service_reverse_charge_paid",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "accepted_categories": [
+        "hosting"
+      ],
+      "richtung": "ausgabe",
+      "art": "rechnung",
+      "datum": "2026-08-06",
+      "belegnummer": "SS-2026-0806-030",
+      "gegenpartei_name": "Slatepeak Systems Inc.",
+      "gegenpartei_land": "US",
+      "kategorie": "software",
+      "steuerbehandlung": "reverse_charge",
+      "netto_cents": 6400,
+      "steuer_cents": 0,
+      "brutto_cents": 6400,
+      "zahlungen": [
+        {
+          "datum": "2026-08-07",
+          "betrag": 6400
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 6400,
+          "steuer_cents": 0
+        }
+      ]
+    }
+  },
+  {
+    "filename": "31-seitenstrom-fachbuch.pdf",
+    "scenario": "professional_print_book_7_percent",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "ausgabe",
+      "art": "beleg",
+      "datum": "2026-08-12",
+      "belegnummer": "SB-260812-031",
+      "gegenpartei_name": "Seitenstrom Buchhandlung GmbH",
+      "gegenpartei_land": "DE",
+      "kategorie": "fortbildung",
+      "steuerbehandlung": "inland",
+      "netto_cents": 2800,
+      "steuer_cents": 196,
+      "brutto_cents": 2996,
+      "zahlungen": [
+        {
+          "datum": "2026-08-12",
+          "betrag": 2996
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "7",
+          "netto_cents": 2800,
+          "steuer_cents": 196
+        }
+      ]
+    }
+  },
+  {
+    "filename": "32-werftkontor-coworking.pdf",
+    "scenario": "coworking_workspace_paid",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "ausgabe",
+      "art": "rechnung",
+      "datum": "2026-09-01",
+      "belegnummer": "WK-260901-032",
+      "gegenpartei_name": "Werftkontor Räume GmbH",
+      "gegenpartei_land": "DE",
+      "kategorie": "miete",
+      "steuerbehandlung": "inland",
+      "netto_cents": 24000,
+      "steuer_cents": 4560,
+      "brutto_cents": 28560,
+      "zahlungen": [
+        {
+          "datum": "2026-09-03",
+          "betrag": 28560
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 24000,
+          "steuer_cents": 4560
+        }
+      ]
+    }
+  },
+  {
+    "filename": "33-sl-license-stadtfaden.pdf",
+    "scenario": "domestic_license_revenue_paid",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "einnahme",
+      "art": "rechnung",
+      "datum": "2026-09-08",
+      "belegnummer": "SL-2026-096",
+      "gegenpartei_name": "Stadtfaden Verlag GmbH",
+      "gegenpartei_land": "DE",
+      "kategorie": "umsatz_lizenzen",
+      "steuerbehandlung": "inland",
+      "netto_cents": 150000,
+      "steuer_cents": 28500,
+      "brutto_cents": 178500,
+      "zahlungen": [
+        {
+          "datum": "2026-09-18",
+          "betrag": 178500
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 150000,
+          "steuer_cents": 28500
+        }
+      ]
+    }
+  },
+  {
+    "filename": "34-sl-partial-payment-holzlinie.pdf",
+    "scenario": "domestic_service_income_part_paid",
+    "expected": {
+      "faelligkeit": "2026-09-30",
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "einnahme",
+      "art": "rechnung",
+      "datum": "2026-09-16",
+      "belegnummer": "SL-2026-097",
+      "gegenpartei_name": "Holzlinie Möbel GmbH",
+      "gegenpartei_land": "DE",
+      "kategorie": "umsatz_dienstleistung",
+      "steuerbehandlung": "inland",
+      "netto_cents": 200000,
+      "steuer_cents": 38000,
+      "brutto_cents": 238000,
+      "zahlungen": [
+        {
+          "datum": "2026-09-20",
+          "betrag": 80000
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 200000,
+          "steuer_cents": 38000
+        }
+      ]
+    }
+  },
+  {
+    "filename": "35-eichenrat-advisory.pdf",
+    "scenario": "professional_advice_unpaid",
+    "expected": {
+      "faelligkeit": "2026-10-03",
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "ausgabe",
+      "art": "rechnung",
+      "datum": "2026-09-19",
+      "belegnummer": "ER-260919-035",
+      "gegenpartei_name": "Eichenrat Steuerberatung",
+      "gegenpartei_land": "DE",
+      "kategorie": "beratung",
+      "steuerbehandlung": "inland",
+      "netto_cents": 32000,
+      "steuer_cents": 6080,
+      "brutto_cents": 38080,
+      "zahlungen": [],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 32000,
+          "steuer_cents": 6080
+        }
+      ]
+    }
+  },
+  {
+    "filename": "36-signalwerk-drawing-tablet.pdf",
+    "scenario": "low_value_hardware_accessory_paid",
+    "expected": {
+      "faelligkeit": null,
+      "privatanteil_prozent": 0,
+      "nutzungsdauer_jahre": null,
+      "waehrung": null,
+      "originalbetrag": null,
+      "richtung": "ausgabe",
+      "art": "rechnung",
+      "datum": "2026-09-22",
+      "belegnummer": "ST-260922-036",
+      "gegenpartei_name": "Signalwerk Technik GmbH",
+      "gegenpartei_land": "DE",
+      "kategorie": "hardware",
+      "steuerbehandlung": "inland",
+      "netto_cents": 12900,
+      "steuer_cents": 2451,
+      "brutto_cents": 15351,
+      "zahlungen": [
+        {
+          "datum": "2026-09-22",
+          "betrag": 15351
+        }
+      ],
+      "positionen_nach_satz": [
+        {
+          "steuersatz": "19",
+          "netto_cents": 12900,
+          "steuer_cents": 2451
+        }
+      ]
+    }
+  }
+]

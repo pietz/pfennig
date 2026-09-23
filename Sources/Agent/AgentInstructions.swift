@@ -4,11 +4,11 @@ import Foundation
 /// The system prompt, built fresh for every run. The schema comes out of the
 /// database itself, so it can never drift from what the agent writes into.
 public enum AgentInstructions {
-    public static func build(_ repository: Repository) throws -> String {
+    public static func build(_ repository: Repository, rulesOverride: String? = nil) throws -> String {
         let profile = try repository.profile()
         return try [
             environment,
-            rules,
+            rulesOverride ?? rules,
             "## Profil\n\n" + profileText(profile),
             "## Schema\n\n" + appManagedFields + "\n\n```sql\n" + (repository.schemaText()) + "\n```",
             "## Kategorien\n\n" + categoryText()

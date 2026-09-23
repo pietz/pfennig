@@ -33,14 +33,16 @@ public struct FileIntake: Sendable {
     let path: ArchivePaths
     let transport: Transport
     let key: String?
+    let rulesOverride: String?
     private let inFlight = InFlight()
 
     public init(
         repository: Repository,
         path: ArchivePaths = .standard,
-        transport: @escaping Transport = Responses.network
+        transport: @escaping Transport = Responses.network,
+        rulesOverride: String? = nil
     ) throws {
-        try self.init(repository: repository, path: path, transport: transport, key: nil)
+        try self.init(repository: repository, path: path, transport: transport, key: nil, rulesOverride: rulesOverride)
     }
 
     /// Internal key override for tests. Production intake reads the key from
@@ -49,13 +51,15 @@ public struct FileIntake: Sendable {
         repository: Repository,
         path: ArchivePaths,
         transport: @escaping Transport,
-        key: String?
+        key: String?,
+        rulesOverride: String? = nil
     ) throws {
         self.repository = repository
         tool = try SQLTool(repository)
         self.path = path
         self.transport = transport
         self.key = key
+        self.rulesOverride = rulesOverride
     }
 
     /// The SHA-256 of a file, lowercase hex. It is the key of `files` and
@@ -153,7 +157,13 @@ public struct FileIntake: Sendable {
 
             let id = try known ?? store(name: inbox.lastPathComponent, data: data, hash: hash)
             let input = FileInput(id: id, name: inbox.lastPathComponent, fileExtension: fileExtension, data: data)
-            let run = AgentRun(repository: repository, tool: tool, key: key, transport: transport)
+            let run = AgentRun(
+                repository: repository,
+                tool: tool,
+                key: key,
+                transport: transport,
+                rulesOverride: rulesOverride
+            )
             _ = try await run.start(input)
             // The run is committed. A cleanup failure must not turn a
             // successful import back into a failed run.

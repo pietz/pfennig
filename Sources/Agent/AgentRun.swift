@@ -104,17 +104,20 @@ public struct AgentRun: Sendable {
     /// Read once per run from the Keychain, never kept anywhere else.
     let key: String
     let transport: Transport
+    let rulesOverride: String?
 
     public init(
         repository: Repository,
         tool: SQLTool,
         key: String,
-        transport: @escaping Transport = Responses.network
+        transport: @escaping Transport = Responses.network,
+        rulesOverride: String? = nil
     ) {
         self.repository = repository
         self.tool = tool
         self.key = key
         self.transport = transport
+        self.rulesOverride = rulesOverride
     }
 
     /// The SQL tool the agent gets, in the shape the Responses API expects.
@@ -214,7 +217,7 @@ public struct AgentRun: Sendable {
         dateiId: Int64? = nil,
         gespraechId: Int64? = nil
     ) async throws -> (result: RunResult, items: [[String: Any]]) {
-        let instructions = try AgentInstructions.build(repository)
+        let instructions = try AgentInstructions.build(repository, rulesOverride: rulesOverride)
         let ai = try repository.aiSettings()
         let request = try repository.startRequest(dateiId: dateiId, gespraechId: gespraechId, modell: ai.model.rawValue)
         var items: [[String: Any]] = [["role": "user", "content": message]]
