@@ -20,7 +20,7 @@ struct ChatView: View {
     var body: some View {
         VStack(spacing: 0) {
             if model.chatMessages.isEmpty, busy == false {
-                Text("Frag nach deinen Buchungen oder hänge eine Datei an, etwa einen Kontoauszug zum Abgleichen.")
+                Text("Frag nach deinen Buchungen oder hänge eine Datei an.")
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(40)
