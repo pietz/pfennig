@@ -25,4 +25,4 @@ Stand der Recherche: 21.09.2026. Diese Notiz dokumentiert nur die Quellen für d
 - **Bewirtung:** Speisen netto 54,00 EUR mit 7 % und Getränke netto 14,00 EUR mit 19 %. Kein Trinkgeld. Der Bewirtungsvermerk nennt Mara Winter und Jonas Berg (Kunde) sowie den geschäftlichen Anlass.
 - **Nahverkehr und S-Bahn:** Jeweils 7 % entsprechend der im Brief vorgegebenen Beispielszenarien. Die Belege tragen keine zusätzliche rechtliche Begründung für die tarifliche Einordnung.
 
-Alle Anbieter, Adressen, Domains und Steuerkennungen auf den Dokumenten sind erfunden. Jede auf einem Beleg genannte USt-ID ist ausdrücklich als ungültiger Demo-Platzhalter gekennzeichnet. Die `.example`-Domains sind reservierte Beispieldomains. Die PDFs tragen den Hinweis „Fiktiver Musterbeleg · Nicht zur Zahlung“.
+Alle Anbieter, Adressen, Domains und Steuerkennungen auf den Dokumenten sind erfunden. Jede auf einem Beleg genannte USt-ID ist ausdrücklich als ungültiger Demo-Platzhalter gekennzeichnet. Die `.example`-Domains sind reservierte Beispieldomains.

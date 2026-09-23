@@ -1,6 +1,5 @@
 import Agent
 import Core
-import CryptoKit
 import Darwin
 import Foundation
 
@@ -9,7 +8,8 @@ private struct Options {
     var truthFile: URL?
     var model: Model?
     var effort: ReasoningEffort?
-    var caseIDs: Set<String>?
+    var allCases = false
+    var caseIDs: Set<String> = []
     var repeats = 1
     var rulesFile: URL?
     var output: URL?
@@ -23,7 +23,7 @@ private struct Options {
             if flag == "--validate-only" {
                 validateOnly = true
             } else if flag == "--all" {
-                caseIDs = []
+                allCases = true
             } else {
                 index += 1
                 guard index < arguments.count else { throw EvalError.invalid("Missing value for \(flag)") }
@@ -31,8 +31,17 @@ private struct Options {
                 switch flag {
                 case "--root": root = URL(fileURLWithPath: value)
                 case "--truth": truthFile = URL(fileURLWithPath: value)
-                case "--model": model = Model(rawValue: value)
-                case "--effort": effort = ReasoningEffort(rawValue: value)
+                case "--model":
+                    guard let chosen = Model(rawValue: value) else {
+                        throw EvalError.invalid("Unknown model \(value); choose \(Model.allCases.map(\.rawValue))")
+                    }
+                    model = chosen
+                case "--effort":
+                    guard let chosen = ReasoningEffort(rawValue: value) else {
+                        let efforts = ReasoningEffort.allCases.map(\.rawValue)
+                        throw EvalError.invalid("Unknown effort \(value); choose \(efforts)")
+                    }
+                    effort = chosen
                 case "--cases": caseIDs = Set(value.split(separator: ",").map(String.init))
                 case "--repeats": repeats = Int(value) ?? 0
                 case "--rules": rulesFile = URL(fileURLWithPath: value)
@@ -44,11 +53,6 @@ private struct Options {
             index += 1
         }
         guard (1 ... 5).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...5") }
-        if validateOnly == false, rescoreFile == nil {
-            guard model != nil, effort != nil, caseIDs != nil else {
-                throw EvalError.invalid("Choose --model, --effort and either --cases or --all.")
-            }
-        }
     }
 }
 
@@ -65,6 +69,8 @@ private struct CaseResult: Codable {
     let promptFile: String
     let promptSHA256: String
     let fileSHA256: String
+    /// Absent in reports written before it was recorded.
+    let fileID: Int64?
     var mismatches: [String]
     let bookings: [Buchung]
 
@@ -87,6 +93,18 @@ private struct Report: Codable {
     let agentTotal: Int
     var cases: [CaseResult]
     var rescoreOf: String?
+
+    mutating func recount() {
+        passed = cases.filter(\.passed).count
+        agentPassed = cases.filter { $0.agentEvaluated && $0.passed }.count
+    }
+
+    func write(to url: URL) throws {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        encoder.dateEncodingStrategy = .iso8601
+        try encoder.encode(self).write(to: url, options: .atomic)
+    }
 }
 
 @main
@@ -104,11 +122,8 @@ enum PfennigEval {
         let options = try Options(Array(CommandLine.arguments.dropFirst()))
         let root = options.root.standardizedFileURL
         let truthURL = options.truthFile ?? root.appending(path: "ground-truth.json")
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
         let truthData = try Data(contentsOf: truthURL)
-        let truth = try decoder.decode(GroundTruth.self, from: truthData)
-        try truth.validate(at: root)
+        let truth = try GroundTruth.load(truthData, root: root)
         if options.validateOnly {
             print(
                 "Valid ground truth: \(truth.cases.filter { $0.expected != nil }.count) bookable, \(truth.cases.filter { $0.expected == nil }.count) controls"
@@ -116,19 +131,19 @@ enum PfennigEval {
             return
         }
         if let sourceReport = options.rescoreFile {
-            try rescore(sourceReport, truth: truth, truthData: truthData, root: root)
+            try rescore(sourceReport, truth: truth, truthData: truthData, root: root, output: options.output)
             return
         }
-        let selected = truth.cases
-            .filter { options.caseIDs?.isEmpty == true || options.caseIDs?.contains($0.id) == true }
-        guard selected.isEmpty == false,
-              selected.count == options.caseIDs?.count || options.caseIDs?.isEmpty == true
+        guard let model = options.model, let effort = options.effort,
+              options.allCases || options.caseIDs.isEmpty == false
         else {
+            throw EvalError.invalid("Choose --model, --effort and either --cases or --all.")
+        }
+        let selected = options.allCases ? truth.cases : truth.cases.filter { options.caseIDs.contains($0.id) }
+        guard selected.isEmpty == false, options.allCases || selected.count == options.caseIDs.count else {
             throw EvalError.invalid("Unknown or empty case selection.")
         }
         guard Keychain.exists else { throw EvalError.invalid("Pfennig API key not found in Keychain.") }
-        let model = try require(options.model, "model")
-        let effort = try require(options.effort, "effort")
         let rules = try options.rulesFile.map { try String(contentsOf: $0, encoding: .utf8) }
         if let rules, rules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw EvalError.invalid("Rules file is empty.")
@@ -144,25 +159,23 @@ enum PfennigEval {
         try truthData.write(to: output.appending(path: "truth-snapshot.json"), options: .atomic)
         var results: [CaseResult] = []
         func saveReport() throws -> Report {
-            let report = Report(
+            var report = Report(
                 generatedAt: ISO8601DateFormatter().string(from: Date()),
                 model: model.rawValue,
                 effort: effort.rawValue,
                 rulesFile: options.rulesFile?.path,
-                rulesSHA256: rules.map { digest(Data($0.utf8)) },
-                truthSHA256: digest(truthData),
-                passed: results.filter(\.passed).count,
+                rulesSHA256: rules.map { FileIntake.hash(Data($0.utf8)) },
+                truthSHA256: FileIntake.hash(truthData),
+                passed: 0,
                 total: results.count,
                 plannedTotal: selected.count * options.repeats,
-                agentPassed: results.filter { $0.agentEvaluated && $0.passed }.count,
+                agentPassed: 0,
                 agentTotal: results.filter(\.agentEvaluated).count,
                 cases: results,
                 rescoreOf: nil
             )
-            let encoder = JSONEncoder()
-            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            encoder.dateEncodingStrategy = .iso8601
-            try encoder.encode(report).write(to: output.appending(path: "report.json"), options: .atomic)
+            report.recount()
+            try report.write(to: output.appending(path: "report.json"))
             return report
         }
         for item in selected {
@@ -192,16 +205,7 @@ enum PfennigEval {
         )
     }
 
-    private static func require<T>(_ value: T?, _ label: String) throws -> T {
-        guard let value else { throw EvalError.invalid("Missing \(label)") }
-        return value
-    }
-
-    private static func digest(_ data: Data) -> String {
-        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
-    }
-
-    private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL) throws {
+    private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL, output: URL?) throws {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         var report = try decoder.decode(Report.self, from: Data(contentsOf: source))
@@ -220,26 +224,21 @@ enum PfennigEval {
                 outcome: recorded.outcome,
                 error: recorded.error,
                 bookings: recorded.bookings,
-                fileID: recorded.bookings.first?.belege.first
+                fileID: recorded.fileID ?? recorded.bookings.first?.belege.first
             )
         }
         report.generatedAt = ISO8601DateFormatter().string(from: Date())
-        report.truthSHA256 = digest(truthData)
-        report.passed = report.cases.filter(\.passed).count
-        report.agentPassed = report.cases.filter { $0.agentEvaluated && $0.passed }.count
+        report.truthSHA256 = FileIntake.hash(truthData)
+        report.recount()
         report.rescoreOf = source.path
+        let folder = output ?? source.deletingLastPathComponent()
+        try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         let suffix = String(report.truthSHA256.prefix(12))
-        let output = source.deletingLastPathComponent().appending(path: "rescore-\(suffix).json")
-        try truthData.write(
-            to: source.deletingLastPathComponent().appending(path: "truth-\(suffix).json"),
-            options: .atomic
-        )
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-        encoder.dateEncodingStrategy = .iso8601
-        try encoder.encode(report).write(to: output, options: .atomic)
+        let reportURL = folder.appending(path: "rescore-\(suffix).json")
+        try truthData.write(to: folder.appending(path: "truth-\(suffix).json"), options: .atomic)
+        try report.write(to: reportURL)
         print(
-            "Rescored \(report.passed)/\(report.total); agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.path)"
+            "Rescored \(report.passed)/\(report.total); agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(reportURL.path)"
         )
     }
 
@@ -259,15 +258,20 @@ enum PfennigEval {
         ))
         try repository.saveAISettings(AISettings(model: model, effort: effort))
         let prompt = try AgentInstructions.build(repository, rulesOverride: rules)
-        let promptSHA256 = digest(Data(prompt.utf8))
+        let promptSHA256 = FileIntake.hash(Data(prompt.utf8))
         let promptFile = "prompt-\(promptSHA256).txt"
         let promptURL = output.appending(path: promptFile)
         if FileManager.default.fileExists(atPath: promptURL.path) == false {
             try prompt.write(to: promptURL, atomically: true, encoding: .utf8)
         }
+        // The model sees the file name. A neutral one keeps names such as
+        // "12-laptop.pdf" from answering what the document should.
+        let source = root.appending(path: item.file)
+        let input = folder.appending(path: "\(item.id).\(source.pathExtension)")
+        try FileManager.default.copyItem(at: source, to: input)
         let intake = try FileIntake(repository: repository, path: archive, rulesOverride: rules)
         let started = Date()
-        let intakeResult = await intake.process(root.appending(path: item.file))
+        let intakeResult = await intake.process(input)
         let seconds = Date().timeIntervalSince(started)
         let (outcome, error): (String, String?) = switch intakeResult {
         case .booked: ("booked", nil)
@@ -276,12 +280,8 @@ enum PfennigEval {
         }
         let bookings = try repository.allBookings()
         let request = try repository.allRequests().last
-        let agentEvaluated = request != nil && (error.map {
-            !$0.hasPrefix("OpenAI hat mit ")
-                && !$0.hasPrefix("Die Verbindung zu OpenAI kam nicht zustande:")
-                && !$0.hasPrefix("Kein API-Schlüssel hinterlegt.")
-        } ?? true)
-        let hash = try FileIntake.hash(Data(contentsOf: root.appending(path: item.file)))
+        let agentEvaluated = request != nil && EvalScoring.isInfrastructureError(error) == false
+        let hash = try FileIntake.hash(Data(contentsOf: source))
         let fileID = try repository.fileID(sha256: hash)
         let mismatches = EvalScoring.mismatches(
             item,
@@ -308,6 +308,7 @@ enum PfennigEval {
             promptFile: promptFile,
             promptSHA256: promptSHA256,
             fileSHA256: hash,
+            fileID: fileID,
             mismatches: mismatches,
             bookings: bookings
         )

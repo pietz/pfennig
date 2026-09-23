@@ -127,7 +127,8 @@
             "netto_cents": 175000,
             "steuer_cents": 0,
             "accepted_rates": [
-              "19"
+              "19",
+              "20"
             ]
           }
         ],
@@ -136,7 +137,7 @@
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
-        "Outgoing reverse charge has zero invoice VAT; the schema also uses the recipient-liability rate for reverse-charge positions, so 0 and 19 are accepted with zero tax."
+        "Outgoing reverse charge has zero invoice VAT; the schema also allows the recipient-liability rate, German 19 or the Austrian recipient's 20, so 0, 19 and 20 are accepted with zero tax."
       ]
     },
     {
@@ -228,6 +229,9 @@
         "datum": "2026-08-20",
         "belegnummer": "NST-2026-08-20-4421",
         "faelligkeit": "2026-09-03",
+        "accepted_due_dates": [
+          null
+        ],
         "gegenpartei_name": "Northstar Dev Tools Inc.",
         "gegenpartei_land": "US",
         "kategorie": "software",
@@ -254,7 +258,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "The due date follows from NET 14 and is not printed; leaving it empty is accepted."
+      ]
     },
     {
       "id": "08",
@@ -301,6 +308,9 @@
         "art": "beleg",
         "datum": "2026-08-04",
         "belegnummer": "PP-040826",
+        "accepted_receipt_numbers": [
+          "08426"
+        ],
         "faelligkeit": null,
         "gegenpartei_name": "Papier & Punkt",
         "gegenpartei_land": "DE",
@@ -333,7 +343,8 @@
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
-        "The visible brand is Papier & Punkt; PDF metadata includes Fachhandel as part of the merchant name."
+        "The visible brand is Papier & Punkt; PDF metadata includes Fachhandel as part of the merchant name.",
+        "The receipt shows KASSENBON PP-040826 and the till line Beleg 08426; both are accepted."
       ]
     },
     {
@@ -419,6 +430,9 @@
         "datum": "2026-09-04",
         "belegnummer": "PK-260904-12",
         "faelligkeit": null,
+        "accepted_due_dates": [
+          "2026-09-04"
+        ],
         "gegenpartei_name": "Pixelkern Computerhaus KG",
         "gegenpartei_land": "DE",
         "kategorie": "hardware",
@@ -445,7 +459,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Payable immediately: the invoice date or no due date are both accepted."
+      ]
     },
     {
       "id": "13",
@@ -513,13 +530,18 @@
         ],
         "zahlungen": [],
         "accepted_counterparties": [
-          "Jana Feld – Wortspur Freie Texte"
+          "Jana Feld – Wortspur Freie Texte",
+          "Jana Feld"
+        ],
+        "accepted_categories": [
+          "werbung"
         ]
       },
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
-        "The invoice names both the proprietor and the studio brand."
+        "The invoice names both the proprietor and the studio brand.",
+        "The texts are for the own website, which fits werbung; bought-in work also fits fremdleistung."
       ]
     },
     {
@@ -897,6 +919,9 @@
         "datum": "2026-07-03",
         "belegnummer": "WF-260703-25",
         "faelligkeit": null,
+        "accepted_due_dates": [
+          "2026-07-03"
+        ],
         "gegenpartei_name": "Wellenfeld Domainservice GmbH",
         "gegenpartei_land": "DE",
         "kategorie": "hosting",
@@ -923,7 +948,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Payable immediately: the invoice date or no due date are both accepted."
+      ]
     },
     {
       "id": "26",
@@ -1311,6 +1339,9 @@
         "art": "beleg",
         "datum": "2026-08-04",
         "belegnummer": "PP-040826",
+        "accepted_receipt_numbers": [
+          "08426"
+        ],
         "faelligkeit": null,
         "gegenpartei_name": "Papier & Punkt",
         "gegenpartei_land": "DE",
@@ -1341,7 +1372,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "The receipt shows KASSENBON PP-040826 and the till line Beleg 08426; both are accepted."
+      ]
     },
     {
       "id": "42",
@@ -1349,6 +1383,9 @@
       "expected": {
         "richtung": "ausgabe",
         "art": "rechnung",
+        "accepted_arts": [
+          "beleg"
+        ],
         "datum": "2026-09-16",
         "belegnummer": "LH-2026-0916-028",
         "faelligkeit": null,
@@ -1383,7 +1420,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "The paid hotel invoice can be recorded as Rechnung or Beleg, as in case 17."
+      ]
     },
     {
       "id": "43",

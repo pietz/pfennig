@@ -105,3 +105,57 @@ import Testing
         fileID: nil
     ).isEmpty == false)
 }
+
+@Test func evalScoringAcceptsDocumentedEmptyValuesAndEqualRates() throws {
+    let data = Data("""
+    {
+      "id":"due", "file":"due.pdf", "converted_eur_tolerance_cents":0, "strict_nulls":true,
+      "expected":{
+        "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
+        "belegnummer":"A-1", "accepted_receipt_numbers":["0815"],
+        "faelligkeit":"2026-09-15", "accepted_due_dates":[null],
+        "gegenpartei_name":"Northstar", "gegenpartei_land":"DE", "kategorie":"software",
+        "steuerbehandlung":"inland", "privatanteil_prozent":0, "nutzungsdauer_jahre":null,
+        "waehrung":null, "originalbetrag":null,
+        "netto_cents":1000, "steuer_cents":190, "brutto_cents":1190,
+        "positionen_nach_satz":[{"steuersatz":"19.00", "netto_cents":1000, "steuer_cents":190}],
+        "zahlungen":[]
+      }
+    }
+    """.utf8)
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    let item = try decoder.decode(EvalCase.self, from: data)
+    var booking = try Buchung(
+        richtung: .ausgabe, art: .rechnung, datum: #require(LocalDate("2026-09-01")),
+        titel: "Tool", belegnummer: "0815", kategorie: "software",
+        gegenparteiName: "Northstar", gegenparteiLand: "DE",
+        positionen: [Position(netto: Cent(1000), steuersatz: 19, steuer: Cent(190))],
+        steuerbehandlung: .inland, belege: [7]
+    )
+    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 7).isEmpty)
+    booking.steuerbehandlung = nil
+    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 7)
+        .contains { $0.hasPrefix("steuerbehandlung") })
+}
+
+@Test func evalTruthRejectsUnknownKeysAndMalformedValues() throws {
+    let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-eval-truth-\(UUID().uuidString)")
+    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+    defer { try? FileManager.default.removeItem(at: folder) }
+    try Data().write(to: folder.appending(path: "a.pdf"))
+    func truth(_ expected: String) -> Data {
+        Data("""
+        {"profile":{"name":"M","ustid":"","kleinunternehmer":false},
+         "cases":[{"id":"a", "file":"a.pdf", "converted_eur_tolerance_cents":0, "expected":{
+           "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"N",
+           "gegenpartei_land":"DE", "kategorie":"software", \(expected)}}]}
+        """.utf8)
+    }
+    #expect(throws: Never.self) { try GroundTruth.load(truth(#""originalbetrag":"21.92""#), root: folder) }
+    #expect(throws: EvalError.self) { try GroundTruth.load(truth(#""acceptd_categories":[]"#), root: folder) }
+    #expect(throws: EvalError.self) { try GroundTruth.load(truth(#""originalbetrag":"21,92""#), root: folder) }
+    #expect(throws: EvalError.self) {
+        try GroundTruth.load(truth(#""steuerbehandlung":"reverse-charge""#), root: folder)
+    }
+}
