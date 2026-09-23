@@ -60,6 +60,7 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button("Neues Gespräch", systemImage: "square.and.pencil") {
+                    selection = nil
                     model.newConversation()
                     focused = true
                 }
@@ -184,6 +185,9 @@ struct ChatView: View {
     }
 
     private func send() {
+        guard model.canSend else { return }
+        // TextSelection indices belong to the old draft and must go before send clears it.
+        selection = nil
         Task {
             await model.send()
             focused = true
