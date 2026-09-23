@@ -146,20 +146,14 @@ public struct FileIntake: Sendable {
             let inbox = try inInbox(url, data: data, hash: hash)
             location = inbox
             let fileExtension = inbox.pathExtension.lowercased()
-            guard FileInput.textExtensions.contains(fileExtension) == false
-                || data.count <= FileInput.maxTextBytes
-            else {
-                throw AgentError.textTooLarge
-            }
+            try FileInput.checkSize(fileExtension, data)
             guard let key = key ?? Keychain.read(), key.isEmpty == false else {
                 throw AgentError.missingKey
             }
 
             let id = try known ?? store(name: inbox.lastPathComponent, data: data, hash: hash)
             let input = FileInput(id: id, name: inbox.lastPathComponent, fileExtension: fileExtension, data: data)
-            let run = AgentRun(
-                repository: repository, tool: tool, key: key, transport: transport, path: path
-            )
+            let run = AgentRun(repository: repository, tool: tool, key: key, transport: transport)
             _ = try await run.start(input)
             // The run is committed. A cleanup failure must not turn a
             // successful import back into a failed run.
@@ -196,13 +190,20 @@ public struct FileIntake: Sendable {
     public func attach(_ url: URL) throws -> FileInput {
         let data = try Data(contentsOf: url)
         let fileExtension = url.pathExtension.lowercased()
-        guard FileInput.textExtensions.contains(fileExtension) == false || data.count <= FileInput.maxTextBytes else {
-            throw AgentError.textTooLarge
-        }
+        try FileInput.checkSize(fileExtension, data)
         let hash = FileIntake.hash(data)
         try path.create()
         let id = try repository.fileID(sha256: hash) ?? store(name: url.lastPathComponent, data: data, hash: hash)
         return FileInput(id: id, name: url.lastPathComponent, fileExtension: fileExtension, data: data)
+    }
+
+    /// The files a conversation already refers to, read from the archive.
+    /// One that is gone is left out; the model then reads that it is gone.
+    func stored(_ ids: [Int64]) -> [FileInput] {
+        ((try? repository.files(for: ids)) ?? []).compactMap { datei in
+            guard let id = datei.id, let data = try? Data(contentsOf: path.original(datei)) else { return nil }
+            return FileInput(id: id, name: datei.dateiname, fileExtension: datei.endung, data: data)
+        }
     }
 
     /// Archive copy first, row second: a leftover copy without a row is

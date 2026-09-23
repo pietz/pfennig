@@ -5,7 +5,7 @@ Stand 2026-09-23, nach Release 0.9.0. GitHub-Issues halten offene Arbeit fest, n
 ## Nächste Schritte
 
 1. **Stabilisierung von 0.9.0.** Echter Einsatz von 0.9.0, Live-API-Test mit `scripts/test-live.sh` (braucht separate Freigabe für API-/Schlüsselbundzugriff), Durchlauf der Q3-Beispieldaten aus `sample-data/2026-q3/` und ELSTER-Prüfung der neuen Kennzahlen 89/93/61/39. Befunde daraus werden die nächste Arbeitsliste.
-2. **Chat [#16](https://github.com/pietz/pfennig/issues/16).** Danach, mit einem klein zugeschnittenen ersten Schritt. Braucht eine Schemaänderung; Plan vor Umsetzung mit dem Eigentümer abstimmen. Die besprochene Richtung steht im Issue.
+2. **Chat [#16](https://github.com/pietz/pfennig/issues/16), erster Schritt gebaut, Eigentümerprüfung ausstehend.** Ein Agent für Import und Chat, zustandslos, Verlauf ohne Dateibytes in `gespraeche`. Schemaänderung mit [Arbeitsblatt](maintenance/0.10.0.md) für bestehende Archive; Live-API-Prüfung steht aus.
 3. **Dateienübersicht [#17](https://github.com/pietz/pfennig/issues/17) und Anfragekosten [#19](https://github.com/pietz/pfennig/issues/19)** bleiben zurückgestellt, bis der Einsatz konkreten Bedarf zeigt.
 
 Außerdem offen: Landingpage-Medien, fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.

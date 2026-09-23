@@ -119,7 +119,6 @@ private func input() -> FileInput {
     let result = try await run.start(input())
     #expect(result.touched == [1])
     #expect(result.created == [1])
-    #expect(result.summary.hasPrefix("Ausgabe Stadtwerke"))
 
     // The tool really wrote, and it wrote the way the agent must not: unreviewed.
     let buchung = try #require(try repository.allBookings().first)
@@ -412,7 +411,7 @@ private func input() -> FileInput {
     await #expect(throws: RunAbort.self) { try await run.start(input()) }
     let request = try #require(try repository.allRequests().first)
     #expect(request.status == .fehler)
-    #expect(request.konversation?.contains("Datei 1 hinzugefügt") == true)
+    #expect(request.konversation?.contains("max_output_tokens") == true)
 }
 
 /// A transport that refuses every request, so a run ends without the network
@@ -1052,4 +1051,21 @@ private func letzteAnfrage(_ skript: Skript) async throws -> [[String: Any]] {
     #expect(title.count == Chat.titleLength)
     #expect(title.hasSuffix("…"))
     #expect(Chat.title("", files: [input()]) == "rechnung.pdf")
+}
+
+@Test func gescheiterteChatRundeEntferntIhreNeuenBuchungen() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let skript = Skript([
+        werkzeugantwort(einfuegen),
+        object(["id": "resp_2", "status": "incomplete", "incomplete_details": ["reason": "max_output_tokens"]])
+    ])
+    let intake = try await FileIntake(repository: repository, path: path, transport: skript.transport, key: "test")
+    await #expect(throws: RunAbort.self) {
+        try await Chat(intake: intake).send("Buche den Strom", files: [], to: nil)
+    }
+    #expect(try repository.allBookings().isEmpty)
+    #expect(try repository.conversations().isEmpty)
+    let request = try #require(try repository.allRequests().first)
+    #expect(request.konversation?.contains("max_output_tokens") == true)
 }

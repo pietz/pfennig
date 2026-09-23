@@ -81,7 +81,6 @@ public enum Schema {
     CREATE TABLE gespraeche (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         titel TEXT NOT NULL,                        -- gekürzte erste Nutzernachricht
-        erstellt_am TEXT NOT NULL,
         geaendert_am TEXT NOT NULL,
         -- JSON-Liste der Responses-Elemente ohne Dateibytes; eine Datei steht als {"type": "datei", "id": 3}
         verlauf TEXT NOT NULL DEFAULT '[]'

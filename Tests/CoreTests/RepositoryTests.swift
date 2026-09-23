@@ -606,7 +606,7 @@ func beobachtungLiefertJedeAenderung() async throws {
     continued.verlauf = "[{\"role\":\"user\"}]"
     continued = try repository.saveConversation(continued)
     #expect(continued.id == first.id)
-    #expect(try repository.conversation(id: #require(first.id))?.verlauf == "[{\"role\":\"user\"}]")
+    #expect(try repository.conversations().first { $0.id == first.id }?.verlauf == "[{\"role\":\"user\"}]")
 
     // A round keeps its cost row after its conversation is gone.
     let request = try repository.startRequest(gespraechId: #require(second.id), modell: "gpt-5")

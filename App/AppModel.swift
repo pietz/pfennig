@@ -47,6 +47,15 @@ final class AppModel {
     private(set) var chatMessages: [ChatMessage] = []
     private(set) var conversations: [Gespraech] = []
     private(set) var pendingMessage: String?
+    /// The message being written, kept here so it survives a change of page
+    /// and comes back after a failed round.
+    var draft = ""
+    var draftFiles: [URL] = []
+
+    var canSend: Bool {
+        pendingMessage == nil
+            && (draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false || draftFiles.isEmpty == false)
+    }
 
     /// A running agent, from the inbox or the chat, may still hang a receipt on
     /// a booking; deleting waits until it is done.
@@ -304,24 +313,35 @@ final class AppModel {
 
     // MARK: - Chat
 
-    /// Answers whether the message went through; on failure the view keeps
-    /// the text so the user can send it again.
-    func send(_ text: String, files: [URL]) async -> Bool {
-        guard pendingMessage == nil else { return false }
-        pendingMessage = text
+    /// Sends the draft. It leaves the field at once and comes back when the
+    /// round fails, so the user can send it again.
+    func send() async {
+        guard canSend else { return }
+        let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        let files = draftFiles
+        draft = ""
+        draftFiles = []
+        pendingMessage = text.isEmpty ? files.map(\.lastPathComponent).joined(separator: "\n") : text
         defer { pendingMessage = nil }
         do {
             conversation = try await chat.send(text, files: files, to: conversation)
             loadConversations()
-            return true
         } catch {
+            draft = text
+            draftFiles = files
             errorMessage = error.localizedDescription
-            return false
         }
+    }
+
+    /// Files for the next message; whatever the agent cannot read falls away.
+    func attach(_ urls: [URL]) {
+        draftFiles += FileIntake.files(in: urls).filter { draftFiles.contains($0) == false }
     }
 
     func newConversation() {
         conversation = nil
+        draft = ""
+        draftFiles = []
     }
 
     func open(_ gespraech: Gespraech) {

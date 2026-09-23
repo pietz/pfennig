@@ -95,14 +95,12 @@ public struct Gespraech: Codable, Hashable, Sendable, Identifiable, FetchableRec
 
     public var id: Int64?
     public var titel: String
-    public var erstelltAm: Date
     public var geaendertAm: Date
     public var verlauf: String
 
     public init(titel: String, verlauf: String = "[]") {
         self.titel = titel
-        erstelltAm = Date()
-        geaendertAm = erstelltAm
+        geaendertAm = Date()
         self.verlauf = verlauf
     }
 

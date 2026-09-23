@@ -31,6 +31,13 @@ public struct FileInput: Sendable {
         return binaryExtensions.contains(lowered) || textExtensions.contains(lowered)
     }
 
+    /// A text file larger than `maxTextBytes` does not go to the agent.
+    static func checkSize(_ fileExtension: String, _ data: Data) throws {
+        guard textExtensions.contains(fileExtension) == false || data.count <= maxTextBytes else {
+            throw AgentError.textTooLarge
+        }
+    }
+
     var isText: Bool {
         FileInput.textExtensions.contains(fileExtension.lowercased())
     }
@@ -74,7 +81,6 @@ public struct FileInput: Sendable {
 public struct RunResult: Sendable {
     public var touched: [Int64] = []
     public var created: [Int64] = []
-    public var summary = ""
 }
 
 /// A run that gave up, with the bookings it had already written. Swift removes
@@ -98,21 +104,17 @@ public struct AgentRun: Sendable {
     /// Read once per run from the Keychain, never kept anywhere else.
     let key: String
     let transport: Transport
-    /// Where the originals of earlier files in a conversation are read from.
-    let path: ArchivePaths
 
     public init(
         repository: Repository,
         tool: SQLTool,
         key: String,
-        transport: @escaping Transport = Responses.network,
-        path: ArchivePaths = .standard
+        transport: @escaping Transport = Responses.network
     ) {
         self.repository = repository
         self.tool = tool
         self.key = key
         self.transport = transport
-        self.path = path
     }
 
     /// The SQL tool the agent gets, in the shape the Responses API expects.
@@ -174,9 +176,16 @@ public struct AgentRun: Sendable {
     }
 
     /// One round of a stored conversation: the user's text with the files
-    /// attached to it. It may end without touching a booking. Answers with the
-    /// conversation grown by the round; the caller stores it.
-    public func chat(_ gespraech: Gespraech, text: String, files: [FileInput]) async throws -> Gespraech {
+    /// attached to it. `earlier` holds the files the conversation already
+    /// refers to; one missing there is named as gone. The round may end
+    /// without touching a booking. Answers with the conversation grown by the
+    /// round; the caller stores it.
+    public func chat(
+        _ gespraech: Gespraech,
+        text: String,
+        files: [FileInput],
+        earlier: [FileInput]
+    ) async throws -> Gespraech {
         guard let id = gespraech.id else { preconditionFailure("the conversation is stored before its first round") }
         let history = Conversation.items(gespraech.verlauf)
         var message: [[String: Any]] = files.flatMap { file -> [[String: Any]] in
@@ -188,7 +197,7 @@ public struct AgentRun: Sendable {
         if text.isEmpty == false {
             message.append(["type": "input_text", "text": text])
         }
-        let items = try await run(history: history, message: message, files: files, gespraechId: id).items
+        let items = try await run(history: history, message: message, files: files + earlier, gespraechId: id).items
         var updated = gespraech
         updated.verlauf = Conversation.json(history + items)
         return updated
@@ -219,7 +228,7 @@ public struct AgentRun: Sendable {
             )
         }
         do {
-            let known = resolve(Conversation.fileIDs(history), given: files)
+            let known = Dictionary(files.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
             try await loop(
                 history: history, items: &items, files: known, ai: ai, instructions: instructions,
                 result: &result, usage: &usage
@@ -229,6 +238,8 @@ public struct AgentRun: Sendable {
                 throw AgentError.noBooking
             }
         } catch {
+            // The reason goes into the log only, never into a conversation.
+            items.append(["fehler": error.localizedDescription])
             try? repository.finishRequest(id: request, status: .fehler)
             throw RunAbort(created: result.created, reason: error)
         }
@@ -237,19 +248,6 @@ public struct AgentRun: Sendable {
         // must survive a failure to persist the completion status.
         try repository.finishRequest(id: request, status: .erfolg)
         return (result, items)
-    }
-
-    /// The files the conversation refers to, read once per run: the ones of
-    /// this round as handed in, earlier ones from the archive. A file that is
-    /// gone is left out, and the model reads that it is gone.
-    private func resolve(_ ids: [Int64], given: [FileInput]) -> [Int64: FileInput] {
-        var files = Dictionary(given.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        let missing = ids.filter { files[$0] == nil }
-        for datei in (try? repository.files(for: missing)) ?? [] {
-            guard let id = datei.id, let data = try? Data(contentsOf: path.original(datei)) else { continue }
-            files[id] = FileInput(id: id, name: datei.dateiname, fileExtension: datei.endung, data: data)
-        }
-        return files
     }
 
     /// Stateless on OpenAI's side: every request carries the whole item list
@@ -286,10 +284,7 @@ public struct AgentRun: Sendable {
             items.append(contentsOf: AgentRun.outputItems(response))
 
             let callsThisRound = AgentRun.toolCalls(response)
-            guard callsThisRound.isEmpty == false else {
-                result.summary = AgentRun.text(response)
-                return
-            }
+            guard callsThisRound.isEmpty == false else { return }
             calls += callsThisRound.count
             guard calls <= AgentRun.maxToolCalls else {
                 throw AgentError.tooManyToolCalls
@@ -338,17 +333,6 @@ public struct AgentRun: Sendable {
                 arguments: item["arguments"] as? String ?? "{}"
             )
         }
-    }
-
-    static func text(_ response: [String: Any]) -> String {
-        for item in outputItems(response) where item["type"] as? String == "message" {
-            for piece in (item["content"] as? [[String: Any]]) ?? [] {
-                if let text = piece["text"] as? String, piece["type"] as? String == "output_text" {
-                    return text
-                }
-            }
-        }
-        return ""
     }
 
     static func validateStatus(_ response: [String: Any]) throws {

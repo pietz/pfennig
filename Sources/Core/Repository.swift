@@ -282,10 +282,6 @@ public final class Repository: Sendable {
         }
     }
 
-    public func conversation(id: Int64) throws -> Gespraech? {
-        try database.read { try Gespraech.fetchOne($0, key: id) }
-    }
-
     /// Removes the conversation only. Its files stay, and so do the rows in
     /// `anfragen` that record what its rounds cost.
     public func deleteConversation(id: Int64) throws {

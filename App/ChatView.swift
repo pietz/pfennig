@@ -7,8 +7,7 @@ import SwiftUI
 /// instead of into the import.
 struct ChatView: View {
     @Bindable var model: AppModel
-    @State private var text = ""
-    @State private var files: [URL] = []
+    @State private var selection: TextSelection?
     @State private var picking = false
     @State private var historyVisible = false
     @State private var isDropTarget = false
@@ -42,12 +41,12 @@ struct ChatView: View {
         }
         // Inside the chat a drop attaches; the window-wide drop imports.
         .dropDestination(for: URL.self) { urls, _ in
-            attach(urls)
+            model.attach(urls)
             return true
         } isTargeted: { isDropTarget = $0 }
         .fileImporter(isPresented: $picking, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
             if case let .success(urls) = result {
-                attach(urls)
+                model.attach(urls)
             }
         }
         .toolbar {
@@ -62,8 +61,6 @@ struct ChatView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button("Neues Gespräch", systemImage: "square.and.pencil") {
                     model.newConversation()
-                    text = ""
-                    files = []
                     focused = true
                 }
                 .disabled(busy)
@@ -104,14 +101,14 @@ struct ChatView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if files.isEmpty == false {
+            if model.draftFiles.isEmpty == false {
                 ScrollView(.horizontal) {
                     HStack(spacing: 6) {
-                        ForEach(files, id: \.self) { file in
+                        ForEach(model.draftFiles, id: \.self) { file in
                             HStack(spacing: 4) {
                                 Image(systemName: "doc")
                                 Text(file.lastPathComponent).lineLimit(1)
-                                Button("Entfernen", systemImage: "xmark") { files.removeAll { $0 == file } }
+                                Button("Entfernen", systemImage: "xmark") { model.draftFiles.removeAll { $0 == file } }
                                     .labelStyle(.iconOnly)
                                     .buttonStyle(.borderless)
                             }
@@ -129,14 +126,14 @@ struct ChatView: View {
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .help("Datei anhängen")
-                TextField("Nachricht", text: $text, axis: .vertical)
+                TextField("Nachricht", text: $model.draft, selection: $selection, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1 ... 8)
                     .focused($focused)
                     // Return sends, Shift-Return starts a new line.
                     .onKeyPress(.return) {
                         if NSEvent.modifierFlags.contains(.shift) {
-                            text += "\n"
+                            newLine()
                         } else {
                             send()
                         }
@@ -146,7 +143,7 @@ struct ChatView: View {
                     .labelStyle(.iconOnly)
                     .buttonStyle(.borderless)
                     .font(.title2)
-                    .disabled(canSend == false)
+                    .disabled(model.canSend == false)
             }
         }
         .padding(12)
@@ -186,30 +183,22 @@ struct ChatView: View {
         }
     }
 
-    private var canSend: Bool {
-        busy == false &&
-            (text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false || files.isEmpty == false)
-    }
-
-    private func attach(_ urls: [URL]) {
-        let allowed = FileIntake.files(in: urls).filter { files.contains($0) == false }
-        files.append(contentsOf: allowed)
-    }
-
-    /// The fields empty at once; a failed round gives them back.
     private func send() {
-        guard canSend else { return }
-        let message = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let attached = files
-        text = ""
-        files = []
         Task {
-            if await model.send(message, files: attached) == false {
-                text = message
-                files = attached
-            }
+            await model.send()
             focused = true
         }
+    }
+
+    /// Shift-Return: a line break where the cursor is, replacing a selection.
+    private func newLine() {
+        guard case let .selection(range) = selection?.indices else {
+            model.draft += "\n"
+            return
+        }
+        let offset = model.draft.distance(from: model.draft.startIndex, to: range.lowerBound)
+        model.draft.replaceSubrange(range, with: "\n")
+        selection = TextSelection(insertionPoint: model.draft.index(model.draft.startIndex, offsetBy: offset + 1))
     }
 }
 
