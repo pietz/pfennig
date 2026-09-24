@@ -217,15 +217,17 @@ public enum ValidationRules {
         )
     }
 
-    /// Zero-rate bookings use another treatment in either direction. Pfennig
-    /// supports domestic income at 19 or 7 percent only. Purchase invoices may
-    /// carry other rates, including the average rates of §24 UStG; Kz 66 takes
-    /// the written invoice tax.
+    /// Pfennig supports domestic income at 19 or 7 percent only. A purchase
+    /// may carry other rates, including the average rates of §24 UStG, and
+    /// untaxed parts such as a tip at 0; Kz 66 takes the written invoice tax.
+    /// A purchase without any tax uses another treatment.
     static let inlandNurMit19Oder7: Regel = { buchung, _ in
         guard buchung.steuerbehandlung == .inland else { return nil }
-        if let index = buchung.positionen.firstIndex(where: { $0.steuersatz == 0 }) {
+        if buchung.richtung == .ausgabe, buchung.positionen.isEmpty == false,
+           buchung.positionen.allSatisfy({ $0.steuersatz == 0 })
+        {
             return ValidationIssue(
-                .rate(index),
+                .rate(0),
                 "Inland braucht einen positiven Steuersatz; andernfalls die Steuerbehandlung berichtigen."
             )
         }

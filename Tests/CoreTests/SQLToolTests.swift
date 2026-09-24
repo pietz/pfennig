@@ -322,6 +322,11 @@ func autorisiererWeistAuchDieUmwegeAb(sql: String) throws {
         basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: pauschal), profile
     ) != nil)
     #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sieben), profile) == nil)
+    // Ein Trinkgeld steht ohne Steuer in derselben Bewirtung.
+    #expect(ValidationRules.inlandNurMit19Oder7(basis(positionen: sieben + ohneSteuer), profile) == nil)
+    #expect(ValidationRules.inlandNurMit19Oder7(
+        basis(richtung: .einnahme, kategorie: "umsatz_waren", positionen: sieben + ohneSteuer), profile
+    ) != nil)
     #expect(ValidationRules
         .inlandNurMit19Oder7(basis(positionen: ohneSteuer, steuerbehandlung: .steuerfrei), profile) == nil)
 
