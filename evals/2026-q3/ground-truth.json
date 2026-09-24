@@ -2075,7 +2075,51 @@
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
-        "Scenario: the paid invoice SL-2026-071 is booked; its partial cancellation is a booking of its own and leaves the invoice as it is."
+        "Scenario: the paid invoice SL-2026-071 is booked; its partial cancellation is a booking of its own and leaves the invoice as it is.",
+        "Writing the cancellation into the invoice with the refund as a negative payment gives the same UStVA and EÜR under Ist-Versteuerung (checked: July Kz 81 2400 €, August −400 €); it is accepted."
+      ],
+      "accepted_expected": [
+        [
+          {
+            "richtung": "einnahme",
+            "art": "rechnung",
+            "datum": "2026-07-17",
+            "belegnummer": "SL-2026-071",
+            "faelligkeit": "2026-07-31",
+            "gegenpartei_name": "Elbbogen Keramik",
+            "gegenpartei_land": "DE",
+            "kategorie": "umsatz_dienstleistung",
+            "steuerbehandlung": "inland",
+            "privatanteil_prozent": 0,
+            "nutzungsdauer_jahre": null,
+            "waehrung": null,
+            "originalbetrag": null,
+            "netto_cents": 200000,
+            "steuer_cents": 38000,
+            "brutto_cents": 238000,
+            "positionen_nach_satz": [
+              {
+                "steuersatz": "19",
+                "netto_cents": 200000,
+                "steuer_cents": 38000
+              }
+            ],
+            "zahlungen": [
+              {
+                "datum": "2026-07-28",
+                "betrag": 285600
+              },
+              {
+                "datum": "2026-08-18",
+                "betrag": -47600
+              }
+            ],
+            "belege": [
+              "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf",
+              "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf"
+            ]
+          }
+        ]
       ]
     },
     {

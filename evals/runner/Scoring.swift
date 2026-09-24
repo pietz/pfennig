@@ -42,10 +42,11 @@ struct GroundTruth: Decodable {
         "profile": ["name", "ustid", "kleinunternehmer"],
         "cases": [
             "id", "archive", "files", "chat", "expected", "converted_eur_tolerance_cents", "expected_failure",
-            "strict_nulls", "accepted_no_booking", "label_uncertainties", "source_amounts"
+            "strict_nulls", "accepted_no_booking", "accepted_expected", "label_uncertainties", "source_amounts"
         ],
         "archive": bookingKeys,
         "expected": bookingKeys,
+        "accepted_expected": bookingKeys,
         "positionen_nach_satz": ["steuersatz", "accepted_rates", "netto_cents", "steuer_cents"],
         "zahlungen": ["datum", "betrag"]
     ]
@@ -96,7 +97,11 @@ struct GroundTruth: Decodable {
                     "archive booking without files, tax treatment, positions or payment amounts"
                 )
             }
-            for expected in seeds + item.expected {
+            try require(
+                (item.acceptedExpected ?? []).allSatisfy { $0.allSatisfy { Set($0.belege).isSubset(of: known) } },
+                "unknown file in accepted_expected"
+            )
+            for expected in seeds + item.expected + (item.acceptedExpected ?? []).flatMap(\.self) {
                 try validate(expected, strict: item.strictNulls == true, require: require)
             }
         }
@@ -169,6 +174,9 @@ struct EvalCase: Decodable {
     /// Null means "must be empty" rather than "not settled by the document".
     let strictNulls: Bool?
     let acceptedNoBooking: Bool?
+    /// Other end states that are as correct, such as a credit note written
+    /// into its invoice with the same tax result.
+    let acceptedExpected: [[ExpectedBooking]]?
 }
 
 struct ExpectedBooking: Decodable {
@@ -297,7 +305,16 @@ enum EvalScoring {
         error?.hasPrefix(AgentError.api(status: status, text: "").localizedDescription) == true
     }
 
+    /// The findings against `expected`, or none when an accepted end state fits.
     static func mismatches(_ item: EvalCase, run: CaseRun) -> [String] {
+        let findings = mismatches(item, expected: item.expected, run: run)
+        guard findings.isEmpty == false,
+              (item.acceptedExpected ?? []).contains(where: { mismatches(item, expected: $0, run: run).isEmpty })
+        else { return findings }
+        return []
+    }
+
+    private static func mismatches(_ item: EvalCase, expected wanted: [ExpectedBooking], run: CaseRun) -> [String] {
         let noBooking = AgentError.noBooking.localizedDescription
         let created = run.bookings.filter { $0.id.map(run.seeded.contains) != true }
         if item.acceptedNoBooking == true, created.isEmpty,
@@ -310,7 +327,7 @@ enum EvalScoring {
             findings.append("Chat failed: \(error)")
         }
         // A file some booking should carry must book; any other must be declined.
-        let attached = Set(item.expected.flatMap(\.belege))
+        let attached = Set(wanted.flatMap(\.belege))
         for file in run.imports {
             let label = run.imports.count > 1 ? "\(file.file): " : ""
             if attached.contains(file.file) {
@@ -333,8 +350,8 @@ enum EvalScoring {
         // Each expected booking takes the remaining booking it fits best.
         let names = Dictionary(run.fileIDs.map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
         var remaining = run.bookings
-        for (index, expected) in item.expected.enumerated() {
-            let label = item.expected.count > 1 ? "[\(index + 1)] " : ""
+        for (index, expected) in wanted.enumerated() {
+            let label = wanted.count > 1 ? "[\(index + 1)] " : ""
             guard remaining.isEmpty == false else {
                 findings.append("\(label)missing booking: \(expected.gegenparteiName)")
                 continue

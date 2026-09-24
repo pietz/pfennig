@@ -187,6 +187,27 @@ private let noBooking = AgentError.noBooking.localizedDescription
     #expect([0, 25, 26, 27, 115].map(PfennigEval.letters) == ["a", "z", "aa", "ab", "dl"])
 }
 
+@Test func evalScoringAcceptsAnAlternativeEndState() throws {
+    let booking = """
+    {"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"Hetzner",
+     "gegenpartei_land":"DE", "kategorie":"hosting", "belege":["a.pdf"], "brutto_cents":
+    """
+    let item = try evalCase("""
+    {"id":"alt", "files":["a.pdf"], "converted_eur_tolerance_cents":0,
+     "expected":[\(booking)1190}], "accepted_expected":[[\(booking)1000}]]}
+    """)
+    var actual = try Buchung(
+        richtung: .ausgabe, art: .rechnung, datum: #require(LocalDate("2026-09-01")), titel: "Server",
+        kategorie: "hosting", gegenparteiName: "Hetzner", gegenparteiLand: "DE",
+        positionen: [Position(netto: Cent(1000), steuersatz: 19, steuer: Cent(190))], belege: [1]
+    )
+    #expect(score(item, [actual], fileIDs: ["a.pdf": 1]).isEmpty)
+    actual.positionen[0].steuer = .null
+    #expect(score(item, [actual], fileIDs: ["a.pdf": 1]).isEmpty)
+    actual.positionen[0].netto = Cent(900)
+    #expect(score(item, [actual], fileIDs: ["a.pdf": 1]) == ["brutto_cents: expected 1190 ±0, got 900"])
+}
+
 @Test func evalSeedWritesAConfirmableBooking() throws {
     let item = try evalCase("""
     {"id":"seed", "files":["a.pdf"], "converted_eur_tolerance_cents":0, "expected":[],
