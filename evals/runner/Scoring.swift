@@ -144,7 +144,7 @@ struct ExpectedBooking: Decodable {
     let gegenparteiName: String
     let acceptedCounterparties: [String]?
     let gegenparteiLand: String
-    let acceptedCountries: [String]?
+    let acceptedCountries: [String?]?
     let kategorie: String
     let acceptedCategories: [String]?
     let steuerbehandlung: String?
@@ -167,7 +167,7 @@ struct ExpectedBooking: Decodable {
     }
 
     var countries: [String] {
-        [gegenparteiLand] + (acceptedCountries ?? [])
+        [gegenparteiLand] + (acceptedCountries ?? []).compactMap(\.self)
     }
 }
 
@@ -343,10 +343,16 @@ enum EvalScoring {
             }
         }
         if let payments = expected.zahlungen {
-            let actualDates = actual.zahlungen.map(\.datum.description).sorted()
-            let expectedDates = payments.map(\.datum).sorted()
+            let actualDates = Set(actual.zahlungen.map(\.datum.description)).sorted()
+            let expectedDates = Set(payments.map(\.datum)).sorted()
             if actualDates != expectedDates {
                 findings.append("zahlungsdaten: expected \(expectedDates), got \(actualDates)")
+            }
+            // A payment without an amount is the EUR amount no document
+            // states, such as a card charge in USD: it settles the rest.
+            let paid = actual.zahlungen.reduce(0) { $0 + $1.betrag.value }
+            if payments.contains(where: { $0.betrag == nil }), paid != actual.brutto.value {
+                findings.append("zahlungen: expected \(actual.brutto.value) in total, got \(paid)")
             }
             for (date, due) in Dictionary(grouping: payments, by: \.datum).sorted(by: { $0.key < $1.key })
                 where due.allSatisfy({ $0.betrag != nil })

@@ -512,6 +512,9 @@
         "faelligkeit": "2026-09-18",
         "gegenpartei_name": "Wortspur Freie Texte",
         "gegenpartei_land": "DE",
+        "accepted_countries": [
+          null
+        ],
         "kategorie": "fremdleistung",
         "steuerbehandlung": "inland",
         "privatanteil_prozent": 0,
@@ -541,7 +544,8 @@
       "strict_nulls": true,
       "label_uncertainties": [
         "The invoice names both the proprietor and the studio brand.",
-        "The texts are for the own website, which fits werbung; bought-in work also fits fremdleistung."
+        "The texts are for the own website, which fits werbung; bought-in work also fits fremdleistung.",
+        "The document does not print the supplier's country; leaving it empty is accepted."
       ]
     },
     {
@@ -555,6 +559,9 @@
         "faelligkeit": null,
         "gegenpartei_name": "NordAir AG",
         "gegenpartei_land": "DE",
+        "accepted_countries": [
+          null
+        ],
         "kategorie": "reise_fahrt",
         "steuerbehandlung": "inland",
         "privatanteil_prozent": 0,
@@ -579,7 +586,10 @@
         ]
       },
       "converted_eur_tolerance_cents": 0,
-      "strict_nulls": true
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "The document does not print the supplier's country; leaving it empty is accepted."
+      ]
     },
     {
       "id": "16",

@@ -827,7 +827,7 @@ private actor Zaehler {
 
     ## Regeln
 
-    - Ausgaben gelten beim Import als bezahlt, sofern das Dokument nichts Gegenteiliges erkennen lässt; fehlt das Zahlungsdatum, verwende das Belegdatum. Eigene Ausgangsrechnungen bleiben unbezahlt, solange keine Zahlung belegt ist.
+    - Ausgaben gelten beim Import als bezahlt, auch wenn die Rechnung einen fälligen Betrag oder eine spätere Abbuchung nennt; unbezahlt bleiben sie nur, wenn das Dokument sie ausdrücklich als offen ausweist. Fehlt das Zahlungsdatum, verwende das Belegdatum. Eigene Ausgangsrechnungen bleiben unbezahlt, solange keine Zahlung belegt ist.
     - Die Zahlungen einer Buchung sollen zusammen dem tatsächlich geflossenen Geld einschließlich belegter Verrechnungen entsprechen. Zahlungsbeträge sind relativ zur Buchung: eine Zahlung positiv, eine Erstattung negativ, unabhängig vom Vorzeichen auf dem Kontoauszug.
     - Gehe von vollständig betrieblicher Nutzung aus, sofern das Dokument oder der Nutzer keinen privaten Anteil angibt.
     - Nutze `notizen` nur für relevante Zusatzinformationen oder konkrete Unsicherheiten mit kurzem Grund oder Prüfhinweis, nicht für Zusammenfassungen oder Wiederholungen anderer Felder; sonst bei neuen Buchungen leer lassen. Die obigen Zahlungs- und Nutzungsannahmen sind keine Unsicherheiten. Erhalte inhaltliche Nutzernotizen bei Änderungen.

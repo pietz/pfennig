@@ -59,6 +59,32 @@ import Testing
         .contains { $0.contains("faelligkeit") })
 }
 
+@Test func evalScoringSettlesTheRestWithAPaymentWithoutAmount() throws {
+    let data = Data("""
+    {"id":"card", "file":"card.pdf", "converted_eur_tolerance_cents":0,
+     "expected":{"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
+                 "gegenpartei_name":"Railway", "gegenpartei_land":"US", "kategorie":"hosting",
+                 "zahlungen":[{"datum":"2026-09-01", "betrag":null}]}}
+    """.utf8)
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    let item = try decoder.decode(EvalCase.self, from: data)
+    let date = try #require(LocalDate("2026-09-01"))
+    var booking = try Buchung(
+        richtung: .ausgabe, art: .rechnung, datum: date, titel: "Hosting", kategorie: "hosting",
+        gegenparteiName: "Railway", gegenparteiLand: "US",
+        positionen: [Position(netto: Cent(1612), steuersatz: 19, steuer: Cent(306))],
+        steuerbehandlung: .inland,
+        zahlungen: [Zahlung(datum: date, betrag: Cent(14))],
+        belege: [1]
+    )
+    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 1)
+        .contains { $0.contains("zahlungen") })
+    // Credit balance plus card charge on the same day settle the invoice.
+    booking.zahlungen.append(Zahlung(datum: date, betrag: Cent(1904)))
+    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 1).isEmpty)
+}
+
 @Test func evalScoringChecksTheReasonForNoBooking() throws {
     let data = Data("""
     {"id":"bank", "file":"bank.pdf", "expected":null, "converted_eur_tolerance_cents":0}
