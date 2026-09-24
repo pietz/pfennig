@@ -69,23 +69,30 @@ private struct Options {
 private struct CaseResult: Codable {
     let id: String
     let repetition: Int
-    let outcome: String
-    let error: String?
     let agentEvaluated: Bool
     let seconds: Double
     let inputTokens: Int?
     let outputTokens: Int?
-    let trace: String?
+    let traces: [String]
     let promptFile: String
     let promptSHA256: String
-    let fileSHA256: String
-    /// Absent in reports written before it was recorded.
-    let fileID: Int64?
+    /// Source hashes by truth path, checked before a rescore.
+    let fileSHA256: [String: String]
+    let fileIDs: [String: Int64]
+    let seeded: [Int64]
+    let imports: [FileRun]
+    let chatError: String?
+    /// The agent's last chat answer.
+    let answer: String?
     var mismatches: [String]
     let bookings: [Buchung]
 
     var passed: Bool {
         mismatches.isEmpty
+    }
+
+    var scored: CaseRun {
+        CaseRun(imports: imports, chatError: chatError, bookings: bookings, fileIDs: fileIDs, seeded: Set(seeded))
     }
 }
 
@@ -109,19 +116,6 @@ private struct Report: Codable {
         agentPassed = cases.filter { $0.agentEvaluated && $0.passed }.count
     }
 
-    var tallies: [String: Stability.Tally] {
-        Stability.tally(cases.map { ($0.id, $0.mismatches) })
-    }
-
-    /// Mean input and output tokens of the runs that reported usage.
-    var tokenText: String {
-        let counted = cases.filter { $0.inputTokens != nil }
-        guard counted.isEmpty == false else { return "none recorded" }
-        let input = counted.reduce(0) { $0 + ($1.inputTokens ?? 0) } / counted.count
-        let output = counted.reduce(0) { $0 + ($1.outputTokens ?? 0) } / counted.count
-        return "\(input) in, \(output) out"
-    }
-
     static func read(_ url: URL) throws -> Report {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
@@ -133,6 +127,40 @@ private struct Report: Codable {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         encoder.dateEncodingStrategy = .iso8601
         try encoder.encode(self).write(to: url, options: .atomic)
+    }
+}
+
+/// The part of a report that summary and comparison read. It decodes
+/// reports of every format, so older runs remain comparable.
+private struct Digest: Decodable {
+    struct Entry: Decodable {
+        let id: String
+        let mismatches: [String]
+        let inputTokens: Int?
+        let outputTokens: Int?
+    }
+
+    let passed: Int
+    let total: Int
+    let agentPassed: Int
+    let agentTotal: Int
+    let cases: [Entry]
+
+    init(_ url: URL) throws {
+        self = try JSONDecoder().decode(Digest.self, from: Data(contentsOf: url))
+    }
+
+    var tallies: [String: Stability.Tally] {
+        Stability.tally(cases.map { ($0.id, $0.mismatches) })
+    }
+
+    /// Mean input and output tokens of the runs that reported usage.
+    var tokenText: String {
+        let counted = cases.filter { $0.inputTokens != nil }
+        guard counted.isEmpty == false else { return "none recorded" }
+        let input = counted.reduce(0) { $0 + ($1.inputTokens ?? 0) } / counted.count
+        let output = counted.reduce(0) { $0 + ($1.outputTokens ?? 0) } / counted.count
+        return "\(input) in, \(output) out"
     }
 }
 
@@ -150,14 +178,14 @@ enum PfennigEval {
     private static func execute() async throws {
         let options = try Options(Array(CommandLine.arguments.dropFirst()))
         if let file = options.summaryFile {
-            let report = try Report.read(file)
+            let report = try Digest(file)
             print("\(report.passed)/\(report.total) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal)")
             Stability.summary(report.tallies).forEach { print($0) }
             return
         }
         if let (oldFile, newFile) = options.compareFiles {
-            let old = try Report.read(oldFile)
-            let new = try Report.read(newFile)
+            let old = try Digest(oldFile)
+            let new = try Digest(newFile)
             print(
                 "Passed \(old.passed)/\(old.total) → \(new.passed)/\(new.total); agent-evaluable \(old.agentPassed)/\(old.agentTotal) → \(new.agentPassed)/\(new.agentTotal)"
             )
@@ -171,7 +199,7 @@ enum PfennigEval {
         let truth = try GroundTruth.load(truthData, root: root)
         if options.validateOnly {
             print(
-                "Valid ground truth: \(truth.cases.filter { $0.expected != nil }.count) bookable, \(truth.cases.filter { $0.expected == nil }.count) controls"
+                "Valid ground truth: \(truth.cases.filter { $0.expected.isEmpty == false }.count) with bookings, \(truth.cases.filter(\.expected.isEmpty).count) controls"
             )
             return
         }
@@ -263,7 +291,7 @@ enum PfennigEval {
         print(
             "\(report.passed)/\(results.count) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.appending(path: "report.json").path)"
         )
-        Stability.summary(report.tallies).forEach { print($0) }
+        Stability.summary(Stability.tally(report.cases.map { ($0.id, $0.mismatches) })).forEach { print($0) }
     }
 
     /// `OPENAI_API_KEY` from the environment or from `.env` in the working
@@ -295,17 +323,12 @@ enum PfennigEval {
             guard let item = items[recorded.id] else {
                 throw EvalError.invalid("Case missing from ground truth: \(recorded.id)")
             }
-            let sourceHash = try FileIntake.hash(Data(contentsOf: root.appending(path: item.file)))
-            guard sourceHash == recorded.fileSHA256 else {
-                throw EvalError.invalid("Source file changed: \(item.file)")
+            for (file, hash) in recorded.fileSHA256 {
+                guard try FileIntake.hash(Data(contentsOf: root.appending(path: file))) == hash else {
+                    throw EvalError.invalid("Source file changed: \(file)")
+                }
             }
-            report.cases[index].mismatches = EvalScoring.mismatches(
-                item,
-                outcome: recorded.outcome,
-                error: recorded.error,
-                bookings: recorded.bookings,
-                fileID: recorded.fileID ?? recorded.bookings.first?.belege.first
-            )
+            report.cases[index].mismatches = EvalScoring.mismatches(item, run: recorded.scored)
         }
         report.generatedAt = ISO8601DateFormatter().string(from: Date())
         report.truthSHA256 = FileIntake.hash(truthData)
@@ -320,6 +343,12 @@ enum PfennigEval {
         print(
             "Rescored \(report.passed)/\(report.total); agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(reportURL.path)"
         )
+    }
+
+    /// a, b, … z, aa, ab: a name part no one reads as a file ID.
+    static func letters(_ number: Int) -> String {
+        let letter = String(UnicodeScalar(UInt8(97 + number % 26)))
+        return number < 26 ? letter : letters(number / 26 - 1) + letter
     }
 
     private static func run(
@@ -345,12 +374,6 @@ enum PfennigEval {
         if FileManager.default.fileExists(atPath: promptURL.path) == false {
             try prompt.write(to: promptURL, atomically: true, encoding: .utf8)
         }
-        // The model sees the file name. A neutral one keeps names such as
-        // "12-laptop.pdf" from answering what the document should; a number
-        // would be mistaken for the file ID.
-        let source = root.appending(path: item.file)
-        let input = folder.appending(path: "dokument.\(source.pathExtension)")
-        try FileManager.default.copyItem(at: source, to: input)
         let intake = try FileIntake(
             repository: repository,
             path: archive,
@@ -358,47 +381,109 @@ enum PfennigEval {
             key: key,
             rulesOverride: rules
         )
+
+        // The model sees file names. Neutral ones keep names such as
+        // "12-laptop.pdf" from answering what the document should; a number
+        // would be mistaken for a file ID.
+        let seeds = item.archive ?? []
+        let paths = (seeds.flatMap(\.belege) + item.files).reduce(into: [String]()) { paths, path in
+            if paths.contains(path) == false {
+                paths.append(path)
+            }
+        }
+        var inputs: [String: URL] = [:]
+        var hashes: [String: String] = [:]
+        for (number, path) in paths.enumerated() {
+            let source = root.appending(path: path)
+            let suffix = paths.count == 1 ? "" : "-" + letters(number)
+            let input = folder.appending(path: "dokument\(suffix).\(source.pathExtension)")
+            try FileManager.default.copyItem(at: source, to: input)
+            inputs[path] = input
+            hashes[path] = try FileIntake.hash(Data(contentsOf: source))
+        }
+        var seeded: [Int64] = []
+        for seed in seeds {
+            var ids: [String: Int64] = [:]
+            for path in seed.belege {
+                ids[path] = try intake.attach(inputs[path]!).id
+            }
+            let saved = try repository.save(seed.seed(files: ids), akteur: .nutzer)
+            try repository.confirm(id: saved.id!)
+            seeded.append(saved.id!)
+        }
+
         let started = Date()
-        let intakeResult = await intake.process(input)
+        var imports: [FileRun] = []
+        var chatError: String?
+        var answer: String?
+        if let text = item.chat {
+            do {
+                let conversation = try await Chat(intake: intake).send(
+                    text, files: item.files.compactMap { inputs[$0] }, to: nil
+                )
+                answer = Conversation.messages(conversation.verlauf).last { $0.fromUser == false }?.text
+            } catch {
+                chatError = error.localizedDescription
+            }
+        } else {
+            // One drop: every file at once through the same intake, as in the app.
+            let inputs = inputs
+            imports = await withTaskGroup(of: FileRun.self) { group in
+                for path in item.files {
+                    group.addTask {
+                        switch await intake.process(inputs[path]!) {
+                        case .booked: FileRun(file: path, outcome: "booked", error: nil)
+                        case .alreadyPresent: FileRun(file: path, outcome: "alreadyPresent", error: nil)
+                        case let .failed(_, message): FileRun(file: path, outcome: "failed", error: message)
+                        }
+                    }
+                }
+                var runs: [FileRun] = []
+                for await run in group {
+                    runs.append(run)
+                }
+                return runs.sorted { $0.file < $1.file }
+            }
+        }
         let seconds = Date().timeIntervalSince(started)
-        let (outcome, error): (String, String?) = switch intakeResult {
-        case .booked: ("booked", nil)
-        case .alreadyPresent: ("alreadyPresent", nil)
-        case let .failed(_, message): ("failed", message)
+
+        let requests = try repository.allRequests()
+        var traces: [String] = []
+        for (number, request) in requests.enumerated() {
+            guard let conversation = request.konversation else { continue }
+            let trace = "\(item.id)-\(repetition)-\(number + 1)-trace.json"
+            try conversation.write(to: output.appending(path: trace), atomically: true, encoding: .utf8)
+            traces.append(trace)
         }
-        let bookings = try repository.allBookings()
-        let request = try repository.allRequests().last
-        let agentEvaluated = request != nil && EvalScoring.isInfrastructureError(error) == false
-        let hash = try FileIntake.hash(Data(contentsOf: source))
-        let fileID = try repository.fileID(sha256: hash)
-        let mismatches = EvalScoring.mismatches(
-            item,
-            outcome: outcome,
-            error: error,
-            bookings: bookings,
-            fileID: fileID
+        var fileIDs: [String: Int64] = [:]
+        for (path, hash) in hashes {
+            fileIDs[path] = try repository.fileID(sha256: hash)
+        }
+        let errors = imports.map(\.error) + [chatError]
+        let run = try CaseRun(
+            imports: imports, chatError: chatError, bookings: repository.allBookings(),
+            fileIDs: fileIDs, seeded: Set(seeded)
         )
-        var trace: String?
-        if let conversation = request?.konversation {
-            trace = "\(item.id)-\(repetition)-trace.json"
-            try conversation.write(to: output.appending(path: trace!), atomically: true, encoding: .utf8)
-        }
+        let tokens = requests.compactMap(\.eingabeTokens)
         return CaseResult(
             id: item.id,
             repetition: repetition,
-            outcome: outcome,
-            error: error,
-            agentEvaluated: agentEvaluated,
+            agentEvaluated: requests.isEmpty == false && errors
+                .contains(where: EvalScoring.isInfrastructureError) == false,
             seconds: seconds,
-            inputTokens: request?.eingabeTokens,
-            outputTokens: request?.ausgabeTokens,
-            trace: trace,
+            inputTokens: tokens.isEmpty ? nil : tokens.reduce(0, +),
+            outputTokens: requests.compactMap(\.ausgabeTokens).reduce(0, +),
+            traces: traces,
             promptFile: promptFile,
             promptSHA256: promptSHA256,
-            fileSHA256: hash,
-            fileID: fileID,
-            mismatches: mismatches,
-            bookings: bookings
+            fileSHA256: hashes,
+            fileIDs: fileIDs,
+            seeded: seeded,
+            imports: imports,
+            chatError: chatError,
+            answer: answer,
+            mismatches: EvalScoring.mismatches(item, run: run),
+            bookings: run.bookings
         )
     }
 }

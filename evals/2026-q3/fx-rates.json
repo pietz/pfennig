@@ -1,0 +1,3 @@
+{
+  "https://api.frankfurter.dev/v2/rate/USD/EUR?date=2026-08-21" : "{\"date\":\"2026-08-21\",\"base\":\"USD\",\"quote\":\"EUR\",\"rate\":0.85569}"
+}

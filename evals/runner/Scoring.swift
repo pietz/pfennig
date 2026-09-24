@@ -26,6 +26,14 @@ struct GroundTruth: Decodable {
         return truth
     }
 
+    private static let bookingKeys: Set<String> = [
+        "richtung", "art", "accepted_arts", "datum", "belegnummer", "accepted_receipt_numbers",
+        "faelligkeit", "accepted_due_dates", "gegenpartei_name", "accepted_counterparties",
+        "gegenpartei_land", "accepted_countries", "kategorie", "accepted_categories", "steuerbehandlung",
+        "privatanteil_prozent", "nutzungsdauer_jahre", "waehrung", "originalbetrag", "netto_cents",
+        "steuer_cents", "brutto_cents", "positionen_nach_satz", "zahlungen", "belege", "titel"
+    ]
+
     /// The keys of each level, named by the key that holds it. Case notes
     /// such as `label_uncertainties` and `source_amounts` document a label
     /// and are not scored.
@@ -33,16 +41,11 @@ struct GroundTruth: Decodable {
         "truth": ["profile", "today", "cases"],
         "profile": ["name", "ustid", "kleinunternehmer"],
         "cases": [
-            "id", "file", "expected", "converted_eur_tolerance_cents", "expected_failure", "strict_nulls",
-            "accepted_no_booking", "label_uncertainties", "source_amounts"
+            "id", "archive", "files", "chat", "expected", "converted_eur_tolerance_cents", "expected_failure",
+            "strict_nulls", "accepted_no_booking", "label_uncertainties", "source_amounts"
         ],
-        "expected": [
-            "richtung", "art", "accepted_arts", "datum", "belegnummer", "accepted_receipt_numbers",
-            "faelligkeit", "accepted_due_dates", "gegenpartei_name", "accepted_counterparties",
-            "gegenpartei_land", "accepted_countries", "kategorie", "accepted_categories", "steuerbehandlung",
-            "privatanteil_prozent", "nutzungsdauer_jahre", "waehrung", "originalbetrag", "netto_cents",
-            "steuer_cents", "brutto_cents", "positionen_nach_satz", "zahlungen"
-        ],
+        "archive": bookingKeys,
+        "expected": bookingKeys,
         "positionen_nach_satz": ["steuersatz", "accepted_rates", "netto_cents", "steuer_cents"],
         "zahlungen": ["datum", "betrag"]
     ]
@@ -71,62 +74,96 @@ struct GroundTruth: Decodable {
             func require(_ condition: Bool, _ problem: String) throws {
                 guard condition else { throw EvalError.invalid("Case \(item.id): \(problem)") }
             }
-            try require(FileManager.default.fileExists(atPath: root.appending(path: item.file).path), "missing file")
-            try require(item.convertedEurToleranceCents >= 0, "negative tolerance")
-            guard let expected = item.expected else {
-                try require([nil, "invalid_pdf"].contains(item.expectedFailure), "unknown expected_failure")
-                continue
-            }
-            try require(item.expectedFailure == nil, "expected_failure next to an expected booking")
-            guard let richtung = Richtung(rawValue: expected.richtung) else {
-                throw EvalError.invalid("Case \(item.id): unknown richtung")
-            }
-            let categories = Set(Kategorie.fuer(richtung).map(\.schluessel))
-            let positions = expected.positionenNachSatz ?? []
-            let dates = [expected.datum] + [expected.faelligkeit].compactMap(\.self)
-                + (expected.acceptedDueDates ?? []).compactMap(\.self) + (expected.zahlungen ?? []).map(\.datum)
-            let decimals = [expected.originalbetrag].compactMap(\.self)
-                + positions.flatMap { [$0.steuersatz] + ($0.acceptedRates ?? []) }
-            try require(expected.arts.allSatisfy { Art(rawValue: $0) != nil }, "unknown art")
-            try require(expected.categories.allSatisfy(categories.contains), "unknown category")
-            try require(expected.countries.allSatisfy { $0.wholeMatch(of: /[A-Z]{2}/) != nil }, "invalid country")
+            let seeds = item.archive ?? []
+            let known = Set(item.files + seeds.flatMap(\.belege))
+            try require(item.chat != nil || item.files.isEmpty == false, "neither files nor chat")
+            try require(item.chat?.isEmpty != true, "empty chat")
+            try require(Set(item.files).count == item.files.count, "a file imported twice in one drop")
             try require(
-                expected.steuerbehandlung.map { Steuerbehandlung(rawValue: $0) != nil } ?? true,
-                "unknown steuerbehandlung"
+                known.allSatisfy { FileManager.default.fileExists(atPath: root.appending(path: $0).path) },
+                "missing file"
             )
-            try require(dates.allSatisfy { LocalDate($0) != nil }, "invalid date")
-            try require(decimals.allSatisfy { $0.wholeMatch(of: /-?\d+(\.\d+)?/) != nil }, "invalid decimal")
-            if item.strictNulls == true {
-                // These have no empty state in a booking, so null can only mean unscored.
-                let settled: [Any?] = [
-                    expected.privatanteilProzent, expected.nettoCents, expected.steuerCents,
-                    expected.bruttoCents, expected.positionenNachSatz, expected.zahlungen
-                ]
+            try require(item.expected.allSatisfy { Set($0.belege).isSubset(of: known) }, "unknown file in belege")
+            try require(item.convertedEurToleranceCents >= 0, "negative tolerance")
+            try require([nil, "invalid_pdf"].contains(item.expectedFailure), "unknown expected_failure")
+            for seed in seeds {
+                // A seed is written as it stands, so every amount must be given.
                 try require(
-                    settled.allSatisfy { $0 != nil }
-                        && positions.allSatisfy { $0.nettoCents != nil && $0.steuerCents != nil }
-                        && (expected.zahlungen ?? []).allSatisfy { $0.betrag != nil },
-                    "strict_nulls leaves an amount or share unscored"
+                    seed.belege.isEmpty == false && seed.steuerbehandlung != nil
+                        && (seed.positionenNachSatz ?? []).isEmpty == false
+                        && (seed.positionenNachSatz ?? []).allSatisfy { $0.nettoCents != nil && $0.steuerCents != nil }
+                        && (seed.zahlungen ?? []).allSatisfy { $0.betrag != nil },
+                    "archive booking without files, tax treatment, positions or payment amounts"
                 )
             }
-            if let net = expected.nettoCents, let tax = expected.steuerCents, let gross = expected.bruttoCents {
-                try require(net + tax == gross, "inconsistent gross amount")
-                if expected.positionenNachSatz != nil {
-                    try require(
-                        positions.reduce(0) { $0 + ($1.nettoCents ?? 0) } == net
-                            && positions.reduce(0) { $0 + ($1.steuerCents ?? 0) } == tax,
-                        "inconsistent positions"
-                    )
-                }
+            for expected in seeds + item.expected {
+                try validate(expected, strict: item.strictNulls == true, require: require)
+            }
+        }
+    }
+
+    private func validate(
+        _ expected: ExpectedBooking,
+        strict: Bool,
+        require: (Bool, String) throws -> Void
+    ) throws {
+        guard let richtung = Richtung(rawValue: expected.richtung) else {
+            return try require(false, "unknown richtung")
+        }
+        let categories = Set(Kategorie.fuer(richtung).map(\.schluessel))
+        let positions = expected.positionenNachSatz ?? []
+        let dates = [expected.datum] + [expected.faelligkeit].compactMap(\.self)
+            + (expected.acceptedDueDates ?? []).compactMap(\.self) + (expected.zahlungen ?? []).map(\.datum)
+        let decimals = [expected.originalbetrag].compactMap(\.self)
+            + positions.flatMap { [$0.steuersatz] + ($0.acceptedRates ?? []) }
+        try require(expected.arts.allSatisfy { Art(rawValue: $0) != nil }, "unknown art")
+        try require(expected.categories.allSatisfy(categories.contains), "unknown category")
+        try require(expected.countries.allSatisfy { $0.wholeMatch(of: /[A-Z]{2}/) != nil }, "invalid country")
+        try require(
+            expected.steuerbehandlung.map { Steuerbehandlung(rawValue: $0) != nil } ?? true,
+            "unknown steuerbehandlung"
+        )
+        try require(dates.allSatisfy { LocalDate($0) != nil }, "invalid date")
+        try require(decimals.allSatisfy { $0.wholeMatch(of: /-?\d+(\.\d+)?/) != nil }, "invalid decimal")
+        if strict {
+            // These have no empty state in a booking, so null can only mean unscored.
+            let settled: [Any?] = [
+                expected.privatanteilProzent, expected.nettoCents, expected.steuerCents,
+                expected.bruttoCents, expected.positionenNachSatz, expected.zahlungen
+            ]
+            try require(
+                settled.allSatisfy { $0 != nil }
+                    && positions.allSatisfy { $0.nettoCents != nil && $0.steuerCents != nil }
+                    && (expected.zahlungen ?? []).allSatisfy { $0.betrag != nil },
+                "strict_nulls leaves an amount or share unscored"
+            )
+        }
+        if let net = expected.nettoCents, let tax = expected.steuerCents, let gross = expected.bruttoCents {
+            try require(net + tax == gross, "inconsistent gross amount")
+            if expected.positionenNachSatz != nil {
+                try require(
+                    positions.reduce(0) { $0 + ($1.nettoCents ?? 0) } == net
+                        && positions.reduce(0) { $0 + ($1.steuerCents ?? 0) } == tax,
+                    "inconsistent positions"
+                )
             }
         }
     }
 }
 
+/// One scenario: the bookings the archive starts with, then either files
+/// dropped together or a chat message, then every booking the archive should
+/// hold. A single document into an empty archive is the simplest case.
 struct EvalCase: Decodable {
     let id: String
-    let file: String
-    let expected: ExpectedBooking?
+    /// Written before the run and confirmed, each with its files.
+    let archive: [ExpectedBooking]?
+    /// Imported side by side as one drop, or attached to `chat`.
+    let files: [String]
+    /// Sent as a chat message instead of importing `files`.
+    let chat: String?
+    /// The whole archive after the run, seeded bookings included.
+    let expected: [ExpectedBooking]
     let convertedEurToleranceCents: Int64
     let expectedFailure: String?
     /// Null means "must be empty" rather than "not settled by the document".
@@ -159,6 +196,10 @@ struct ExpectedBooking: Decodable {
     let bruttoCents: Int64?
     let positionenNachSatz: [ExpectedRate]?
     let zahlungen: [ExpectedPayment]?
+    /// The case's files this booking carries, exactly.
+    let belege: [String]
+    /// A seed's title, as the agent would have written it. Not scored.
+    let titel: String?
 
     var arts: [String] {
         [art] + (acceptedArts ?? [])
@@ -170,6 +211,33 @@ struct ExpectedBooking: Decodable {
 
     var countries: [String] {
         [gegenparteiLand] + (acceptedCountries ?? []).compactMap(\.self)
+    }
+
+    /// The booking a seed writes, from its expected values.
+    func seed(files ids: [String: Int64]) throws -> Buchung {
+        guard let richtung = Richtung(rawValue: richtung), let art = Art(rawValue: art),
+              let datum = LocalDate(datum)
+        else { throw EvalError.invalid("Unreadable archive booking \(gegenparteiName)") }
+        return Buchung(
+            richtung: richtung, art: art, datum: datum, titel: titel ?? gegenparteiName,
+            belegnummer: belegnummer, faelligkeit: faelligkeit.flatMap { LocalDate($0) },
+            kategorie: kategorie, privatanteilProzent: privatanteilProzent ?? 0,
+            nutzungsdauerJahre: nutzungsdauerJahre, gegenparteiName: gegenparteiName,
+            gegenparteiLand: gegenparteiLand,
+            positionen: (positionenNachSatz ?? []).map {
+                Position(
+                    netto: Cent($0.nettoCents ?? 0),
+                    steuersatz: Decimal(string: $0.steuersatz) ?? 0,
+                    steuer: Cent($0.steuerCents ?? 0)
+                )
+            },
+            waehrung: waehrung, originalbetrag: originalbetrag.flatMap { Decimal(string: $0) },
+            steuerbehandlung: steuerbehandlung.flatMap { Steuerbehandlung(rawValue: $0) },
+            zahlungen: (zahlungen ?? []).compactMap { payment in
+                LocalDate(payment.datum).map { Zahlung(datum: $0, betrag: Cent(payment.betrag ?? 0)) }
+            },
+            belege: belege.compactMap { ids[$0] }
+        )
     }
 }
 
@@ -183,6 +251,25 @@ struct ExpectedRate: Decodable {
 struct ExpectedPayment: Decodable {
     let datum: String
     let betrag: Int64?
+}
+
+/// How one imported file ended.
+struct FileRun: Codable, Equatable {
+    let file: String
+    let outcome: String
+    let error: String?
+}
+
+/// What a case left behind, the input of scoring. A saved report holds it,
+/// so a changed truth label can be scored again without another run.
+struct CaseRun {
+    var imports: [FileRun] = []
+    var chatError: String?
+    var bookings: [Buchung]
+    /// Archive IDs of the case's files, by truth path.
+    var fileIDs: [String: Int64]
+    /// Bookings written before the run.
+    var seeded: Set<Int64> = []
 }
 
 enum EvalError: Error, LocalizedError {
@@ -210,41 +297,70 @@ enum EvalScoring {
         error?.hasPrefix(AgentError.api(status: status, text: "").localizedDescription) == true
     }
 
-    static func mismatches(
-        _ item: EvalCase,
-        outcome: String,
-        error: String?,
-        bookings: [Buchung],
-        fileID: Int64?
-    ) -> [String] {
-        let noBooking = error == AgentError.noBooking.localizedDescription
-        guard let expected = item.expected else {
-            var findings: [String] = []
-            if outcome != "failed" {
-                findings.append("Expected failure, got \(outcome): \(error ?? "")")
-            } else if item.expectedFailure == "invalid_pdf" {
-                if noBooking == false, [400, 422].contains(where: { isAPIError(error, status: $0) }) == false {
-                    findings.append("Expected document rejection, got: \(error ?? "")")
-                }
-            } else if noBooking == false {
-                findings.append("Expected noBooking, got: \(error ?? "")")
-            }
-            if bookings.isEmpty == false {
-                findings.append("Expected no bookings, got \(bookings.count)")
-            }
-            return findings
-        }
-        if item.acceptedNoBooking == true, outcome == "failed", noBooking, bookings.isEmpty {
+    static func mismatches(_ item: EvalCase, run: CaseRun) -> [String] {
+        let noBooking = AgentError.noBooking.localizedDescription
+        let created = run.bookings.filter { $0.id.map(run.seeded.contains) != true }
+        if item.acceptedNoBooking == true, created.isEmpty,
+           run.imports.allSatisfy({ $0.outcome == "failed" && $0.error == noBooking })
+        {
             return []
         }
         var findings: [String] = []
-        if outcome != "booked" {
-            findings.append("Import \(outcome): \(error ?? "")")
+        if item.chat != nil, let error = run.chatError {
+            findings.append("Chat failed: \(error)")
         }
-        guard bookings.count == 1, let actual = bookings.first else {
-            findings.append("Expected one booking, got \(bookings.count)")
-            return findings
+        // A file some booking should carry must book; any other must be declined.
+        let attached = Set(item.expected.flatMap(\.belege))
+        for file in run.imports {
+            let label = run.imports.count > 1 ? "\(file.file): " : ""
+            if attached.contains(file.file) {
+                if ["booked", "alreadyPresent"].contains(file.outcome) == false {
+                    findings.append("\(label)Import \(file.outcome): \(file.error ?? "")")
+                }
+            } else if file.outcome != "failed" {
+                findings.append("\(label)Expected failure, got \(file.outcome): \(file.error ?? "")")
+            } else if item.expectedFailure == "invalid_pdf" {
+                if file.error != noBooking,
+                   [400, 422].contains(where: { isAPIError(file.error, status: $0) }) == false
+                {
+                    findings.append("\(label)Expected document rejection, got: \(file.error ?? "")")
+                }
+            } else if file.error != noBooking {
+                findings.append("\(label)Expected noBooking, got: \(file.error ?? "")")
+            }
         }
+
+        // Each expected booking takes the remaining booking it fits best.
+        let names = Dictionary(run.fileIDs.map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
+        var remaining = run.bookings
+        for (index, expected) in item.expected.enumerated() {
+            let label = item.expected.count > 1 ? "[\(index + 1)] " : ""
+            guard remaining.isEmpty == false else {
+                findings.append("\(label)missing booking: \(expected.gegenparteiName)")
+                continue
+            }
+            let scored = remaining.indices.map { position in
+                (position, fields(expected, remaining[position], item: item, run: run, names: names))
+            }
+            guard let best = scored.min(by: { $0.1.count < $1.1.count }) else { continue }
+            findings += best.1.map { label + $0 }
+            remaining.remove(at: best.0)
+        }
+        for extra in remaining {
+            findings.append("unexpected booking: \(extra.titel), \(extra.brutto.value) cents")
+        }
+        return findings
+    }
+
+    /// The field mismatches of one booking against its expectation.
+    private static func fields(
+        _ expected: ExpectedBooking,
+        _ actual: Buchung,
+        item: EvalCase,
+        run: CaseRun,
+        names: [Int64: String]
+    ) -> [String] {
+        var findings: [String] = []
         let strict = item.strictNulls == true
         let tolerance = item.convertedEurToleranceCents
 
@@ -367,10 +483,13 @@ enum EvalScoring {
                 }
             }
         }
-        if fileID.map({ actual.belege.contains($0) }) != true {
-            findings.append("Receipt is not attached")
+        let expectedFiles = Set(expected.belege)
+        let actualFiles = Set(actual.belege.map { names[$0] ?? "file \($0)" })
+        if actualFiles != expectedFiles {
+            findings.append("belege: expected \(expectedFiles.sorted()), got \(actualFiles.sorted())")
         }
-        if actual.geprueftAm != nil {
+        // Review state is the app's; only a booking the agent wrote is checked.
+        if actual.id.map(run.seeded.contains) != true, actual.geprueftAm != nil {
             findings.append("Booking should remain unreviewed")
         }
         return findings

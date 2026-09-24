@@ -4,12 +4,37 @@ import Foundation
 @testable import PfennigEval
 import Testing
 
+private func evalCase(_ json: String) throws -> EvalCase {
+    let decoder = JSONDecoder()
+    decoder.keyDecodingStrategy = .convertFromSnakeCase
+    return try decoder.decode(EvalCase.self, from: Data(json.utf8))
+}
+
+/// Scores a one-file import whose every file ended the same way.
+private func score(
+    _ item: EvalCase,
+    _ bookings: [Buchung],
+    outcome: String = "booked",
+    error: String? = nil,
+    fileIDs: [String: Int64] = [:],
+    seeded: Set<Int64> = []
+) -> [String] {
+    EvalScoring.mismatches(item, run: CaseRun(
+        imports: item.files.map { FileRun(file: $0, outcome: outcome, error: error) },
+        bookings: bookings,
+        fileIDs: fileIDs,
+        seeded: seeded
+    ))
+}
+
+private let noBooking = AgentError.noBooking.localizedDescription
+
 @Test func evalScoringAllowsOnlyDocumentedAlternativesAndConversionCents() throws {
-    let data = Data("""
+    let item = try evalCase("""
     {
-      "id":"fx", "file":"fx.pdf", "converted_eur_tolerance_cents":2,
+      "id":"fx", "files":["fx.pdf"], "converted_eur_tolerance_cents":2,
       "strict_nulls":true, "accepted_no_booking":true,
-      "expected":{
+      "expected":[{
         "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
         "belegnummer":"FX-1", "faelligkeit":null,
         "gegenpartei_name":"Northstar Dev Tools", "accepted_counterparties":["Northstar Dev Tools Inc."],
@@ -20,13 +45,12 @@ import Testing
         "netto_cents":10000, "steuer_cents":0, "brutto_cents":10000,
         "positionen_nach_satz":[{"steuersatz":"0", "accepted_rates":["19"],
                                  "netto_cents":10000, "steuer_cents":0}],
-        "zahlungen":[{"datum":"2026-09-02", "betrag":10000}]
-      }
+        "zahlungen":[{"datum":"2026-09-02", "betrag":10000}],
+        "belege":["fx.pdf"]
+      }]
     }
-    """.utf8)
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    let item = try decoder.decode(EvalCase.self, from: data)
+    """)
+    let files = ["fx.pdf": Int64(42)]
     var booking = try Buchung(
         richtung: .ausgabe, art: .rechnung, datum: #require(LocalDate("2026-09-01")),
         titel: "License", belegnummer: "FX-1", kategorie: "hosting",
@@ -37,40 +61,31 @@ import Testing
         zahlungen: [Zahlung(datum: #require(LocalDate("2026-09-02")), betrag: Cent(10000))],
         belege: [42]
     )
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 42).isEmpty)
-    #expect(EvalScoring.mismatches(
-        item,
-        outcome: "failed",
-        error: AgentError.noBooking.localizedDescription,
-        bookings: [],
-        fileID: nil
-    ).isEmpty)
+    #expect(score(item, [booking], fileIDs: files).isEmpty)
+    #expect(score(item, [], outcome: "failed", error: noBooking).isEmpty)
 
     booking.positionen[0].netto = Cent(10003)
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 42)
-        .contains { $0.contains("netto_cents") })
+    #expect(score(item, [booking], fileIDs: files).contains { $0.contains("netto_cents") })
     booking.positionen[0].netto = Cent(10000)
     booking.kategorie = "werbung"
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 42)
-        .contains { $0.contains("kategorie") })
+    #expect(score(item, [booking], fileIDs: files).contains { $0.contains("kategorie") })
     booking.kategorie = "hosting"
     booking.faelligkeit = LocalDate("2026-09-30")
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 42)
-        .contains { $0.contains("faelligkeit") })
+    #expect(score(item, [booking], fileIDs: files).contains { $0.contains("faelligkeit") })
+    booking.faelligkeit = nil
+    booking.belege = []
+    #expect(score(item, [booking], fileIDs: files).contains { $0.hasPrefix("belege") })
 }
 
 @Test func evalScoringSettlesTheRestWithAPaymentWithoutAmount() throws {
-    let data = Data("""
-    {"id":"card", "file":"card.pdf", "converted_eur_tolerance_cents":0,
-     "expected":{"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
-                 "gegenpartei_name":"Railway", "gegenpartei_land":"US", "kategorie":"hosting",
-                 "zahlungen":[{"datum":"2026-09-01", "betrag":null}]}}
-    """.utf8)
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    let item = try decoder.decode(EvalCase.self, from: data)
+    let item = try evalCase("""
+    {"id":"card", "files":["card.pdf"], "converted_eur_tolerance_cents":0,
+     "expected":[{"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
+                  "gegenpartei_name":"Railway", "gegenpartei_land":"US", "kategorie":"hosting",
+                  "zahlungen":[{"datum":"2026-09-01", "betrag":null}], "belege":["card.pdf"]}]}
+    """)
     let date = try #require(LocalDate("2026-09-01"))
-    var booking = try Buchung(
+    var booking = Buchung(
         richtung: .ausgabe, art: .rechnung, datum: date, titel: "Hosting", kategorie: "hosting",
         gegenparteiName: "Railway", gegenparteiLand: "US",
         positionen: [Position(netto: Cent(1612), steuersatz: 19, steuer: Cent(306))],
@@ -78,65 +93,35 @@ import Testing
         zahlungen: [Zahlung(datum: date, betrag: Cent(14))],
         belege: [1]
     )
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 1)
-        .contains { $0.contains("zahlungen") })
+    #expect(score(item, [booking], fileIDs: ["card.pdf": 1]).contains { $0.contains("zahlungen") })
     // Credit balance plus card charge on the same day settle the invoice.
     booking.zahlungen.append(Zahlung(datum: date, betrag: Cent(1904)))
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 1).isEmpty)
+    #expect(score(item, [booking], fileIDs: ["card.pdf": 1]).isEmpty)
 }
 
 @Test func evalScoringChecksTheReasonForNoBooking() throws {
-    let data = Data("""
-    {"id":"bank", "file":"bank.pdf", "expected":null, "converted_eur_tolerance_cents":0}
-    """.utf8)
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    let item = try decoder.decode(EvalCase.self, from: data)
-    #expect(EvalScoring.mismatches(
-        item,
-        outcome: "failed",
-        error: AgentError.noBooking.localizedDescription,
-        bookings: [],
-        fileID: nil
-    ).isEmpty)
-    #expect(EvalScoring.mismatches(
-        item,
-        outcome: "failed",
-        error: "network error",
-        bookings: [],
-        fileID: nil
-    ).isEmpty == false)
+    let item = try evalCase("""
+    {"id":"bank", "files":["bank.pdf"], "expected":[], "converted_eur_tolerance_cents":0}
+    """)
+    #expect(score(item, [], outcome: "failed", error: noBooking).isEmpty)
+    #expect(score(item, [], outcome: "failed", error: "network error").isEmpty == false)
 }
 
 @Test func evalScoringRejectsInfrastructureErrorsForMalformedControls() throws {
-    let data = Data("""
-    {"id":"invalid", "file":"invalid.pdf", "expected":null,
+    let item = try evalCase("""
+    {"id":"invalid", "files":["invalid.pdf"], "expected":[],
      "converted_eur_tolerance_cents":0, "expected_failure":"invalid_pdf"}
-    """.utf8)
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    let item = try decoder.decode(EvalCase.self, from: data)
-    #expect(EvalScoring.mismatches(
-        item,
-        outcome: "failed",
-        error: "OpenAI hat mit 400 geantwortet: invalid PDF",
-        bookings: [],
-        fileID: nil
-    ).isEmpty)
-    #expect(EvalScoring.mismatches(
-        item,
-        outcome: "failed",
-        error: "Die Verbindung zu OpenAI kam nicht zustande",
-        bookings: [],
-        fileID: nil
-    ).isEmpty == false)
+    """)
+    #expect(score(item, [], outcome: "failed", error: "OpenAI hat mit 400 geantwortet: invalid PDF").isEmpty)
+    #expect(score(item, [], outcome: "failed", error: "Die Verbindung zu OpenAI kam nicht zustande")
+        .isEmpty == false)
 }
 
 @Test func evalScoringAcceptsDocumentedEmptyValuesAndEqualRates() throws {
-    let data = Data("""
+    let item = try evalCase("""
     {
-      "id":"due", "file":"due.pdf", "converted_eur_tolerance_cents":0, "strict_nulls":true,
-      "expected":{
+      "id":"due", "files":["due.pdf"], "converted_eur_tolerance_cents":0, "strict_nulls":true,
+      "expected":[{
         "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01",
         "belegnummer":"A-1", "accepted_receipt_numbers":["0815"],
         "faelligkeit":"2026-09-15", "accepted_due_dates":[null],
@@ -145,13 +130,10 @@ import Testing
         "waehrung":null, "originalbetrag":null,
         "netto_cents":1000, "steuer_cents":190, "brutto_cents":1190,
         "positionen_nach_satz":[{"steuersatz":"19.00", "netto_cents":1000, "steuer_cents":190}],
-        "zahlungen":[]
-      }
+        "zahlungen":[], "belege":["due.pdf"]
+      }]
     }
-    """.utf8)
-    let decoder = JSONDecoder()
-    decoder.keyDecodingStrategy = .convertFromSnakeCase
-    let item = try decoder.decode(EvalCase.self, from: data)
+    """)
     var booking = try Buchung(
         richtung: .ausgabe, art: .rechnung, datum: #require(LocalDate("2026-09-01")),
         titel: "Tool", belegnummer: "0815", kategorie: "software",
@@ -159,10 +141,65 @@ import Testing
         positionen: [Position(netto: Cent(1000), steuersatz: 19, steuer: Cent(190))],
         steuerbehandlung: .inland, belege: [7]
     )
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 7).isEmpty)
+    #expect(score(item, [booking], fileIDs: ["due.pdf": 7]).isEmpty)
     booking.steuerbehandlung = nil
-    #expect(EvalScoring.mismatches(item, outcome: "booked", error: nil, bookings: [booking], fileID: 7)
-        .contains { $0.hasPrefix("steuerbehandlung") })
+    #expect(score(item, [booking], fileIDs: ["due.pdf": 7]).contains { $0.hasPrefix("steuerbehandlung") })
+}
+
+@Test func evalScenarioScoresTheWholeArchive() throws {
+    // An invoice already booked, its receipt and a bank statement dropped together.
+    let invoice = """
+    {"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"Hetzner",
+     "gegenpartei_land":"DE", "kategorie":"hosting", "steuerbehandlung":"inland",
+     "positionen_nach_satz":[{"steuersatz":"19", "netto_cents":1000, "steuer_cents":190}],
+     "zahlungen":[{"datum":"2026-09-01", "betrag":1190}], "belege":["invoice.pdf"
+    """
+    let item = try evalCase("""
+    {"id":"receipt", "archive":[\(invoice)]}], "files":["receipt.pdf", "bank.pdf"],
+     "converted_eur_tolerance_cents":0, "expected":[\(invoice), "receipt.pdf"]}]}
+    """)
+    let files: [String: Int64] = ["invoice.pdf": 1, "receipt.pdf": 2, "bank.pdf": 3]
+    var booking = try #require(item.archive?.first).seed(files: files)
+    booking.id = 10
+    booking.geprueftAm = Date()
+    booking.belege = [1, 2]
+    func run(_ bookings: [Buchung], bank: String? = noBooking) -> [String] {
+        EvalScoring.mismatches(item, run: CaseRun(
+            imports: [
+                FileRun(file: "receipt.pdf", outcome: "booked", error: nil),
+                FileRun(file: "bank.pdf", outcome: bank == nil ? "booked" : "failed", error: bank)
+            ],
+            bookings: bookings, fileIDs: files, seeded: [10]
+        ))
+    }
+    #expect(run([booking]).isEmpty)
+    #expect(run([booking], bank: nil).contains { $0.hasPrefix("bank.pdf: Expected failure") })
+    var duplicate = booking
+    duplicate.id = 11
+    duplicate.belege = [2]
+    booking.belege = [1]
+    let findings = run([booking, duplicate])
+    #expect(findings.contains { $0.hasPrefix("belege") })
+    #expect(findings.contains { $0.hasPrefix("unexpected booking") })
+}
+
+@Test func evalFileNamesStayLettersPastTheAlphabet() {
+    #expect([0, 25, 26, 27, 115].map(PfennigEval.letters) == ["a", "z", "aa", "ab", "dl"])
+}
+
+@Test func evalSeedWritesAConfirmableBooking() throws {
+    let item = try evalCase("""
+    {"id":"seed", "files":["a.pdf"], "converted_eur_tolerance_cents":0, "expected":[],
+     "archive":[{"richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"Hetzner",
+                 "gegenpartei_land":"DE", "kategorie":"hosting", "steuerbehandlung":"inland",
+                 "positionen_nach_satz":[{"steuersatz":"19", "netto_cents":1000, "steuer_cents":190}],
+                 "zahlungen":[{"datum":"2026-09-01", "betrag":1190}], "belege":["a.pdf"]}]}
+    """)
+    let repository = try Repository.inMemory()
+    let saved = try repository.save(#require(item.archive?.first).seed(files: [:]), akteur: .nutzer)
+    try repository.confirm(id: #require(saved.id))
+    let stored = try #require(repository.allBookings().first)
+    #expect(stored.brutto == Cent(1190) && stored.geprueftAm != nil && stored.zahlungen.count == 1)
 }
 
 @Test func evalTruthRejectsUnknownKeysAndMalformedValues() throws {
@@ -170,12 +207,12 @@ import Testing
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     defer { try? FileManager.default.removeItem(at: folder) }
     try Data().write(to: folder.appending(path: "a.pdf"))
-    func truth(_ expected: String) -> Data {
+    func truth(_ expected: String, belege: String = #"["a.pdf"]"#) -> Data {
         Data("""
         {"profile":{"name":"M","ustid":"","kleinunternehmer":false}, "today":"2026-09-24",
-         "cases":[{"id":"a", "file":"a.pdf", "converted_eur_tolerance_cents":0, "expected":{
+         "cases":[{"id":"a", "files":["a.pdf"], "converted_eur_tolerance_cents":0, "expected":[{
            "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"N",
-           "gegenpartei_land":"DE", "kategorie":"software", \(expected)}}]}
+           "gegenpartei_land":"DE", "kategorie":"software", "belege":\(belege), \(expected)}]}]}
         """.utf8)
     }
     #expect(throws: Never.self) { try GroundTruth.load(truth(#""originalbetrag":"21.92""#), root: folder) }
@@ -183,6 +220,9 @@ import Testing
     #expect(throws: EvalError.self) { try GroundTruth.load(truth(#""originalbetrag":"21,92""#), root: folder) }
     #expect(throws: EvalError.self) {
         try GroundTruth.load(truth(#""steuerbehandlung":"reverse-charge""#), root: folder)
+    }
+    #expect(throws: EvalError.self) {
+        try GroundTruth.load(truth(#""waehrung":null"#, belege: #"["b.pdf"]"#), root: folder)
     }
 }
 

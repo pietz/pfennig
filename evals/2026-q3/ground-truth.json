@@ -8,133 +8,161 @@
   "cases": [
     {
       "id": "01",
-      "file": "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-07-17",
-        "belegnummer": "SL-2026-071",
-        "faelligkeit": "2026-07-31",
-        "gegenpartei_name": "Elbbogen Keramik",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 240000,
-        "steuer_cents": 45600,
-        "brutto_cents": 285600,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 240000,
-            "steuer_cents": 45600
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "02",
-      "file": "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-08-20",
-        "belegnummer": "SL-2026-082",
-        "faelligkeit": "2026-09-03",
-        "gegenpartei_name": "Isarblick Innenräume",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 320000,
-        "steuer_cents": 60800,
-        "brutto_cents": 380800,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 320000,
-            "steuer_cents": 60800
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "SL-2026-082",
+          "faelligkeit": "2026-09-03",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 320000,
+          "steuer_cents": 60800,
+          "brutto_cents": 380800,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 320000,
+              "steuer_cents": 60800
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "03",
-      "file": "ausgang/03_2026-09-21_SL-2026-093_isarblick-phase-2.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-09-21",
-        "belegnummer": "SL-2026-093",
-        "faelligkeit": "2026-10-05",
-        "gegenpartei_name": "Isarblick Innenräume",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 380000,
-        "steuer_cents": 72200,
-        "brutto_cents": 452200,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 380000,
-            "steuer_cents": 72200
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/03_2026-09-21_SL-2026-093_isarblick-phase-2.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-09-21",
+          "belegnummer": "SL-2026-093",
+          "faelligkeit": "2026-10-05",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 380000,
+          "steuer_cents": 72200,
+          "brutto_cents": 452200,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 380000,
+              "steuer_cents": 72200
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/03_2026-09-21_SL-2026-093_isarblick-phase-2.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "04",
-      "file": "ausgang/04_2026-09-18_SL-2026-094_alpenfokus.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-09-18",
-        "belegnummer": "SL-2026-094",
-        "faelligkeit": "2026-10-02",
-        "gegenpartei_name": "Alpenfokus Bürogestaltung",
-        "gegenpartei_land": "AT",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "reverse_charge",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 175000,
-        "steuer_cents": 0,
-        "brutto_cents": 175000,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "0",
-            "netto_cents": 175000,
-            "steuer_cents": 0,
-            "accepted_rates": [
-              "19",
-              "20"
-            ]
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/04_2026-09-18_SL-2026-094_alpenfokus.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-09-18",
+          "belegnummer": "SL-2026-094",
+          "faelligkeit": "2026-10-02",
+          "gegenpartei_name": "Alpenfokus Bürogestaltung",
+          "gegenpartei_land": "AT",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "reverse_charge",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 175000,
+          "steuer_cents": 0,
+          "brutto_cents": 175000,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "0",
+              "netto_cents": 175000,
+              "steuer_cents": 0,
+              "accepted_rates": [
+                "19",
+                "20"
+              ]
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/04_2026-09-18_SL-2026-094_alpenfokus.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -143,41 +171,48 @@
     },
     {
       "id": "05",
-      "file": "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-08-10",
-        "belegnummer": "SL-2026-081",
-        "faelligkeit": null,
-        "gegenpartei_name": "Elbbogen Keramik",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": -40000,
-        "steuer_cents": -7600,
-        "brutto_cents": -47600,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": -40000,
-            "steuer_cents": -7600
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-08-18",
-            "betrag": -47600
-          }
-        ],
-        "accepted_arts": [
-          "gutschrift"
-        ]
-      },
+      "files": [
+        "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-10",
+          "belegnummer": "SL-2026-081",
+          "faelligkeit": null,
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": -40000,
+          "steuer_cents": -7600,
+          "brutto_cents": -47600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": -40000,
+              "steuer_cents": -7600
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-18",
+              "betrag": -47600
+            }
+          ],
+          "accepted_arts": [
+            "gutschrift"
+          ],
+          "belege": [
+            "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -186,78 +221,92 @@
     },
     {
       "id": "06",
-      "file": "einkauf/06-klarquell-studio-pro-2026-07-08.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-08",
-        "belegnummer": "KQS-260708-184",
-        "faelligkeit": null,
-        "gegenpartei_name": "Klarquell Studio Software Ltd.",
-        "gegenpartei_land": "IE",
-        "kategorie": "software",
-        "steuerbehandlung": "reverse_charge",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 4200,
-        "steuer_cents": 0,
-        "brutto_cents": 4200,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 4200,
-            "steuer_cents": 0
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-07-10",
-            "betrag": 4200
-          }
-        ]
-      },
+      "files": [
+        "einkauf/06-klarquell-studio-pro-2026-07-08.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-08",
+          "belegnummer": "KQS-260708-184",
+          "faelligkeit": null,
+          "gegenpartei_name": "Klarquell Studio Software Ltd.",
+          "gegenpartei_land": "IE",
+          "kategorie": "software",
+          "steuerbehandlung": "reverse_charge",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 4200,
+          "steuer_cents": 0,
+          "brutto_cents": 4200,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 4200,
+              "steuer_cents": 0
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-10",
+              "betrag": 4200
+            }
+          ],
+          "belege": [
+            "einkauf/06-klarquell-studio-pro-2026-07-08.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "07",
-      "file": "einkauf/07-northstar-dev-tools-2026-08-20.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-08-20",
-        "belegnummer": "NST-2026-08-20-4421",
-        "faelligkeit": "2026-09-03",
-        "accepted_due_dates": [
-          null
-        ],
-        "gegenpartei_name": "Northstar Dev Tools Inc.",
-        "gegenpartei_land": "US",
-        "kategorie": "software",
-        "steuerbehandlung": "reverse_charge",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": "USD",
-        "originalbetrag": "86.40",
-        "netto_cents": 7992,
-        "steuer_cents": 0,
-        "brutto_cents": 7992,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 7992,
-            "steuer_cents": 0
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-08-21",
-            "betrag": 7992
-          }
-        ]
-      },
+      "files": [
+        "einkauf/07-northstar-dev-tools-2026-08-20.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "NST-2026-08-20-4421",
+          "faelligkeit": "2026-09-03",
+          "accepted_due_dates": [
+            null
+          ],
+          "gegenpartei_name": "Northstar Dev Tools Inc.",
+          "gegenpartei_land": "US",
+          "kategorie": "software",
+          "steuerbehandlung": "reverse_charge",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": "USD",
+          "originalbetrag": "86.40",
+          "netto_cents": 7992,
+          "steuer_cents": 0,
+          "brutto_cents": 7992,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 7992,
+              "steuer_cents": 0
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-21",
+              "betrag": 7992
+            }
+          ],
+          "belege": [
+            "einkauf/07-northstar-dev-tools-2026-08-20.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -266,81 +315,95 @@
     },
     {
       "id": "08",
-      "file": "einkauf/08-hafenblick-hosting-2026-07-15.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-15",
-        "belegnummer": "HBH-2026-0715-089",
-        "faelligkeit": null,
-        "gegenpartei_name": "Hafenblick Hosting GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "hosting",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 3400,
-        "steuer_cents": 646,
-        "brutto_cents": 4046,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 3400,
-            "steuer_cents": 646
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-07-18",
-            "betrag": 4046
-          }
-        ]
-      },
+      "files": [
+        "einkauf/08-hafenblick-hosting-2026-07-15.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-15",
+          "belegnummer": "HBH-2026-0715-089",
+          "faelligkeit": null,
+          "gegenpartei_name": "Hafenblick Hosting GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "hosting",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 3400,
+          "steuer_cents": 646,
+          "brutto_cents": 4046,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 3400,
+              "steuer_cents": 646
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-18",
+              "betrag": 4046
+            }
+          ],
+          "belege": [
+            "einkauf/08-hafenblick-hosting-2026-07-15.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "09",
-      "file": "einkauf/09-papier-punkt-kassenbon-2026-08-04.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-08-04",
-        "belegnummer": "PP-040826",
-        "accepted_receipt_numbers": [
-          "08426"
-        ],
-        "faelligkeit": null,
-        "gegenpartei_name": "Papier & Punkt",
-        "gegenpartei_land": "DE",
-        "kategorie": "buerobedarf",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 2470,
-        "steuer_cents": 469,
-        "brutto_cents": 2939,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 2470,
-            "steuer_cents": 469
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-08-04",
-            "betrag": 2939
-          }
-        ],
-        "accepted_counterparties": [
-          "Papier & Punkt Fachhandel"
-        ]
-      },
+      "files": [
+        "einkauf/09-papier-punkt-kassenbon-2026-08-04.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-08-04",
+          "belegnummer": "PP-040826",
+          "accepted_receipt_numbers": [
+            "08426"
+          ],
+          "faelligkeit": null,
+          "gegenpartei_name": "Papier & Punkt",
+          "gegenpartei_land": "DE",
+          "kategorie": "buerobedarf",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 2470,
+          "steuer_cents": 469,
+          "brutto_cents": 2939,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 2470,
+              "steuer_cents": 469
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-04",
+              "betrag": 2939
+            }
+          ],
+          "accepted_counterparties": [
+            "Papier & Punkt Fachhandel"
+          ],
+          "belege": [
+            "einkauf/09-papier-punkt-kassenbon-2026-08-04.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -350,115 +413,136 @@
     },
     {
       "id": "10",
-      "file": "einkauf/10-druckwerk-nord-portfolio-karten-2026-09-07.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-07",
-        "belegnummer": "DN-26-0907-311",
-        "faelligkeit": null,
-        "gegenpartei_name": "Druckwerk Nord OHG",
-        "gegenpartei_land": "DE",
-        "kategorie": "werbung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 6000,
-        "steuer_cents": 1140,
-        "brutto_cents": 7140,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 6000,
-            "steuer_cents": 1140
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-10",
-            "betrag": 7140
-          }
-        ]
-      },
+      "files": [
+        "einkauf/10-druckwerk-nord-portfolio-karten-2026-09-07.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-07",
+          "belegnummer": "DN-26-0907-311",
+          "faelligkeit": null,
+          "gegenpartei_name": "Druckwerk Nord OHG",
+          "gegenpartei_land": "DE",
+          "kategorie": "werbung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 6000,
+          "steuer_cents": 1140,
+          "brutto_cents": 7140,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 6000,
+              "steuer_cents": 1140
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-10",
+              "betrag": 7140
+            }
+          ],
+          "belege": [
+            "einkauf/10-druckwerk-nord-portfolio-karten-2026-09-07.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "11",
-      "file": "einkauf/11-mobile.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-08-12",
-        "belegnummer": "NM-2026-0812-11",
-        "faelligkeit": null,
-        "gegenpartei_name": "Nordlicht Mobilfunk GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "telekommunikation",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 30,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 7479,
-        "steuer_cents": 1421,
-        "brutto_cents": 8900,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 7479,
-            "steuer_cents": 1421
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-08-20",
-            "betrag": 8900
-          }
-        ]
-      },
+      "files": [
+        "einkauf/11-mobile.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-08-12",
+          "belegnummer": "NM-2026-0812-11",
+          "faelligkeit": null,
+          "gegenpartei_name": "Nordlicht Mobilfunk GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "telekommunikation",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 30,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 7479,
+          "steuer_cents": 1421,
+          "brutto_cents": 8900,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 7479,
+              "steuer_cents": 1421
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-20",
+              "betrag": 8900
+            }
+          ],
+          "belege": [
+            "einkauf/11-mobile.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "12",
-      "file": "einkauf/12-laptop.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-04",
-        "belegnummer": "PK-260904-12",
-        "faelligkeit": null,
-        "accepted_due_dates": [
-          "2026-09-04"
-        ],
-        "gegenpartei_name": "Pixelkern Computerhaus KG",
-        "gegenpartei_land": "DE",
-        "kategorie": "hardware",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": 1,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 119900,
-        "steuer_cents": 22781,
-        "brutto_cents": 142681,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 119900,
-            "steuer_cents": 22781
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-08",
-            "betrag": 142681
-          }
-        ]
-      },
+      "files": [
+        "einkauf/12-laptop.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-04",
+          "belegnummer": "PK-260904-12",
+          "faelligkeit": null,
+          "accepted_due_dates": [
+            "2026-09-04"
+          ],
+          "gegenpartei_name": "Pixelkern Computerhaus KG",
+          "gegenpartei_land": "DE",
+          "kategorie": "hardware",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": 1,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 119900,
+          "steuer_cents": 22781,
+          "brutto_cents": 142681,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 119900,
+              "steuer_cents": 22781
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-08",
+              "betrag": 142681
+            }
+          ],
+          "belege": [
+            "einkauf/12-laptop.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -467,80 +551,94 @@
     },
     {
       "id": "13",
-      "file": "einkauf/13-course.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-19",
-        "belegnummer": "LN-2026-0719-13",
-        "faelligkeit": null,
-        "gegenpartei_name": "Lernwerk Nord GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "fortbildung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 34900,
-        "steuer_cents": 6631,
-        "brutto_cents": 41531,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 34900,
-            "steuer_cents": 6631
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-07-22",
-            "betrag": 41531
-          }
-        ]
-      },
+      "files": [
+        "einkauf/13-course.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-19",
+          "belegnummer": "LN-2026-0719-13",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lernwerk Nord GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "fortbildung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 34900,
+          "steuer_cents": 6631,
+          "brutto_cents": 41531,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 34900,
+              "steuer_cents": 6631
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-22",
+              "betrag": 41531
+            }
+          ],
+          "belege": [
+            "einkauf/13-course.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "14",
-      "file": "einkauf/14-freelancer.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-10",
-        "belegnummer": "WS-26-0910-14",
-        "faelligkeit": "2026-09-18",
-        "gegenpartei_name": "Wortspur Freie Texte",
-        "gegenpartei_land": "DE",
-        "accepted_countries": [
-          null
-        ],
-        "kategorie": "fremdleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 78000,
-        "steuer_cents": 14820,
-        "brutto_cents": 92820,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 78000,
-            "steuer_cents": 14820
-          }
-        ],
-        "zahlungen": [],
-        "accepted_counterparties": [
-          "Jana Feld – Wortspur Freie Texte",
-          "Jana Feld"
-        ],
-        "accepted_categories": [
-          "werbung"
-        ]
-      },
+      "files": [
+        "einkauf/14-freelancer.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-10",
+          "belegnummer": "WS-26-0910-14",
+          "faelligkeit": "2026-09-18",
+          "gegenpartei_name": "Wortspur Freie Texte",
+          "gegenpartei_land": "DE",
+          "accepted_countries": [
+            null
+          ],
+          "kategorie": "fremdleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 78000,
+          "steuer_cents": 14820,
+          "brutto_cents": 92820,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 78000,
+              "steuer_cents": 14820
+            }
+          ],
+          "zahlungen": [],
+          "accepted_counterparties": [
+            "Jana Feld – Wortspur Freie Texte",
+            "Jana Feld"
+          ],
+          "accepted_categories": [
+            "werbung"
+          ],
+          "belege": [
+            "einkauf/14-freelancer.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -551,41 +649,48 @@
     },
     {
       "id": "15",
-      "file": "reise/15-flugrechnung-hamburg-muenchen.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-07",
-        "belegnummer": "ML-2026-0914-07",
-        "faelligkeit": null,
-        "gegenpartei_name": "NordAir AG",
-        "gegenpartei_land": "DE",
-        "accepted_countries": [
-          null
-        ],
-        "kategorie": "reise_fahrt",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 23800,
-        "steuer_cents": 4522,
-        "brutto_cents": 28322,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 23800,
-            "steuer_cents": 4522
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-08",
-            "betrag": 28322
-          }
-        ]
-      },
+      "files": [
+        "reise/15-flugrechnung-hamburg-muenchen.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-07",
+          "belegnummer": "ML-2026-0914-07",
+          "faelligkeit": null,
+          "gegenpartei_name": "NordAir AG",
+          "gegenpartei_land": "DE",
+          "accepted_countries": [
+            null
+          ],
+          "kategorie": "reise_fahrt",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 23800,
+          "steuer_cents": 4522,
+          "brutto_cents": 28322,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 23800,
+              "steuer_cents": 4522
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-08",
+              "betrag": 28322
+            }
+          ],
+          "belege": [
+            "reise/15-flugrechnung-hamburg-muenchen.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -594,83 +699,97 @@
     },
     {
       "id": "16",
-      "file": "reise/16-taxiquittung-flughafen-hotel.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-09-14",
-        "belegnummer": "NS-140926-0848",
-        "faelligkeit": null,
-        "gegenpartei_name": "Nordstern Mobilität GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "reise_fahrt",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 13200,
-        "steuer_cents": 2508,
-        "brutto_cents": 15708,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 13200,
-            "steuer_cents": 2508
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-14",
-            "betrag": 15708
-          }
-        ]
-      },
+      "files": [
+        "reise/16-taxiquittung-flughafen-hotel.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-09-14",
+          "belegnummer": "NS-140926-0848",
+          "faelligkeit": null,
+          "gegenpartei_name": "Nordstern Mobilität GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_fahrt",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 13200,
+          "steuer_cents": 2508,
+          "brutto_cents": 15708,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 13200,
+              "steuer_cents": 2508
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-14",
+              "betrag": 15708
+            }
+          ],
+          "belege": [
+            "reise/16-taxiquittung-flughafen-hotel.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "17",
-      "file": "reise/17-hotelrechnung-lumenhof-muenchen.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-16",
-        "belegnummer": "LH-2026-0916-028",
-        "faelligkeit": null,
-        "gegenpartei_name": "Lumenhof Hotel München",
-        "gegenpartei_land": "DE",
-        "kategorie": "reise_uebernachtung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 30800,
-        "steuer_cents": 2276,
-        "brutto_cents": 33076,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 29800,
-            "steuer_cents": 2086
-          },
-          {
-            "steuersatz": "19",
-            "netto_cents": 1000,
-            "steuer_cents": 190
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-16",
-            "betrag": 33076
-          }
-        ],
-        "accepted_arts": [
-          "beleg"
-        ]
-      },
+      "files": [
+        "reise/17-hotelrechnung-lumenhof-muenchen.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-16",
+          "belegnummer": "LH-2026-0916-028",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lumenhof Hotel München",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_uebernachtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 30800,
+          "steuer_cents": 2276,
+          "brutto_cents": 33076,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 29800,
+              "steuer_cents": 2086
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1000,
+              "steuer_cents": 190
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 33076
+            }
+          ],
+          "accepted_arts": [
+            "beleg"
+          ],
+          "belege": [
+            "reise/17-hotelrechnung-lumenhof-muenchen.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -679,285 +798,341 @@
     },
     {
       "id": "18",
-      "file": "reise/18-bewirtungsbeleg-wandelpunkt-kueche.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-09-15",
-        "belegnummer": "WP-150926-1942",
-        "faelligkeit": null,
-        "gegenpartei_name": "Wandelpunkt Küche",
-        "gegenpartei_land": "DE",
-        "kategorie": "bewirtung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 6800,
-        "steuer_cents": 644,
-        "brutto_cents": 7444,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 5400,
-            "steuer_cents": 378
-          },
-          {
-            "steuersatz": "19",
-            "netto_cents": 1400,
-            "steuer_cents": 266
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-15",
-            "betrag": 7444
-          }
-        ]
-      },
+      "files": [
+        "reise/18-bewirtungsbeleg-wandelpunkt-kueche.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-09-15",
+          "belegnummer": "WP-150926-1942",
+          "faelligkeit": null,
+          "gegenpartei_name": "Wandelpunkt Küche",
+          "gegenpartei_land": "DE",
+          "kategorie": "bewirtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 6800,
+          "steuer_cents": 644,
+          "brutto_cents": 7444,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 5400,
+              "steuer_cents": 378
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1400,
+              "steuer_cents": 266
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-15",
+              "betrag": 7444
+            }
+          ],
+          "belege": [
+            "reise/18-bewirtungsbeleg-wandelpunkt-kueche.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "19",
-      "file": "reise/19-nahverkehrsticket-hotel-workshop.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-09-15",
-        "belegnummer": "IM-150926-1006-07",
-        "faelligkeit": null,
-        "gegenpartei_name": "IsarMobil Verkehrsbetriebe GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "reise_fahrt",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 935,
-        "steuer_cents": 65,
-        "brutto_cents": 1000,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 935,
-            "steuer_cents": 65
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-15",
-            "betrag": 1000
-          }
-        ]
-      },
+      "files": [
+        "reise/19-nahverkehrsticket-hotel-workshop.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-09-15",
+          "belegnummer": "IM-150926-1006-07",
+          "faelligkeit": null,
+          "gegenpartei_name": "IsarMobil Verkehrsbetriebe GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_fahrt",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 935,
+          "steuer_cents": 65,
+          "brutto_cents": 1000,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 935,
+              "steuer_cents": 65
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-15",
+              "betrag": 1000
+            }
+          ],
+          "belege": [
+            "reise/19-nahverkehrsticket-hotel-workshop.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "20",
-      "file": "reise/20-s-bahn-ticket-zum-flughafen.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-09-16",
-        "belegnummer": "MS-160926-1524-09",
-        "faelligkeit": null,
-        "gegenpartei_name": "Morgenstern Schiene GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "reise_fahrt",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 1250,
-        "steuer_cents": 88,
-        "brutto_cents": 1338,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 1250,
-            "steuer_cents": 88
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-16",
-            "betrag": 1338
-          }
-        ]
-      },
+      "files": [
+        "reise/20-s-bahn-ticket-zum-flughafen.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-09-16",
+          "belegnummer": "MS-160926-1524-09",
+          "faelligkeit": null,
+          "gegenpartei_name": "Morgenstern Schiene GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_fahrt",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 1250,
+          "steuer_cents": 88,
+          "brutto_cents": 1338,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 1250,
+              "steuer_cents": 88
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 1338
+            }
+          ],
+          "belege": [
+            "reise/20-s-bahn-ticket-zum-flughafen.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "21",
-      "file": "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-07-24",
-        "belegnummer": "SL-2026-072",
-        "faelligkeit": "2026-08-07",
-        "gegenpartei_name": "Nordkante Verlag GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 82000,
-        "steuer_cents": 15580,
-        "brutto_cents": 97580,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 82000,
-            "steuer_cents": 15580
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-24",
+          "belegnummer": "SL-2026-072",
+          "faelligkeit": "2026-08-07",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 82000,
+          "steuer_cents": 15580,
+          "brutto_cents": 97580,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 82000,
+              "steuer_cents": 15580
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "22",
-      "file": "ausgang/22_2026-08-24_SL-2026-083_nordkante-maintenance-august.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-08-24",
-        "belegnummer": "SL-2026-083",
-        "faelligkeit": "2026-09-10",
-        "gegenpartei_name": "Nordkante Verlag GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 90000,
-        "steuer_cents": 17100,
-        "brutto_cents": 107100,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 90000,
-            "steuer_cents": 17100
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/22_2026-08-24_SL-2026-083_nordkante-maintenance-august.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-24",
+          "belegnummer": "SL-2026-083",
+          "faelligkeit": "2026-09-10",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 90000,
+          "steuer_cents": 17100,
+          "brutto_cents": 107100,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 90000,
+              "steuer_cents": 17100
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/22_2026-08-24_SL-2026-083_nordkante-maintenance-august.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "23",
-      "file": "ausgang/23_2026-09-18_SL-2026-095_nordkante-maintenance-september.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-09-18",
-        "belegnummer": "SL-2026-095",
-        "faelligkeit": "2026-10-02",
-        "gegenpartei_name": "Nordkante Verlag GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 88000,
-        "steuer_cents": 16720,
-        "brutto_cents": 104720,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 88000,
-            "steuer_cents": 16720
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/23_2026-09-18_SL-2026-095_nordkante-maintenance-september.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-09-18",
+          "belegnummer": "SL-2026-095",
+          "faelligkeit": "2026-10-02",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 88000,
+          "steuer_cents": 16720,
+          "brutto_cents": 104720,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 88000,
+              "steuer_cents": 16720
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/23_2026-09-18_SL-2026-095_nordkante-maintenance-september.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "24",
-      "file": "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf",
-      "expected": {
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-08-28",
-        "belegnummer": "SL-2026-084",
-        "faelligkeit": "2026-09-11",
-        "gegenpartei_name": "Kiesel & Kante GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 28000,
-        "steuer_cents": 5320,
-        "brutto_cents": 33320,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 28000,
-            "steuer_cents": 5320
-          }
-        ],
-        "zahlungen": []
-      },
+      "files": [
+        "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-28",
+          "belegnummer": "SL-2026-084",
+          "faelligkeit": "2026-09-11",
+          "gegenpartei_name": "Kiesel & Kante GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 28000,
+          "steuer_cents": 5320,
+          "brutto_cents": 33320,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28000,
+              "steuer_cents": 5320
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "25",
-      "file": "einkauf/25-wellenfeld-domain-renewal-2026-07-03.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-03",
-        "belegnummer": "WF-260703-25",
-        "faelligkeit": null,
-        "accepted_due_dates": [
-          "2026-07-03"
-        ],
-        "gegenpartei_name": "Wellenfeld Domainservice GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "hosting",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 1800,
-        "steuer_cents": 342,
-        "brutto_cents": 2142,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 1800,
-            "steuer_cents": 342
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-07-05",
-            "betrag": 2142
-          }
-        ]
-      },
+      "files": [
+        "einkauf/25-wellenfeld-domain-renewal-2026-07-03.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-03",
+          "belegnummer": "WF-260703-25",
+          "faelligkeit": null,
+          "accepted_due_dates": [
+            "2026-07-03"
+          ],
+          "gegenpartei_name": "Wellenfeld Domainservice GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "hosting",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 1800,
+          "steuer_cents": 342,
+          "brutto_cents": 2142,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 1800,
+              "steuer_cents": 342
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-05",
+              "betrag": 2142
+            }
+          ],
+          "belege": [
+            "einkauf/25-wellenfeld-domain-renewal-2026-07-03.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -966,129 +1141,154 @@
     },
     {
       "id": "26",
-      "file": "einkauf/26-sicherpfad-berufsschutz-2026-07-01.pdf",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-01",
-        "belegnummer": "SP-260701-26",
-        "faelligkeit": null,
-        "gegenpartei_name": "Sicherpfad Berufsschutz AG",
-        "gegenpartei_land": "DE",
-        "kategorie": "versicherung",
-        "steuerbehandlung": "steuerfrei",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 57120,
-        "steuer_cents": 0,
-        "brutto_cents": 57120,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "0",
-            "netto_cents": 57120,
-            "steuer_cents": 0
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-07-01",
-            "betrag": 57120
-          }
-        ]
-      },
+      "files": [
+        "einkauf/26-sicherpfad-berufsschutz-2026-07-01.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-01",
+          "belegnummer": "SP-260701-26",
+          "faelligkeit": null,
+          "gegenpartei_name": "Sicherpfad Berufsschutz AG",
+          "gegenpartei_land": "DE",
+          "kategorie": "versicherung",
+          "steuerbehandlung": "steuerfrei",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 57120,
+          "steuer_cents": 0,
+          "brutto_cents": 57120,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "0",
+              "netto_cents": 57120,
+              "steuer_cents": 0
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-01",
+              "betrag": 57120
+            }
+          ],
+          "belege": [
+            "einkauf/26-sicherpfad-berufsschutz-2026-07-01.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "27",
-      "file": "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf",
-      "expected": null,
+      "files": [
+        "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "28",
-      "file": "bank/28_kontur-bank-zahlungseingaenge-september.pdf",
-      "expected": null,
+      "files": [
+        "bank/28_kontur-bank-zahlungseingaenge-september.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "29",
-      "file": "extra/29-veldlicht-eu-display.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-07-14",
-        "belegnummer": "VH-260714-029",
-        "gegenpartei_name": "Veldlicht Handel B.V.",
-        "gegenpartei_land": "NL",
-        "kategorie": "hardware",
-        "steuerbehandlung": "innergemeinschaftlicher_erwerb",
-        "netto_cents": 28800,
-        "steuer_cents": 0,
-        "brutto_cents": 28800,
-        "zahlungen": [
-          {
-            "datum": "2026-07-16",
-            "betrag": 28800
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 28800,
-            "steuer_cents": 0
-          }
-        ]
-      },
+      "files": [
+        "extra/29-veldlicht-eu-display.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-14",
+          "belegnummer": "VH-260714-029",
+          "gegenpartei_name": "Veldlicht Handel B.V.",
+          "gegenpartei_land": "NL",
+          "kategorie": "hardware",
+          "steuerbehandlung": "innergemeinschaftlicher_erwerb",
+          "netto_cents": 28800,
+          "steuer_cents": 0,
+          "brutto_cents": 28800,
+          "zahlungen": [
+            {
+              "datum": "2026-07-16",
+              "betrag": 28800
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28800,
+              "steuer_cents": 0
+            }
+          ],
+          "belege": [
+            "extra/29-veldlicht-eu-display.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "30",
-      "file": "extra/30-slatepeak-cloud-service.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-08-06",
-        "belegnummer": "SS-2026-0806-030",
-        "gegenpartei_name": "Slatepeak Systems Inc.",
-        "gegenpartei_land": "US",
-        "kategorie": "software",
-        "steuerbehandlung": "reverse_charge",
-        "netto_cents": 6400,
-        "steuer_cents": 0,
-        "brutto_cents": 6400,
-        "zahlungen": [
-          {
-            "datum": "2026-08-07",
-            "betrag": 6400
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 6400,
-            "steuer_cents": 0
-          }
-        ],
-        "accepted_categories": [
-          "hosting"
-        ]
-      },
+      "files": [
+        "extra/30-slatepeak-cloud-service.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-08-06",
+          "belegnummer": "SS-2026-0806-030",
+          "gegenpartei_name": "Slatepeak Systems Inc.",
+          "gegenpartei_land": "US",
+          "kategorie": "software",
+          "steuerbehandlung": "reverse_charge",
+          "netto_cents": 6400,
+          "steuer_cents": 0,
+          "brutto_cents": 6400,
+          "zahlungen": [
+            {
+              "datum": "2026-08-07",
+              "betrag": 6400
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 6400,
+              "steuer_cents": 0
+            }
+          ],
+          "accepted_categories": [
+            "hosting"
+          ],
+          "belege": [
+            "extra/30-slatepeak-cloud-service.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -1097,291 +1297,348 @@
     },
     {
       "id": "31",
-      "file": "extra/31-seitenstrom-fachbuch.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-08-12",
-        "belegnummer": "SB-260812-031",
-        "gegenpartei_name": "Seitenstrom Buchhandlung GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "fortbildung",
-        "steuerbehandlung": "inland",
-        "netto_cents": 2800,
-        "steuer_cents": 196,
-        "brutto_cents": 2996,
-        "zahlungen": [
-          {
-            "datum": "2026-08-12",
-            "betrag": 2996
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 2800,
-            "steuer_cents": 196
-          }
-        ]
-      },
+      "files": [
+        "extra/31-seitenstrom-fachbuch.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-08-12",
+          "belegnummer": "SB-260812-031",
+          "gegenpartei_name": "Seitenstrom Buchhandlung GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "fortbildung",
+          "steuerbehandlung": "inland",
+          "netto_cents": 2800,
+          "steuer_cents": 196,
+          "brutto_cents": 2996,
+          "zahlungen": [
+            {
+              "datum": "2026-08-12",
+              "betrag": 2996
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 2800,
+              "steuer_cents": 196
+            }
+          ],
+          "belege": [
+            "extra/31-seitenstrom-fachbuch.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "32",
-      "file": "extra/32-werftkontor-coworking.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-01",
-        "belegnummer": "WK-260901-032",
-        "gegenpartei_name": "Werftkontor Räume GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "miete",
-        "steuerbehandlung": "inland",
-        "netto_cents": 24000,
-        "steuer_cents": 4560,
-        "brutto_cents": 28560,
-        "zahlungen": [
-          {
-            "datum": "2026-09-03",
-            "betrag": 28560
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 24000,
-            "steuer_cents": 4560
-          }
-        ]
-      },
+      "files": [
+        "extra/32-werftkontor-coworking.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-01",
+          "belegnummer": "WK-260901-032",
+          "gegenpartei_name": "Werftkontor Räume GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "miete",
+          "steuerbehandlung": "inland",
+          "netto_cents": 24000,
+          "steuer_cents": 4560,
+          "brutto_cents": 28560,
+          "zahlungen": [
+            {
+              "datum": "2026-09-03",
+              "betrag": 28560
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 24000,
+              "steuer_cents": 4560
+            }
+          ],
+          "belege": [
+            "extra/32-werftkontor-coworking.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "33",
-      "file": "extra/33-sl-license-stadtfaden.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-09-08",
-        "belegnummer": "SL-2026-096",
-        "gegenpartei_name": "Stadtfaden Verlag GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_lizenzen",
-        "steuerbehandlung": "inland",
-        "netto_cents": 150000,
-        "steuer_cents": 28500,
-        "brutto_cents": 178500,
-        "zahlungen": [
-          {
-            "datum": "2026-09-18",
-            "betrag": 178500
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 150000,
-            "steuer_cents": 28500
-          }
-        ]
-      },
+      "files": [
+        "extra/33-sl-license-stadtfaden.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-09-08",
+          "belegnummer": "SL-2026-096",
+          "gegenpartei_name": "Stadtfaden Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_lizenzen",
+          "steuerbehandlung": "inland",
+          "netto_cents": 150000,
+          "steuer_cents": 28500,
+          "brutto_cents": 178500,
+          "zahlungen": [
+            {
+              "datum": "2026-09-18",
+              "betrag": 178500
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 150000,
+              "steuer_cents": 28500
+            }
+          ],
+          "belege": [
+            "extra/33-sl-license-stadtfaden.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "34",
-      "file": "extra/34-sl-partial-payment-holzlinie.pdf",
-      "expected": {
-        "faelligkeit": "2026-09-30",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "einnahme",
-        "art": "rechnung",
-        "datum": "2026-09-16",
-        "belegnummer": "SL-2026-097",
-        "gegenpartei_name": "Holzlinie Möbel GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "umsatz_dienstleistung",
-        "steuerbehandlung": "inland",
-        "netto_cents": 200000,
-        "steuer_cents": 38000,
-        "brutto_cents": 238000,
-        "zahlungen": [
-          {
-            "datum": "2026-09-20",
-            "betrag": 80000
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 200000,
-            "steuer_cents": 38000
-          }
-        ]
-      },
+      "files": [
+        "extra/34-sl-partial-payment-holzlinie.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": "2026-09-30",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-09-16",
+          "belegnummer": "SL-2026-097",
+          "gegenpartei_name": "Holzlinie Möbel GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "netto_cents": 200000,
+          "steuer_cents": 38000,
+          "brutto_cents": 238000,
+          "zahlungen": [
+            {
+              "datum": "2026-09-20",
+              "betrag": 80000
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 200000,
+              "steuer_cents": 38000
+            }
+          ],
+          "belege": [
+            "extra/34-sl-partial-payment-holzlinie.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "35",
-      "file": "extra/35-eichenrat-advisory.pdf",
-      "expected": {
-        "faelligkeit": "2026-10-03",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-19",
-        "belegnummer": "ER-260919-035",
-        "gegenpartei_name": "Eichenrat Steuerberatung",
-        "gegenpartei_land": "DE",
-        "kategorie": "beratung",
-        "steuerbehandlung": "inland",
-        "netto_cents": 32000,
-        "steuer_cents": 6080,
-        "brutto_cents": 38080,
-        "zahlungen": [],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 32000,
-            "steuer_cents": 6080
-          }
-        ]
-      },
+      "files": [
+        "extra/35-eichenrat-advisory.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": "2026-10-03",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-19",
+          "belegnummer": "ER-260919-035",
+          "gegenpartei_name": "Eichenrat Steuerberatung",
+          "gegenpartei_land": "DE",
+          "kategorie": "beratung",
+          "steuerbehandlung": "inland",
+          "netto_cents": 32000,
+          "steuer_cents": 6080,
+          "brutto_cents": 38080,
+          "zahlungen": [],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 32000,
+              "steuer_cents": 6080
+            }
+          ],
+          "belege": [
+            "extra/35-eichenrat-advisory.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "36",
-      "file": "extra/36-signalwerk-drawing-tablet.pdf",
-      "expected": {
-        "faelligkeit": null,
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-22",
-        "belegnummer": "ST-260922-036",
-        "gegenpartei_name": "Signalwerk Technik GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "hardware",
-        "steuerbehandlung": "inland",
-        "netto_cents": 12900,
-        "steuer_cents": 2451,
-        "brutto_cents": 15351,
-        "zahlungen": [
-          {
-            "datum": "2026-09-22",
-            "betrag": 15351
-          }
-        ],
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 12900,
-            "steuer_cents": 2451
-          }
-        ]
-      },
+      "files": [
+        "extra/36-signalwerk-drawing-tablet.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-22",
+          "belegnummer": "ST-260922-036",
+          "gegenpartei_name": "Signalwerk Technik GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "hardware",
+          "steuerbehandlung": "inland",
+          "netto_cents": 12900,
+          "steuer_cents": 2451,
+          "brutto_cents": 15351,
+          "zahlungen": [
+            {
+              "datum": "2026-09-22",
+              "betrag": 15351
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 12900,
+              "steuer_cents": 2451
+            }
+          ],
+          "belege": [
+            "extra/36-signalwerk-drawing-tablet.pdf"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "37",
-      "file": "controls/37-blank.pdf",
-      "expected": null,
+      "files": [
+        "controls/37-blank.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "38",
-      "file": "controls/38-event-invitation.pdf",
-      "expected": null,
+      "files": [
+        "controls/38-event-invitation.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true
     },
     {
       "id": "39",
-      "file": "controls/39-empty.pdf",
-      "expected": null,
+      "files": [
+        "controls/39-empty.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "expected_failure": "invalid_pdf",
       "strict_nulls": true
     },
     {
       "id": "40",
-      "file": "controls/40-invalid.pdf",
-      "expected": null,
+      "files": [
+        "controls/40-invalid.pdf"
+      ],
+      "expected": [],
       "converted_eur_tolerance_cents": 0,
       "expected_failure": "invalid_pdf",
       "strict_nulls": true
     },
     {
       "id": "41",
-      "file": "modalities/41-paper-receipt.png",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "beleg",
-        "datum": "2026-08-04",
-        "belegnummer": "PP-040826",
-        "accepted_receipt_numbers": [
-          "08426"
-        ],
-        "faelligkeit": null,
-        "gegenpartei_name": "Papier & Punkt",
-        "gegenpartei_land": "DE",
-        "kategorie": "buerobedarf",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 2470,
-        "steuer_cents": 469,
-        "brutto_cents": 2939,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 2470,
-            "steuer_cents": 469
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-08-04",
-            "betrag": 2939
-          }
-        ],
-        "accepted_counterparties": [
-          "Papier & Punkt Fachhandel"
-        ]
-      },
+      "files": [
+        "modalities/41-paper-receipt.png"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-08-04",
+          "belegnummer": "PP-040826",
+          "accepted_receipt_numbers": [
+            "08426"
+          ],
+          "faelligkeit": null,
+          "gegenpartei_name": "Papier & Punkt",
+          "gegenpartei_land": "DE",
+          "kategorie": "buerobedarf",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 2470,
+          "steuer_cents": 469,
+          "brutto_cents": 2939,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 2470,
+              "steuer_cents": 469
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-04",
+              "betrag": 2939
+            }
+          ],
+          "accepted_counterparties": [
+            "Papier & Punkt Fachhandel"
+          ],
+          "belege": [
+            "modalities/41-paper-receipt.png"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -1390,46 +1647,53 @@
     },
     {
       "id": "42",
-      "file": "modalities/42-hotel-scan.jpg",
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "accepted_arts": [
-          "beleg"
-        ],
-        "datum": "2026-09-16",
-        "belegnummer": "LH-2026-0916-028",
-        "faelligkeit": null,
-        "gegenpartei_name": "Lumenhof Hotel München",
-        "gegenpartei_land": "DE",
-        "kategorie": "reise_uebernachtung",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 30800,
-        "steuer_cents": 2276,
-        "brutto_cents": 33076,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "7",
-            "netto_cents": 29800,
-            "steuer_cents": 2086
-          },
-          {
-            "steuersatz": "19",
-            "netto_cents": 1000,
-            "steuer_cents": 190
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-16",
-            "betrag": 33076
-          }
-        ]
-      },
+      "files": [
+        "modalities/42-hotel-scan.jpg"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "accepted_arts": [
+            "beleg"
+          ],
+          "datum": "2026-09-16",
+          "belegnummer": "LH-2026-0916-028",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lumenhof Hotel München",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_uebernachtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 30800,
+          "steuer_cents": 2276,
+          "brutto_cents": 33076,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 29800,
+              "steuer_cents": 2086
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1000,
+              "steuer_cents": 190
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 33076
+            }
+          ],
+          "belege": [
+            "modalities/42-hotel-scan.jpg"
+          ]
+        }
+      ],
       "converted_eur_tolerance_cents": 0,
       "strict_nulls": true,
       "label_uncertainties": [
@@ -1438,40 +1702,992 @@
     },
     {
       "id": "43",
-      "file": "modalities/43-moorwinkel-software.html",
+      "files": [
+        "modalities/43-moorwinkel-software.html"
+      ],
       "strict_nulls": true,
       "converted_eur_tolerance_cents": 0,
-      "expected": {
-        "richtung": "ausgabe",
-        "art": "rechnung",
-        "datum": "2026-09-23",
-        "belegnummer": "MI-260923-043",
-        "faelligkeit": null,
-        "gegenpartei_name": "Moorwinkel IT GmbH",
-        "gegenpartei_land": "DE",
-        "kategorie": "software",
-        "steuerbehandlung": "inland",
-        "privatanteil_prozent": 0,
-        "nutzungsdauer_jahre": null,
-        "waehrung": null,
-        "originalbetrag": null,
-        "netto_cents": 5000,
-        "steuer_cents": 950,
-        "brutto_cents": 5950,
-        "positionen_nach_satz": [
-          {
-            "steuersatz": "19",
-            "netto_cents": 5000,
-            "steuer_cents": 950
-          }
-        ],
-        "zahlungen": [
-          {
-            "datum": "2026-09-23",
-            "betrag": 5950
-          }
-        ]
-      }
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-23",
+          "belegnummer": "MI-260923-043",
+          "faelligkeit": null,
+          "gegenpartei_name": "Moorwinkel IT GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "software",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 5000,
+          "steuer_cents": 950,
+          "brutto_cents": 5950,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 5000,
+              "steuer_cents": 950
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-23",
+              "betrag": 5950
+            }
+          ],
+          "belege": [
+            "modalities/43-moorwinkel-software.html"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "s1-scan-for-booked-hotel",
+      "archive": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-16",
+          "belegnummer": "LH-2026-0916-028",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lumenhof Hotel München",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_uebernachtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 30800,
+          "steuer_cents": 2276,
+          "brutto_cents": 33076,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 29800,
+              "steuer_cents": 2086
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1000,
+              "steuer_cents": 190
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 33076
+            }
+          ],
+          "accepted_arts": [
+            "beleg"
+          ],
+          "belege": [
+            "reise/17-hotelrechnung-lumenhof-muenchen.pdf"
+          ],
+          "titel": "Hotelübernachtung mit Frühstück in München (14.–16.09.2026)"
+        }
+      ],
+      "files": [
+        "modalities/42-hotel-scan.jpg"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-16",
+          "belegnummer": "LH-2026-0916-028",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lumenhof Hotel München",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_uebernachtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 30800,
+          "steuer_cents": 2276,
+          "brutto_cents": 33076,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 29800,
+              "steuer_cents": 2086
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1000,
+              "steuer_cents": 190
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 33076
+            }
+          ],
+          "accepted_arts": [
+            "beleg"
+          ],
+          "belege": [
+            "reise/17-hotelrechnung-lumenhof-muenchen.pdf",
+            "modalities/42-hotel-scan.jpg"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: the hotel invoice is booked; a scan of the same invoice arrives later and belongs to that booking."
+      ]
+    },
+    {
+      "id": "s2-hotel-pdf-and-scan-together",
+      "files": [
+        "reise/17-hotelrechnung-lumenhof-muenchen.pdf",
+        "modalities/42-hotel-scan.jpg"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-16",
+          "belegnummer": "LH-2026-0916-028",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lumenhof Hotel München",
+          "gegenpartei_land": "DE",
+          "kategorie": "reise_uebernachtung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 30800,
+          "steuer_cents": 2276,
+          "brutto_cents": 33076,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 29800,
+              "steuer_cents": 2086
+            },
+            {
+              "steuersatz": "19",
+              "netto_cents": 1000,
+              "steuer_cents": 190
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-09-16",
+              "betrag": 33076
+            }
+          ],
+          "accepted_arts": [
+            "beleg"
+          ],
+          "belege": [
+            "reise/17-hotelrechnung-lumenhof-muenchen.pdf",
+            "modalities/42-hotel-scan.jpg"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: the hotel invoice PDF and its scan are dropped together; they are one transaction."
+      ]
+    },
+    {
+      "id": "s3-receipt-pdf-and-photo-together",
+      "files": [
+        "einkauf/09-papier-punkt-kassenbon-2026-08-04.pdf",
+        "modalities/41-paper-receipt.png"
+      ],
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "beleg",
+          "datum": "2026-08-04",
+          "belegnummer": "PP-040826",
+          "accepted_receipt_numbers": [
+            "08426"
+          ],
+          "faelligkeit": null,
+          "gegenpartei_name": "Papier & Punkt",
+          "gegenpartei_land": "DE",
+          "kategorie": "buerobedarf",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 2470,
+          "steuer_cents": 469,
+          "brutto_cents": 2939,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 2470,
+              "steuer_cents": 469
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-04",
+              "betrag": 2939
+            }
+          ],
+          "accepted_counterparties": [
+            "Papier & Punkt Fachhandel"
+          ],
+          "belege": [
+            "einkauf/09-papier-punkt-kassenbon-2026-08-04.pdf",
+            "modalities/41-paper-receipt.png"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: a till receipt as PDF and as photo dropped together; they are one purchase."
+      ]
+    },
+    {
+      "id": "s4-credit-note-after-invoice",
+      "archive": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-28",
+              "betrag": 285600
+            }
+          ],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ],
+          "titel": "Markenauftritt Elbbogen Keramik"
+        }
+      ],
+      "files": [
+        "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-28",
+              "betrag": 285600
+            }
+          ],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-10",
+          "belegnummer": "SL-2026-081",
+          "faelligkeit": null,
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": -40000,
+          "steuer_cents": -7600,
+          "brutto_cents": -47600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": -40000,
+              "steuer_cents": -7600
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-18",
+              "betrag": -47600
+            }
+          ],
+          "accepted_arts": [
+            "gutschrift"
+          ],
+          "belege": [
+            "ausgang/05_2026-08-10_SL-2026-081_elbbogen-teil-storno.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: the paid invoice SL-2026-071 is booked; its partial cancellation is a booking of its own and leaves the invoice as it is."
+      ]
+    },
+    {
+      "id": "s5-bank-statement-dropped",
+      "archive": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ],
+          "titel": "Markenauftritt Elbbogen Keramik"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-24",
+          "belegnummer": "SL-2026-072",
+          "faelligkeit": "2026-08-07",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 82000,
+          "steuer_cents": 15580,
+          "brutto_cents": 97580,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 82000,
+              "steuer_cents": 15580
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf"
+          ],
+          "titel": "Website-Wartung Juli 2026"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-28",
+          "belegnummer": "SL-2026-084",
+          "faelligkeit": "2026-09-11",
+          "gegenpartei_name": "Kiesel & Kante GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 28000,
+          "steuer_cents": 5320,
+          "brutto_cents": 33320,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28000,
+              "steuer_cents": 5320
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf"
+          ],
+          "titel": "Gestaltungsauftrag Kiesel & Kante"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "SL-2026-082",
+          "faelligkeit": "2026-09-03",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 320000,
+          "steuer_cents": 60800,
+          "brutto_cents": 380800,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 320000,
+              "steuer_cents": 60800
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf"
+          ],
+          "titel": "Website-Projekt Isarblick, Phase 1"
+        }
+      ],
+      "files": [
+        "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+      ],
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-24",
+          "belegnummer": "SL-2026-072",
+          "faelligkeit": "2026-08-07",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 82000,
+          "steuer_cents": 15580,
+          "brutto_cents": 97580,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 82000,
+              "steuer_cents": 15580
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-28",
+          "belegnummer": "SL-2026-084",
+          "faelligkeit": "2026-09-11",
+          "gegenpartei_name": "Kiesel & Kante GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 28000,
+          "steuer_cents": 5320,
+          "brutto_cents": 33320,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28000,
+              "steuer_cents": 5320
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "SL-2026-082",
+          "faelligkeit": "2026-09-03",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 320000,
+          "steuer_cents": 60800,
+          "brutto_cents": 380800,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 320000,
+              "steuer_cents": 60800
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: a bank statement dropped without instruction is not processed, even when it settles open invoices."
+      ]
+    },
+    {
+      "id": "s6-chat-bank-payments",
+      "archive": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf"
+          ],
+          "titel": "Markenauftritt Elbbogen Keramik"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-24",
+          "belegnummer": "SL-2026-072",
+          "faelligkeit": "2026-08-07",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 82000,
+          "steuer_cents": 15580,
+          "brutto_cents": 97580,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 82000,
+              "steuer_cents": 15580
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf"
+          ],
+          "titel": "Website-Wartung Juli 2026"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-28",
+          "belegnummer": "SL-2026-084",
+          "faelligkeit": "2026-09-11",
+          "gegenpartei_name": "Kiesel & Kante GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 28000,
+          "steuer_cents": 5320,
+          "brutto_cents": 33320,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28000,
+              "steuer_cents": 5320
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf"
+          ],
+          "titel": "Gestaltungsauftrag Kiesel & Kante"
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "SL-2026-082",
+          "faelligkeit": "2026-09-03",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 320000,
+          "steuer_cents": 60800,
+          "brutto_cents": 380800,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 320000,
+              "steuer_cents": 60800
+            }
+          ],
+          "zahlungen": [],
+          "belege": [
+            "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf"
+          ],
+          "titel": "Website-Projekt Isarblick, Phase 1"
+        }
+      ],
+      "files": [
+        "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+      ],
+      "chat": "Trag bitte die Zahlungseingänge aus diesem Kontoauszug bei den offenen Rechnungen ein.",
+      "expected": [
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-17",
+          "belegnummer": "SL-2026-071",
+          "faelligkeit": "2026-07-31",
+          "gegenpartei_name": "Elbbogen Keramik",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 240000,
+          "steuer_cents": 45600,
+          "brutto_cents": 285600,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 240000,
+              "steuer_cents": 45600
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-28",
+              "betrag": 285600
+            }
+          ],
+          "belege": [
+            "ausgang/01_2026-07-17_SL-2026-071_elbbogen-keramik.pdf",
+            "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-07-24",
+          "belegnummer": "SL-2026-072",
+          "faelligkeit": "2026-08-07",
+          "gegenpartei_name": "Nordkante Verlag GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 82000,
+          "steuer_cents": 15580,
+          "brutto_cents": 97580,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 82000,
+              "steuer_cents": 15580
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-05",
+              "betrag": 97580
+            }
+          ],
+          "belege": [
+            "ausgang/21_2026-07-24_SL-2026-072_nordkante-maintenance-july.pdf",
+            "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-28",
+          "belegnummer": "SL-2026-084",
+          "faelligkeit": "2026-09-11",
+          "gegenpartei_name": "Kiesel & Kante GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 28000,
+          "steuer_cents": 5320,
+          "brutto_cents": 33320,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 28000,
+              "steuer_cents": 5320
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-29",
+              "betrag": 33320
+            }
+          ],
+          "belege": [
+            "ausgang/24_2026-08-28_SL-2026-084_kiesel-kante-design.pdf",
+            "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+          ]
+        },
+        {
+          "richtung": "einnahme",
+          "art": "rechnung",
+          "datum": "2026-08-20",
+          "belegnummer": "SL-2026-082",
+          "faelligkeit": "2026-09-03",
+          "gegenpartei_name": "Isarblick Innenräume",
+          "gegenpartei_land": "DE",
+          "kategorie": "umsatz_dienstleistung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 320000,
+          "steuer_cents": 60800,
+          "brutto_cents": 380800,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 320000,
+              "steuer_cents": 60800
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-08-31",
+              "betrag": 380800
+            }
+          ],
+          "belege": [
+            "ausgang/02_2026-08-20_SL-2026-082_isarblick-phase-1.pdf",
+            "bank/27_kontur-bank-zahlungseingaenge-juli-august.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: the user asks in the chat to record the payments of an attached bank statement for four open invoices.",
+        "The statement is attached to each settled invoice as proof of payment."
+      ]
+    },
+    {
+      "id": "s7-chat-private-share",
+      "archive": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-19",
+          "belegnummer": "LN-2026-0719-13",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lernwerk Nord GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "fortbildung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 34900,
+          "steuer_cents": 6631,
+          "brutto_cents": 41531,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 34900,
+              "steuer_cents": 6631
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-22",
+              "betrag": 41531
+            }
+          ],
+          "belege": [
+            "einkauf/13-course.pdf"
+          ],
+          "titel": "Beruflicher Onlinekurs bei Lernwerk Nord"
+        }
+      ],
+      "files": [],
+      "chat": "Den Onlinekurs nutze ich zur Hälfte privat. Trag bitte 50 % Privatanteil ein.",
+      "expected": [
+        {
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-07-19",
+          "belegnummer": "LN-2026-0719-13",
+          "faelligkeit": null,
+          "gegenpartei_name": "Lernwerk Nord GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "fortbildung",
+          "steuerbehandlung": "inland",
+          "privatanteil_prozent": 50,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "netto_cents": 34900,
+          "steuer_cents": 6631,
+          "brutto_cents": 41531,
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 34900,
+              "steuer_cents": 6631
+            }
+          ],
+          "zahlungen": [
+            {
+              "datum": "2026-07-22",
+              "betrag": 41531
+            }
+          ],
+          "belege": [
+            "einkauf/13-course.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true,
+      "label_uncertainties": [
+        "Scenario: the user states a private share for a booked course in the chat."
+      ]
     }
   ]
 }
