@@ -126,7 +126,7 @@ private func input() -> FileInput {
     #expect(buchung.geprueftAm == nil)
 
     let request = try #require(try repository.allRequests().first)
-    #expect(request.modell == Model.luna.rawValue)
+    #expect(request.modell == Model.luna6.rawValue)
     #expect(request.status == .erfolg)
     #expect(request.eingabeTokens == 250)
     #expect(request.ausgabeTokens == 50)
@@ -190,8 +190,8 @@ private func input() -> FileInput {
     #expect(gesehen.count == 2)
 
     let erste = gesehen[0]
-    #expect(erste["model"] as? String == "gpt-5.6-luna")
-    #expect((erste["reasoning"] as? [String: Any])?["effort"] as? String == "medium")
+    #expect(erste["model"] as? String == Model.luna6.rawValue)
+    #expect((erste["reasoning"] as? [String: Any])?["effort"] as? String == "high")
     // Stateless: nothing stored at OpenAI, the reasoning comes back encrypted.
     #expect(erste["store"] as? Bool == false)
     #expect(erste["include"] as? [String] == ["reasoning.encrypted_content"])

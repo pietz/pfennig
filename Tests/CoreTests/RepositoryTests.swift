@@ -479,7 +479,7 @@ private func bestaetigungsfehler(
 @Test func kiEinstellungenUeberstehenDenRundlauf() throws {
     let repository = try Repository.inMemory()
     // A fresh installation asks the cheap model with the documented default.
-    #expect(try repository.aiSettings() == AISettings(model: .luna, effort: .medium, fast: false))
+    #expect(try repository.aiSettings() == AISettings(model: .luna6, effort: .high, fast: false))
 
     let gewaehlt = AISettings(model: .terra, effort: .xhigh, fast: true)
     try repository.saveAISettings(gewaehlt)

@@ -16,7 +16,7 @@ struct LiveAcceptanceTests {
         defer { try? FileManager.default.removeItem(at: folder) }
         let repository = try Repository(path: path.databaseFile)
         try repository.saveProfile(Profil(name: "Teststudio Nord", ustid: "DE123456789"))
-        try repository.saveAISettings(AISettings(model: .luna, effort: .low))
+        try repository.saveAISettings(AISettings(model: .luna6, effort: .low))
         let intake = try FileIntake(repository: repository, path: path)
 
         let invoice = folder.appending(path: "rechnung.pdf")

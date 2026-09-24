@@ -55,7 +55,7 @@ public struct AISettings: Hashable, Sendable {
     /// steadier answers.
     public var fast: Bool
 
-    public init(model: Model = .luna, effort: ReasoningEffort = .medium, fast: Bool = false) {
+    public init(model: Model = .luna6, effort: ReasoningEffort = .high, fast: Bool = false) {
         self.model = model
         self.effort = effort
         self.fast = fast
