@@ -10,6 +10,8 @@ struct GroundTruth: Decodable {
     }
 
     let profile: Profile
+    /// The day the agent sees as today, so a corpus scores the same on any day.
+    let today: LocalDate
     let cases: [EvalCase]
 
     /// Decodes and checks a truth file. Without the key check a misspelled
@@ -28,7 +30,7 @@ struct GroundTruth: Decodable {
     /// such as `label_uncertainties` and `source_amounts` document a label
     /// and are not scored.
     private static let allowedKeys: [String: Set<String>] = [
-        "truth": ["profile", "cases"],
+        "truth": ["profile", "today", "cases"],
         "profile": ["name", "ustid", "kleinunternehmer"],
         "cases": [
             "id", "file", "expected", "converted_eur_tolerance_cents", "expected_failure", "strict_nulls",

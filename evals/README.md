@@ -25,7 +25,7 @@ Live runs read `OPENAI_API_KEY` from the environment or from an ignored `.env` i
 swift run PfennigEval --model gpt-5.6-luna --effort medium --cases 04,07,09,29,37,39
 ```
 
-For a full public sweep replace `--cases ...` with `--all`; for the real corpus add the private `--root` and `--truth` arguments above. Other app models are `gpt-6-luna`, `gpt-5.6-terra` and `gpt-5.6-sol`. Effort values are `none`, `low`, `medium`, `high`, `xhigh`, and `max`. `--repeats 2` reruns each case in a fresh archive. `--jobs 20` runs up to 20 cases at once, each in its own archive. `--rules path/to/rules.txt` substitutes the app's short agent rules while retaining its tool and schema instructions. `--output path` selects a report directory; the default is under ignored `evals/results/`.
+For a full public sweep replace `--cases ...` with `--all`; for the real corpus add the private `--root` and `--truth` arguments above. Other app models are `gpt-6-luna`, `gpt-5.6-terra` and `gpt-5.6-sol`. Effort values are `none`, `low`, `medium`, `high`, `xhigh`, and `max`. `--repeats 3` (up to 10) reruns each case in a fresh archive; the run ends with each failing case's pass rate and failing fields. `--jobs 20` runs up to 20 cases at once, each in its own archive. `--rules path/to/rules.txt` substitutes the app's short agent rules while retaining its tool and schema instructions. `--output path` selects a report directory; the default is under ignored `evals/results/`.
 
 If a reviewed truth label changes, score a saved run again without another API call:
 
@@ -33,8 +33,15 @@ If a reviewed truth label changes, score a saved run again without another API c
 swift run PfennigEval --rescore evals/results/RUN/report.json
 ```
 
+Summarize a saved report, or compare two reports case by case (pass rates, failing fields, tokens per run):
+
+```sh
+swift run PfennigEval --summary evals/results/RUN/report.json
+swift run PfennigEval --compare evals/results/OLD/report.json evals/results/NEW/report.json
+```
+
 Add the private `--root` and `--truth` options when rescoring a real-document run. The command checks source file hashes and writes a separate scored report plus a truth snapshot beside the original, or into `--output`.
 
-Each document reaches the model under the neutral name `dokument.<ext>`, so a descriptive file name cannot answer what the document should. Each run snapshots its truth file and saves the report after every case. The report records the model, effort, truth and rule hashes, the rendered prompt and its hash, source file hashes, tokens, time, outcome, field mismatches, bookings, and agent traces. It reports total pass rate and a separate pass rate for cases that reached the agent. Empty and invalid PDF controls pass only when the agent declines to book or the API rejects the input with 400/422; API rejection is excluded from agent accuracy, and network and authentication errors fail. Compare pass rates by case and field across configurations. The first pilot should include controls and both easy and difficult bookings before a full sweep. A live run calls the OpenAI API.
+Each truth file sets `today`, the date the agent sees, so a corpus scores the same on any calendar day. Exchange rates the agent looks up are stored in `fx-rates.json` beside the truth file and replayed on later runs; a rate not stored yet is fetched once and added. Each document reaches the model under the neutral name `dokument.<ext>`, so a descriptive file name cannot answer what the document should. Each run snapshots its truth file and saves the report after every case. The report records the model, effort, truth and rule hashes, the rendered prompt and its hash, source file hashes, tokens, time, outcome, field mismatches, bookings, and agent traces. It reports total pass rate and a separate pass rate for cases that reached the agent. Empty and invalid PDF controls pass only when the agent declines to book or the API rejects the input with 400/422; API rejection is excluded from agent accuracy, and network and authentication errors fail. Compare pass rates by case and field across configurations. The first pilot should include controls and both easy and difficult bookings before a full sweep. A live run calls the OpenAI API.
 
 Regenerate the synthetic PDFs with the six scripts in `2026-q3/sources/` (`outgoing.py`, `purchases.py`, `equipment-services.py`, `travel.py`, `bank.py`, `extra.py`) plus `controls.py`; then run `modalities.py` for the image and HTML cases. Run `verify.py` for the original 28-document accounting checks. The PDFs themselves carry no marker that instructs the agent to reject them. Keep the source directory outside any drag-and-drop import.

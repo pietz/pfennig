@@ -15,6 +15,8 @@ private struct Options {
     var rulesFile: URL?
     var output: URL?
     var rescoreFile: URL?
+    var summaryFile: URL?
+    var compareFiles: (old: URL, new: URL)?
     var validateOnly = false
 
     init(_ arguments: [String]) throws {
@@ -25,6 +27,10 @@ private struct Options {
                 validateOnly = true
             } else if flag == "--all" {
                 allCases = true
+            } else if flag == "--compare" {
+                guard index + 2 < arguments.count else { throw EvalError.invalid("--compare needs two reports") }
+                compareFiles = (URL(fileURLWithPath: arguments[index + 1]), URL(fileURLWithPath: arguments[index + 2]))
+                index += 2
             } else {
                 index += 1
                 guard index < arguments.count else { throw EvalError.invalid("Missing value for \(flag)") }
@@ -49,12 +55,13 @@ private struct Options {
                 case "--rules": rulesFile = URL(fileURLWithPath: value)
                 case "--output": output = URL(fileURLWithPath: value)
                 case "--rescore": rescoreFile = URL(fileURLWithPath: value)
+                case "--summary": summaryFile = URL(fileURLWithPath: value)
                 default: throw EvalError.invalid("Unknown option: \(flag)")
                 }
             }
             index += 1
         }
-        guard (1 ... 5).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...5") }
+        guard (1 ... 10).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...10") }
         guard (1 ... 50).contains(jobs) else { throw EvalError.invalid("--jobs must be 1...50") }
     }
 }
@@ -102,6 +109,25 @@ private struct Report: Codable {
         agentPassed = cases.filter { $0.agentEvaluated && $0.passed }.count
     }
 
+    var tallies: [String: Stability.Tally] {
+        Stability.tally(cases.map { ($0.id, $0.mismatches) })
+    }
+
+    /// Mean input and output tokens of the runs that reported usage.
+    var tokenText: String {
+        let counted = cases.filter { $0.inputTokens != nil }
+        guard counted.isEmpty == false else { return "none recorded" }
+        let input = counted.reduce(0) { $0 + ($1.inputTokens ?? 0) } / counted.count
+        let output = counted.reduce(0) { $0 + ($1.outputTokens ?? 0) } / counted.count
+        return "\(input) in, \(output) out"
+    }
+
+    static func read(_ url: URL) throws -> Report {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode(Report.self, from: Data(contentsOf: url))
+    }
+
     func write(to url: URL) throws {
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -123,6 +149,22 @@ enum PfennigEval {
 
     private static func execute() async throws {
         let options = try Options(Array(CommandLine.arguments.dropFirst()))
+        if let file = options.summaryFile {
+            let report = try Report.read(file)
+            print("\(report.passed)/\(report.total) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal)")
+            Stability.summary(report.tallies).forEach { print($0) }
+            return
+        }
+        if let (oldFile, newFile) = options.compareFiles {
+            let old = try Report.read(oldFile)
+            let new = try Report.read(newFile)
+            print(
+                "Passed \(old.passed)/\(old.total) → \(new.passed)/\(new.total); agent-evaluable \(old.agentPassed)/\(old.agentTotal) → \(new.agentPassed)/\(new.agentTotal)"
+            )
+            print("Tokens per run: \(old.tokenText) → \(new.tokenText)")
+            Stability.comparison(old.tallies, new.tallies).forEach { print($0) }
+            return
+        }
         let root = options.root.standardizedFileURL
         let truthURL = options.truthFile ?? root.appending(path: "ground-truth.json")
         let truthData = try Data(contentsOf: truthURL)
@@ -185,15 +227,20 @@ enum PfennigEval {
         // arrive in any order and are saved as they come.
         let runs = selected.flatMap { item in (1 ... options.repeats).map { (item, $0) } }
         let profile = truth.profile
+        let today = truth.today
+        let rates = try RateCache(file: truthURL.deletingLastPathComponent().appending(path: "fx-rates.json"))
+        let transport = rates.transport(over: Responses.network)
         try await withThrowingTaskGroup(of: CaseResult.self) { group in
             var pending = runs.makeIterator()
             func startNext() {
                 guard let (item, repetition) = pending.next() else { return }
                 group.addTask {
-                    try await run(
-                        item, repetition: repetition, root: root, output: output, profile: profile,
-                        model: model, effort: effort, rules: rules, key: key
-                    )
+                    try await LocalDate.$pinnedToday.withValue(today) {
+                        try await run(
+                            item, repetition: repetition, root: root, output: output, profile: profile,
+                            model: model, effort: effort, rules: rules, key: key, transport: transport
+                        )
+                    }
                 }
             }
             for _ in 0 ..< options.jobs {
@@ -216,6 +263,7 @@ enum PfennigEval {
         print(
             "\(report.passed)/\(results.count) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.appending(path: "report.json").path)"
         )
+        Stability.summary(report.tallies).forEach { print($0) }
     }
 
     /// `OPENAI_API_KEY` from the environment or from `.env` in the working
@@ -240,9 +288,7 @@ enum PfennigEval {
     }
 
     private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL, output: URL?) throws {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        var report = try decoder.decode(Report.self, from: Data(contentsOf: source))
+        var report = try Report.read(source)
         let items = Dictionary(uniqueKeysWithValues: truth.cases.map { ($0.id, $0) })
         for index in report.cases.indices {
             let recorded = report.cases[index]
@@ -278,7 +324,8 @@ enum PfennigEval {
 
     private static func run(
         _ item: EvalCase, repetition: Int, root: URL, output: URL,
-        profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?, key: String
+        profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?, key: String,
+        transport: @escaping Transport
     ) async throws -> CaseResult {
         let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-eval-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -307,7 +354,7 @@ enum PfennigEval {
         let intake = try FileIntake(
             repository: repository,
             path: archive,
-            transport: Responses.network,
+            transport: transport,
             key: key,
             rulesOverride: rules
         )

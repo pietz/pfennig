@@ -172,7 +172,7 @@ import Testing
     try Data().write(to: folder.appending(path: "a.pdf"))
     func truth(_ expected: String) -> Data {
         Data("""
-        {"profile":{"name":"M","ustid":"","kleinunternehmer":false},
+        {"profile":{"name":"M","ustid":"","kleinunternehmer":false}, "today":"2026-09-24",
          "cases":[{"id":"a", "file":"a.pdf", "converted_eur_tolerance_cents":0, "expected":{
            "richtung":"ausgabe", "art":"rechnung", "datum":"2026-09-01", "gegenpartei_name":"N",
            "gegenpartei_land":"DE", "kategorie":"software", \(expected)}}]}
@@ -183,5 +183,56 @@ import Testing
     #expect(throws: EvalError.self) { try GroundTruth.load(truth(#""originalbetrag":"21,92""#), root: folder) }
     #expect(throws: EvalError.self) {
         try GroundTruth.load(truth(#""steuerbehandlung":"reverse-charge""#), root: folder)
+    }
+}
+
+@Test func evalStabilityTalliesRepeatsAndComparesRuns() {
+    let old = Stability.tally([("a", []), ("a", ["kategorie: x"]), ("b", []), ("c", [])])
+    let new = Stability.tally([
+        ("a", []), ("a", []), ("b", ["kategorie: x", "zahlungen: y"]), ("b", ["kategorie: z"]), ("d", [])
+    ])
+    #expect(old["a"] == Stability.Tally(runs: 2, passes: 1, fields: ["kategorie": 1]))
+    #expect(new["b"]?.fieldText == "kategorie×2, zahlungen")
+    #expect(Stability.summary(new).contains("  b  0/2  kategorie×2, zahlungen"))
+    #expect(Stability.comparison(old, new) == [
+        "Better:", "  a  1/2 → 2/2  ",
+        "Worse:", "  b  1/1 → 0/2  kategorie×2, zahlungen",
+        "Only in the new run: d", "Only in the old run: c"
+    ])
+}
+
+@Test func evalRateCacheReplaysStoredRates() async throws {
+    let file = FileManager.default.temporaryDirectory.appending(path: "pfennig-rates-\(UUID().uuidString).json")
+    defer { try? FileManager.default.removeItem(at: file) }
+    let calls = Counter()
+    let network: Transport = { request in
+        await calls.add()
+        let url = try #require(request.url)
+        let response = try #require(HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil))
+        return (Data(#"{"rate":1.1}"#.utf8), response)
+    }
+    var request = try URLRequest(url: #require(URL(string: "https://rates.test/rate/USD/EUR?date=2026-09-01")))
+    request.httpMethod = "GET"
+    _ = try await RateCache(file: file).transport(over: network)(request)
+    // A fresh cache reads the stored answer instead of asking again.
+    let (data, _) = try await RateCache(file: file).transport(over: network)(request)
+    #expect(String(decoding: data, as: UTF8.self) == #"{"rate":1.1}"#)
+    #expect(await calls.value == 1)
+    request.httpMethod = "POST"
+    _ = try await RateCache(file: file).transport(over: network)(request)
+    #expect(await calls.value == 2)
+}
+
+@Test func pinnedTodayReachesThePrompt() throws {
+    let date = try #require(LocalDate("2026-09-24"))
+    let repository = try Repository.inMemory()
+    let prompt = try LocalDate.$pinnedToday.withValue(date) { try AgentInstructions.build(repository) }
+    #expect(prompt.contains("- heute: 2026-09-24"))
+}
+
+private actor Counter {
+    var value = 0
+    func add() {
+        value += 1
     }
 }
