@@ -45,9 +45,9 @@ public struct FileIntake: Sendable {
         try self.init(repository: repository, path: path, transport: transport, key: nil, rulesOverride: rulesOverride)
     }
 
-    /// Internal key override for tests. Production intake reads the key from
-    /// the Keychain when it starts a run.
-    init(
+    /// A fixed key for tests and the eval runner. Production intake reads the
+    /// key from the Keychain when it starts a run.
+    public init(
         repository: Repository,
         path: ArchivePaths,
         transport: @escaping Transport,

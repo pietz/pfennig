@@ -373,10 +373,12 @@ enum EvalScoring {
         NSDecimalNumber(string: text, locale: Locale(identifier: "en_US_POSIX")).stringValue
     }
 
+    /// The words of a name, so "Wortspur Freie Texte · Jana Feld" and
+    /// "Jana Feld – Wortspur Freie Texte" agree.
     private static func normalized(_ value: String?) -> String? {
-        value?.split(whereSeparator: \.isWhitespace).joined(separator: " ").folding(
-            options: [.caseInsensitive, .diacriticInsensitive],
-            locale: Locale(identifier: "de_DE")
-        )
+        value?.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: Locale(identifier: "de_DE"))
+            .split(whereSeparator: { $0.isLetter == false && $0.isNumber == false })
+            .sorted()
+            .joined(separator: " ")
     }
 }

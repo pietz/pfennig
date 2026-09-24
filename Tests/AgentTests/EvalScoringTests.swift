@@ -30,7 +30,7 @@ import Testing
     var booking = try Buchung(
         richtung: .ausgabe, art: .rechnung, datum: #require(LocalDate("2026-09-01")),
         titel: "License", belegnummer: "FX-1", kategorie: "hosting",
-        gegenparteiName: "Northstar Dev Tools Inc.", gegenparteiLand: "US",
+        gegenparteiName: "Inc. · Northstar dev tools", gegenparteiLand: "US",
         positionen: [Position(netto: Cent(10002), steuersatz: 19, steuer: .null)],
         waehrung: "USD", originalbetrag: 100,
         steuerbehandlung: .reverseCharge,

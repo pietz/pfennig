@@ -11,6 +11,7 @@ private struct Options {
     var allCases = false
     var caseIDs: Set<String> = []
     var repeats = 1
+    var jobs = 1
     var rulesFile: URL?
     var output: URL?
     var rescoreFile: URL?
@@ -44,6 +45,7 @@ private struct Options {
                     effort = chosen
                 case "--cases": caseIDs = Set(value.split(separator: ",").map(String.init))
                 case "--repeats": repeats = Int(value) ?? 0
+                case "--jobs": jobs = Int(value) ?? 0
                 case "--rules": rulesFile = URL(fileURLWithPath: value)
                 case "--output": output = URL(fileURLWithPath: value)
                 case "--rescore": rescoreFile = URL(fileURLWithPath: value)
@@ -53,6 +55,7 @@ private struct Options {
             index += 1
         }
         guard (1 ... 5).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...5") }
+        guard (1 ... 50).contains(jobs) else { throw EvalError.invalid("--jobs must be 1...50") }
     }
 }
 
@@ -143,7 +146,7 @@ enum PfennigEval {
         guard selected.isEmpty == false, options.allCases || selected.count == options.caseIDs.count else {
             throw EvalError.invalid("Unknown or empty case selection.")
         }
-        guard Keychain.exists else { throw EvalError.invalid("Pfennig API key not found in Keychain.") }
+        let key = try apiKey()
         let rules = try options.rulesFile.map { try String(contentsOf: $0, encoding: .utf8) }
         if let rules, rules.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             throw EvalError.invalid("Rules file is empty.")
@@ -178,31 +181,62 @@ enum PfennigEval {
             try report.write(to: output.appending(path: "report.json"))
             return report
         }
-        for item in selected {
-            for repetition in 1 ... options.repeats {
-                let result = try await run(
-                    item,
-                    repetition: repetition,
-                    root: root,
-                    output: output,
-                    profile: truth.profile,
-                    model: model,
-                    effort: effort,
-                    rules: rules
-                )
+        // Every run has its own archive, so runs only share the API. Results
+        // arrive in any order and are saved as they come.
+        let runs = selected.flatMap { item in (1 ... options.repeats).map { (item, $0) } }
+        let profile = truth.profile
+        try await withThrowingTaskGroup(of: CaseResult.self) { group in
+            var pending = runs.makeIterator()
+            func startNext() {
+                guard let (item, repetition) = pending.next() else { return }
+                group.addTask {
+                    try await run(
+                        item, repetition: repetition, root: root, output: output, profile: profile,
+                        model: model, effort: effort, rules: rules, key: key
+                    )
+                }
+            }
+            for _ in 0 ..< options.jobs {
+                startNext()
+            }
+            while let result = try await group.next() {
                 results.append(result)
                 _ = try saveReport()
                 let fields = result.mismatches.map { String($0.split(separator: ":", maxSplits: 1).first ?? "") }
                 print(
-                    "\(item.id) #\(repetition): \(result.passed ? "PASS" : "FAIL") \(fields.joined(separator: ", "))"
+                    "\(result.id) #\(result.repetition): \(result.passed ? "PASS" : "FAIL") \(fields.joined(separator: ", "))"
                 )
                 fflush(stdout)
+                startNext()
             }
         }
+        let order = Dictionary(uniqueKeysWithValues: selected.enumerated().map { ($1.id, $0) })
+        results.sort { (order[$0.id] ?? 0, $0.repetition) < (order[$1.id] ?? 0, $1.repetition) }
         let report = try saveReport()
         print(
             "\(report.passed)/\(results.count) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal). Report: \(output.appending(path: "report.json").path)"
         )
+    }
+
+    /// `OPENAI_API_KEY` from the environment or from `.env` in the working
+    /// directory. The eval never touches the app's Keychain entry, so a
+    /// rebuilt binary does not ask for Keychain access again.
+    private static func apiKey() throws -> String {
+        if let key = ProcessInfo.processInfo.environment["OPENAI_API_KEY"], key.isEmpty == false {
+            return key
+        }
+        let lines = (try? String(contentsOfFile: ".env", encoding: .utf8))?.split(whereSeparator: \.isNewline) ?? []
+        for line in lines {
+            let parts = line.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
+            guard parts.count == 2, parts[0] == "OPENAI_API_KEY" || parts[0] == "export OPENAI_API_KEY" else {
+                continue
+            }
+            let key = parts[1].trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
+            if key.isEmpty == false {
+                return key
+            }
+        }
+        throw EvalError.invalid("Set OPENAI_API_KEY in the environment or in .env.")
     }
 
     private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL, output: URL?) throws {
@@ -244,7 +278,7 @@ enum PfennigEval {
 
     private static func run(
         _ item: EvalCase, repetition: Int, root: URL, output: URL,
-        profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?
+        profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?, key: String
     ) async throws -> CaseResult {
         let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-eval-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -265,11 +299,18 @@ enum PfennigEval {
             try prompt.write(to: promptURL, atomically: true, encoding: .utf8)
         }
         // The model sees the file name. A neutral one keeps names such as
-        // "12-laptop.pdf" from answering what the document should.
+        // "12-laptop.pdf" from answering what the document should; a number
+        // would be mistaken for the file ID.
         let source = root.appending(path: item.file)
-        let input = folder.appending(path: "\(item.id).\(source.pathExtension)")
+        let input = folder.appending(path: "dokument.\(source.pathExtension)")
         try FileManager.default.copyItem(at: source, to: input)
-        let intake = try FileIntake(repository: repository, path: archive, rulesOverride: rules)
+        let intake = try FileIntake(
+            repository: repository,
+            path: archive,
+            transport: Responses.network,
+            key: key,
+            rulesOverride: rules
+        )
         let started = Date()
         let intakeResult = await intake.process(input)
         let seconds = Date().timeIntervalSince(started)

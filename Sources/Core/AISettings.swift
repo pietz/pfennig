@@ -1,9 +1,10 @@
-/// The models Pfennig offers. All three read PDFs and images and take tools;
-/// they differ in price and depth.
+/// The models Pfennig offers. All read PDFs and images and take tools; they
+/// differ in price and depth.
 public enum Model: String, CaseIterable, Hashable, Sendable, Identifiable {
     case sol = "gpt-5.6-sol"
     case terra = "gpt-5.6-terra"
     case luna = "gpt-5.6-luna"
+    case luna6 = "gpt-6-luna"
 
     public var id: String {
         rawValue
@@ -14,12 +15,13 @@ public enum Model: String, CaseIterable, Hashable, Sendable, Identifiable {
         case .sol: "GPT-5.6 Sol"
         case .terra: "GPT-5.6 Terra"
         case .luna: "GPT-5.6 Luna"
+        case .luna6: "GPT-6 Luna"
         }
     }
 }
 
 /// How long the model thinks before it answers. These are the values the
-/// gpt-5.6 models take.
+/// gpt-5.6 and gpt-6 models take.
 public enum ReasoningEffort: String, CaseIterable, Hashable, Sendable, Identifiable {
     case none
     case low
