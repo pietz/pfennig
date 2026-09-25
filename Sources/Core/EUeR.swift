@@ -110,7 +110,6 @@ public struct EUeR: Hashable, Sendable {
     // MARK: - Berechnung
 
     public static func calculate(_ buchungen: [Buchung], jahr: Int, profile: Profil) -> EUeR {
-        let zeitraum = Zeitraum(jahr: jahr, einteilung: .jahr)
         let brutto = profile.kleinunternehmer
         var werte: [Int: Cent] = [:]
         var vereinnahmt = Cent.null
@@ -124,7 +123,7 @@ public struct EUeR: Hashable, Sendable {
             guard kategorie != nil
                 || (buchung.richtung == .ausgabe && buchung.nutzungsdauerJahre != nil)
             else { continue }
-            let summe = summe(buchung, zeitraum: zeitraum)
+            let summe = summe(buchung, jahr: jahr, profile: profile)
             let betrag: Cent
             switch buchung.richtung {
             case .einnahme:
@@ -250,19 +249,36 @@ public struct EUeR: Hashable, Sendable {
 
     /// What one booking brings into the year: the net and the tax of the
     /// shares of its payments of the year, both before the Privatanteil.
-    private static func summe(_ buchung: Buchung, zeitraum: Zeitraum) -> (netto: Cent, steuer: Cent) {
+    private static func summe(_ buchung: Buchung, jahr: Int, profile: Profil) -> (netto: Cent, steuer: Cent) {
         let zahlungen = buchung.zahlungen.sorted { $0.datum < $1.datum }
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
 
         var netto = Cent.null
         var steuer = Cent.null
-        for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
+        for (stelle, zahlung) in zahlungen.enumerated()
+            where abflussjahr(zahlung.datum, buchung, profile: profile) == jahr
+        {
             for anteil in anteile[stelle] {
                 netto = netto + anteil.netto
                 steuer = steuer + anteil.steuer
             }
         }
         return (netto, steuer)
+    }
+
+    /// The year a payment counts in. A USt-Vorauszahlung is a regularly
+    /// recurring expense: paid and due 1 to 10 January, it belongs to the old
+    /// year, §11 Abs. 2 Satz 2 EStG. What falls due on 10 January is the
+    /// December, November or fourth quarter advance, except for a quarterly
+    /// filer with Dauerfristverlängerung, whose Q4 is due 10 February (BFH
+    /// VIII R 25/20). A weekend shift under §108 AO does not matter (BFH X R
+    /// 44/16). Annual or late VAT payments that happen to fall in those days,
+    /// and other recurring expenses such as rent, need a manual correction.
+    static func abflussjahr(_ datum: LocalDate, _ buchung: Buchung, profile: Profil) -> Int {
+        let vorauszahlungImJanuar = profile.rhythmus == .monatlich || profile.dauerfristverlaengerung == false
+        guard buchung.kategorie == "ust_zahlung", vorauszahlungImJanuar, datum.monat == 1, datum.tag <= 10
+        else { return datum.jahr }
+        return datum.jahr - 1
     }
 
     /// A gift to someone who is not an employee is deductible only while it

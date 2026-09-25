@@ -368,3 +368,43 @@ private func anlage(_ titel: String) -> Buchung {
     #expect(euer.zeilen[0].betrag.value == -9520)
     #expect(UStVA.calculate([gutschrift], zeitraum: q3, profile: regel).nummern.isEmpty)
 }
+
+private func ustZahlung(_ monat: Int, _ tag: Int, kategorie: String = "ust_zahlung") -> Buchung {
+    buchung(
+        id: 17,
+        richtung: .ausgabe,
+        datum: datum(2027, monat, tag),
+        kategorie: kategorie,
+        positionen: [positionOhneSteuer(50000, 0)],
+        behandlung: .nichtSteuerbar,
+        zahlungen: [zahlung(2027, monat, tag, 50000)]
+    )
+}
+
+/// The Gewinn of both years, old year first.
+private func ergebnisse(_ buchung: Buchung, _ profile: Profil) -> [Int64] {
+    [2026, 2027].map { EUeR.calculate([buchung], jahr: $0, profile: profile).ergebnis.value }
+}
+
+@Test func dieUmsatzsteuerVorauszahlungImJanuarGehoertInsAlteJahr() {
+    // Quartalszahler ohne Dauerfristverlängerung: Q4 ist am 10. Januar fällig.
+    #expect(ergebnisse(ustZahlung(1, 10), regel) == [-50000, 0])
+    #expect(EUeR.calculate([ustZahlung(1, 10)], jahr: 2026, profile: regel).zeilen.map(\.zeile) == [59])
+    // Am 11. Januar ist die Zehntagesfrist vorbei.
+    #expect(ergebnisse(ustZahlung(1, 11), regel) == [0, -50000])
+}
+
+@Test func mitDauerfristverlaengerungGiltDieZehntagesregelNurMonatlich() {
+    var quartal = regel
+    quartal.dauerfristverlaengerung = true
+    // Q4 ist erst am 10. Februar fällig, BFH VIII R 25/20.
+    #expect(ergebnisse(ustZahlung(1, 8), quartal) == [0, -50000])
+    var monat = quartal
+    monat.rhythmus = .monatlich
+    // Der November ist am 10. Januar fällig.
+    #expect(ergebnisse(ustZahlung(1, 8), monat) == [-50000, 0])
+}
+
+@Test func andereAusgabenImJanuarBleibenImNeuenJahr() {
+    #expect(ergebnisse(ustZahlung(1, 5, kategorie: "sonstige_ausgabe"), regel) == [0, -50000])
+}
