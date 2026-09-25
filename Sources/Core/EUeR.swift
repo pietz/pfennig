@@ -64,6 +64,7 @@ public struct EUeR: Hashable, Sendable {
         16: "Umsatzsteuerfreie, nicht steuerbare und § 13b-Betriebseinnahmen",
         17: "Vereinnahmte Umsatzsteuer",
         18: "Vom Finanzamt erstattete Umsatzsteuer",
+        29: "Waren, Rohstoffe und Hilfsstoffe",
         30: "Bezogene Fremdleistungen",
         34: "AfA auf bewegliche Wirtschaftsgüter",
         37: "Geringwertige Wirtschaftsgüter",

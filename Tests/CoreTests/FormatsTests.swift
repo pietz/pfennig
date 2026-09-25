@@ -93,7 +93,7 @@ func empfaengersteuerBearbeitungLaesstSatzStehenUndSteuerNull(behandlung: Steuer
 }
 
 @Test func kategorienSindFestUndNachRichtungSortiert() {
-    #expect(Kategorie.alle.count == 26)
+    #expect(Kategorie.alle.count == 27)
     #expect(Kategorie.alle.first?.schluessel == "umsatz_dienstleistung")
     #expect(Kategorie.fuer(.einnahme).count == 6)
     #expect(Kategorie.fuer(.ausgabe).allSatisfy { $0.richtung == .ausgabe })
