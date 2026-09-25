@@ -38,7 +38,34 @@ private let laptop = buchung(
     let summe = (2025 ... 2041).reduce(Cent.null) { $0 + AfA.betrag(schreibtisch, jahr: $1, brutto: false) }
     #expect(summe.value == 300_000)
     #expect(AfA.restbuchwert(schreibtisch, endeJahr: 2026, brutto: false).value == 280_769)
+    #expect(AfA.restbuchwert(schreibtisch, endeJahr: 2038, brutto: false).value == 3845)
     #expect(AfA.restbuchwert(schreibtisch, endeJahr: 2039, brutto: false) == .null)
+}
+
+/// Ein gebrauchter Schreibtisch für 1.000 Euro netto, gekauft im Januar, mit
+/// drei Jahren Restnutzungsdauer; Einrichtung braucht keine Kategorie.
+private let gebrauchterSchreibtisch = buchung(
+    id: 3,
+    richtung: .ausgabe,
+    datum: datum(2026, 1, 10),
+    nutzungsdauer: 3,
+    positionen: [position(100_000, 19)],
+    zahlungen: [zahlung(2026, 1, 10, 119_000)]
+)
+
+@Test func dieAfaEndetMitDerNutzungsdauerAuchWennSichDerRestRundet() {
+    // 1.000 durch 3 sind 333,33 im Jahr; das dritte Jahr nimmt den Rest, das
+    // vierte bekommt keinen Rundungscent mehr.
+    #expect(AfA.betrag(gebrauchterSchreibtisch, jahr: 2026, brutto: false).value == 33333)
+    #expect(AfA.betrag(gebrauchterSchreibtisch, jahr: 2027, brutto: false).value == 33333)
+    #expect(AfA.betrag(gebrauchterSchreibtisch, jahr: 2028, brutto: false).value == 33334)
+    #expect(AfA.betrag(gebrauchterSchreibtisch, jahr: 2029, brutto: false) == .null)
+    #expect(AfA.restbuchwert(gebrauchterSchreibtisch, endeJahr: 2028, brutto: false) == .null)
+
+    #expect(EUeR.calculate([gebrauchterSchreibtisch], jahr: 2028, profile: regel).anlagen.map(\.id) == [3])
+    let viertesJahr = EUeR.calculate([gebrauchterSchreibtisch], jahr: 2029, profile: regel)
+    #expect(viertesJahr.anlagen.isEmpty)
+    #expect(viertesJahr.zeilen.isEmpty)
 }
 
 @Test func einJahrNutzungsdauerSchreibtGanzImAnschaffungsjahrAb() {
