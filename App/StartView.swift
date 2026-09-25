@@ -112,9 +112,8 @@ struct StartView: View {
 
     // MARK: Toolbar
 
-    /// Filters, search and the inspector belong to the table and stay away.
-    /// What remains are the two actions that concern the whole window, plus the
-    /// intake indicator.
+    /// The filter belongs to the table and stays away. What remains are the
+    /// two actions the ledger also ends with, plus the intake indicator.
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         if model.progress.visible {
             ToolbarItem(placement: .primaryAction) {

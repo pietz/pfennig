@@ -44,10 +44,8 @@ struct WorkspaceView: View {
             // hides the right hand table columns.
             HStack(spacing: 0) {
                 MainWindow(model: model)
-                if model.inspectorVisible {
-                    Divider()
-                    inspectorPane.frame(width: WorkspaceView.inspectorWidth)
-                }
+                Divider()
+                inspectorPane.frame(width: WorkspaceView.inspectorWidth)
             }
         case .chat:
             ChatView(model: model)
@@ -77,6 +75,14 @@ struct WorkspaceView: View {
                     }
                 }
         }
+        // Search sits in the sidebar on every page, so the toolbar keeps its
+        // two actions at the trailing edge. Typing leads to the bookings.
+        .searchable(text: $model.search, placement: .sidebar, prompt: "Suchen")
+        .onChange(of: model.search) {
+            if model.search.isEmpty == false {
+                workspace = .buchungen
+            }
+        }
         // Drag and drop counts for the whole window, on Start as well.
         .dropDestination(for: URL.self) { urls, _ in
             model.acceptFiles(urls)
@@ -99,6 +105,7 @@ struct WorkspaceView: View {
     static let tableMinimumWidth: CGFloat = 560
     static let startMinimumWidth: CGFloat = 640
 
+    /// The ledger with its inspector, the widest page and the opening size.
     static let defaultWidth = sidebarWidth + tableMinimumWidth + inspectorWidth + 1
 
     private var minimumWindowWidth: CGFloat {
@@ -106,7 +113,7 @@ struct WorkspaceView: View {
         case .start, .chat:
             Self.sidebarWidth + Self.startMinimumWidth
         case .buchungen:
-            model.inspectorVisible ? Self.defaultWidth : Self.sidebarWidth + Self.tableMinimumWidth
+            Self.defaultWidth
         }
     }
 

@@ -20,7 +20,6 @@ struct MainWindow: View {
             Divider()
             Footer(totals: Overview.totals(rows))
         }
-        .searchable(text: $model.search, prompt: "Suchen")
         .toolbar { toolbarItems }
         // The table shrinks with the inspector; only the Unternehmen column gives.
         .frame(minWidth: WorkspaceView.tableMinimumWidth)
@@ -170,10 +169,19 @@ struct MainWindow: View {
             Image(systemName: status.symbol)
                 .font(.system(size: 9, weight: .bold))
                 .symbolRenderingMode(.palette)
-                .foregroundStyle(.white, highlightsMissingInput(buchung) ? Color.red : .orange)
+                .foregroundStyle(.white, badgeColor(status, highlighted: highlightsMissingInput(buchung)))
                 .offset(x: 3, y: 2)
                 .help(status.name)
         }
+    }
+
+    /// Orange asks for a review; a missing receipt stays neutral like the
+    /// status column. Missing agent input is red either way.
+    private func badgeColor(_ status: ReviewStatus, highlighted: Bool) -> Color {
+        if highlighted {
+            return .red
+        }
+        return status == .zuPruefen ? .orange : .secondary
     }
 
     /// Stored rows always have an id. The table still sees the optional id from
@@ -207,6 +215,10 @@ struct MainWindow: View {
         return "\(toDelete.count) Buchungen werden endgültig entfernt, mit Belegen, die keine verbleibende Buchung trägt."
     }
 
+    private var filtered: Bool {
+        model.filter != .alle || model.reviewFilter != .alle
+    }
+
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         // Visible for as long as there is something in the queue.
         if model.progress.visible {
@@ -215,19 +227,26 @@ struct MainWindow: View {
             }
         }
         ToolbarItem(placement: .primaryAction) {
-            Picker("Richtung", selection: $model.filter) {
-                ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
+            Menu {
+                Picker("Richtung", selection: $model.filter) {
+                    ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
+                }
+                Picker("Status", selection: $model.reviewFilter) {
+                    ForEach(ReviewFilter.allCases) { Text($0.menuTitle).tag($0) }
+                }
+            } label: {
+                Label(
+                    "Filter",
+                    systemImage: filtered
+                        ? "line.3.horizontal.decrease.circle.fill"
+                        : "line.3.horizontal.decrease.circle"
+                )
             }
-            .pickerStyle(.menu)
-            .labelsHidden()
+            .pickerStyle(.inline)
+            .menuIndicator(.hidden)
+            .help("Filter")
         }
-        ToolbarItem(placement: .primaryAction) {
-            Picker("Prüfung", selection: $model.reviewFilter) {
-                ForEach(ReviewFilter.allCases) { Text($0.menuTitle).tag($0) }
-            }
-            .pickerStyle(.menu)
-            .labelsHidden()
-        }
+        // The same two actions as on the start page, in the same place.
         ToolbarItem(placement: .primaryAction) {
             Button("Neue Buchung", systemImage: "plus") { model.createBooking() }
         }
@@ -236,9 +255,6 @@ struct MainWindow: View {
                 model.exportPeriod = nil
                 model.exportVisible = true
             }
-        }
-        ToolbarItem(placement: .primaryAction) {
-            Button("Inspector", systemImage: "sidebar.trailing") { model.inspectorVisible.toggle() }
         }
     }
 }

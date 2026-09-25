@@ -85,7 +85,10 @@ struct Inspector: View {
             originalAmountText = updated.originalbetrag?.deutschFormatiert ?? ""
             dueDateText = updated.faelligkeit?.formatted ?? ""
         }
-        .onDisappear { save() }
+        .onDisappear {
+            save()
+            model.discardIfBlank(draft)
+        }
         // Quitting must not swallow a field the user typed but never committed.
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             save()
