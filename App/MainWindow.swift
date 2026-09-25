@@ -215,10 +215,6 @@ struct MainWindow: View {
         return "\(toDelete.count) Buchungen werden endgültig entfernt, mit Belegen, die keine verbleibende Buchung trägt."
     }
 
-    private var filtered: Bool {
-        model.filter != .alle || model.reviewFilter != .alle
-    }
-
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         // Visible for as long as there is something in the queue.
         if model.progress.visible {
@@ -227,24 +223,28 @@ struct MainWindow: View {
             }
         }
         ToolbarItem(placement: .primaryAction) {
+            Picker("Richtung", selection: $model.filter) {
+                ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
+            }
+            .pickerStyle(.menu)
+            .labelsHidden()
+        }
+        ToolbarItem(placement: .primaryAction) {
             Menu {
-                Picker("Richtung", selection: $model.filter) {
-                    ForEach(BookingFilter.allCases) { Text($0.name).tag($0) }
-                }
                 Picker("Status", selection: $model.reviewFilter) {
                     ForEach(ReviewFilter.allCases) { Text($0.menuTitle).tag($0) }
                 }
             } label: {
                 Label(
-                    "Filter",
-                    systemImage: filtered
+                    "Status",
+                    systemImage: model.reviewFilter != .alle
                         ? "line.3.horizontal.decrease.circle.fill"
                         : "line.3.horizontal.decrease.circle"
                 )
             }
             .pickerStyle(.inline)
             .menuIndicator(.hidden)
-            .help("Filter")
+            .help("Status")
         }
         // The same two actions as on the start page, in the same place.
         ToolbarItem(placement: .primaryAction) {
