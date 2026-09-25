@@ -46,7 +46,9 @@ struct PfennigApp: App {
     }
 
     var body: some Scene {
-        WindowGroup {
+        // The id names the saved frame. It changed with the wider default, so
+        // a window saved at the old size opens once at the new one.
+        WindowGroup(id: "workspace") {
             WorkspaceView(model: model)
                 .modifier(AppearanceModifier())
         }
