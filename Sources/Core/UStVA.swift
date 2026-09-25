@@ -7,9 +7,11 @@ import Foundation
 /// - **Umsatzsteuer auf Einnahmen** arises per payment, in the period of the
 ///   payment date. A partial payment carries its proportional share of the
 ///   positions; an unpaid invoice does not count at all.
-/// - **Vorsteuer auf Ausgaben** counts in the period of max(Belegdatum,
-///   Zahlungsdatum), per payment. That is conservative against §15 UStG, where
-///   the invoice alone would already do, and needs no further field.
+/// - **Vorsteuer auf Ausgaben** counts in full in the period of the
+///   Belegdatum, paid or not: §15 Abs. 1 Satz 1 Nr. 1 UStG asks for the supply
+///   and the invoice, and Ist-Versteuerung concerns only the output tax. The
+///   Belegdatum stands in for the supply; an unpaid advance invoice for a
+///   supply still to come counts too early and needs manual adjustment.
 /// - **§13b** arises with the service, in practice with the Belegdatum, and in
 ///   full, at the rate of its positions; the payment date does not matter. A
 ///   Kleinunternehmer owes the tax without the matching Vorsteuer.
@@ -128,15 +130,10 @@ public struct UStVA: Hashable, Sendable {
         let vorsteuer = profile.kleinunternehmer == false && EUeR.vorsteuerAusgeschlossen(buchung) == false
         switch buchung.steuerbehandlung {
         case .inland:
-            // Vorsteuer at max(Belegdatum, Zahlungsdatum), per payment.
-            guard vorsteuer else { return }
-            let zahlungen = geordnet(buchung)
-            let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
-            for (stelle, zahlung) in zahlungen.enumerated() {
-                guard zeitraum.enthaelt(max(buchung.datum, zahlung.datum)) else { continue }
-                let steuer = anteile[stelle].reduce(Cent.null) { $0 + $1.steuer }
-                buchen(66, EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent), in: &werte)
-            }
+            // The invoice dates the Vorsteuer, not the payment.
+            guard vorsteuer, zeitraum.enthaelt(buchung.datum) else { return }
+            let steuer = buchung.positionen.reduce(Cent.null) { $0 + $1.steuer }
+            buchen(66, EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent), in: &werte)
 
         case .reverseCharge:
             // The service dates the entry, not the payment.
