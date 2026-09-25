@@ -269,10 +269,12 @@ public struct EUeR: Hashable, Sendable {
     /// costs no more than 50 Euro, §4 Abs. 5 Satz 1 Nr. 1 EStG, net when the
     /// business deducts Vorsteuer and gross otherwise. The limit holds per
     /// recipient and year; Pfennig takes one booking as one recipient, and
-    /// several gifts on one invoice or to one person need a manual check.
+    /// several gifts on one invoice or to one person need a manual check. A
+    /// credit note is judged by its own amount, so a full refund follows its
+    /// gift and a partial one needs a manual check too.
     static func geschenkAbziehbar(_ buchung: Buchung, brutto: Bool) -> Bool {
         let kosten = buchung.positionen.reduce(Cent.null) { $0 + $1.netto + (brutto ? $1.steuer : .null) }
-        return kosten <= Cent(5000)
+        return abs(kosten.value) <= 5000
     }
 
     /// The Vorsteuer of a gift that is not deductible is not deductible

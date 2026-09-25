@@ -145,8 +145,7 @@ public enum ValidationRules {
     }
 
     static let datumLiegtNichtWeitInDerZukunft: @Sendable (Buchung, Profil) -> String? = { buchung, _ in
-        let grenze = LocalDate(Date().addingTimeInterval(Double(vorlaufTage) * 86400))
-        guard buchung.datum > grenze else { return nil }
+        guard LocalDate.today().tage(bis: buchung.datum) > vorlaufTage else { return nil }
         return "datum \(buchung.datum) liegt zu weit in der Zukunft."
     }
 

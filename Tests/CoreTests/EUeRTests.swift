@@ -350,3 +350,21 @@ private func anlage(_ titel: String) -> Buchung {
     #expect(EUeR.calculate([wein], jahr: 2026, profile: regel).ausgaben.value == 4500 + 855)
     #expect(EUeR.calculate([wein], jahr: 2026, profile: klein).ausgaben == .null)
 }
+
+@Test func eineGutschriftZuEinemGeschenkFolgtDemGeschenk() {
+    let gutschrift = buchung(
+        id: 16,
+        richtung: .ausgabe,
+        art: .gutschrift,
+        datum: datum(2026, 8, 1),
+        kategorie: "geschenke",
+        positionen: [position(-8000, 19)],
+        zahlungen: [zahlung(2026, 8, 1, -9520)]
+    )
+    // Das Geschenk über 80 Euro war nicht abziehbar, also auch seine Erstattung.
+    let euer = EUeR.calculate([gutschrift], jahr: 2026, profile: regel)
+    #expect(euer.zeilen.map(\.zeile) == [63])
+    #expect(euer.zeilen[0].nichtAbziehbar)
+    #expect(euer.zeilen[0].betrag.value == -9520)
+    #expect(UStVA.calculate([gutschrift], zeitraum: q3, profile: regel).nummern.isEmpty)
+}

@@ -4,6 +4,8 @@ import Foundation
 /// The UStVA of each quarter and the Anlage EÜR of one year, computed with
 /// the app's own code from the bookings a run left, one set per repetition.
 /// A corpus of a whole year then compares with the figures that were filed.
+/// Each case keeps its whole archive, so only single-step cases add up; a
+/// scenario's seeded bookings would count once per case.
 enum TaxTotals {
     struct Year: Encodable {
         let repetition: Int
@@ -17,7 +19,9 @@ enum TaxTotals {
 
     private struct Run: Decodable {
         struct Case: Decodable {
+            let id: String
             let repetition: Int
+            let seeded: [Int64]
             let bookings: [Buchung]
         }
 
@@ -36,6 +40,9 @@ enum TaxTotals {
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         let run = try decoder.decode(Run.self, from: Data(contentsOf: report))
+        if let scenario = run.cases.first(where: { $0.seeded.isEmpty == false }) {
+            throw EvalError.invalid("--tax adds up single-step cases only; \(scenario.id) seeds an archive")
+        }
         let truth = try decoder.decode(
             Truth.self,
             from: Data(contentsOf: report.deletingLastPathComponent().appending(path: "truth-snapshot.json"))
