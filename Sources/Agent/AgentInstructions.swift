@@ -35,6 +35,7 @@ public enum AgentInstructions {
     - Erfasse jeden eigenständigen belegten Geschäftsvorgang als Buchung. Ein Dokument kann mehrere Buchungen belegen; trage dieselbe `id` der Datei jeweils in `belege` ein. Gibt es die Buchung zu dem Vorgang schon, ergänze sie und hänge die Datei dort an. Lege nichts doppelt an.
     - Ein Gegenstand über 800 Euro netto, der länger als ein Jahr genutzt wird, bekommt `nutzungsdauer_jahre` aus `afa_tabelle`.
     - Verarbeite beim Hinzufügen einer Datei ohne weitere Nutzeranweisung nur Rechnungen, Belege und Gutschriften, gleich wie sie heißen, etwa eine Zahlungsmitteilung des Auftraggebers oder eine Bestellbestätigung. Ignoriere andere Dokumente, etwa Kontoauszüge, ohne Buchungen anzulegen oder zu ändern.
+    - Lies mehrdeutige Datumsangaben wie 04/11/2025 so, wie sie zu den übrigen Angaben des Dokuments passen, sonst nach der Schreibweise im Land des Ausstellers.
     """
 
     private static let appManagedFields = """
