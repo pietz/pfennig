@@ -171,9 +171,7 @@ public struct FileIntake: Sendable {
             return .booked
         } catch let abort as RunAbort {
             // Rows of the broken run go, so a second attempt cannot double them.
-            for id in abort.created {
-                _ = try? repository.delete(id: id)
-            }
+            try? repository.deleteUnchanged(abort.created)
             return .failed(file: location, text: abort.localizedDescription)
         } catch {
             return .failed(file: location, text: error.localizedDescription)
@@ -185,14 +183,22 @@ public struct FileIntake: Sendable {
     private func inInbox(_ url: URL, data: Data, hash: String) throws -> URL {
         guard isInInbox(url) == false else { return url }
         try path.create()
-        var destination = path.inbox.appending(path: url.lastPathComponent)
-        if FileManager.default.fileExists(atPath: destination.path) {
+        // Files arrive side by side, so the name is claimed by the write itself.
+        let destination = path.inbox.appending(path: url.lastPathComponent)
+        do {
+            try data.write(to: destination, options: .withoutOverwriting)
+            return destination
+        } catch CocoaError.fileWriteFileExists {
             // Another file of that name is still waiting; it keeps its place.
-            let name = url.deletingPathExtension().lastPathComponent
-            destination = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
         }
-        try data.write(to: destination)
-        return destination
+        let name = url.deletingPathExtension().lastPathComponent
+        let hashed = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
+        do {
+            try data.write(to: hashed, options: .withoutOverwriting)
+        } catch CocoaError.fileWriteFileExists {
+            // Same name and hash: the same content is already there.
+        }
+        return hashed
     }
 
     /// A file attached in the chat: stored like a dropped one, or the stored

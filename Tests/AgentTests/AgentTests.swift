@@ -934,6 +934,96 @@ private actor Zaehler {
     #expect(retry.inbox().isEmpty)
 }
 
+/// The script's transport with a step in between: before the request after
+/// `after` answers, `step` runs, the way a user or a parallel run acts while
+/// the run is still going.
+private func dazwischen(_ skript: Skript, after: Int, _ step: @escaping @Sendable () throws -> Void) -> Transport {
+    { request in
+        if await skript.gesehen.count == after {
+            try step()
+        }
+        return await skript.antworten(auf: request)
+    }
+}
+
+private let abbruch = object([
+    "id": "resp_x", "status": "incomplete", "incomplete_details": ["reason": "max_output_tokens"]
+])
+
+@Test func gescheiterterLaufLaesstZwischendurchGeaenderteBuchungenStehen() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let file = folder.appending(path: "beleg.pdf")
+    try Data("%PDF synthetisch".utf8).write(to: file)
+    let skript = Skript([
+        werkzeugantwort(einfuegenMitBeleg),
+        werkzeugantwort(einfuegenMitBeleg),
+        werkzeugantwort(einfuegenMitBeleg),
+        werkzeugantwort("UPDATE buchungen SET notizen = 'Zweiter Schritt' WHERE id = 3"),
+        abbruch
+    ])
+    let other = try SQLTool(repository)
+    let transport = dazwischen(skript, after: 4) {
+        // The user edits booking 1 in the inspector, a parallel run booking 2.
+        var buchung = try #require(try repository.allBookings().first { $0.id == 1 })
+        buchung.titel = "Strom vom Nutzer"
+        try repository.save(buchung, akteur: .nutzer)
+        #expect(other.execute("UPDATE buchungen SET notizen = 'Anderer Lauf' WHERE id = 2").touched == [2])
+    }
+    let intake = try FileIntake(repository: repository, path: path, transport: transport, key: "test")
+    guard case .failed = await intake.process(file) else {
+        Issue.record("Der abgebrochene Lauf hätte scheitern müssen.")
+        return
+    }
+    // Only booking 3, written by this run alone, goes, even after two writes.
+    let remaining = try repository.allBookings()
+    #expect(remaining.compactMap(\.id).sorted() == [1, 2])
+    #expect(remaining.first { $0.id == 1 }?.titel == "Strom vom Nutzer")
+    #expect(remaining.first { $0.id == 2 }?.notizen == "Anderer Lauf")
+}
+
+@Test func gescheiterteChatRundeLaesstVomNutzerGeaenderteBuchungStehen() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let skript = Skript([werkzeugantwort(einfuegen), werkzeugantwort(einfuegen), abbruch])
+    let transport = dazwischen(skript, after: 2) {
+        var buchung = try #require(try repository.allBookings().first { $0.id == 1 })
+        buchung.titel = "Strom vom Nutzer"
+        try repository.save(buchung, akteur: .nutzer)
+    }
+    let intake = try FileIntake(repository: repository, path: path, transport: transport, key: "test")
+    await #expect(throws: RunAbort.self) {
+        try await Chat(intake: intake).send("Buche den Strom", files: [], to: nil)
+    }
+    #expect(try repository.allBookings().map(\.titel) == ["Strom vom Nutzer"])
+}
+
+@Test func gleichnamigeDateienBekommenJeEineEigeneInboxKopie() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let contents = ["a", "b", "c"].map { Data("%PDF-1.4 Rechnung \($0)".utf8) }
+    var sources: [URL] = []
+    for (index, content) in contents.enumerated() {
+        let subfolder = folder.appending(path: "Ordner\(index)")
+        try FileManager.default.createDirectory(at: subfolder, withIntermediateDirectories: true)
+        let source = subfolder.appending(path: "rechnung.pdf")
+        try content.write(to: source)
+        sources.append(source)
+    }
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "test")
+    for source in sources + [sources[1]] {
+        // Each run gets as far as the model, so no inbox write failed.
+        guard case let .failed(_, text) = await intake.process(source), text.contains("Schlüssel") else {
+            Issue.record("Der Lauf hätte erst am Schlüssel scheitern müssen.")
+            return
+        }
+    }
+    // Every content has its own copy; the repeated drop reused its hashed one.
+    let copies = try intake.inbox().map { try Data(contentsOf: $0) }
+    #expect(copies.count == 3)
+    #expect(Set(copies) == Set(contents))
+}
+
 @Test func abgelegteOrdnerWerdenBisZurLetztenZugelassenenDateiAufgeloest() throws {
     let folder = FileManager.default.temporaryDirectory.appending(path: UUID().uuidString)
     defer { try? FileManager.default.removeItem(at: folder) }

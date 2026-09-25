@@ -16,7 +16,8 @@ public struct Chat: Sendable {
     /// conversation. A new conversation is created with the first message and
     /// goes again if that first round fails; a failed round leaves an existing
     /// conversation as it was. Rows the broken round created go as well, as
-    /// in the import; changes it made to existing bookings stay.
+    /// in the import, unless someone else changed them meanwhile; changes it
+    /// made to existing bookings stay.
     public func send(_ text: String, files urls: [URL], to gespraech: Gespraech?) async throws -> Gespraech {
         let repository = intake.repository
         guard let key = intake.key ?? Keychain.read(), key.isEmpty == false else {
@@ -31,9 +32,7 @@ public struct Chat: Sendable {
             return try repository.saveConversation(updated)
         } catch {
             if let abort = error as? RunAbort {
-                for id in abort.created {
-                    _ = try? repository.delete(id: id)
-                }
+                try? repository.deleteUnchanged(abort.created)
             }
             if gespraech == nil, let id = current.id {
                 try? repository.deleteConversation(id: id)
