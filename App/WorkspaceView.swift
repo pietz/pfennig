@@ -45,7 +45,8 @@ struct WorkspaceView: View {
             HStack(spacing: 0) {
                 MainWindow(model: model)
                 Divider()
-                inspectorPane.frame(width: WorkspaceView.inspectorWidth)
+                // The divider counts toward the inspector's width.
+                inspectorPane.frame(width: WorkspaceView.inspectorWidth - 1)
             }
         case .chat:
             ChatView(model: model)
@@ -98,15 +99,16 @@ struct WorkspaceView: View {
         .frame(minWidth: minimumWindowWidth, minHeight: 416)
     }
 
-    /// The fixed sidebar width, the fixed inspector width, the smallest table
-    /// width the columns need and the smallest width the two start columns need.
+    /// The ledger with its inspector: the widest page and the opening size.
+    static let defaultWidth: CGFloat = 1000
+    /// The fixed sidebar width, the fixed inspector width and the smallest
+    /// width the two start columns need.
     static let sidebarWidth: CGFloat = 160
     static let inspectorWidth: CGFloat = 280
-    static let tableMinimumWidth: CGFloat = 560
     static let startMinimumWidth: CGFloat = 640
-
-    /// The ledger with its inspector, the widest page and the opening size.
-    static let defaultWidth = sidebarWidth + tableMinimumWidth + inspectorWidth + 1
+    /// The table takes what the ledger leaves, less the split view's own
+    /// separator line after the sidebar.
+    static let tableMinimumWidth = defaultWidth - sidebarWidth - 1 - inspectorWidth
 
     private var minimumWindowWidth: CGFloat {
         switch workspace {
