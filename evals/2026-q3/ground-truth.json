@@ -1745,6 +1745,94 @@
       ]
     },
     {
+      "id": "44",
+      "files": [
+        "extra/44-rebenkontor-kundengeschenk.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-11",
+          "belegnummer": "RK-260911-044",
+          "gegenpartei_name": "Rebenkontor Weinhandel GmbH",
+          "gegenpartei_land": "DE",
+          "kategorie": "geschenke",
+          "steuerbehandlung": "inland",
+          "netto_cents": 4200,
+          "steuer_cents": 798,
+          "brutto_cents": 4998,
+          "zahlungen": [
+            {
+              "datum": "2026-09-11",
+              "betrag": 4998
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "19",
+              "netto_cents": 4200,
+              "steuer_cents": 798
+            }
+          ],
+          "belege": [
+            "extra/44-rebenkontor-kundengeschenk.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true
+    },
+    {
+      "id": "45",
+      "files": [
+        "extra/45-hafenkorb-praesentkorb.pdf"
+      ],
+      "expected": [
+        {
+          "faelligkeit": null,
+          "privatanteil_prozent": 0,
+          "nutzungsdauer_jahre": null,
+          "waehrung": null,
+          "originalbetrag": null,
+          "richtung": "ausgabe",
+          "art": "rechnung",
+          "datum": "2026-09-18",
+          "belegnummer": "HK-2026-0918-45",
+          "gegenpartei_name": "Hafenkorb Feinkost e.K.",
+          "gegenpartei_land": "DE",
+          "kategorie": "geschenke",
+          "steuerbehandlung": "inland",
+          "netto_cents": 8400,
+          "steuer_cents": 588,
+          "brutto_cents": 8988,
+          "zahlungen": [
+            {
+              "datum": "2026-09-18",
+              "betrag": 8988
+            }
+          ],
+          "positionen_nach_satz": [
+            {
+              "steuersatz": "7",
+              "netto_cents": 8400,
+              "steuer_cents": 588
+            }
+          ],
+          "belege": [
+            "extra/45-hafenkorb-praesentkorb.pdf"
+          ]
+        }
+      ],
+      "converted_eur_tolerance_cents": 0,
+      "strict_nulls": true
+    },
+    {
       "id": "s1-scan-for-booked-hotel",
       "archive": [
         {

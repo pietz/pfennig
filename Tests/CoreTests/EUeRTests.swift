@@ -311,3 +311,42 @@ private func anlage(_ titel: String) -> Buchung {
     #expect(euer.zeilen.map(\.betrag.value) == [1000, 2333])
     #expect(euer.ausgaben.value == 2333)
 }
+
+@Test func geschenkeBis50EuroSindAbziehbar() {
+    func geschenk(_ netto: Int64) -> Buchung {
+        buchung(
+            id: 14,
+            richtung: .ausgabe,
+            datum: datum(2026, 7, 1),
+            kategorie: "geschenke",
+            positionen: [position(netto, 19)],
+            zahlungen: [zahlung(2026, 7, 1, netto * 119 / 100)]
+        )
+    }
+    let bis50 = EUeR.calculate([geschenk(5000)], jahr: 2026, profile: regel)
+    #expect(bis50.zeilen.map(\.zeile) == [58, 63])
+    #expect(bis50.zeilen[1].bezeichnung == "Geschenke, abziehbar")
+    #expect(bis50.zeilen[1].betrag.value == 5000)
+    #expect(bis50.ausgaben.value == 5000 + 950)
+
+    // Über der Freigrenze ist das ganze Geschenk samt Steuer nicht abziehbar.
+    let ueber50 = EUeR.calculate([geschenk(6000)], jahr: 2026, profile: regel)
+    #expect(ueber50.zeilen.map(\.zeile) == [63])
+    #expect(ueber50.zeilen[0].bezeichnung == "Geschenke, nicht abziehbar")
+    #expect(ueber50.zeilen[0].betrag.value == 7140)
+    #expect(ueber50.ausgaben == .null)
+}
+
+@Test func kleinunternehmerPruefenGeschenkeBrutto() {
+    let wein = buchung(
+        id: 15,
+        richtung: .ausgabe,
+        datum: datum(2026, 7, 1),
+        kategorie: "geschenke",
+        positionen: [position(4500, 19)],
+        zahlungen: [zahlung(2026, 7, 1, 5355)]
+    )
+    // 45 Euro netto, aber 53,55 Euro Anschaffungskosten ohne Vorsteuerabzug.
+    #expect(EUeR.calculate([wein], jahr: 2026, profile: regel).ausgaben.value == 4500 + 855)
+    #expect(EUeR.calculate([wein], jahr: 2026, profile: klein).ausgaben == .null)
+}

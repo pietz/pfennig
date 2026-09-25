@@ -1,6 +1,6 @@
 # Studio Linden: Belege für die Q3-2026-Evaluation
 
-43 vollständig erfundene Eingabedateien für eine Hamburger Designerin und Webentwicklerin: 40 PDFs, zwei Bilder und eine HTML-Rechnung. 37 können eine Buchung erzeugen; sechs prüfen, ob der Importer ohne Buchung endet. Zwei Bilder zeigen bereits vorhandene Transaktionen in einem anderen Format. Der Zeitraum reicht von Juli bis zum 23. September 2026. Die Dateien dienen der Evaluation, nicht einer echten Steuererklärung. Die Sollwerte stehen in `ground-truth.json`; der Runner und die Befehle stehen in `../README.md`.
+45 vollständig erfundene Eingabedateien für eine Hamburger Designerin und Webentwicklerin: 42 PDFs, zwei Bilder und eine HTML-Rechnung. 39 können eine Buchung erzeugen; sechs prüfen, ob der Importer ohne Buchung endet. Zwei Bilder zeigen bereits vorhandene Transaktionen in einem anderen Format. Der Zeitraum reicht von Juli bis zum 23. September 2026. Die Dateien dienen der Evaluation, nicht einer echten Steuererklärung. Die Sollwerte stehen in `ground-truth.json`; der Runner und die Befehle stehen in `../README.md`.
 
 ## Manueller Import in Pfennig Dev
 
@@ -47,7 +47,7 @@ Die Beispieldaten sind zeitlich fest: Wenn man sie später öffnet, ändern sich
 | 27 | Bank | Gefilterte Zahlungseingänge Juli/August |
 | 28 | Bank | Gefilterte Zahlungseingänge September |
 
-Die Reise gehört zum Website-Kunden **Isarblick Innenräume**. Ausgangsrechnungen haben ein gemeinsames Studio-Design; Lieferanten, Hotel und schmale Bons verwenden unterschiedliche Gestaltungen. Die PDFs tragen keinen Hinweis auf ihren Testzweck; ihre Einordnung als Beispieldaten steht nur hier im Ordner. Alle Domains enden auf `.example`, Steuerkennungen sind ungültige Platzhalter. `extra/` enthält die Fälle 29 bis 36: EU-Wareneinkauf, US-Dienstleistung, Fachbuch mit 7 %, Coworking, Lizenzeinnahme, Teilzahlung, offene Beratung und Grafiktablett. `controls/` enthält die Fälle 37 bis 40: leere Seite, Einladung, Datei ohne Inhalt und ungültige PDF-Datei. `modalities/` enthält die Fälle 41 bis 43: Kassenbon als PNG, Hotelrechnung als JPEG und Software-Rechnung als HTML.
+Die Reise gehört zum Website-Kunden **Isarblick Innenräume**. Ausgangsrechnungen haben ein gemeinsames Studio-Design; Lieferanten, Hotel und schmale Bons verwenden unterschiedliche Gestaltungen. Die PDFs tragen keinen Hinweis auf ihren Testzweck; ihre Einordnung als Beispieldaten steht nur hier im Ordner. Alle Domains enden auf `.example`, Steuerkennungen sind ungültige Platzhalter. `extra/` enthält die Fälle 29 bis 36 sowie 44 und 45: EU-Wareneinkauf, US-Dienstleistung, Fachbuch mit 7 %, Coworking, Lizenzeinnahme, Teilzahlung, offene Beratung, Grafiktablett und zwei Kundengeschenke unter und über 50 Euro. `controls/` enthält die Fälle 37 bis 40: leere Seite, Einladung, Datei ohne Inhalt und ungültige PDF-Datei. `modalities/` enthält die Fälle 41 bis 43: Kassenbon als PNG, Hotelrechnung als JPEG und Software-Rechnung als HTML.
 
 ## Erneut erzeugen und prüfen
 

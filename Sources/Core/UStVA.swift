@@ -123,10 +123,13 @@ public struct UStVA: Hashable, Sendable {
         profile: Profil,
         in werte: inout [Int: Cent]
     ) {
+        // Kz 66, 67 and 61 take no Vorsteuer for a gift over the limit; the
+        // recipient taxes of 46/47, 84/85 and 89/93 are owed all the same.
+        let vorsteuer = profile.kleinunternehmer == false && EUeR.vorsteuerAusgeschlossen(buchung) == false
         switch buchung.steuerbehandlung {
         case .inland:
             // Vorsteuer at max(Belegdatum, Zahlungsdatum), per payment.
-            guard profile.kleinunternehmer == false else { return }
+            guard vorsteuer else { return }
             let zahlungen = geordnet(buchung)
             let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
             for (stelle, zahlung) in zahlungen.enumerated() {
@@ -145,7 +148,7 @@ public struct UStVA: Hashable, Sendable {
             let rows = Kennzahl.reverseCharge(land: buchung.gegenparteiLand)
             buchen(rows.bemessung, buchung.netto, in: &werte)
             buchen(rows.steuer, steuer, in: &werte)
-            if profile.kleinunternehmer == false {
+            if vorsteuer {
                 buchen(
                     67,
                     EUeR.ohnePrivatanteil(steuer, prozent: buchung.privatanteilProzent),
@@ -168,7 +171,7 @@ public struct UStVA: Hashable, Sendable {
             }
             // This treatment identifies goods: §15 Abs. 1 Satz 2 excludes
             // input VAT below ten percent business use, unlike services.
-            if profile.kleinunternehmer == false, buchung.privatanteilProzent <= 90 {
+            if vorsteuer, buchung.privatanteilProzent <= 90 {
                 buchen(
                     61,
                     EUeR.ohnePrivatanteil(erwerbsteuer, prozent: buchung.privatanteilProzent),

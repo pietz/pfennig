@@ -156,6 +156,12 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
             symbol: "fork.knife"
         ),
         Kategorie(
+            schluessel: "geschenke", name: "Geschenke", richtung: .ausgabe,
+            euerZeile: 63,
+            beschreibung: "Geschenke an Geschäftspartner und Kunden, mit dem Beschenkten in den Notizen.",
+            symbol: "gift"
+        ),
+        Kategorie(
             schluessel: "fortbildung", name: "Fortbildung", richtung: .ausgabe,
             euerZeile: 46,
             beschreibung: "Kurse, Konferenzen, Fachbücher und Schulungen.",

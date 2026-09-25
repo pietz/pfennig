@@ -449,3 +449,24 @@ import Testing
     kaum.privatanteilProzent = 95
     #expect(UStVA.calculate([kaum], zeitraum: q3, profile: regel).betrag(66) == 950)
 }
+
+@Test func geschenkeUeber50EuroHabenKeineVorsteuer() {
+    func geschenk(_ netto: Int64, behandlung: Steuerbehandlung = .inland, land: String = "DE") -> Buchung {
+        buchung(
+            id: 1,
+            richtung: .ausgabe,
+            datum: datum(2026, 8, 3),
+            kategorie: "geschenke",
+            land: land,
+            positionen: [behandlung == .inland ? position(netto, 19) : positionOhneSteuer(netto, 19)],
+            behandlung: behandlung,
+            zahlungen: [zahlung(2026, 8, 3, behandlung == .inland ? netto * 119 / 100 : netto)]
+        )
+    }
+    #expect(UStVA.calculate([geschenk(5000)], zeitraum: q3, profile: regel).betrag(66) == 950)
+    #expect(UStVA.calculate([geschenk(5001)], zeitraum: q3, profile: regel).nummern.isEmpty)
+    // Die Steuer eines §13b-Bezugs bleibt geschuldet, nur die Vorsteuer entfällt.
+    let bezug = UStVA.calculate([geschenk(8000, behandlung: .reverseCharge, land: "IE")], zeitraum: q3, profile: regel)
+    #expect(bezug.nummern == [46, 47])
+    #expect(bezug.zahllast.value == 1520)
+}

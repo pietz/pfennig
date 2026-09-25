@@ -52,8 +52,9 @@ public struct EUeR: Hashable, Sendable {
     /// The line every Anlagegut goes on instead of its category line.
     static let zeileAfA = 34
 
-    /// The one line Pfennig fills that has a nicht abziehbare and an
-    /// abziehbare column, §4 Abs. 5 Satz 1 Nr. 2 EStG.
+    /// The two lines Pfennig fills that have a nicht abziehbare and an
+    /// abziehbare column, §4 Abs. 5 Satz 1 Nr. 1 and 2 EStG.
+    static let zeileGeschenke = 63
     static let zeileBewirtung = 64
 
     /// The line titles of the Anlage EÜR 2026 for the lines Pfennig fills,
@@ -80,6 +81,7 @@ public struct EUeR: Hashable, Sendable {
         58: "Gezahlte Vorsteuer",
         59: "An das Finanzamt gezahlte Umsatzsteuer",
         61: "Übrige unbeschränkt abziehbare Betriebsausgaben",
+        63: "Geschenke",
         64: "Bewirtungsaufwendungen",
         71: "Sonstige tatsächliche Fahrtkosten"
     ]
@@ -113,6 +115,7 @@ public struct EUeR: Hashable, Sendable {
         var werte: [Int: Cent] = [:]
         var vereinnahmt = Cent.null
         var vorsteuer = Cent.null
+        var geschenkeNichtAbziehbar = Cent.null
 
         for buchung in buchungen where buchung.art != .ignoriert {
             let kategorie = buchung.kategorie.flatMap { key in
@@ -134,7 +137,7 @@ public struct EUeR: Hashable, Sendable {
                 let prozent = buchung.privatanteilProzent
                 // The same share the UStVA takes into Kz 66, and only where
                 // the supplier charged German tax the business actually paid.
-                let abziehbar = brutto || buchung.steuerbehandlung != .inland
+                let abziehbar = brutto || buchung.steuerbehandlung != .inland || vorsteuerAusgeschlossen(buchung)
                     ? Cent.null
                     : ohnePrivatanteil(summe.steuer, prozent: prozent)
                 // The business share of net and tax, minus what line 58 takes:
@@ -151,12 +154,25 @@ public struct EUeR: Hashable, Sendable {
             }
             if betrag != .null {
                 let zeilenummer = kategorie.map { EUeR.zeile(buchung, $0, profile: profile) } ?? zeileAfA
-                werte[zeilenummer, default: .null] = werte[zeilenummer, default: .null] + betrag
+                if zeilenummer == zeileGeschenke, geschenkAbziehbar(buchung, brutto: brutto) == false {
+                    geschenkeNichtAbziehbar = geschenkeNichtAbziehbar + betrag
+                } else {
+                    werte[zeilenummer, default: .null] = werte[zeilenummer, default: .null] + betrag
+                }
             }
         }
 
         var rows = werte.keys.sorted().flatMap { nummer in
             zeilen(nummer, betrag: werte[nummer] ?? .null)
+        }
+        if geschenkeNichtAbziehbar != .null {
+            rows.append(Zeile(
+                zeile: zeileGeschenke,
+                bezeichnung: "\(bezeichnung(zeileGeschenke)), nicht abziehbar",
+                richtung: .ausgabe,
+                betrag: geschenkeNichtAbziehbar,
+                nichtAbziehbar: true
+            ))
         }
         if vereinnahmt != .null {
             rows.append(Zeile(
@@ -174,7 +190,7 @@ public struct EUeR: Hashable, Sendable {
                 betrag: vorsteuer
             ))
         }
-        // The form prints the nicht abziehbare column of line 64 first, and
+        // The form prints the nicht abziehbare column of lines 63 and 64 first, and
         // Swift does not promise a stable sort, so the order is part of the key.
         return EUeR(
             jahr: jahr,
@@ -203,6 +219,14 @@ public struct EUeR: Hashable, Sendable {
     /// remainder, so both columns together stay the full amount.
     private static func zeilen(_ nummer: Int, betrag: Cent) -> [Zeile] {
         let richtung: Richtung = nummer < 24 ? .einnahme : .ausgabe
+        if nummer == zeileGeschenke {
+            return [Zeile(
+                zeile: nummer,
+                bezeichnung: "\(bezeichnung(nummer)), abziehbar",
+                richtung: richtung,
+                betrag: betrag
+            )]
+        }
         guard nummer == zeileBewirtung else {
             return [Zeile(zeile: nummer, bezeichnung: bezeichnung(nummer), richtung: richtung, betrag: betrag)]
         }
@@ -239,6 +263,23 @@ public struct EUeR: Hashable, Sendable {
             }
         }
         return (netto, steuer)
+    }
+
+    /// A gift to someone who is not an employee is deductible only while it
+    /// costs no more than 50 Euro, §4 Abs. 5 Satz 1 Nr. 1 EStG, net when the
+    /// business deducts Vorsteuer and gross otherwise. The limit holds per
+    /// recipient and year; Pfennig takes one booking as one recipient, and
+    /// several gifts on one invoice or to one person need a manual check.
+    static func geschenkAbziehbar(_ buchung: Buchung, brutto: Bool) -> Bool {
+        let kosten = buchung.positionen.reduce(Cent.null) { $0 + $1.netto + (brutto ? $1.steuer : .null) }
+        return kosten <= Cent(5000)
+    }
+
+    /// The Vorsteuer of a gift that is not deductible is not deductible
+    /// either, §15 Abs. 1a UStG.
+    static func vorsteuerAusgeschlossen(_ buchung: Buchung) -> Bool {
+        buchung.richtung == .ausgabe && buchung.kategorie == "geschenke"
+            && geschenkAbziehbar(buchung, brutto: false) == false
     }
 
     /// The business part of an amount, rounded to the cent.
