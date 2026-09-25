@@ -39,7 +39,10 @@ Summarize a saved report, or compare two reports case by case (pass rates, faili
 ```sh
 swift run PfennigEval --summary evals/results/RUN/report.json
 swift run PfennigEval --compare evals/results/OLD/report.json evals/results/NEW/report.json
+swift run PfennigEval --tax evals/results/RUN/report.json 2025
 ```
+
+`--tax REPORT YEAR` computes, with the app's own code, the UStVA of each quarter and the Anlage EÜR of the year from the bookings a run left, once per repetition, as JSON; a corpus of a whole year then compares with the filed figures.
 
 Add the private `--root` and `--truth` options when rescoring a real-document run. The command checks source file hashes and writes a separate scored report plus a truth snapshot beside the original, or into `--output`.
 

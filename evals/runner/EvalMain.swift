@@ -17,6 +17,7 @@ private struct Options {
     var rescoreFile: URL?
     var summaryFile: URL?
     var compareFiles: (old: URL, new: URL)?
+    var taxReport: (file: URL, year: Int)?
     var validateOnly = false
     var reasoningSummaries = false
 
@@ -30,6 +31,12 @@ private struct Options {
                 allCases = true
             } else if flag == "--reasoning-summaries" {
                 reasoningSummaries = true
+            } else if flag == "--tax" {
+                guard index + 2 < arguments.count, let year = Int(arguments[index + 2]) else {
+                    throw EvalError.invalid("--tax needs a report and a year")
+                }
+                taxReport = (URL(fileURLWithPath: arguments[index + 1]), year)
+                index += 2
             } else if flag == "--compare" {
                 guard index + 2 < arguments.count else { throw EvalError.invalid("--compare needs two reports") }
                 compareFiles = (URL(fileURLWithPath: arguments[index + 1]), URL(fileURLWithPath: arguments[index + 2]))
@@ -185,6 +192,12 @@ enum PfennigEval {
             let report = try Digest(file)
             print("\(report.passed)/\(report.total) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal)")
             Stability.summary(report.tallies).forEach { print($0) }
+            return
+        }
+        if let (file, year) = options.taxReport {
+            let encoder = JSONEncoder()
+            encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+            try print(String(decoding: encoder.encode(TaxTotals.compute(report: file, year: year)), as: UTF8.self))
             return
         }
         if let (oldFile, newFile) = options.compareFiles {
