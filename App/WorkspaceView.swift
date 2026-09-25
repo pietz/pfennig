@@ -95,17 +95,18 @@ struct WorkspaceView: View {
     /// The fixed sidebar width, the fixed inspector width, the smallest table
     /// width the columns need and the smallest width the two start columns need.
     static let sidebarWidth: CGFloat = 160
-    static let inspectorWidth: CGFloat = 320
-    static let tableMinimumWidth: CGFloat = 640
+    static let inspectorWidth: CGFloat = 280
+    static let tableMinimumWidth: CGFloat = 560
     static let startMinimumWidth: CGFloat = 640
+
+    static let defaultWidth = sidebarWidth + tableMinimumWidth + inspectorWidth + 1
 
     private var minimumWindowWidth: CGFloat {
         switch workspace {
         case .start, .chat:
             Self.sidebarWidth + Self.startMinimumWidth
         case .buchungen:
-            Self.sidebarWidth + Self.tableMinimumWidth
-                + (model.inspectorVisible ? Self.inspectorWidth + 1 : 0)
+            model.inspectorVisible ? Self.defaultWidth : Self.sidebarWidth + Self.tableMinimumWidth
         }
     }
 

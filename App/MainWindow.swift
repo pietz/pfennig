@@ -54,6 +54,7 @@ struct MainWindow: View {
                         .foregroundStyle(.secondary)
                         .frame(width: 22, height: 22)
                         .help(buchung.categoryName.isEmpty ? "Keine Kategorie" : buchung.categoryName)
+                        .overlay(alignment: .bottomTrailing) { reviewBadge(buchung) }
                     VStack(alignment: .leading, spacing: 1) {
                         HStack(alignment: .firstTextBaseline, spacing: 6) {
                             Text(buchung.unternehmen)
@@ -117,13 +118,14 @@ struct MainWindow: View {
             TableColumn("Status") { buchung in
                 ReviewStatusLabel(
                     status: buchung.reviewStatus(profile: model.currentProfile),
-                    highlightsMissingInput: buchung.id.map { model.agentCreatedBookingIDs.contains($0) } == true
-                        && ValidationRules.issues(buchung, profile: model.currentProfile).isEmpty == false
+                    highlightsMissingInput: highlightsMissingInput(buchung)
                 )
                 .ledgerCell()
             }
             .width(84)
             .customizationID("status")
+            // The badge on the category symbol carries it by default.
+            .defaultVisibility(.hidden)
 
             TableColumn("Kategorie", value: \.categoryName)
                 .width(min: 100, ideal: 150)
@@ -152,6 +154,25 @@ struct MainWindow: View {
                 }
                 .disabled(model.deleteLocked)
             }
+        }
+    }
+
+    private func highlightsMissingInput(_ buchung: Buchung) -> Bool {
+        buchung.id.map { model.agentCreatedBookingIDs.contains($0) } == true
+            && ValidationRules.issues(buchung, profile: model.currentProfile).isEmpty == false
+    }
+
+    /// Only a booking that still needs attention carries a badge, so the
+    /// reviewed majority stays quiet.
+    @ViewBuilder private func reviewBadge(_ buchung: Buchung) -> some View {
+        let status = buchung.reviewStatus(profile: model.currentProfile)
+        if status != .geprueft {
+            Image(systemName: status.symbol)
+                .font(.system(size: 9, weight: .bold))
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, highlightsMissingInput(buchung) ? Color.red : .orange)
+                .offset(x: 3, y: 2)
+                .help(status.name)
         }
     }
 

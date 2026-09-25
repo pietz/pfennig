@@ -19,7 +19,7 @@ final class AppModel {
     var reviewFilter: ReviewFilter = .alle
     var search = ""
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
-    var inspectorVisible = false
+    var inspectorVisible = true
     var exportVisible = false
     /// Set by the start page so the export sheet opens on that period.
     var exportPeriod: Zeitraum?

@@ -92,6 +92,9 @@ struct ChatView: View {
                     }
                     Color.clear.frame(height: 1).id("end")
                 }
+                // Long lines read badly, so the column stops growing and centers.
+                .frame(maxWidth: 600)
+                .frame(maxWidth: .infinity)
                 .padding(16)
             }
             .defaultScrollAnchor(.bottom)
@@ -226,7 +229,6 @@ private struct MessageRow: View {
             Text(markdown)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 80)
         }
     }
 
