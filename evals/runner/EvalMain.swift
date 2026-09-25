@@ -18,6 +18,7 @@ private struct Options {
     var summaryFile: URL?
     var compareFiles: (old: URL, new: URL)?
     var validateOnly = false
+    var reasoningSummaries = false
 
     init(_ arguments: [String]) throws {
         var index = 0
@@ -27,6 +28,8 @@ private struct Options {
                 validateOnly = true
             } else if flag == "--all" {
                 allCases = true
+            } else if flag == "--reasoning-summaries" {
+                reasoningSummaries = true
             } else if flag == "--compare" {
                 guard index + 2 < arguments.count else { throw EvalError.invalid("--compare needs two reports") }
                 compareFiles = (URL(fileURLWithPath: arguments[index + 1]), URL(fileURLWithPath: arguments[index + 2]))
@@ -102,6 +105,7 @@ private struct Report: Codable {
     let effort: String
     let rulesFile: String?
     let rulesSHA256: String?
+    let reasoningSummaries: Bool?
     var truthSHA256: String
     var passed: Int
     let total: Int
@@ -238,6 +242,7 @@ enum PfennigEval {
                 effort: effort.rawValue,
                 rulesFile: options.rulesFile?.path,
                 rulesSHA256: rules.map { FileIntake.hash(Data($0.utf8)) },
+                reasoningSummaries: options.reasoningSummaries,
                 truthSHA256: FileIntake.hash(truthData),
                 passed: 0,
                 total: results.count,
@@ -257,7 +262,9 @@ enum PfennigEval {
         let profile = truth.profile
         let today = truth.today
         let rates = try RateCache(file: truthURL.deletingLastPathComponent().appending(path: "fx-rates.json"))
-        let transport = rates.transport(over: Responses.network)
+        let network = options.reasoningSummaries ? ReasoningSummaries.transport(over: Responses.network) : Responses
+            .network
+        let transport = rates.transport(over: network)
         try await withThrowingTaskGroup(of: CaseResult.self) { group in
             var pending = runs.makeIterator()
             func startNext() {
