@@ -101,14 +101,14 @@ struct WorkspaceView: View {
 
     /// The ledger with its inspector: the widest page and the opening size.
     static let defaultWidth: CGFloat = 1000
-    /// The fixed sidebar width, the fixed inspector width and the smallest
-    /// width the two start columns need.
+    /// The fixed sidebar width, the smallest table width the columns need and
+    /// the smallest width the two start columns need.
     static let sidebarWidth: CGFloat = 160
-    static let inspectorWidth: CGFloat = 280
+    static let tableMinimumWidth: CGFloat = 560
     static let startMinimumWidth: CGFloat = 640
-    /// The table takes what the ledger leaves, less the split view's own
+    /// The inspector takes what the ledger leaves, less the split view's own
     /// separator line after the sidebar.
-    static let tableMinimumWidth = defaultWidth - sidebarWidth - 1 - inspectorWidth
+    static let inspectorWidth = defaultWidth - sidebarWidth - 1 - tableMinimumWidth
 
     private var minimumWindowWidth: CGFloat {
         switch workspace {

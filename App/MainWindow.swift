@@ -75,7 +75,7 @@ struct MainWindow: View {
                 }
                 .ledgerCell()
             }
-            .width(min: 160, ideal: 270)
+            .width(min: 160, ideal: 200)
             .customizationID("unternehmen")
             .disabledCustomizationBehavior(.visibility)
 
