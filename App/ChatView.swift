@@ -79,7 +79,7 @@ struct ChatView: View {
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 24) {
                     ForEach(model.chatMessages) { message in
                         MessageRow(fromUser: message.fromUser, text: message.text)
                     }
