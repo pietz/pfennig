@@ -1,6 +1,6 @@
 # Aktuell und später
 
-Stand 2026-09-23, nach Release 0.9.0. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang. Entscheidungen stehen in `.memory/MEMORY.md`, der Umsetzungsstand in `docs/status.md`. Abgeschlossen oder entschieden: #1, #2, #3, #5, #6, #8, #10, #12, #18, #20.
+Stand 2026-10-01, nach Release 0.9.0. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang. Entscheidungen stehen in `.memory/MEMORY.md`, der Umsetzungsstand in `docs/status.md`. Abgeschlossen oder entschieden: #1, #2, #3, #5, #6, #8, #10, #12, #18, #20.
 
 ## Nächste Schritte
 
@@ -11,6 +11,15 @@ Stand 2026-09-23, nach Release 0.9.0. GitHub-Issues halten offene Arbeit fest, n
 Außerdem offen: Landingpage-Medien, fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
 ## Geparkt
+
+### Apple Intelligence als optionale KI
+
+Wieder aufnehmen, sobald der Eigentümer macOS 27 installiert hat (2026-10-01). Anlass: Stay Steady nutzt lokale KI; Apples neueres Modell könnte für Pfennig ausreichend sein und API-Einrichtung sowie laufende API-Kosten vermeiden. Keine gemessene Qualität gegenüber dem derzeitigen GPT-5.6 Luna und kein Auftrag zur Integration.
+
+- Das über Foundation Models tatsächlich verfügbare macOS-27-Modell mit Luna vergleichen. Bildverarbeitung, Kontextbudget und Werkzeugaufrufe auf dem Testgerät prüfen; Grenzen von macOS 26 nicht ungeprüft übertragen. [Apple: neue Framework-Funktionen](https://developer.apple.com/videos/play/wwdc2026/241/).
+- Vorhandene synthetische Belege aus `sample-data/2026-q3/` verwenden: zuerst denselben extrahierten Text für beide Modelle, dann vollständige Dokumentverarbeitung. Korrekte Beträge, Steuerbehandlung, Zahlungsstatus, SQL-Werkzeugabläufe, Wiederholbarkeit, Laufzeit und manuellen Korrekturaufwand vergleichen.
+- Danach Aufwand einer wählbaren lokalen KI im bestehenden Agenten bewerten. Apples Private Cloud Compute separat betrachten: Serververarbeitung, Nutzungslimits und [App-Store-/Entitlement-Voraussetzungen](https://developer.apple.com/private-cloud-compute/).
+- Geschäftsidee prüfen: kostenlose lokale Basis-KI, stärkere KI als Pro-Angebot eventuell im Abonnement. Erst nach belegtem Qualitätsunterschied und Klärung der laufenden Kosten entscheiden; Modellwahl, Preise, Abrechnung und Ablösung des eigenen API-Schlüssels sind offen.
 
 ### Eingang und Prüfung
 
