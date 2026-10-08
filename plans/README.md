@@ -68,7 +68,7 @@ Most of the distribution machinery already exists. The work shifts toward onboar
 4. Complete one quarter with the existing UI, then test export additions and isolated archive recovery. Let observed friction determine any feature work.
 5. Schedule 2027 verification as maintenance. Only then choose the next audience-facing feature or launch milestone.
 
-The key question for the owner: what currently prevents using Pfennig as the normal bookkeeping workflow, and how much of that is trust versus missing capability? No implementation plans or external issue edits have been authorized by this inventory. Select the next bounded topic after that conversation.
+Owner clarification on 2026-10-08: personal needs drive most features, but Pfennig should also be useful to other people and may eventually earn money. Monetization is secondary. Removing API-key setup and addressing reluctance to send bookkeeping documents to OpenAI are immediate product questions. Research into macOS 27 AI capabilities was requested; backend implementation and distribution changes have not been approved.
 
 ## Considered and not recommended
 
@@ -78,3 +78,39 @@ The key question for the owner: what currently prevents using Pfennig as the nor
 - Claiming ELSTER upload is entirely unverified: the September 14 upload is recorded as successful. Only subsequent additions remain explicitly outstanding.
 - Claiming green offline tests establish agent accuracy, legal compliance or external acceptance: they establish none of those by themselves.
 - Calling the pre-1.0 single-schema policy a defect: it is intentional. Wider distribution would need an explicit future data-preservation decision, not an unsolicited migration framework now.
+
+## macOS 27 AI research, 2026-10-08
+
+Research performed with the requested GPT-6.1 Sol subagent at medium effort, plus a direct review of Pfennig's integration and official OpenAI documentation. This is a feasibility assessment, not a benchmark. The inspected development machine reports macOS 15.8.1 and Xcode 26.3, so no macOS 27 execution was possible here.
+
+### Existing AI contract
+
+`Sources/Agent/AgentRun.swift` sends original PDFs and images, or text from XML/CSV/HTML/etc., to OpenAI Responses. One agent serves both import and chat, classifies transactions, searches/updates bookings through `SQLTool`, and uses `CurrencyConverter` for reference rates. Swift retains authorization, exact arithmetic, validation, review state and tax exports. `AppModel` permits ten concurrent imports; the loop caps tool calls at 60. No document-specific extraction engine exists.
+
+`Conversation.swift` persists OpenAI Responses items, including provider-specific reasoning items, with document references replacing bytes. History and attachments are replayed on subsequent requests. `Responses.swift` expects one non-streaming JSON response. Both intake and chat require an OpenAI key. Therefore replacing the URL or model name would not implement another backend correctly.
+
+### Verified alternatives
+
+| Route | What is supported | Main constraint for Pfennig |
+| --- | --- | --- |
+| Apple on-device Foundation Models | macOS 27 adds image understanding, Vision OCR/barcode tools and improved agent capabilities. Custom tools and guided Swift output are available. | Receipt accuracy, generated SQL, context budget and batch throughput remain unmeasured. Requires supported hardware, OS and model availability. |
+| Apple Private Cloud Compute | `PrivateCloudComputeLanguageModel` provides reasoning and a 32K context without app-managed user keys. | Managed entitlement, Small Business Program, download eligibility and production App Store distribution. Daily user quotas apply; iCloud+ offers higher limits. It is cloud processing. |
+| Other providers through Foundation Models | `LanguageModel` protocol permits server/local providers; Dynamic Profiles can change model, tools and instructions within a session. | A common Swift interface does not supply provider authentication, subscriptions or equal capabilities. |
+| Direct Sign in with ChatGPT | Eligible open-source/local apps can request permission to use a user's ChatGPT plan for Responses inference. | Preview restrictions, account-specific models, OAuth lifecycle and streaming changes. Documents still go to OpenAI. Paid/hosted apps are directed to an interest process. |
+
+Apple sources: [macOS 27 additions](https://developer.apple.com/macos/whats-new/), [framework update](https://developer.apple.com/videos/play/wwdc2026/241/), [PCC guide](https://developer.apple.com/documentation/foundationmodels/adding-server-side-intelligence-with-private-cloud-compute), [PCC eligibility](https://developer.apple.com/private-cloud-compute/). OpenAI sources: [ChatGPT plan usage](https://developers.openai.com/siwc/token-sharing-open-source), [preview constraints](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+
+### Implementation implications
+
+- **Documents:** Apple's documented attachment path is images, not a verified raw-PDF equivalent. Render PDF pages through PDFKit for the experiment; images and text remain direct inputs. Generic rendering preserves agent-owned interpretation. [Multimodal inputs](https://developer.apple.com/documentation/foundationmodels/analyzing-images-with-multimodal-prompting).
+- **Tools:** Wrap the existing SQL and currency operations as native tools, preserving write validation, rollback ownership and a bounded run. Framework tool execution differs from the explicit Responses loop. One session cannot handle concurrent requests; ten independent sessions are not a promise of ten-way inference throughput. [Tool calling](https://developer.apple.com/documentation/foundationmodels/expanding-generation-with-tool-calling).
+- **Context:** Query `contextSize` and token usage on the actual machine. Apple's guides still show 4K local context while its WWDC26 example shows 8192 and recommends hardware-aware checks. Do not assume current full-history replay will fit. PCC's documented 32K is also finite. [Context management](https://developer.apple.com/documentation/foundationmodels/managing-the-context-window).
+- **Persistence:** Apple transcripts are Codable and restorable, but do not establish interchangeability with existing OpenAI reasoning/history. First evaluate new synthetic sessions; any production history/storage change needs a separate preservation decision. [Transcript persistence](https://developer.apple.com/documentation/foundationmodels/inspecting-session-transcripts-and-reporting-model-feedback).
+- **ChatGPT login:** The documented route requires streaming, `store: false`, developer instructions, namespaced function tools and explicit history. File/image inputs depend on the account's selected model. Pfennig already has client-side tools and history, but needs OAuth, token renewal, SSE handling and request-shape changes. It is a smaller conceptual departure from the present backend, not just a different credential string. [Inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference), [preview constraints](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations).
+- **Privacy and availability:** Local model inference keeps document processing on the Mac. Currency conversion can still fetch currency/date reference data over the network. PCC removes OpenAI from that processing path but is not on-device or a guarantee of EU-only hosting. A cloud option should be an explicit choice, never an invisible fallback from a local promise. Apple Intelligence supports German on eligible Macs, but runtime availability and language support must be checked. [Requirements](https://support.apple.com/en-us/121115).
+
+### Recommended next experiment
+
+Estimate: a few days for a bounded evaluation after a macOS 27 development machine is available; not a production-migration estimate. Use existing public synthetic cases and scoring in isolated temporary archives. Test one invoice, a scanned receipt, a multipage PDF, mixed tax positions, a foreign-currency document, duplicate lookup and a chat correction, repeated three times. Keep the existing SQL validation and exact calculations. Record final booking correctness, invented facts, tool failures/refusals, context usage, latency and transcript restoration. Start sequentially, then measure batching. Compare against the existing OpenAI path with the same cases when a live comparison is authorized.
+
+Do not first build a provider framework, new document parser, cloud billing service or production archive conversion. If native inference passes, decide whether local mode can become the default. If it fails materially, retain it as an experiment and assess PCC's App Store tradeoff or ChatGPT sign-in separately. Siri/App Intents integration is an optional way to expose app actions, not a replacement for the in-app agent.
