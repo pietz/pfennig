@@ -12,6 +12,7 @@ private struct Options {
     var caseIDs: Set<String> = []
     var repeats = 1
     var jobs = 1
+    var fileJobs = 1
     var rulesFile: URL?
     var output: URL?
     var rescoreFile: URL?
@@ -62,6 +63,7 @@ private struct Options {
                 case "--cases": caseIDs = Set(value.split(separator: ",").map(String.init))
                 case "--repeats": repeats = Int(value) ?? 0
                 case "--jobs": jobs = Int(value) ?? 0
+                case "--file-jobs": fileJobs = Int(value) ?? 0
                 case "--rules": rulesFile = URL(fileURLWithPath: value)
                 case "--output": output = URL(fileURLWithPath: value)
                 case "--rescore": rescoreFile = URL(fileURLWithPath: value)
@@ -73,6 +75,7 @@ private struct Options {
         }
         guard (1 ... 10).contains(repeats) else { throw EvalError.invalid("--repeats must be 1...10") }
         guard (1 ... 50).contains(jobs) else { throw EvalError.invalid("--jobs must be 1...50") }
+        guard (1 ... 50).contains(fileJobs) else { throw EvalError.invalid("--file-jobs must be 1...50") }
     }
 }
 
@@ -113,6 +116,8 @@ private struct Report: Codable {
     let rulesFile: String?
     let rulesSHA256: String?
     let reasoningSummaries: Bool?
+    /// Missing in old reports: every file in a case was started at once.
+    let fileJobs: Int?
     var truthSHA256: String
     var passed: Int
     let total: Int
@@ -156,6 +161,7 @@ private struct Digest: Decodable {
     let agentPassed: Int
     let agentTotal: Int
     let cases: [Entry]
+    let fileJobs: Int?
 
     init(_ url: URL) throws {
         self = try JSONDecoder().decode(Digest.self, from: Data(contentsOf: url))
@@ -163,6 +169,10 @@ private struct Digest: Decodable {
 
     var tallies: [String: Stability.Tally] {
         Stability.tally(cases.map { ($0.id, $0.mismatches) })
+    }
+
+    var fileConcurrencyText: String {
+        fileJobs.map(String.init) ?? "all files at once (legacy)"
     }
 
     /// Mean input and output tokens of the runs that reported usage.
@@ -191,6 +201,7 @@ enum PfennigEval {
         if let file = options.summaryFile {
             let report = try Digest(file)
             print("\(report.passed)/\(report.total) passed; agent-evaluable \(report.agentPassed)/\(report.agentTotal)")
+            print("Concurrent files per case: \(report.fileConcurrencyText)")
             Stability.summary(report.tallies).forEach { print($0) }
             return
         }
@@ -207,6 +218,7 @@ enum PfennigEval {
                 "Passed \(old.passed)/\(old.total) → \(new.passed)/\(new.total); agent-evaluable \(old.agentPassed)/\(old.agentTotal) → \(new.agentPassed)/\(new.agentTotal)"
             )
             print("Tokens per run: \(old.tokenText) → \(new.tokenText)")
+            print("Concurrent files per case: \(old.fileConcurrencyText) → \(new.fileConcurrencyText)")
             Stability.comparison(old.tallies, new.tallies).forEach { print($0) }
             return
         }
@@ -256,6 +268,7 @@ enum PfennigEval {
                 rulesFile: options.rulesFile?.path,
                 rulesSHA256: rules.map { FileIntake.hash(Data($0.utf8)) },
                 reasoningSummaries: options.reasoningSummaries,
+                fileJobs: options.fileJobs,
                 truthSHA256: FileIntake.hash(truthData),
                 passed: 0,
                 total: results.count,
@@ -286,7 +299,8 @@ enum PfennigEval {
                     try await LocalDate.$pinnedToday.withValue(today) {
                         try await run(
                             item, repetition: repetition, root: root, output: output, profile: profile,
-                            model: model, effort: effort, rules: rules, key: key, transport: transport
+                            model: model, effort: effort, rules: rules, key: key, transport: transport,
+                            fileJobs: options.fileJobs
                         )
                     }
                 }
@@ -314,25 +328,13 @@ enum PfennigEval {
         Stability.summary(Stability.tally(report.cases.map { ($0.id, $0.mismatches) })).forEach { print($0) }
     }
 
-    /// `OPENAI_API_KEY` from the environment or from `.env` in the working
-    /// directory. The eval never touches the app's Keychain entry, so a
-    /// rebuilt binary does not ask for Keychain access again.
+    /// Only the intended process receives the injected environment key.
+    /// The runner never reads credential files or the app's Keychain entry.
     private static func apiKey() throws -> String {
         if let key = ProcessInfo.processInfo.environment["OPENAI_API_KEY"], key.isEmpty == false {
             return key
         }
-        let lines = (try? String(contentsOfFile: ".env", encoding: .utf8))?.split(whereSeparator: \.isNewline) ?? []
-        for line in lines {
-            let parts = line.split(separator: "=", maxSplits: 1).map { $0.trimmingCharacters(in: .whitespaces) }
-            guard parts.count == 2, parts[0] == "OPENAI_API_KEY" || parts[0] == "export OPENAI_API_KEY" else {
-                continue
-            }
-            let key = parts[1].trimmingCharacters(in: CharacterSet(charactersIn: "\"'"))
-            if key.isEmpty == false {
-                return key
-            }
-        }
-        throw EvalError.invalid("Set OPENAI_API_KEY in the environment or in .env.")
+        throw EvalError.invalid("Inject OPENAI_API_KEY into the runner's environment.")
     }
 
     private static func rescore(_ source: URL, truth: GroundTruth, truthData: Data, root: URL, output: URL?) throws {
@@ -374,7 +376,7 @@ enum PfennigEval {
     private static func run(
         _ item: EvalCase, repetition: Int, root: URL, output: URL,
         profile: GroundTruth.Profile, model: Model, effort: ReasoningEffort, rules: String?, key: String,
-        transport: @escaping Transport
+        transport: @escaping Transport, fileJobs: Int
     ) async throws -> CaseResult {
         let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-eval-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: folder) }
@@ -446,10 +448,13 @@ enum PfennigEval {
                 chatError = error.localizedDescription
             }
         } else {
-            // One drop: every file at once through the same intake, as in the app.
+            // Default: one file at a time, as in the app. Case concurrency
+            // stays independent; larger file limits isolate import races.
             let inputs = inputs
             imports = await withTaskGroup(of: FileRun.self) { group in
-                for path in item.files {
+                var pending = item.files.makeIterator()
+                func startNext() {
+                    guard let path = pending.next() else { return }
                     group.addTask {
                         switch await intake.process(inputs[path]!) {
                         case .booked: FileRun(file: path, outcome: "booked", error: nil)
@@ -458,9 +463,13 @@ enum PfennigEval {
                         }
                     }
                 }
+                for _ in 0 ..< min(fileJobs, item.files.count) {
+                    startNext()
+                }
                 var runs: [FileRun] = []
                 for await run in group {
                     runs.append(run)
+                    startNext()
                 }
                 return runs.sorted { $0.file < $1.file }
             }

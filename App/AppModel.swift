@@ -71,8 +71,8 @@ final class AppModel {
         }
     }
 
-    /// How many files the agent works on at the same time.
-    static let maxConcurrent = 10
+    /// Finish an import before the next agent looks for an existing booking.
+    static let maxConcurrent = 1
     /// The most files one drop may add to the queue.
     static let maxDrop = 50
 
@@ -137,10 +137,8 @@ final class AppModel {
         process()
     }
 
-    /// Files run side by side, at most `maxConcurrent` of them. A drop that
-    /// arrives while they run joins the queue the task is already emptying.
-    /// Every statement of every run still goes through the one database queue,
-    /// so the rows stay consistent.
+    /// Imports finish in order, including rollback and Inbox cleanup. A drop
+    /// that arrives meanwhile joins the queue the task is already emptying.
     private func process() {
         guard progress.running == false else { return }
         progress.running = true

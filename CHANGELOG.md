@@ -1,5 +1,14 @@
 # Änderungen
 
+## 0.11.2 (vorbereitet, noch nicht veröffentlicht)
+
+- Bekannte Vor-Chat-Archive werden beim Öffnen nach einer geprüften Datenbanksicherung transaktional korrigiert. Buchungen, Belege und alte Anfragen behalten ihre IDs
+- Aufbewahrte Belege ohne Buchungsverknüpfung lassen sich erneut importieren; ein früherer Erfolg blockiert das Wiederholen nicht mehr
+- Kann Pfennig das Archiv nicht öffnen, zeigt es den Fehler und den Archivpfad in einem nativen Dialog und beendet sich geordnet
+- Belege werden nacheinander verarbeitet, damit ein weiterer Import bereits erfasste Buchungen sehen kann. Größere Stapel brauchen dadurch länger
+
+Die Archivkorrektur ist eine vorübergehende Ausnahme für das bekannte alte Chat-Schema, keine allgemeine Migration. Andere alte oder unerwartete Schemaformen brauchen eine abgestimmte Korrektur. Apple-KI bleibt ausschließlich ein Eval-Experiment. Steuerexporte bleiben auf 2026 begrenzt. Ein echter Sparkle-Updatezyklus mit diesem Build steht noch aus.
+
 ## 0.9.0 (2026-09-22)
 
 - Fehlende Steuerbehandlung ist eine leere Auswahl statt „Unklar“; der Agent bekommt dafür keine zusätzliche Promptanweisung
