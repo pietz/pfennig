@@ -1,6 +1,7 @@
 @testable import Core
 import Foundation
 import GRDB
+import GRDBSQLite
 import Testing
 
 private let oldRequestTable = """
@@ -17,11 +18,11 @@ CREATE TABLE anfragen (
 );
 """
 
-private func oldArchive() throws -> (URL, DatabaseQueue) {
+private func oldArchive(configuration: Configuration = Configuration()) throws -> (URL, DatabaseQueue) {
     let folder = FileManager.default.temporaryDirectory.appending(path: "pfennig-chat-repair-\(UUID().uuidString)")
     try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     let path = folder.appending(path: "pfennig.sqlite")
-    let database = try DatabaseQueue(path: path.path)
+    let database = try DatabaseQueue(path: path.path, configuration: configuration)
     try database.write { db in
         try db.execute(sql: Schema.sql
             .replacingOccurrences(of: Schema.requestTableSQL, with: oldRequestTable)
@@ -56,9 +57,24 @@ private func storedRows(_ database: DatabaseQueue) throws -> [String: [Row]] {
 }
 
 @Test func chatRepairBacksUpAndPreservesRecordsAndRequestIDs() throws {
-    let (path, database) = try oldArchive()
+    var configuration = Configuration()
+    configuration.journalMode = .wal
+    let (path, database) = try oldArchive(configuration: configuration)
     let folder = path.deletingLastPathComponent()
     defer { try? FileManager.default.removeItem(at: folder) }
+    try database.writeWithoutTransaction { db in
+        try db.checkpoint(.truncate)
+        try db.execute(sql: "PRAGMA wal_autocheckpoint = 0")
+        try db.execute(sql: "UPDATE einstellungen SET wert = 'Committed from WAL' WHERE schluessel = 'name'")
+    }
+    let wal = URL(fileURLWithPath: path.path + "-wal")
+    #expect(try Data(contentsOf: wal).count > 32)
+    let mainOnlyPath = folder.appending(path: "main-only.sqlite")
+    try FileManager.default.copyItem(at: path, to: mainOnlyPath)
+    let mainOnly = try DatabaseQueue(path: mainOnlyPath.path)
+    #expect(try mainOnly.read {
+        try String.fetchOne($0, sql: "SELECT wert FROM einstellungen WHERE schluessel = 'name'")
+    } == "Fiktives Teststudio")
     let before = try storedRows(database)
     let oldRequests = try database.read { try Row.fetchAll($0, sql: "SELECT * FROM anfragen") }
 
@@ -99,6 +115,53 @@ private func storedRows(_ database: DatabaseQueue) throws -> [String: [Row]] {
     #expect(try storedRows(database) == before)
     #expect(try database.read { try $0.columns(in: "anfragen").contains { $0.name == "gespraech_id" } } == false)
     #expect(try database.read { try $0.tableExists("gespraeche") } == false)
+}
+
+private func denyConversationTable(
+    _: UnsafeMutableRawPointer?,
+    _ action: Int32,
+    _ table: UnsafePointer<CChar>?,
+    _: UnsafePointer<CChar>?,
+    _: UnsafePointer<CChar>?,
+    _: UnsafePointer<CChar>?
+) -> Int32 {
+    action == SQLITE_CREATE_TABLE && table.map { String(cString: $0) } == "gespraeche"
+        ? SQLITE_DENY
+        : SQLITE_OK
+}
+
+@Test func failedMidRepairRollsBackSchemaAndRecords() throws {
+    let (path, database) = try oldArchive()
+    let folder = path.deletingLastPathComponent()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let before = try storedRows(database)
+    let oldRequests = try database.read { try Row.fetchAll($0, sql: "SELECT * FROM anfragen") }
+    try database.write { db in
+        #expect(sqlite3_set_authorizer(db.sqliteConnection, denyConversationTable, nil) == SQLITE_OK)
+    }
+    defer {
+        _ = try? database.write { db in
+            sqlite3_set_authorizer(db.sqliteConnection, nil, nil)
+        }
+    }
+
+    do {
+        try ChatArchiveRepair.runIfNeeded(database, at: path)
+        Issue.record("The denied conversation table should abort the repair.")
+    } catch let error as DatabaseError {
+        #expect(error.resultCode == .SQLITE_AUTH)
+    } catch {
+        Issue.record("Expected SQLite authorization denial, got a different failure.")
+    }
+
+    _ = try database.write { db in
+        sqlite3_set_authorizer(db.sqliteConnection, nil, nil)
+    }
+    #expect(try storedRows(database) == before)
+    #expect(try database.read { try Row.fetchAll($0, sql: "SELECT * FROM anfragen") } == oldRequests)
+    #expect(try database.read { try $0.columns(in: "anfragen").contains { $0.name == "gespraech_id" } } == false)
+    #expect(try database.read { try $0.tableExists("gespraeche") } == false)
+    #expect(try database.read { try $0.tableExists("anfragen_vor_chat") } == false)
 }
 
 @Test func unknownOldSchemaIsRejectedWithoutBackupOrChanges() throws {

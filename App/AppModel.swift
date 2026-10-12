@@ -76,16 +76,12 @@ final class AppModel {
     /// The most files one drop may add to the queue.
     static let maxDrop = 50
 
-    init() {
-        do {
-            try path.create()
-            repository = try Repository(path: path.databaseFile)
-            intake = try FileIntake(repository: repository, path: path)
-            chat = Chat(intake: intake)
-            currentProfile = try repository.profile()
-        } catch {
-            fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
-        }
+    init() throws {
+        try path.create()
+        repository = try Repository(path: path.databaseFile)
+        intake = try FileIntake(repository: repository, path: path)
+        chat = Chat(intake: intake)
+        currentProfile = try repository.profile()
     }
 
     // MARK: - FileIntake

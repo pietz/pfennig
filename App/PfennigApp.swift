@@ -1,4 +1,5 @@
 import AppKit
+import Core
 import Sparkle
 import SwiftUI
 
@@ -8,6 +9,7 @@ import SwiftUI
 final class ApplicationDelegate: NSObject, NSApplicationDelegate {
     private var model: AppModel?
     private var pendingFiles: [URL] = []
+    private var startupFailure: (error: Error, archive: URL)?
 
     func connect(to model: AppModel) {
         self.model = model
@@ -16,7 +18,27 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
         pendingFiles = []
     }
 
+    func reportStartupFailure(_ error: Error, archive: URL) {
+        startupFailure = (error, archive)
+    }
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        guard let startupFailure else { return }
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Pfennig konnte das Archiv nicht öffnen."
+        alert.informativeText = "\(startupFailure.error.localizedDescription)\n\nArchiv: \(startupFailure.archive.path)"
+        alert.addButton(withTitle: "Beenden")
+        NSApp.activate(ignoringOtherApps: true)
+        _ = alert.runModal()
+        NSApp.terminate(nil)
+    }
+
     func application(_ sender: NSApplication, openFiles filenames: [String]) {
+        guard startupFailure == nil else {
+            sender.reply(toOpenOrPrint: .failure)
+            return
+        }
         let files = filenames.map { URL(filePath: $0) }
         if let model {
             model.acceptFiles(files)
@@ -30,41 +52,58 @@ final class ApplicationDelegate: NSObject, NSApplicationDelegate {
 @main
 struct PfennigApp: App {
     @NSApplicationDelegateAdaptor(ApplicationDelegate.self) private var applicationDelegate
-    @State private var model: AppModel
+    @State private var model: AppModel?
     #if !DEBUG
-        private let updaterController = SPUStandardUpdaterController(
-            startingUpdater: true,
-            updaterDelegate: nil,
-            userDriverDelegate: nil
-        )
+        private let updaterController: SPUStandardUpdaterController?
     #endif
 
     init() {
-        let model = AppModel()
-        _model = State(initialValue: model)
-        applicationDelegate.connect(to: model)
+        do {
+            let model = try AppModel()
+            _model = State(initialValue: model)
+            #if !DEBUG
+                updaterController = SPUStandardUpdaterController(
+                    startingUpdater: true,
+                    updaterDelegate: nil,
+                    userDriverDelegate: nil
+                )
+            #endif
+            applicationDelegate.connect(to: model)
+        } catch {
+            _model = State(initialValue: nil)
+            #if !DEBUG
+                updaterController = nil
+            #endif
+            applicationDelegate.reportStartupFailure(error, archive: ArchivePaths.standard.folder)
+        }
     }
 
     var body: some Scene {
         // The id names the saved frame. It changed with the wider default, so
         // a window saved at the old size opens once at the new one.
         WindowGroup(id: "workspace") {
-            WorkspaceView(model: model)
-                .modifier(AppearanceModifier())
+            if let model {
+                WorkspaceView(model: model)
+                    .modifier(AppearanceModifier())
+            }
         }
         // The smallest width the ledger needs with the inspector open.
         .defaultSize(width: WorkspaceView.defaultWidth, height: 600)
         #if !DEBUG
             .commands {
-                CommandGroup(after: .appInfo) {
-                    UpdateCommand(updater: updaterController.updater)
+                if let updaterController {
+                    CommandGroup(after: .appInfo) {
+                        UpdateCommand(updater: updaterController.updater)
+                    }
                 }
             }
         #endif
 
         Settings {
-            SettingsView(model: model)
-                .modifier(AppearanceModifier())
+            if let model {
+                SettingsView(model: model)
+                    .modifier(AppearanceModifier())
+            }
         }
     }
 }
