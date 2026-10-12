@@ -1,6 +1,6 @@
 # Änderungen
 
-## 0.11.2 (vorbereitet, noch nicht veröffentlicht)
+## 0.11.2 (2026-10-12)
 
 - Bekannte Vor-Chat-Archive werden beim Öffnen nach einer geprüften Datenbanksicherung transaktional korrigiert. Buchungen, Belege und alte Anfragen behalten ihre IDs
 - Aufbewahrte Belege ohne Buchungsverknüpfung lassen sich erneut importieren; ein früherer Erfolg blockiert das Wiederholen nicht mehr
