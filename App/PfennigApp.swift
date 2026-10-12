@@ -54,13 +54,13 @@ struct PfennigApp: App {
         }
         // The smallest width the ledger needs with the inspector open.
         .defaultSize(width: WorkspaceView.defaultWidth, height: 600)
-        .commands {
-            #if !DEBUG
+        #if !DEBUG
+            .commands {
                 CommandGroup(after: .appInfo) {
                     UpdateCommand(updater: updaterController.updater)
                 }
-            #endif
-        }
+            }
+        #endif
 
         Settings {
             SettingsView(model: model)

@@ -64,27 +64,9 @@ public enum Schema {
         nachher TEXT                                -- JSON-Objekt der Buchungszeile nach der Änderung, leer bei Löschung
     );
 
-    CREATE TABLE anfragen (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        datei_id INTEGER,                           -- Import einer Datei
-        gespraech_id INTEGER,                       -- oder eine Runde eines Gesprächs
-        modell TEXT NOT NULL,
-        gestartet_am TEXT NOT NULL,
-        beendet_am TEXT,
-        status TEXT CHECK (status IN ('erfolg', 'fehler')),
-        eingabe_tokens INTEGER,
-        ausgabe_tokens INTEGER,
-        konversation TEXT,                          -- JSON-Liste der Eingabe- und Ausgabeelemente des Laufs ohne Dateibytes
-        CHECK ((datei_id IS NULL) <> (gespraech_id IS NULL))
-    );
+    \(requestTableSQL)
 
-    CREATE TABLE gespraeche (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        titel TEXT NOT NULL,                        -- gekürzte erste Nutzernachricht
-        geaendert_am TEXT NOT NULL,
-        -- JSON-Liste der Responses-Elemente ohne Dateibytes; eine Datei steht als {"type": "datei", "id": 3}
-        verlauf TEXT NOT NULL DEFAULT '[]'
-    );
+    \(conversationTableSQL)
 
     CREATE TABLE einstellungen (
         schluessel TEXT PRIMARY KEY,
@@ -109,8 +91,34 @@ public enum Schema {
     );
     """
 
+    static let requestTableSQL = """
+    CREATE TABLE anfragen (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        datei_id INTEGER,                           -- Import einer Datei
+        gespraech_id INTEGER,                       -- oder eine Runde eines Gesprächs
+        modell TEXT NOT NULL,
+        gestartet_am TEXT NOT NULL,
+        beendet_am TEXT,
+        status TEXT CHECK (status IN ('erfolg', 'fehler')),
+        eingabe_tokens INTEGER,
+        ausgabe_tokens INTEGER,
+        konversation TEXT,                          -- JSON-Liste der Eingabe- und Ausgabeelemente des Laufs ohne Dateibytes
+        CHECK ((datei_id IS NULL) <> (gespraech_id IS NULL))
+    );
+    """
+
+    static let conversationTableSQL = """
+    CREATE TABLE gespraeche (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        titel TEXT NOT NULL,                        -- gekürzte erste Nutzernachricht
+        geaendert_am TEXT NOT NULL,
+        -- JSON-Liste der Responses-Elemente ohne Dateibytes; eine Datei steht als {"type": "datei", "id": 3}
+        verlauf TEXT NOT NULL DEFAULT '[]'
+    );
+    """
+
     /// Creates the tables the first time the database is opened. There is
-    /// exactly one schema definition and no migrations before the release.
+    /// one schema definition; the temporary chat repair runs before opening an old archive.
     static func create(_ db: Database) throws {
         guard try db.tableExists("buchungen") == false else { return }
         try db.execute(sql: sql)

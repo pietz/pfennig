@@ -133,11 +133,12 @@ public struct FileIntake: Sendable {
         // moment it got there, at its origin before that.
         var location = url
         do {
-            // A known hash is done once a run for it has succeeded. A stored
-            // file whose runs all failed is work again, from the inbox copy or
-            // from a fresh drop.
+            // A successful import is done while a booking still uses its receipt.
+            // Failed runs and retained files without bookings can be processed again.
             let known = try repository.fileID(sha256: hash)
-            if let known, try repository.hasSuccessfulRun(dateiId: known) {
+            if let known, try repository.hasSuccessfulRun(dateiId: known),
+               try repository.isReceiptUsed(known)
+            {
                 // A leftover inbox copy of a done file would announce itself
                 // on every start and has no discard; take it along. An
                 // original from outside the inbox stays untouched.

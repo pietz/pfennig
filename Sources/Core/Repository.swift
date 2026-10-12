@@ -29,7 +29,9 @@ public final class Repository: Sendable {
     }
 
     public convenience init(path: URL) throws {
-        try self.init(DatabaseQueue(path: path.path))
+        let database = try DatabaseQueue(path: path.path)
+        try ChatArchiveRepair.runIfNeeded(database, at: path)
+        try self.init(database)
     }
 
     public static func inMemory() throws -> Repository {
@@ -212,6 +214,17 @@ public final class Repository: Sendable {
             try Bool.fetchOne(
                 db, sql: "SELECT COUNT(*) > 0 FROM anfragen WHERE datei_id = ? AND status = 'erfolg'",
                 arguments: [dateiId]
+            ) ?? false
+        }
+    }
+
+    /// A past successful import alone is not enough after its receipt was removed.
+    public func isReceiptUsed(_ fileID: Int64) throws -> Bool {
+        try database.read { db in
+            try Bool.fetchOne(
+                db,
+                sql: "SELECT EXISTS (SELECT 1 FROM buchungen, json_each(buchungen.belege) WHERE json_each.value = ?)",
+                arguments: [fileID]
             ) ?? false
         }
     }

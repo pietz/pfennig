@@ -455,7 +455,8 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
     #expect(try repository.allRequests().map(\.dateiId) == [id])
     #expect(try repository.fileID(sha256: hash) == id)
 
-    // After a successful run the same hash is done, from wherever it comes.
+    // A successful run with a surviving booking makes the same hash done.
+    #expect(try SQLTool(repository).execute(einfuegenMitBeleg).touched == [1])
     try repository.finishRequest(id: 1, status: .erfolg)
     guard case .alreadyPresent = await intake.process(file) else {
         Issue.record("Der bekannte Hash wurde nicht erkannt.")
@@ -498,7 +499,7 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
 
     // What the start scan finds is a done file with an inbox copy: already
     // present, and the copy goes away instead of being announced forever.
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "")
     guard case .alreadyPresent = await intake.process(uebrig) else {
         Issue.record("Die übrige Kopie hätte als bereits vorhanden gegolten.")
         return
@@ -512,6 +513,39 @@ private func setUp() throws -> (Repository, ArchivePaths, URL) {
         return
     }
     #expect(try Data(contentsOf: source) == content)
+}
+
+@Test func entfernterBelegLaesstSichMitDerselbenDateiWiederAnhaengen() async throws {
+    let (repository, path, folder) = try setUp()
+    defer { try? FileManager.default.removeItem(at: folder) }
+    let source = folder.appending(path: "rechnung.pdf")
+    let content = Data("%PDF-1.4 Testbeleg".utf8)
+    try content.write(to: source)
+    let first = Skript([werkzeugantwort(einfuegenMitBeleg), schlussantwort])
+    let intake = try await FileIntake(repository: repository, path: path, transport: first.transport, key: "test")
+    guard case .booked = await intake.process(source) else {
+        Issue.record("Der erste Import muss gelingen.")
+        return
+    }
+    let fileID = try #require(try repository.fileID(sha256: FileIntake.hash(content)))
+    try repository.removeReceipt(fileID, from: 1)
+    #expect(try repository.hasSuccessfulRun(dateiId: fileID))
+    #expect(try repository.isReceiptUsed(fileID) == false)
+
+    let second = Skript([
+        werkzeugantwort("UPDATE buchungen SET belege = '[1]' WHERE id = 1"), schlussantwort
+    ])
+    let retry = try await FileIntake(repository: repository, path: path, transport: second.transport, key: "test")
+    guard case .booked = await retry.process(source) else {
+        Issue.record("Ein entfernter Beleg muss erneut verarbeitet werden können.")
+        return
+    }
+    #expect(try repository.allBookings().count == 1)
+    #expect(try repository.allBookings().first?.belege == [fileID])
+    #expect(try repository.allRequests().count == 2)
+    #expect(try repository.fileID(sha256: FileIntake.hash(content)) == fileID)
+    #expect(try Data(contentsOf: source) == content)
+    #expect(try repository.isReceiptUsed(fileID))
 }
 
 @Test func einGescheiterterVerbindungsaufbauWirdEinmalWiederholt() async throws {
@@ -552,7 +586,7 @@ private actor Zaehler {
 
     // No key, so the run ends before the network; the file still has to have
     // travelled into the inbox and to stay there with the error text.
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "")
     guard case let .failed(file, text) = await intake.process(source) else {
         Issue.record("Der Lauf hätte scheitern müssen.")
         return
@@ -561,8 +595,7 @@ private actor Zaehler {
     #expect(text.isEmpty == false)
     #expect(FileManager.default.fileExists(atPath: file.path))
     #expect(intake.inbox().map(\.lastPathComponent) == ["rechnung.pdf"])
-    // Whether the file reached the archive depends on whether this Mac has a
-    // key; either way no booking came out of it.
+    // An injected empty key keeps the test independent of the real Keychain.
     #expect(try repository.allBookings().isEmpty)
 }
 
@@ -669,7 +702,7 @@ private actor Zaehler {
     let content = Data("Testbeleg".utf8)
     try content.write(to: source)
     try content.write(to: kopie)
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "")
 
     try intake.discard(kopie)
 
@@ -686,7 +719,7 @@ private actor Zaehler {
     let source = andererOrdner.appending(path: "rechnung.pdf")
     let content = Data("Testbeleg".utf8)
     try content.write(to: source)
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "")
 
     try intake.discard(source)
 
@@ -703,7 +736,7 @@ private actor Zaehler {
     // reading the Keychain. The failure must still point at the original.
     try FileManager.default.removeItem(at: path.inbox)
     try Data().write(to: path.inbox)
-    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen)
+    let intake = try FileIntake(repository: repository, path: path, transport: abgewiesen, key: "")
     guard case let .failed(file, _) = await intake.process(source) else {
         Issue.record("Der Eingang hätte vor dem Kopieren scheitern müssen.")
         return
