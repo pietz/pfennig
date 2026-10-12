@@ -13,6 +13,8 @@ Stand: 2026-09-22. Kurze Begründungen für getroffene Entscheidungen, keine neu
 
 ## Bewusste Vereinfachungen
 
+- **Apple-KI vorerst nur als Eval (2026-10-12):** Nach unzureichenden nativen Ergebnissen hat der Eigentümer die App-Integration zurückgestellt. Ausführbare Komponentenproben, Vergleichsskript und Forschungsnachweise bleiben unter `evals/apple-ai/`; kein Apple-Modell in der normalen App. Die frühere vollständige experimentelle Integration bleibt in Git erhalten. Bessere Benchmarks sollen sowohl den vorhandenen Luna-Agenten als auch spätere Apple-Ansätze bewerten; keine weitere App-Integration ohne belastbare Ergebnisse und neue Eigentümerrichtung.
+
 - **Kein Aktivitätsverlauf in der UI (#18):** Am 22. September aus dem aktuellen Produktumfang gestrichen, weil keine Kernfunktion. Bestehende Änderungsprotokollierung bleibt erhalten, falls sie später benötigt wird; derzeit keine Anzeige, kein Undo und kein neuer Umsetzungsauftrag.
 - **Agent zuerst, Prompt schlank:** Dokumentverständnis und Zuordnung bleiben beim Agenten. Neue Anweisungen möglichst mit vorhandenen Regeln verbinden oder diese ersetzen, nicht fortlaufend Sonderfälle anhängen. Seltene Fälle lieber manuell korrigieren.
 - **Import muss etwas buchen:** `noBooking` bleibt. Eine Abschlussnachricht ohne Buchungsänderung führt zum bestehenden Fehler mit Wiederholen/Verwerfen. Das hält einen erfolglosen oder ungeeigneten Import sichtbar; kein neues Ignorieren-Tool oder Abschlussstatus. Für den Chat gilt diese Importbedingung nicht.

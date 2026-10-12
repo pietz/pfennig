@@ -81,6 +81,8 @@ Owner clarification on 2026-10-08: personal needs drive most features, but Pfenn
 
 ## macOS 27 AI research, 2026-10-08
 
+Follow-up on 2026-10-12: the native experiment ran after the OS/toolchain upgrade, but accuracy was insufficient. The owner parked app integration and retained standalone experiments, evidence and benchmark research under [evals/apple-ai](../evals/apple-ai/README.md). The following section is the historical research record, rather than current readiness or implementation status.
+
 Research performed with the requested GPT-6.1 Sol subagent at medium effort, plus a direct review of Pfennig's integration and official OpenAI documentation. This is a feasibility assessment, not a benchmark. The inspected development machine reports macOS 15.8.1 and Xcode 26.3, so no macOS 27 execution was possible here.
 
 ### Existing AI contract
