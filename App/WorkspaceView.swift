@@ -27,6 +27,26 @@ enum Workspace: String, CaseIterable, Identifiable {
     }
 }
 
+/// Activity is a status indicator, so it does not share the actions' glass background.
+struct IntakeProgress: ToolbarContent {
+    @ToolbarContentBuilder var body: some ToolbarContent {
+        if #available(macOS 26, *) {
+            item.sharedBackgroundVisibility(.hidden)
+        } else {
+            item
+        }
+    }
+
+    private var item: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel("Belege werden verarbeitet")
+                .help("Belege werden verarbeitet")
+        }
+    }
+}
+
 struct WorkspaceView: View {
     @Bindable var model: AppModel
     /// The app opens on the overview.

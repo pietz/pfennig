@@ -362,19 +362,21 @@ struct Inspector: View {
     private var zahlungen: some View {
         Section("Zahlungen") {
             ForEach(Array(draft.zahlungen.indices), id: \.self) { i in
-                HStack {
-                    TextField("Datum", value: zahlung(i, \.datum, fallback: .today()), format: .deutsch)
-                        .labelsHidden()
-                        .frame(width: 90)
-                    TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
-                        .labelsHidden()
-                        .modifier(feedback(.payment(i), showsMessages: false))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        TextField("Datum", value: zahlung(i, \.datum, fallback: .today()), format: .deutsch)
+                            .labelsHidden()
+                            .frame(width: 90)
+                        TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
+                            .labelsHidden()
+                            .modifier(feedback(.payment(i), showsMessages: false))
+                        Button("Zahlung entfernen", systemImage: "minus.circle") { removePayment(i) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                    }
                     Text(draft.zahlungen[i].betrag < .null ? "Erstattung" : "Zahlung")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Button("Zahlung entfernen", systemImage: "minus.circle") { removePayment(i) }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
                 }
                 feedback(.payment(i)).messageView
             }

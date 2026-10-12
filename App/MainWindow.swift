@@ -218,9 +218,7 @@ struct MainWindow: View {
     @ToolbarContentBuilder private var toolbarItems: some ToolbarContent {
         // Visible for as long as there is something in the queue.
         if model.progress.visible {
-            ToolbarItem(placement: .primaryAction) {
-                ProgressView().controlSize(.small)
-            }
+            IntakeProgress()
         }
         ToolbarItem(placement: .primaryAction) {
             Picker("Richtung", selection: $model.filter) {
