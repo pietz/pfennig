@@ -6,6 +6,7 @@
 - Aufbewahrte Belege ohne Buchungsverknüpfung lassen sich erneut importieren; ein früherer Erfolg blockiert das Wiederholen nicht mehr
 - Kann Pfennig das Archiv nicht öffnen, zeigt es den Fehler und den Archivpfad in einem nativen Dialog und beendet sich geordnet
 - Belege werden nacheinander verarbeitet, damit ein weiterer Import bereits erfasste Buchungen sehen kann. Größere Stapel brauchen dadurch länger
+- Der Agent ordnet Einnahmen und Ausgaben ausdrücklich aus Sicht des eigenen Unternehmens zu; ein wiederholt falsch eingelesener Eingangsbeleg wurde im Eval damit richtig erkannt
 
 Die Archivkorrektur ist eine vorübergehende Ausnahme für das bekannte alte Chat-Schema, keine allgemeine Migration. Andere alte oder unerwartete Schemaformen brauchen eine abgestimmte Korrektur. Apple-KI bleibt ausschließlich ein Eval-Experiment. Steuerexporte bleiben auf 2026 begrenzt. Ein echter Sparkle-Updatezyklus mit diesem Build steht noch aus.
 

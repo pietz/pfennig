@@ -1,6 +1,6 @@
 # Pfennig: Scope und Entscheidungen
 
-Stand: 2026-09-22. Kurze Begründungen für getroffene Entscheidungen, keine neue Gesamtspezifikation. Offene Arbeit und Reihenfolge stehen in `docs/backlog.md` und GitHub, der Umsetzungsstand in `docs/status.md`. Bei Widersprüchen gegen aktuellen Code und neuere Eigentümerentscheidungen prüfen.
+Stand: 2026-10-12. Kurze Begründungen für getroffene Entscheidungen, keine neue Gesamtspezifikation. Offene Arbeit und Reihenfolge stehen in `docs/backlog.md` und GitHub, der Umsetzungsstand in `docs/status.md`. Bei Widersprüchen gegen aktuellen Code und neuere Eigentümerentscheidungen prüfen.
 
 ## Produktgrenze
 
@@ -38,6 +38,6 @@ Stand: 2026-09-22. Kurze Begründungen für getroffene Entscheidungen, keine neu
 
 ## Zusammenarbeit
 
-Der Eigentümer entscheidet Ziele und relevante Grenzen; der Hauptagent hält Reihenfolge und offene Punkte zusammen. Ein Thema nach dem anderen. Auf neue Eigentümervorgabe vom 2026-09-22 wieder Astra-Medium-Subagenten für klar abgegrenzte Umsetzung und unabhängige Reviews einsetzen, damit das Hauptgespräch weitergehen kann. Dateiverantwortung und Aufgaben dürfen sich nicht überschneiden; Freigabe, Integration und Abschluss bleiben beim Hauptagenten. Subagenten delegieren nicht weiter. Das frühere Verbot neuer Subagenten ist damit aufgehoben. Änderungen abschließend ausdrücklich auf unnötige Komplexität prüfen. Die alte Neuaufbau-Spec wurde bewusst entfernt, weil sie den fertigen Aufbau beschrieb und neue Entscheidungen unnötig behinderte.
+Der Eigentümer entscheidet Ziele und relevante Grenzen; der Hauptagent hält Reihenfolge und offene Punkte zusammen. Ein Thema nach dem anderen. Seit der Eigentümervorgabe vom 2026-10-12 führt der Hauptagent die beauftragte Arbeit als Orchestrator: Astra 6/high für unabhängige Beratung und Reviews, Luna 6/high oder xhigh für klar abgegrenzte Umsetzung und Experimente mit überprüfbarem Ziel. Dateiverantwortung und Aufgaben dürfen sich nicht überschneiden; Freigabe, Integration und Abschluss bleiben beim Hauptagenten. Subagenten delegieren nicht weiter. Änderungen abschließend ausdrücklich auf unnötige Komplexität prüfen. Die alte Neuaufbau-Spec wurde bewusst entfernt, weil sie den fertigen Aufbau beschrieb und neue Entscheidungen unnötig behinderte.
 
 Quelle zur Einkommensteuer: [§12 EStG](https://www.gesetze-im-internet.de/estg/__12.html).

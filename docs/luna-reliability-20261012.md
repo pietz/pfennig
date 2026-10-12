@@ -1,73 +1,84 @@
 # Luna reliability investigation, 2026-10-12
 
-The fresh baseline isolates four failing scenarios: direction in an incoming freelancer invoice, coworking category, and two joint drops that race to insert the same transaction. Keep the whole-agent benchmark and test scheduling before changing model matching instructions.
+Two bounded changes were adopted: one import at a time, and a generic instruction to book from the profile company's transaction perspective. The final candidate sweep passes **51/52** public scenarios; coworking category `32` still fails. Sequential imports pass **11/12** focused matching runs versus **2/12** parallel runs. An omitted lookup can still produce duplicates, so these results do not establish perfect matching or a general accuracy rate.
 
-This investigation reads public fixtures, saved synthetic results, runner/scorer, agent code and relevant tests. It makes no model calls and accesses no credentials, private corpus or app archive. Its owned changes are this report, the eval runner's per-case file-concurrency option and the eval README.
+This investigation reads public fixtures, saved synthetic results, code and tests only. Root owns paid execution, production edits and commits. This leaf accessed no credentials, private corpus or app archive and made no model calls. Raw results are ignored local artifacts under `evals/results/`.
 
-## Frozen baseline
+## Completed scorecard
 
-The fresh run is `evals/results/luna-reliability-baseline-20261012/report.json`: `gpt-6-luna`, `high`, 52 scenarios, two independent temporary archives per scenario. It completed **104/104** planned runs on `2026-10-12T10:38:45Z`, with **96/104 total passes, 92/100 agent-evaluable passes, 84/92 positive-task passes, and 12/12 negative-control passes**. Four invalid-input rejection runs count only toward total passes; the other eight controls are agent-evaluable. **48/52 scenarios pass both repetitions.** All eight failures occur in the same four scenarios, each failing both repeats.
+All planned runs below finished. Positive-state runs mean cases whose expected final archive contains bookings, including seeded scenarios. Agent-evaluable figures exclude API-rejected invalid inputs. Controls remain separate from booking quality.
 
-- Revision before the run: `218ca5dfb6a06c563169ece743b2b1789662331a`. Concurrent authorized worktree changes mean the revision alone does not describe all execution inputs.
-- Truth SHA-256: `631350547a87083546e16538cc7bac1aa30b8fcc505b6a13b5a468bfd683cef3`.
-- Rendered prompt SHA-256: `4690b6ae357b3965f3ed01b992be94e44388425150fcb6ef6515bcf721eb0fa6`.
-- Source manifest SHA-256: `91030dde26fe817ee9bc43a4b56b667df87ae55c694c7ef3d2589dd4b7a0f90b`. This hashes UTF-8 JSON mapping the 45 relative public source paths to their SHA-256 values, sorted by key with compact separators. Every source-hash entry in the completed baseline matches these files.
+| Configuration | Completed | Whole state | Agent-evaluable | Positive state | Controls |
+| --- | --- | --- | --- | --- | --- |
+| Original parallel baseline, 52 scenarios twice | 104/104 | 96/104 | 92/100 | 84/92 | 12/12 |
+| Focused parallel, both file orders, three repeats | 12/12 | 2/12 | 2/12 | 2/12 | 0 controls |
+| Focused sequential, same cases/orders/repeats | 12/12 | 11/12 | 11/12 | 11/12 | 0 controls |
+| Full sequential, original rules | 52/52 | 50/52 | 48/50 | 44/46 | 6/6 |
+| Full sequential, perspective rule | 52/52 | 51/52 | 49/50 | 45/46 | 6/6 |
+| Perspective rule, `14` and `01` five times each | 10/10 | 10/10 | 10/10 | 10/10 | 0 controls |
 
-Preserve persisted whole-state pass as the primary metric. API-rejected invalid inputs demonstrate input rejection, not agent accuracy.
+The final three configurations complete all **114** runs in the approved wrapper. Do not combine configurations into one accuracy estimate. The baseline's 12 controls include four API rejection passes and eight agent-evaluable passes; each full single sweep has two rejection passes and four agent-evaluable controls.
 
-| Fresh failing scenario | Final-state failure | Diagnosis |
+Reports: `luna-reliability-baseline-20261012/report.json`, `luna-scheduling-parallel-20261012/report.json`, `luna-scheduling-serial-20261012/report.json`, `luna-serial-full-20261012/report.json`, `luna-role-full-20261012/report.json`, and `luna-role-focused-20261012/report.json`, all beneath `evals/results/`.
+
+## Frozen evidence and provenance
+
+All configurations use `gpt-6-luna`, `high`, neutral input names, frozen corpus date/profile, isolated archives, unchanged scorer and no reasoning summaries.
+
+| Evidence | SHA-256 |
+| --- | --- |
+| Public truth | `631350547a87083546e16538cc7bac1aa30b8fcc505b6a13b5a468bfd683cef3` |
+| Scheduling truth clone | `534487a8aedbae7fa4a58197f3a877ec0ff090a548a08bc70751d7a6d4d45437` |
+| Original rendered prompt | `4690b6ae357b3965f3ed01b992be94e44388425150fcb6ef6515bcf721eb0fa6` |
+| Perspective rendered prompt | `97a100c180a65f823e33552878f9d8673229fd40072467ddda553f070d1a6adc` |
+| Perspective rules | `e941ecbff3a25f18878a1a197410ba9de27eb3bc09feac145313ef0132593c80` |
+| Public source manifest | `91030dde26fe817ee9bc43a4b56b667df87ae55c694c7ef3d2589dd4b7a0f90b` |
+
+The manifest hashes compact UTF-8 JSON mapping the 45 relative public paths to source SHA-256 values, with sorted keys. All recorded hashes checked against current public sources match. The 12 scheduling pairs have byte-identical truth snapshots, prompt and source maps. The two full sweeps have identical model/effort/truth/source maps/file concurrency; rendered prompts differ only by the tested sentence. Runs occur at different times, not interleaved.
+
+Baseline revision was `218ca5dfb6a06c563169ece743b2b1789662331a`, with concurrent authorized worktree changes; a revision alone is insufficient provenance. Root committed prepared scheduling/runner work as `3603621`. Source rules now match the measured override byte-for-byte. With the same profile/schema/date and unchanged builder, the adopted production prompt therefore equals the saved candidate prompt. This comparison uses code and artifacts, without another API call.
+
+## Scheduling diagnosis
+
+Baseline failures are `14`, `32`, `s2` and `s3`, each failing both repeats; 48/52 scenarios pass twice. Every fresh baseline `s2`/`s3` trace has both agents SELECT matching evidence, receive `[]`, then INSERT. Individual SQL calls are transactional, but SELECT and later INSERT remain separated by inference. Identical-byte hash claims cannot deduplicate a PDF and its image. `--jobs` controls isolated cases and cannot prevent this within-case race.
+
+| Focused case/order | Sequential | Parallel |
 | --- | --- | --- |
-| `14`, both repeats | Expense recorded as income; income category, plus wrong counterparty in repeat 1. | Real profile-perspective error; the document and truth agree. |
-| `32`, both repeats | `mitgliedschaft` instead of `miete` for a fixed coworking workspace. | Category error, separate from matching. |
-| `s2`, both repeats | Two hotel bookings, each with only one supporting file. | Both agents SELECT matching invoice evidence, receive `[]`, then INSERT. |
-| `s3`, both repeats | Two receipt bookings, each with only one supporting file. | Same empty-read race; both correctly read the receipt number in these fresh runs. |
+| Hotel PDF first | 3/3 | 0/3 |
+| Hotel image first | 3/3 | 0/3 |
+| Receipt PDF first | 2/3 | 1/3 |
+| Receipt image first | 3/3 | 1/3 |
 
-Fresh `s1` (scan added to seeded hotel), receipt image `41`, book category `31`, and credit note `s4` pass both repeats. No inspected fresh trace SELECTs a correct existing row and then misattaches to another row. This supports a scheduling experiment, not a lookup-instruction rewrite.
+Nine parallel failures demonstrate two stale empty reads; the tenth (`s3` reversed, repeat 1) has both agents INSERT without lookup. Both parallel successes occur when one agent commits first and the other SELECT sees the correct row, then UPDATEs its attachments. No observed trace retrieves the correct row and then misattaches elsewhere.
 
-## Historical comparability and truth review
+The sequential failure (`s3` original, repeat 3) is a lookup omission: after the PDF creates a booking, the image agent INSERTs directly with the correct receipt number, supplier, date and amount. It never queries the existing row. Serialization prevents the demonstrated race, but cannot guarantee model compliance.
 
-The last saved public endpoint, `exp-exp7-dates-public`, finished 104/104 with 95 total passes, 91/100 agent-evaluable passes and 83/92 positive-task passes; 45/52 scenarios passed both repeats. Its truth hash and all 128 recorded source-hash entries match current files. Its prompt differs (`fe390c704ffce64996e33786a0947df1ac91cfdca8e5034f954c449495f697f6`) and inference was September 25. This is historical evidence, not a controlled comparison against today's code or model service.
+Failed hotel states double gross/payment from 33,076 to 66,152 cents; failed receipt states double 2,939 to 5,878 cents. Each duplicate carries only its own file. Passing states retain one full payment and both attachments. These are real duplicate transactions, not merely association-scoring differences.
 
-Historical traces distinguish two matching failures: `s1` repeat 1 inserts without querying the already-seeded hotel; `s2` repeat 2 and both `s3` repetitions query and receive empty rows before inserting twice. The former is an omitted lookup, the latter a race. Historical receipt-photo errors also misread `PP-040826` as `PP-0426`/`PP-04286`; direct PNG inspection confirms the former and secondary till reference `08426`. These omissions and image errors did not reproduce in the fresh baseline.
+Median focused case duration is 25.62 seconds sequential versus 21.13 parallel; summed case durations are 350.26 versus 328.73 seconds. Mean input/output tokens are 19,207/1,279 versus 17,511/1,639. These describe concurrently scheduled isolated cases, not app queue wall time or general throughput. The production cap reduces throughput for unrelated files in exchange for preventing concurrent empty reads.
 
-Early `exp-baseline-public` and `step2-public` reject the credit note merged into its invoice in `s4`; current truth accepts this equivalent end state. Another historical supplier mismatch (`Wortspur Jana Feld` versus the full name) needs source review before calling it a materially wrong booking. Do not carry old failure totals forward without rescoring against current reviewed truth.
+## Transaction-perspective result
 
-The case `14` PDF's header identifies Wortspur/Jana Feld as issuer, labels Studio Linden/Mara Winter as `RECHNUNGSEMPFÄNGER`, and addresses Mara Winter while billing her for website texts. Text extraction and rendered-page inspection agree. Fresh repeat 2 correctly extracts the supplier but still chooses income; both repeats already perform a lookup. The prompt names `Mara Winter` but does not explicitly define direction from the profile holder's issuer/recipient role. That omission is a plausible experimental target, not proof of the model's internal cause. Keep the correct fixture and truth unchanged.
+Case `14` is genuinely an expense: the visible PDF identifies Wortspur/Jana Feld as issuer and labels Studio Linden/Mara Winter as invoice recipient, then bills Mara Winter for website texts. Text extraction, rendered-page inspection and truth agree. Original rules book it as income in all three fresh observations: baseline twice and full sequential once. One baseline run correctly extracts the supplier while still choosing income, so this is not simply missing supplier text or matching failure.
 
-## Scheduling and measurement limits
+The adopted sentence prefixes the existing payment bullet:
 
-`EvalMain.run` creates an isolated archive per case and repetition. `--jobs` controls independent cases. Within one joint-drop case, tasks share `FileIntake` and its repository. `SQLTool` makes each statement transactional, but SELECT and INSERT are separate calls with model inference between them. `FileIntake.InFlight` claims identical file hashes only; PDF/image hashes differ. Individual transactions cannot prevent the observed empty-read race, and `--jobs 1` would leave it intact.
+> Buche aus Sicht des Unternehmens im Profil: eigene Lieferungen und Leistungen als Einnahmen, bezogene als Ausgaben.
 
-The 52 cases comprise 39 positive single-file forms representing 37 transactions, six controls, and seven archive/drop/chat scenarios. Reused transactions add modalities and state transitions, not independent diversity. Two chat cases are single-turn, the profile is always a regular VAT payer, and no positive standalone document supports multiple distinct transactions. There is no declared untouched holdout.
+Every original payment instruction and other rule remains unchanged. Transaction role avoids reducing direction to document sender/recipient, which can misclassify client-created self-billing credits. No matching parser, special supplier rule or edge-case catalogue was added.
 
-Missing receipt associations already fail: the scorer compares exact `belege` sets and rejects missing/extra bookings. Core rejects nonexistent receipt IDs. `evalScenarioScoresTheWholeArchive` checks duplicate and missing-association outcomes.
+The candidate passes `14` in **six observed runs**: the full sweep plus five focused repeats. All eleven independent outgoing document cases remain correct in the full sweep, and outgoing `01` passes another five focused repetitions. All seven archive/drop/chat scenarios pass in both sequential full sweeps. Only `32`, coworking classified as membership instead of rent, remains wrong. No material full-state regression was observed; the adoption gate was met. No third category experiment was undertaken.
 
-Missing benchmark checks include review invalidation of edited seeds, preserved notes, untouched state after refusal, independent matching distractors with equal amounts/dates or reused invoice numbers across issuers, and multi-turn chat evidence retention. The scorer exempts all seeded rows from the unreviewed-state check; its corresponding test allows an edited confirmed seed to pass. Core separately checks review invalidation, so this is a measurement gap, not an established runtime defect. New expectations need document-backed values and receipt links, without private fixtures or invented facts.
+## Verification and limits
 
-## Two focused experiments
+The runner defaults to `--file-jobs 1`; explicit values `1...50` control files independently of `--jobs`. New reports always record the integer; absent legacy fields mean the original all-files-at-once behavior. Summaries/comparisons display this and rescoring preserves it. Production retains its existing queue/task-group design with a cap of one.
 
-1. **Scheduling only.** Compare unchanged parallel imports with sequential imports on `s2` and `s3`, both file orders, three repetitions per order: 12 runs per configuration. Root's ignored truth clone at `evals/results/luna-scheduling-truth-20261012.json` changes only file order and scenario IDs. Freeze model, effort, prompt, source files, expected states and scorer. Check whether the second agent sees and updates the first booking. A duplicate after seeing a row is different from two empty reads. Assess a cap-only production change using the controlled result and a separate review of the actual queue loop.
+Native runner builds and no-API checks pass for defaults, valid bounds, invalid/missing values, absent-credential refusal, legacy/new summaries/comparison, and offline rescore provenance. A stale executable initially rejected `--file-jobs` before an API call or output directory; README now pins `swift build --build-system native --product PfennigEval`. Verified native executable: `/Users/pietz/Private/pfennig/.build/arm64-apple-macosx/debug/PfennigEval`. Credential input is environment-only; the `.env` fallback was removed without reading a credential file. README documents metadata discovery and `ainv` delivery into the trusted prebuilt runner.
 
-2. **One profile-perspective sentence for case `14`.** Prefix the existing payment bullet with one transaction-perspective sentence: "Buche aus Sicht des Unternehmens im Profil: eigene Lieferungen und Leistungen als Einnahmen, bezogene als Ausgaben." Preserve all original payment wording. This avoids an issuer/recipient shortcut that could reverse a client-created self-billing credit. No edge-case catalogue is added. Compare two full 52-case sweeps with sequential imports, original rules versus the override, one repetition each. Existing independent outgoing invoices detect opposite-direction regressions without manufacturing a tailored mirrored fixture. Direction must follow who supplies whom, with the other party as counterparty. Do not combine direction and lookup changes or infer improvement from case `14` alone. One repetition measures the observed sweep, not a stable pass probability; focused repeats of `14` can diagnose its consistency. This repeatedly tuned corpus is development evidence, not an untouched holdout.
+Final verification is complete: all 259 existing tests pass, the Debug build passes, the unsigned Release build passes, and the release contract check passes. The instruction snapshot was updated to the adopted sentence and the source rules/prompt hashes were verified against the measured override. This work does not include notarization, publication or replacing the installed release app. Queue verification includes separate source-loop review and the actual eval sweeps. At cap one, the loop awaits full intake completion, including persistence or rollback/cleanup, before launching the next file. Direct AppModel queue unit coverage is absent; no runtime abstraction or test bootstrap was added for this cap-only change.
 
-The category error does not justify a third experiment or a special coworking rule during this bounded effort. Any adopted change needs a final 52-case regression sweep before a reliability claim. Scheduling cannot guarantee semantic matching; a generic Swift matching engine or unique-invoice constraint would exceed the evidence and agreed design.
+The historical September 25 endpoint, `exp-exp7-dates-public`, has the same truth/source hashes but a different prompt and inference date: 95/104 total, 91/100 agent-evaluable, 83/92 positive states. Its seeded-hotel lookup omission and receipt-photo text errors did not recur in the fresh baseline. Earlier reports also rejected a credit merged into its invoice; current reviewed truth accepts that equivalent state. Preserve source review and offline rescoring before treating historical mismatches as model defects.
 
-## Eval implementation and verification
+The public corpus has 39 positive single-file forms representing 37 transactions, six controls and seven scenarios. Reused layouts/modalities, single-turn chats and repeated fixtures limit independence. It always uses a regular VAT profile, has no positive standalone multi-transaction document, and has no untouched holdout. Future confidence needs independently held-out transactions, including matching distractors and no-match cases, rather than more repeats of tuned examples.
 
-The runner accepts `--file-jobs N` in `1...50`. After the scheduling pilot, its default changed to `1`, matching the app queue cap of one applied by root. Explicit `2` reproduces the two-file parallel control; `10` reproduces the previous app limit. File tasks use the existing add-next task-group pattern; `1` follows truth-file order and `--jobs` remains independent. The runner does not change production intake, SQL tools, model prompt or scorer.
-
-Every new report records integer `fileJobs`; it remains optional when decoding older reports. Absent legacy values mean original unbounded per-case scheduling, never the new sequential default. Summaries/comparisons display that interpretation and rescoring preserves it. Sequential production imports reduce throughput for unrelated files while preventing the demonstrated stale empty-read race.
-
-The runner build and no-API CLI checks pass: bounds `1`/`50`, rejection of `0`/`51`/noninteger/missing values, legacy/new summary and comparison, and rescore preserving explicit or absent provenance. Those checks initially exercised the Xcode-build executable at `.build/out/Products/Debug/PfennigEval`. A separate root launch initially selected a stale native executable and rejected `--file-jobs` before any API call or output directory. Root rebuilt with the native build system, verified `--validate-only --file-jobs 1` on that binary, and reported all 259 native tests passing. The README now pins `swift build --build-system native --product PfennigEval` before `.build/debug/PfennigEval` execution. After aligning the sequential default, this investigation rebuilt and repeated no-API checks against `/Users/pietz/Private/pfennig/.build/arm64-apple-macosx/debug/PfennigEval`; bounds `1`, `2`, `50`, default validation, invalid arguments, credential refusal, summary/comparison and legacy/serial rescore provenance all pass.
-
-Credential input is environment-only; the `.env` fallback was removed without reading a credential file. The README describes metadata discovery and `ainv` delivery into the already-built trusted runner.
-
-The agreed cap-only production verification plan is separate review of the actual queue-loop invariant, the 259 existing tests, Debug and unsigned Release builds, and actual whole-agent scheduling sweeps. The loop starts work only while its active count is below the cap; with a cap of one, it awaits the current full intake result, including success persistence or failure rollback/cleanup, before starting another file. Keep the existing task group and late-drop draining behavior. Direct AppModel queue unit coverage is absent; no queue service, injectable initializer or test bootstrap is added for this one-constant change. Root owns the production cap change. Final full-sweep and build verification remains pending at this report checkpoint.
-
-## Scheduling experiment results
-
-`evals/results/luna-scheduling-serial-20261012/report.json` completed 12/12 planned runs with `fileJobs: 1`, unchanged prompt/model/effort and truth hash `534487a8aedbae7fa4a58197f3a877ec0ff090a548a08bc70751d7a6d4d45437`. It passes **11/12** whole states: hotel original and reversed orders each 3/3, receipt reversed 3/3, receipt original 2/3. All passing runs preserve the exact expected booking, full single payment and both receipt associations.
-
-The failed original receipt run, repeat 3, is a distinct semantic omission: the PDF agent SELECTs empty and creates booking 1; after that completes, the image agent INSERTs booking 2 directly without a SELECT. Both rows correctly identify `PP-040826`, the same supplier/date/amount, each carries one receipt and a full 2,939-cent payment. It neither misreads the document nor queries and rejects the correct existing row. Serialization prevents concurrent stale reads, but cannot guarantee that the model performs lookup.
-
-Median case duration is 25.62 seconds; sum of case durations is 350.26 seconds. These are case durations from concurrently scheduled isolated cases, not end-user queue wall time. The parallel control and role-rule trial are awaiting mandatory human credential consent and have not made paid calls at this checkpoint. Do not claim a controlled pass-rate or speed improvement yet. Prepared configurations are reviewable independently of that consent.
+Exact attachment sets and missing/extra bookings are scored; nonexistent receipt IDs are rejected by Core. Missing benchmark checks remain edited-seed review invalidation, notes preservation and multi-turn evidence retention. Seeded rows are currently exempt from the scorer's unreviewed-state check, although Core separately tests invalidation. These are measurement gaps, not demonstrated product defects. Tax calculation agreement is not an ELSTER import certification. The measured improvement supports the two bounded changes and continued human review, not a universal reliability claim.
