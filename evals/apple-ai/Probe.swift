@@ -208,6 +208,81 @@ import Vision
     }
 }
 
+/// Experiment 3: printed summaries, with explicit signed amounts and percent rates.
+@Generable struct PrintedAmount: Codable {
+    @Guide(description: "Ist der gedruckte Betrag negativ?") var negativ: Bool
+    @Guide(
+        description: "Absoluter ganzzahliger Euroanteil, z.B. 12 bei 12,34 EUR.",
+        .range(0 ... 100_000_000)
+    ) var euro: Int
+    @Guide(description: "Zwei Cent-Nachkommastellen als Zahl, z.B. 34 bei 12,34 EUR.", .range(0 ... 99)) var cent: Int
+
+    var money: Cent {
+        Cent((Int64(euro) * 100 + Int64(cent)) * (negativ ? -1 : 1))
+    }
+
+    var text: String {
+        NSDecimalNumber(decimal: money.betrag).stringValue
+    }
+}
+
+@Generable struct PrintedVATGroup: Codable {
+    @Guide(description: "Prozentsatz, zum Beispiel 19 für 19%, niemals 0.19.", .range(0 ... 100)) var prozent: Int
+    @Guide(
+        description: "Netto-Bemessungsgrundlage, niemals der Steuerbetrag. Bei einem Satz die gesamte Nettosumme, bei mehreren die Summe der Nettoleistungen dieses Satzes."
+    ) var netto: PrintedAmount
+    @Guide(
+        description: "Ausgewiesener Umsatzsteuerbetrag dieses Satzes aus der Steuerübersicht."
+    ) var steuer: PrintedAmount
+}
+
+@Generable struct PrintedSummary: Codable {
+    @Guide(description: "Name des Ausstellers ohne Werbeslogan, Anschrift oder Beschreibung.") var aussteller: String
+    @Guide(description: "Gedruckte Rechnungs-/Belegnummer.") var belegnummer: String?
+    @Guide(description: "Ausdrückliches Rechnungs-/Belegdatum. Deutsche Reihenfolge Tag.Monat.Jahr.") var datum: Datum
+    @Guide(description: "Gedruckte Netto-Gesamtsumme der Rechnung.") var netto: PrintedAmount
+    @Guide(description: "Gedruckte Brutto-Gesamtsumme der Rechnung.") var brutto: PrintedAmount
+    @Guide(
+        description: "Eine Gruppe je ausgewiesenem Steuersatz. Nettobetrag und Steuerbetrag sind verschieden.",
+        .maximumCount(8)
+    ) var steuergruppen: [PrintedVATGroup]
+
+    func normalized() -> Facts {
+        Facts(
+            date: String(format: "%04d-%02d-%02d", datum.jahr, datum.monat, datum.tag),
+            issuer: aussteller, number: belegnummer, net: netto.text,
+            tax: NSDecimalNumber(decimal: steuergruppen.reduce(Cent.null) { $0 + $1.steuer.money }.betrag).stringValue,
+            gross: brutto.text,
+            vat: steuergruppen.map { VATFacts(rate: String($0.prozent), net: $0.netto.text, tax: $0.steuer.text) }
+        )
+    }
+}
+
+@Generable struct NetAllocation: Codable {
+    @Guide(
+        description: "Alle tatsächlichen Leistungszeilen mit ausdrücklich ausgewiesenem Nettobetrag und dem Steuersatz derselben Zeile. Keine Summen und keine Steuerbeträge.",
+        .maximumCount(12)
+    ) var leistungen: [Leistungszeile]
+}
+
+extension Facts {
+    /// Single-rate totals require no allocation. Mixed rates sum the extracted net lines.
+    func allocatingNet(_ lines: [Leistungszeile]) -> Facts {
+        var result = self
+        if vat.count == 1 {
+            result.vat[0].net = net
+        } else {
+            let groups = Dictionary(grouping: lines, by: \.steuersatz)
+            for index in result.vat.indices {
+                result.vat[index].net = groups[Int(result.vat[index].rate) ?? -1].map {
+                    NSDecimalNumber(decimal: $0.reduce(Cent.null) { $0 + $1.netto.money }.betrag).stringValue
+                }
+            }
+        }
+        return result
+    }
+}
+
 actor State {
     let sqlTool: SQLTool
     var calls: [[String: String]] = []
@@ -385,7 +460,8 @@ struct LinkBridge: Tool {
         let names = ([expected["gegenpartei_name"] as? String].compactMap(\.self)) +
             (expected["accepted_counterparties"] as? [String] ?? [])
         let normalize: (String) -> String = { $0.lowercased().filter { $0.isLetter || $0.isNumber } }
-        if !names
+        // An outgoing booking stores the customer, not the document issuer.
+        if expected["richtung"] as? String != "einnahme", !names
             .contains(where: { normalize($0) == normalize(facts.issuer ?? "") })
         {
             errors.append("issuer: \(facts.issuer ?? "nil")")
@@ -405,6 +481,42 @@ struct LinkBridge: Tool {
 
     static func main() async throws {
         let args = Array(CommandLine.arguments.dropFirst())
+        if args == ["--self-test"] {
+            let amount = PrintedAmount(negativ: true, euro: 0, cent: 34)
+            precondition(amount.money.value == -34)
+            let summary = PrintedSummary(
+                aussteller: "Test", belegnummer: nil, datum: Datum(jahr: 2026, monat: 1, tag: 2),
+                netto: PrintedAmount(negativ: true, euro: 12, cent: 34),
+                brutto: PrintedAmount(negativ: true, euro: 14, cent: 68),
+                steuergruppen: [PrintedVATGroup(
+                    prozent: 19,
+                    netto: PrintedAmount(negativ: true, euro: 99, cent: 0),
+                    steuer: PrintedAmount(negativ: true, euro: 2, cent: 34)
+                )]
+            ).normalized()
+            precondition(summary.tax == "-2.34" && summary.allocatingNet([]).vat[0].net == "-12.34")
+            var mixed = summary
+            mixed.vat = [VATFacts(rate: "7", net: nil, tax: "0.86"), VATFacts(rate: "19", net: nil, tax: "0.95")]
+            let lines = [Leistungszeile(leistung: "A", netto: Eurobetrag(euro: 10, cent: 0), steuersatz: 7),
+                         Leistungszeile(leistung: "B", netto: Eurobetrag(euro: 2, cent: 34), steuersatz: 7),
+                         Leistungszeile(leistung: "C", netto: Eurobetrag(euro: 5, cent: 0), steuersatz: 19)]
+            let allocated = mixed.allocatingNet(lines)
+            precondition(allocated.vat.map(\.net) == ["12.34", "5"])
+            precondition(allocated.vat.map(\.tax) == ["0.86", "0.95"])
+            precondition(mixed.allocatingNet([]).vat.allSatisfy { $0.net == nil })
+            let credit = summary.allocatingNet([])
+            let expected: [String: Any] = [
+                "richtung": "einnahme", "gegenpartei_name": "Customer instead of issuer",
+                "datum": "2026-01-02", "netto_cents": -1234, "steuer_cents": -234,
+                "brutto_cents": -1468, "belegnummer": "TEST",
+                "positionen_nach_satz": [["steuersatz": "19", "netto_cents": -1234, "steuer_cents": -234]]
+            ]
+            var numberedCredit = credit
+            numberedCredit.number = "TEST"
+            precondition(mismatch(numberedCredit, expected: expected).isEmpty)
+            print("Native normalization and outgoing-score checks passed; no model inference.")
+            return
+        }
         guard (4 ... 5).contains(args.count)
         else { fatalError("extract|workflow mode case output-directory [prepared-OCR-text]") }
         let kind = args[0], mode = args[1], id = args[2], output = URL(fileURLWithPath: args[3])
@@ -439,6 +551,11 @@ struct LinkBridge: Tool {
         }
         if mode.contains("units") {
             instructions = "Extrahiere nur belegte Dokumentfakten, Lieferant statt Kunde, deutsche Datumsreihenfolge Tag.Monat.Jahr. Beträge getrennt in ganze Euro und Cent-Nachkommastellen:12,34EUR ist euro12,cent34;123,00EUR ist euro123,cent0. Keine Gesamt-Centzahl in euro eintragen. Keine Annahmen oder erfundenen Werte. Nettosummen/Steuerübersicht nicht zusätzlich als Leistungszeile erfassen."
+        }
+        if mode == "ocr-lines-summary" || mode == "ocr-lines-printed" || mode == "ocr-lines-staged" {
+            instructions = """
+            Lies die gedruckten Rechnungsfakten aus dem OCR-Text. Nutze für net, tax und gross die Netto-, Steuer- und Brutto-Gesamtsummen der Abrechnung. Artikelpreise in einer BRUTTO-Spalte sind keine Nettobeträge. Für vat fasse die ausgewiesenen Beträge je Steuersatz zusammen; verwende die Steuerübersicht. Addiere ausgewiesene Teil-Steuerbeträge zur Gesamtsteuer, wenn keine Gesamtsteuer gedruckt ist. Übernimm das ausdrücklich bezeichnete Rechnungs-/Belegdatum und den Aussteller, nicht den Kunden. Deutsche Datumsreihenfolge ist Tag.Monat.Jahr. Geld als Dezimaltext mit Punkt und tatsächlichem Vorzeichen. Fehlende Angaben bleiben null; erfinde nichts.
+            """
         }
         var task = "Lies diesen Beleg vollständig und liefere die Fakten einschließlich aller Umsatzsteuergruppen."
         var tools: [any Tool] = []
@@ -531,12 +648,57 @@ struct LinkBridge: Tool {
             "preparationSeconds": preparationSeconds,
             "toolBudget": 12,
             "sampling": "greedy",
-            "modelContextSize": SystemLanguageModel.default.contextSize
+            "modelContextSize": SystemLanguageModel.default.contextSize,
+            "taxSource": "Model-produced printed facts unless a Core-derived mode overrides this label."
         ]
         do {
             if kind == "extract" {
                 let bytes: Data
-                if mode.contains("core-units") {
+                if mode == "ocr-lines-printed" || mode == "ocr-lines-staged" {
+                    let response = try await session.respond(
+                        to: prompt, generating: PrintedSummary.self,
+                        options: GenerationOptions(
+                            samplingMode: .greedy,
+                            maximumResponseTokens: 1000,
+                            toolCallingMode: .disallowed
+                        )
+                    )
+                    record["rawPrintedSummary"] = try JSONSerialization
+                        .jsonObject(with: JSONEncoder().encode(response.content))
+                    record["taxSource"] = "Core.Cent sum of model-extracted printed VAT tax amounts; no rate-based tax derivation."
+                    var facts = response.content.normalized()
+                    if mode == "ocr-lines-staged" {
+                        if facts.vat.count == 1 {
+                            facts = facts.allocatingNet([])
+                        } else {
+                            let allocationInstructions = "Extrahiere nur die Netto-Leistungszeilen der Rechnung mit ihren Steuersätzen. Lies jede Tabellenzeile horizontal: Beschreibung, Nettobetrag, Prozent. Steuerübersicht und Summen sind keine Leistungen. Geld wird als ganze Euro und Cent-Nachkommastellen geschrieben, z.B.12,34EUR bedeutet euro12,cent34."
+                            try allocationInstructions.write(
+                                to: output.appending(path: "allocation-instructions.txt"),
+                                atomically: true,
+                                encoding: .utf8
+                            )
+                            let allocationSession = LanguageModelSession(instructions: allocationInstructions)
+                            defer {
+                                record["additionalInputTokens"] = allocationSession.usage.input.totalTokenCount
+                                record["additionalOutputTokens"] = allocationSession.usage.output.totalTokenCount
+                            }
+                            let allocation = try await allocationSession.respond(
+                                to: "Lies die Netto-Leistungen und den Steuersatz derselben Zeile.\n" + text,
+                                generating: NetAllocation.self,
+                                options: GenerationOptions(
+                                    samplingMode: .greedy,
+                                    maximumResponseTokens: 800,
+                                    toolCallingMode: .disallowed
+                                )
+                            )
+                            record["rawNetAllocation"] = try JSONSerialization
+                                .jsonObject(with: JSONEncoder().encode(allocation.content))
+                            facts = facts.allocatingNet(allocation.content.leistungen)
+                        }
+                        record["vatNetSource"] = "Single rate: printed total net. Multiple rates: Core sums model-extracted net lines by rate, separate focused call."
+                    }
+                    bytes = try JSONEncoder().encode(facts)
+                } else if mode.contains("core-units") {
                     let response = try await session.respond(
                         to: prompt,
                         generating: CoreEuroFakten.self,
@@ -600,9 +762,11 @@ struct LinkBridge: Tool {
                     bytes = try JSONEncoder().encode(response.content)
                 }
                 record["facts"] = try JSONSerialization.jsonObject(with: bytes)
+                let expected = (item["expected"] as! [[String: Any]])[0]
+                record["unscoredChecks"] = expected["richtung"] as? String == "einnahme" ? ["issuer"] : []
                 record["mismatches"] = try mismatch(
                     JSONDecoder().decode(Facts.self, from: bytes),
-                    expected: (item["expected"] as! [[String: Any]])[0]
+                    expected: expected
                 )
             } else {
                 let response = try await session.respond(
@@ -618,8 +782,8 @@ struct LinkBridge: Tool {
         } catch { record["error"] = String(reflecting: error) }
         record["seconds"] = Date().timeIntervalSince(started)
         record["totalProbeSeconds"] = Date().timeIntervalSince(preparationStarted)
-        record["inputTokens"] = session.usage.input.totalTokenCount
-        record["outputTokens"] = session.usage.output.totalTokenCount
+        record["inputTokens"] = session.usage.input.totalTokenCount + (record["additionalInputTokens"] as? Int ?? 0)
+        record["outputTokens"] = session.usage.output.totalTokenCount + (record["additionalOutputTokens"] as? Int ?? 0)
         record["calls"] = await state.calls
         record["touched"] = await state.touched.sorted()
         record["bookings"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(repository.allBookings()))

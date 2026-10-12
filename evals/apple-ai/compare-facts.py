@@ -1,46 +1,32 @@
+"""Score native document facts and saved public Luna bookings, without model calls."""
 import argparse
-import copy
 import hashlib
 import json
 import pathlib
 import statistics
 from decimal import Decimal
 
-parser = argparse.ArgumentParser(description='Score the fixed nine-run native fact pilot against saved Luna outputs. No model calls.')
-parser.add_argument('apple_results', type=pathlib.Path)
-parser.add_argument('luna_report', type=pathlib.Path)
-args = parser.parse_args()
-project = pathlib.Path(__file__).resolve().parents[2]
-output = args.apple_results.resolve()
-truth_path = project / 'evals/2026-q3/ground-truth.json'
-truth = json.loads(truth_path.read_text())
-truth_hash = hashlib.sha256(truth_path.read_bytes()).hexdigest()
-luna_path = args.luna_report.resolve()
-luna = json.loads(luna_path.read_text())
-assert truth_hash == luna['truthSHA256']
-ids = ['09', '17', '42']
-expected = {c['id']: c['expected'][0] for c in truth['cases'] if c['id'] in ids}
-
-
 def cents(value):
-    if value is None:
+    if value is None or isinstance(value, bool):
         return None
     try:
         scaled = Decimal(value) * 100
+        if not scaled.is_finite():
+            return None
         return int(scaled) if scaled == scaled.to_integral_value() else None
     except Exception:
         return None
 
 
 def normalize(value):
-    return ''.join(c for c in (value or '').lower() if c.isalnum())
+    return ''.join(c for c in value.lower() if c.isalnum()) if isinstance(value, str) else ''
 
 
 def rate(value):
     return str(Decimal(str(value)).normalize())
 
 
-def facts_from_booking(booking):
+def _facts_from_booking(booking):
     if booking is None:
         return {}
     groups = {}
@@ -57,7 +43,16 @@ def facts_from_booking(booking):
                     for key, (n,t) in groups.items()]}
 
 
+def facts_from_booking(booking):
+    try:
+        return _facts_from_booking(booking)
+    except (KeyError, TypeError, ValueError, ArithmeticError):
+        return {}
+
+
 def checks(facts, want):
+    if not isinstance(facts, dict):
+        facts = {}
     names = [want['gegenpartei_name']] + want.get('accepted_counterparties', [])
     numbers = [want['belegnummer']] + want.get('accepted_receipt_numbers', [])
     wanted_vat = sorted((rate(p['steuersatz']), p['netto_cents'], p['steuer_cents'])
@@ -75,63 +70,125 @@ def checks(facts, want):
             'gross': cents(facts.get('gross')) == want['brutto_cents'],
             'vat_groups': actual_vat == wanted_vat}
 
-# Verify the scorer using truth-derived facts, without requiring Luna to pass.
-want = expected['09']
-probe = {'date': want['datum'], 'issuer': want['gegenpartei_name'],
-         'number': want['belegnummer'], 'net': str(Decimal(want['netto_cents']) / 100),
-         'tax': str(Decimal(want['steuer_cents']) / 100),
-         'gross': str(Decimal(want['brutto_cents']) / 100),
-         'vat': [{'rate': p['steuersatz'], 'net': str(Decimal(p['netto_cents']) / 100),
-                  'tax': str(Decimal(p['steuer_cents']) / 100)} for p in want['positionen_nach_satz']]}
-assert all(checks(probe, expected['09']).values())
-bad = copy.deepcopy(probe); bad['date'] = '2026-08-03'; bad['tax'] = '5.59'
-assert not checks(bad, expected['09'])['date'] and not checks(bad, expected['09'])['tax']
-assert not any(checks({}, expected['09']).values())
-
-apple_rows = []
-for path in sorted(output.glob('*/result.json')):
-    d = json.loads(path.read_text()); fields = checks(d.get('facts', {}), expected[d['case']])
-    assert d['mode'] == 'ocr-lines-core-units', 'Compare one fixed extraction configuration.'
-    assert sum(not v for v in fields.values()) == len(d['mismatches'])
-    apple_rows.append({'case': d['case'], 'repetition': int(path.parent.name.split('-r')[1]),
-                       'checks': fields, 'pass': all(fields.values()) and not d.get('error'),
-                       'modelSeconds': d['seconds'], 'totalProbeSeconds': d['totalProbeSeconds'],
-                       'artifact': str(path.relative_to(output))})
-assert len(apple_rows)==9
-assert {(r['case'], r['repetition']) for r in apple_rows} == {(id, rep) for id in ids for rep in range(1, 4)}
-luna_rows = []
-for c in luna['cases']:
-    if c['id'] not in ids: continue
-    for file, sha in c['fileSHA256'].items():
-        assert hashlib.sha256((project / 'evals/2026-q3' / file).read_bytes()).hexdigest()==sha
-    booking = c['bookings'][0] if len(c['bookings']) == 1 else None
-    fields = checks(facts_from_booking(booking), expected[c['id']])
-    luna_rows.append({'case': c['id'], 'repetition': c['repetition'], 'checks': fields,
-                      'pass': all(fields.values()), 'wholeAgentSeconds': c['seconds']})
-assert len(luna_rows)==6
-assert {(r['case'], r['repetition']) for r in luna_rows} == {(id, rep) for id in ids for rep in range(1, 3)}
+def reconciliation(facts):
+    """Diagnostics only: never repair facts or change the frozen seven-check score."""
+    if not isinstance(facts, dict):
+        return []
+    net, tax, gross = (cents(facts.get(k)) for k in ['net', 'tax', 'gross'])
+    errors = []
+    if None not in [net, tax, gross] and net + tax != gross:
+        errors.append('net + tax != gross')
+    groups = facts.get('vat', [])
+    if isinstance(groups, list) and groups:
+        for key, total in [('net', net), ('tax', tax)]:
+            values = [cents(g.get(key)) if isinstance(g, dict) else None for g in groups]
+            if total is not None and all(v is not None for v in values) and sum(values) != total:
+                errors.append(f'VAT group {key} sum != total {key}')
+    return errors
 
 
-def summarize(rows):
+def summarize(rows, ids):
     return {'passed': sum(r['pass'] for r in rows), 'runs': len(rows),
             'correctChecks': sum(sum(r['checks'].values()) for r in rows),
-            'totalChecks': 7*len(rows),
-            'byCase': {id: {'passed': sum(r['pass'] for r in rows if r['case']==id),
-                           'runs': sum(r['case']==id for r in rows)} for id in ids},
+            'totalChecks': sum(len(r['checks']) for r in rows),
+            'byCase': {id: {'passed': sum(r['pass'] for r in rows if r['case'] == id),
+                           'runs': sum(r['case'] == id for r in rows)} for id in ids},
             'byField': {field: sum(r['checks'][field] for r in rows)
-                        for field in rows[0]['checks']}}
+                        for field in rows[0]['checks']} if rows else {}}
 
-report = {'scope': 'Seven essential factual checks, one fixed native extraction configuration; not full booking parity.',
-          'appleMode': 'ocr-lines-core-units', 'appleResults': str(output),
-          'truthSHA256': truth_hash, 'lunaReport': str(luna_path), 'lunaGeneratedAt': luna['generatedAt'],
-          'lunaModel': luna['model'], 'lunaEffort': luna['effort'],
-          'apple': summarize(apple_rows), 'historicalLuna': summarize(luna_rows),
-          'appleMeanModelSeconds': statistics.mean(r['modelSeconds'] for r in apple_rows),
-          'appleMeanTotalProbeSeconds': statistics.mean(r['totalProbeSeconds'] for r in apple_rows),
-          'appleRuns': apple_rows, 'historicalLunaRuns': luna_rows,
-          'limitations': ['Three document cases, two underlying transactions; hotel PDF and scan depict the same invoice.',
-                         'Apple: three new repeats per case; Luna: two historical repeats, not a new endpoint benchmark.',
-                         'Apple emits facts only and derives tax using Core; Luna completed a broader bookkeeping task.',
-                         'No field score for classification, payments, matching, SQL or lifecycle.',
-                         'No end-to-end speed comparison; native component timings and historical whole-agent timings differ.']}
-print(json.dumps(report, ensure_ascii=False, indent=2))
+
+def compare(output, luna_path):
+    project = pathlib.Path(__file__).resolve().parents[2]
+    truth_path = project / 'evals/2026-q3/ground-truth.json'
+    truth = json.loads(truth_path.read_text())
+    sha = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+    truth_hash = sha(truth_path)
+    luna = json.loads(luna_path.read_text())
+    assert truth_hash == luna['truthSHA256'], 'Historical truth differs.'
+    manifest_path = output / 'manifest.json'
+    manifest = json.loads(manifest_path.read_text()) if manifest_path.exists() else None
+    ids = manifest['caseIDs'] if manifest else ['09', '17', '42']
+    repeats = manifest['repeats'] if manifest else 3
+    mode = manifest['mode'] if manifest else 'ocr-lines-core-units'
+    if manifest:
+        assert manifest['truthSHA256'] == truth_hash, 'Native truth differs.'
+        for file, digest in manifest['fileSHA256'].items():
+            assert sha(project / 'evals/2026-q3' / file) == digest, 'Native input changed.'
+    expected = {c['id']: c['expected'][0] for c in truth['cases'] if c['id'] in ids}
+    assert set(expected) == set(ids)
+    outgoing = [i for i in ids if expected[i]['richtung'] == 'einnahme']
+    primary_ids = [i for i in ids if i not in outgoing]
+
+    def comparable_checks(value, id):
+        fields = checks(value, expected[id])
+        if id in outgoing:
+            # An outgoing booking stores the customer; it cannot label document issuer.
+            del fields['issuer']
+        return fields
+    attempts = {(r['case'], r['repetition']): r for r in manifest.get('runs', [])} if manifest else {}
+    apple_rows = []
+    for id in ids:
+        for repetition in range(1, repeats + 1):
+            path = output / f'{id}-r{repetition}/result.json'
+            d = json.loads(path.read_text()) if path.exists() else {'error': 'Missing result'}
+            if path.exists():
+                assert d['mode'] == mode and d['case'] == id, 'Mixed configuration or case.'
+            attempt = attempts.get((id, repetition))
+            execution_error = d.get('error')
+            if attempt and attempt['exitCode'] != 0:
+                execution_error = execution_error or f"Process exited {attempt['exitCode']}"
+            fields = comparable_checks(d.get('facts', {}), id)
+            apple_rows.append({'case': id, 'repetition': repetition, 'checks': fields,
+                               'pass': all(fields.values()) and not execution_error,
+                               'error': execution_error, 'reconciliationErrors': reconciliation(d.get('facts')),
+                               'modelSeconds': d.get('seconds'),
+                               'totalProbeSeconds': d.get('totalProbeSeconds'),
+                               'artifact': str(path.relative_to(output))})
+    actual = set(output.glob('*/result.json'))
+    planned = {output / f'{id}-r{r}/result.json' for id in ids for r in range(1, repeats + 1)}
+    assert actual <= planned, 'Unplanned results must not be silently omitted.'
+    luna_rows = []
+    for c in luna['cases']:
+        if c['id'] not in ids:
+            continue
+        for file, digest in c['fileSHA256'].items():
+            assert sha(project / 'evals/2026-q3' / file) == digest, 'Historical input changed.'
+        booking = c['bookings'][0] if len(c['bookings']) == 1 else None
+        fields = comparable_checks(facts_from_booking(booking), c['id'])
+        # Facts in saved state do not establish successful end-to-end completion.
+        luna_rows.append({'case': c['id'], 'repetition': c['repetition'], 'checks': fields,
+                          'pass': all(fields.values()), 'wholeAgentSeconds': c['seconds']})
+    assert set(r['case'] for r in luna_rows) == set(ids), 'Historical cases missing.'
+    def mean(key):
+        values = [r[key] for r in apple_rows if r[key] is not None]
+        return statistics.mean(values) if values else None
+    return {'scope': 'Seven document-fact checks on expenses; outgoing six-check diagnostics separate. Not whole-agent parity.',
+            'appleMode': mode, 'appleResults': str(output), 'truthSHA256': truth_hash,
+            'nativePlanCompleted': (manifest.get('completedAt') is not None and
+                                    set(attempts) == {(i, r) for i in ids for r in range(1, repeats + 1)})
+                                   if manifest else actual == planned,
+            'lunaReport': str(luna_path), 'lunaGeneratedAt': luna['generatedAt'],
+            'lunaModel': luna['model'], 'lunaEffort': luna['effort'],
+            'apple': summarize([r for r in apple_rows if r['case'] in primary_ids], primary_ids),
+            'historicalLuna': summarize([r for r in luna_rows if r['case'] in primary_ids], primary_ids),
+            'outgoingDiagnostics': {
+                'scope': 'Six comparable checks only. Issuer is unscored: outgoing bookings store the customer.',
+                'apple': summarize([r for r in apple_rows if r['case'] in outgoing], outgoing),
+                'historicalLuna': summarize([r for r in luna_rows if r['case'] in outgoing], outgoing)},
+            'appleMeanModelSeconds': mean('modelSeconds'),
+            'appleMeanTotalProbeSeconds': mean('totalProbeSeconds'),
+            'appleRuns': apple_rows, 'historicalLunaRuns': luna_rows,
+            'limitations': ['Historical Luna bookings are not a fresh endpoint benchmark.',
+                            'Field checks are correlated, not independent samples.',
+                            'Greedy repeats establish observed repeatability only.',
+                            'Extraction excludes classification, payments, matching and persistence.',
+                            'Model component and whole-agent timings are not comparable.']}
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('apple_results', type=pathlib.Path)
+    parser.add_argument('luna_report', type=pathlib.Path)
+    args = parser.parse_args()
+    print(json.dumps(compare(args.apple_results.resolve(), args.luna_report.resolve()),
+                     ensure_ascii=False, indent=2))
