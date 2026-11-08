@@ -72,7 +72,7 @@ public struct Responses: Sendable {
         }
         _ = try await Responses(key: key, transport: transport).send([
             // The cheapest model at the lowest effort; this asks the key, not the choice.
-            "model": Model.luna.rawValue,
+            "model": Model.luna6.rawValue,
             "reasoning": ["effort": ReasoningEffort.none.rawValue],
             "max_output_tokens": 16,
             "input": "Antworte nur mit OK."

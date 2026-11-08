@@ -27,6 +27,26 @@ enum Workspace: String, CaseIterable, Identifiable {
     }
 }
 
+/// Activity is a status indicator, so it does not share the actions' glass background.
+struct IntakeProgress: ToolbarContent {
+    @ToolbarContentBuilder var body: some ToolbarContent {
+        if #available(macOS 26, *) {
+            item.sharedBackgroundVisibility(.hidden)
+        } else {
+            item
+        }
+    }
+
+    private var item: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            ProgressView()
+                .controlSize(.small)
+                .accessibilityLabel("Belege werden verarbeitet")
+                .help("Belege werden verarbeitet")
+        }
+    }
+}
+
 struct WorkspaceView: View {
     @Bindable var model: AppModel
     /// The app opens on the overview.
@@ -44,10 +64,9 @@ struct WorkspaceView: View {
             // hides the right hand table columns.
             HStack(spacing: 0) {
                 MainWindow(model: model)
-                if model.inspectorVisible {
-                    Divider()
-                    inspectorPane.frame(width: WorkspaceView.inspectorWidth)
-                }
+                Divider()
+                // The divider counts toward the inspector's width.
+                inspectorPane.frame(width: WorkspaceView.inspectorWidth - 1)
             }
         case .chat:
             ChatView(model: model)
@@ -77,6 +96,14 @@ struct WorkspaceView: View {
                     }
                 }
         }
+        // Search sits in the sidebar on every page, so the toolbar keeps its
+        // two actions at the trailing edge. Typing leads to the bookings.
+        .searchable(text: $model.search, placement: .sidebar, prompt: "Suchen")
+        .onChange(of: model.search) {
+            if model.search.isEmpty == false {
+                workspace = .buchungen
+            }
+        }
         // Drag and drop counts for the whole window, on Start as well.
         .dropDestination(for: URL.self) { urls, _ in
             model.acceptFiles(urls)
@@ -92,20 +119,23 @@ struct WorkspaceView: View {
         .frame(minWidth: minimumWindowWidth, minHeight: 416)
     }
 
-    /// The fixed sidebar width, the fixed inspector width, the smallest table
-    /// width the columns need and the smallest width the two start columns need.
+    /// The ledger with its inspector: the widest page and the opening size.
+    static let defaultWidth: CGFloat = 1000
+    /// The fixed sidebar width, the smallest table width the columns need and
+    /// the smallest width the two start columns need.
     static let sidebarWidth: CGFloat = 160
-    static let inspectorWidth: CGFloat = 320
-    static let tableMinimumWidth: CGFloat = 640
+    static let tableMinimumWidth: CGFloat = 560
     static let startMinimumWidth: CGFloat = 640
+    /// The inspector takes what the ledger leaves, less the split view's own
+    /// separator line after the sidebar.
+    static let inspectorWidth = defaultWidth - sidebarWidth - 1 - tableMinimumWidth
 
     private var minimumWindowWidth: CGFloat {
         switch workspace {
         case .start, .chat:
             Self.sidebarWidth + Self.startMinimumWidth
         case .buchungen:
-            Self.sidebarWidth + Self.tableMinimumWidth
-                + (model.inspectorVisible ? Self.inspectorWidth + 1 : 0)
+            Self.defaultWidth
         }
     }
 

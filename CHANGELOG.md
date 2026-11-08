@@ -1,5 +1,22 @@
 # Änderungen
 
+## 0.11.3 (2026-10-12)
+
+- Der Importindikator auf Start und Buchungen hat unter macOS 26 und neuer keinen eigenen schmalen Glasrahmen mehr
+- Zahlungsbeträge im Inspector haben mehr Platz; „Zahlung“ oder „Erstattung“ steht darunter statt neben dem Betrag
+
+Unter macOS 27.0.1 nativ geprüft. Der geringe Kontrast ausgewählter Einstellungstabs im dunklen Modus bleibt bekannt und offen. Steuerexporte bleiben auf 2026 begrenzt.
+
+## 0.11.2 (2026-10-12)
+
+- Bekannte Vor-Chat-Archive werden beim Öffnen nach einer geprüften Datenbanksicherung transaktional korrigiert. Buchungen, Belege und alte Anfragen behalten ihre IDs
+- Aufbewahrte Belege ohne Buchungsverknüpfung lassen sich erneut importieren; ein früherer Erfolg blockiert das Wiederholen nicht mehr
+- Kann Pfennig das Archiv nicht öffnen, zeigt es den Fehler und den Archivpfad in einem nativen Dialog und beendet sich geordnet
+- Belege werden nacheinander verarbeitet, damit ein weiterer Import bereits erfasste Buchungen sehen kann. Größere Stapel brauchen dadurch länger
+- Der Agent ordnet Einnahmen und Ausgaben ausdrücklich aus Sicht des eigenen Unternehmens zu; ein wiederholt falsch eingelesener Eingangsbeleg wurde im Eval damit richtig erkannt
+
+Die Archivkorrektur ist eine vorübergehende Ausnahme für das bekannte alte Chat-Schema, keine allgemeine Migration. Andere alte oder unerwartete Schemaformen brauchen eine abgestimmte Korrektur. Apple-KI bleibt ausschließlich ein Eval-Experiment. Steuerexporte bleiben auf 2026 begrenzt. Der Eigentümer hat den normalen App-Updatezyklus und den erneuten Vercel-Import mit diesem Build erfolgreich bestätigt.
+
 ## 0.9.0 (2026-09-22)
 
 - Fehlende Steuerbehandlung ist eine leere Auswahl statt „Unklar“; der Agent bekommt dafür keine zusätzliche Promptanweisung

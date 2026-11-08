@@ -19,7 +19,6 @@ final class AppModel {
     var reviewFilter: ReviewFilter = .alle
     var search = ""
     var sortOrder = [KeyPathComparator(\Buchung.datum, order: .reverse)]
-    var inspectorVisible = false
     var exportVisible = false
     /// Set by the start page so the export sheet opens on that period.
     var exportPeriod: Zeitraum?
@@ -72,21 +71,17 @@ final class AppModel {
         }
     }
 
-    /// How many files the agent works on at the same time.
-    static let maxConcurrent = 10
+    /// Finish an import before the next agent looks for an existing booking.
+    static let maxConcurrent = 1
     /// The most files one drop may add to the queue.
     static let maxDrop = 50
 
-    init() {
-        do {
-            try path.create()
-            repository = try Repository(path: path.databaseFile)
-            intake = try FileIntake(repository: repository, path: path)
-            chat = Chat(intake: intake)
-            currentProfile = try repository.profile()
-        } catch {
-            fatalError("Die Datenbank ließ sich nicht öffnen: \(error)")
-        }
+    init() throws {
+        try path.create()
+        repository = try Repository(path: path.databaseFile)
+        intake = try FileIntake(repository: repository, path: path)
+        chat = Chat(intake: intake)
+        currentProfile = try repository.profile()
     }
 
     // MARK: - FileIntake
@@ -142,10 +137,8 @@ final class AppModel {
         process()
     }
 
-    /// Files run side by side, at most `maxConcurrent` of them. A drop that
-    /// arrives while they run joins the queue the task is already emptying.
-    /// Every statement of every run still goes through the one database queue,
-    /// so the rows stay consistent.
+    /// Imports finish in order, including rollback and Inbox cleanup. A drop
+    /// that arrives meanwhile joins the queue the task is already emptying.
     private func process() {
         guard progress.running == false else { return }
         progress.running = true
@@ -253,7 +246,30 @@ final class AppModel {
         reviewFilter = .alle
         search = ""
         selection = Set(saved.id.map { [$0] } ?? [])
-        inspectorVisible = true
+        if let id = saved.id {
+            blankDrafts[id] = saved
+        }
+    }
+
+    /// Bookings from the plus button as they were created. One left without
+    /// any input is dropped again instead of lingering as an empty draft.
+    private var blankDrafts: [Int64: Buchung] = [:]
+
+    /// The inspector calls this when it leaves a booking, after its last save.
+    /// A blank draft carries no receipt, so a running import cannot need it.
+    func discardIfBlank(_ buchung: Buchung) {
+        guard let id = buchung.id, var blank = blankDrafts.removeValue(forKey: id) else { return }
+        // The row's timestamps come back from the database; only content counts.
+        blank.erstelltAm = buchung.erstelltAm
+        blank.geaendertAm = buchung.geaendertAm
+        guard blank == buchung else { return }
+        buchungen.removeAll { $0.id == id }
+        selection.remove(id)
+        do {
+            try repository.delete(id: id)
+        } catch {
+            errorMessage = "\(error)"
+        }
     }
 
     /// The click on the symbol in the Bezahlt column. An open booking is

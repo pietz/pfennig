@@ -81,12 +81,16 @@ public struct FileInput: Sendable {
 public struct RunResult: Sendable {
     public var touched: [Int64] = []
     public var created: [Int64] = []
+    /// How many rows the run left in `aktivitaeten` for each booking it
+    /// touched, one per statement.
+    public var writes: [Int64: Int] = [:]
 }
 
-/// A run that gave up, with the bookings it had already written. Swift removes
-/// them before the file is tried again, so nothing doubles.
+/// A run that gave up, with the bookings it had created and the log rows it
+/// wrote for each. Swift removes those nobody else changed meanwhile before
+/// the file is tried again, so nothing doubles.
 public struct RunAbort: Error, LocalizedError {
-    public var created: [Int64]
+    public var created: [Int64: Int]
     public var reason: any Error
 
     public var errorDescription: String? {
@@ -104,17 +108,20 @@ public struct AgentRun: Sendable {
     /// Read once per run from the Keychain, never kept anywhere else.
     let key: String
     let transport: Transport
+    let rulesOverride: String?
 
     public init(
         repository: Repository,
         tool: SQLTool,
         key: String,
-        transport: @escaping Transport = Responses.network
+        transport: @escaping Transport = Responses.network,
+        rulesOverride: String? = nil
     ) {
         self.repository = repository
         self.tool = tool
         self.key = key
         self.transport = transport
+        self.rulesOverride = rulesOverride
     }
 
     /// The SQL tool the agent gets, in the shape the Responses API expects.
@@ -214,7 +221,7 @@ public struct AgentRun: Sendable {
         dateiId: Int64? = nil,
         gespraechId: Int64? = nil
     ) async throws -> (result: RunResult, items: [[String: Any]]) {
-        let instructions = try AgentInstructions.build(repository)
+        let instructions = try AgentInstructions.build(repository, rulesOverride: rulesOverride)
         let ai = try repository.aiSettings()
         let request = try repository.startRequest(dateiId: dateiId, gespraechId: gespraechId, modell: ai.model.rawValue)
         var items: [[String: Any]] = [["role": "user", "content": message]]
@@ -241,7 +248,8 @@ public struct AgentRun: Sendable {
             // The reason goes into the log only, never into a conversation.
             items.append(["fehler": error.localizedDescription])
             try? repository.finishRequest(id: request, status: .fehler)
-            throw RunAbort(created: result.created, reason: error)
+            let created = result.created.map { ($0, result.writes[$0, default: 0]) }
+            throw RunAbort(created: Dictionary(uniqueKeysWithValues: created), reason: error)
         }
         // Completion is required before intake removes the inbox copy. Keep
         // this outside the abort handler: bookings are already committed and
@@ -297,6 +305,9 @@ public struct AgentRun: Sendable {
                     let toolResult = tool.execute(AgentRun.sql(call.arguments))
                     result.touched = Array(Set(result.touched).union(toolResult.touched)).sorted()
                     result.created = Array(Set(result.created).union(toolResult.created)).sorted()
+                    for id in toolResult.touched {
+                        result.writes[id, default: 0] += 1
+                    }
                     text = toolResult.text
                 case "umrechnen":
                     text = await CurrencyConverter.execute(call.arguments, transport: transport)

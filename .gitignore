@@ -11,6 +11,8 @@
 .build/
 build/
 dist/
+evals/results/
+evals/private/
 DerivedData/
 *.xcresult
 

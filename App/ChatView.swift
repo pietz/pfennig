@@ -60,6 +60,7 @@ struct ChatView: View {
             }
             ToolbarItem(placement: .primaryAction) {
                 Button("Neues Gespräch", systemImage: "square.and.pencil") {
+                    selection = nil
                     model.newConversation()
                     focused = true
                 }
@@ -78,7 +79,7 @@ struct ChatView: View {
     private var transcript: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: 14) {
+                LazyVStack(alignment: .leading, spacing: 24) {
                     ForEach(model.chatMessages) { message in
                         MessageRow(fromUser: message.fromUser, text: message.text)
                     }
@@ -91,6 +92,9 @@ struct ChatView: View {
                     }
                     Color.clear.frame(height: 1).id("end")
                 }
+                // Long lines read badly, so the column stops growing and centers.
+                .frame(maxWidth: 600)
+                .frame(maxWidth: .infinity)
                 .padding(16)
             }
             .defaultScrollAnchor(.bottom)
@@ -184,6 +188,9 @@ struct ChatView: View {
     }
 
     private func send() {
+        guard model.canSend else { return }
+        // TextSelection indices belong to the old draft and must go before send clears it.
+        selection = nil
         Task {
             await model.send()
             focused = true
@@ -222,7 +229,6 @@ private struct MessageRow: View {
             Text(markdown)
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, 80)
         }
     }
 

@@ -48,22 +48,34 @@ import Testing
     #expect(UStVA.calculate([rechnung], zeitraum: q4, profile: regel).betrag(81) == 50000)
 }
 
-@Test func vorsteuerZaehltZumSpaeterenVonBelegUndZahlung() {
+@Test func vorsteuerZaehltZumBelegdatumAuchBeiSpaetererZahlung() {
+    // §15 Abs. 1 Satz 1 Nr. 1 UStG: Leistung und Rechnung genügen, die
+    // Ist-Versteuerung betrifft nur die Umsatzsteuer.
     let ausgabe = buchung(
         id: 1,
         richtung: .ausgabe,
-        datum: datum(2026, 9, 30),
+        datum: datum(2026, 9, 20),
         positionen: [position(10000, 19)],
         zahlungen: [zahlung(2026, 10, 5, 11900)]
     )
-    #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: regel).zeilen.isEmpty)
-    let spaeter = UStVA.calculate([ausgabe], zeitraum: q4, profile: regel)
-    #expect(spaeter.betrag(66) == 1900)
-    #expect(spaeter.zahllast.value == -1900)
+    let belegt = UStVA.calculate([ausgabe], zeitraum: q3, profile: regel)
+    #expect(belegt.betrag(66) == 1900)
+    #expect(belegt.zahllast.value == -1900)
+    #expect(UStVA.calculate([ausgabe], zeitraum: q4, profile: regel).zeilen.isEmpty)
+}
+
+@Test func vorsteuerEinerUnbezahltenRechnungZaehltZumBelegdatum() {
+    let offen = buchung(
+        id: 1,
+        richtung: .ausgabe,
+        datum: datum(2026, 8, 10),
+        positionen: [position(10000, 19), position(20000, 7)]
+    )
+    #expect(UStVA.calculate([offen], zeitraum: q3, profile: regel).betrag(66) == 1900 + 1400)
 }
 
 @Test func vorsteuerZaehltNichtVorDemBeleg() {
-    // Anzahlung im Juli, Rechnung im Oktober: die Vorsteuer wartet auf den Beleg.
+    // Zahlung im Juli, Rechnung im Oktober: die Vorsteuer wartet auf den Beleg.
     let ausgabe = buchung(
         id: 1,
         richtung: .ausgabe,
@@ -73,6 +85,21 @@ import Testing
     )
     #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: regel).zeilen.isEmpty)
     #expect(UStVA.calculate([ausgabe], zeitraum: q4, profile: regel).betrag(66) == 1900)
+}
+
+@Test func teilzahlungenVerteilenDieVorsteuerNicht() {
+    // Die ganze Vorsteuer im Quartal des Belegs, der Privatanteil auf die Summe.
+    let ausgabe = buchung(
+        id: 1,
+        richtung: .ausgabe,
+        datum: datum(2026, 9, 1),
+        privatanteil: 50,
+        positionen: [position(10100, 19)],
+        zahlungen: [zahlung(2026, 9, 2, 6010), zahlung(2026, 10, 2, 6009)]
+    )
+    // Die Hälfte von 19,19 Euro, einmal gerundet.
+    #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: regel).betrag(66) == 960)
+    #expect(UStVA.calculate([ausgabe], zeitraum: q4, profile: regel).zeilen.isEmpty)
 }
 
 @Test func reverseChargeAusDerEuStehtInKz46Und47Und67() {
@@ -238,6 +265,9 @@ import Testing
         zahlungen: [zahlung(2026, 8, 2, 11900)]
     )
     #expect(UStVA.calculate([ausgabe], zeitraum: q3, profile: klein).zeilen.isEmpty)
+    var offen = ausgabe
+    offen.zahlungen = []
+    #expect(UStVA.calculate([offen], zeitraum: q3, profile: klein).zeilen.isEmpty)
 }
 
 @Test func negativeGutschriftMitNegativerZahlungZaehltInUStVAUndEUeR() {
@@ -448,4 +478,25 @@ import Testing
     var kaum = telefon
     kaum.privatanteilProzent = 95
     #expect(UStVA.calculate([kaum], zeitraum: q3, profile: regel).betrag(66) == 950)
+}
+
+@Test func geschenkeUeber50EuroHabenKeineVorsteuer() {
+    func geschenk(_ netto: Int64, behandlung: Steuerbehandlung = .inland, land: String = "DE") -> Buchung {
+        buchung(
+            id: 1,
+            richtung: .ausgabe,
+            datum: datum(2026, 8, 3),
+            kategorie: "geschenke",
+            land: land,
+            positionen: [behandlung == .inland ? position(netto, 19) : positionOhneSteuer(netto, 19)],
+            behandlung: behandlung,
+            zahlungen: [zahlung(2026, 8, 3, behandlung == .inland ? netto * 119 / 100 : netto)]
+        )
+    }
+    #expect(UStVA.calculate([geschenk(5000)], zeitraum: q3, profile: regel).betrag(66) == 950)
+    #expect(UStVA.calculate([geschenk(5001)], zeitraum: q3, profile: regel).nummern.isEmpty)
+    // Die Steuer eines §13b-Bezugs bleibt geschuldet, nur die Vorsteuer entfällt.
+    let bezug = UStVA.calculate([geschenk(8000, behandlung: .reverseCharge, land: "IE")], zeitraum: q3, profile: regel)
+    #expect(bezug.nummern == [46, 47])
+    #expect(bezug.zahllast.value == 1520)
 }

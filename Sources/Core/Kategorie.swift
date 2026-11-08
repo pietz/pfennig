@@ -132,6 +132,12 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
             symbol: "person.2"
         ),
         Kategorie(
+            schluessel: "wareneinkauf", name: "Wareneinkauf", richtung: .ausgabe,
+            euerZeile: 29,
+            beschreibung: "Waren zum Weiterverkauf und Material für eigene Produkte.",
+            symbol: "cart"
+        ),
+        Kategorie(
             schluessel: "reise_fahrt", name: "Reise: Fahrt", richtung: .ausgabe,
             euerZeile: 71,
             beschreibung: "Bahn, Flug, Taxi, Mietwagen und Tankbelege einer Geschäftsreise.",
@@ -148,6 +154,12 @@ public struct Kategorie: Hashable, Sendable, Identifiable {
             euerZeile: 64,
             beschreibung: "Restaurantbelege für Geschäftsessen mit Bewirtungsanlass.",
             symbol: "fork.knife"
+        ),
+        Kategorie(
+            schluessel: "geschenke", name: "Geschenke", richtung: .ausgabe,
+            euerZeile: 63,
+            beschreibung: "Geschenke an Geschäftspartner und Kunden, mit dem Beschenkten in den Notizen.",
+            symbol: "gift"
         ),
         Kategorie(
             schluessel: "fortbildung", name: "Fortbildung", richtung: .ausgabe,

@@ -29,7 +29,9 @@ public final class Repository: Sendable {
     }
 
     public convenience init(path: URL) throws {
-        try self.init(DatabaseQueue(path: path.path))
+        let database = try DatabaseQueue(path: path.path)
+        try ChatArchiveRepair.runIfNeeded(database, at: path)
+        try self.init(database)
     }
 
     public static func inMemory() throws -> Repository {
@@ -64,10 +66,27 @@ public final class Repository: Sendable {
 
     /// Removes a booking and logs it, §146 Abs. 4 AO: the last row for the
     /// booking carries its final state and no `nachher`. Its files stay in
-    /// `dateien` and in the archive; the intake uses this to clear the rows of
-    /// a failed run and keep the stored file for the retry.
+    /// `dateien` and in the archive, as they do when `deleteUnchanged` clears
+    /// the rows of a failed run and keeps the stored file for the retry.
     public func delete(id: Int64) throws {
         try database.write { try Repository.delete(id: id, in: $0) }
+    }
+
+    /// Clears the bookings a failed agent run created, given with the number of
+    /// log rows the run wrote for each. A booking with more rows in the log was
+    /// changed meanwhile by the user or another run and stays as an ordinary
+    /// booking. Ids are never reused, so the log holds nothing older.
+    public func deleteUnchanged(_ created: [Int64: Int]) throws {
+        try database.write { db in
+            for (id, writes) in created {
+                let logged = try Int.fetchOne(
+                    db, sql: "SELECT COUNT(*) FROM aktivitaeten WHERE buchung_id = ?", arguments: [id]
+                )
+                if logged == writes {
+                    try Repository.delete(id: id, in: db)
+                }
+            }
+        }
     }
 
     /// Deletes the selected bookings and their now-unreferenced receipts in one
@@ -195,6 +214,17 @@ public final class Repository: Sendable {
             try Bool.fetchOne(
                 db, sql: "SELECT COUNT(*) > 0 FROM anfragen WHERE datei_id = ? AND status = 'erfolg'",
                 arguments: [dateiId]
+            ) ?? false
+        }
+    }
+
+    /// A past successful import alone is not enough after its receipt was removed.
+    public func isReceiptUsed(_ fileID: Int64) throws -> Bool {
+        try database.read { db in
+            try Bool.fetchOne(
+                db,
+                sql: "SELECT EXISTS (SELECT 1 FROM buchungen, json_each(buchungen.belege) WHERE json_each.value = ?)",
+                arguments: [fileID]
             ) ?? false
         }
     }

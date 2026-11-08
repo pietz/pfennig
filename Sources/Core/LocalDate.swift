@@ -30,8 +30,12 @@ public struct LocalDate: Hashable, Sendable, Comparable, CustomStringConvertible
         self.init(jahr: parts.year ?? 1, monat: parts.month ?? 1, tag: parts.day ?? 1)
     }
 
+    /// The day `today()` answers inside `withValue`. The eval pins it so a
+    /// corpus scores the same on any calendar day.
+    @TaskLocal public static var pinnedToday: LocalDate?
+
     public static func today() -> LocalDate {
-        LocalDate(Date())
+        pinnedToday ?? LocalDate(Date())
     }
 
     /// True when the day exists in the Gregorian calendar.

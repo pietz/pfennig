@@ -33,29 +33,33 @@ public struct FileIntake: Sendable {
     let path: ArchivePaths
     let transport: Transport
     let key: String?
+    let rulesOverride: String?
     private let inFlight = InFlight()
 
     public init(
         repository: Repository,
         path: ArchivePaths = .standard,
-        transport: @escaping Transport = Responses.network
+        transport: @escaping Transport = Responses.network,
+        rulesOverride: String? = nil
     ) throws {
-        try self.init(repository: repository, path: path, transport: transport, key: nil)
+        try self.init(repository: repository, path: path, transport: transport, key: nil, rulesOverride: rulesOverride)
     }
 
-    /// Internal key override for tests. Production intake reads the key from
-    /// the Keychain when it starts a run.
-    init(
+    /// A fixed key for tests and the eval runner. Production intake reads the
+    /// key from the Keychain when it starts a run.
+    public init(
         repository: Repository,
         path: ArchivePaths,
         transport: @escaping Transport,
-        key: String?
+        key: String?,
+        rulesOverride: String? = nil
     ) throws {
         self.repository = repository
         tool = try SQLTool(repository)
         self.path = path
         self.transport = transport
         self.key = key
+        self.rulesOverride = rulesOverride
     }
 
     /// The SHA-256 of a file, lowercase hex. It is the key of `files` and
@@ -129,11 +133,12 @@ public struct FileIntake: Sendable {
         // moment it got there, at its origin before that.
         var location = url
         do {
-            // A known hash is done once a run for it has succeeded. A stored
-            // file whose runs all failed is work again, from the inbox copy or
-            // from a fresh drop.
+            // A successful import is done while a booking still uses its receipt.
+            // Failed runs and retained files without bookings can be processed again.
             let known = try repository.fileID(sha256: hash)
-            if let known, try repository.hasSuccessfulRun(dateiId: known) {
+            if let known, try repository.hasSuccessfulRun(dateiId: known),
+               try repository.isReceiptUsed(known)
+            {
                 // A leftover inbox copy of a done file would announce itself
                 // on every start and has no discard; take it along. An
                 // original from outside the inbox stays untouched.
@@ -153,7 +158,13 @@ public struct FileIntake: Sendable {
 
             let id = try known ?? store(name: inbox.lastPathComponent, data: data, hash: hash)
             let input = FileInput(id: id, name: inbox.lastPathComponent, fileExtension: fileExtension, data: data)
-            let run = AgentRun(repository: repository, tool: tool, key: key, transport: transport)
+            let run = AgentRun(
+                repository: repository,
+                tool: tool,
+                key: key,
+                transport: transport,
+                rulesOverride: rulesOverride
+            )
             _ = try await run.start(input)
             // The run is committed. A cleanup failure must not turn a
             // successful import back into a failed run.
@@ -161,9 +172,7 @@ public struct FileIntake: Sendable {
             return .booked
         } catch let abort as RunAbort {
             // Rows of the broken run go, so a second attempt cannot double them.
-            for id in abort.created {
-                _ = try? repository.delete(id: id)
-            }
+            try? repository.deleteUnchanged(abort.created)
             return .failed(file: location, text: abort.localizedDescription)
         } catch {
             return .failed(file: location, text: error.localizedDescription)
@@ -175,14 +184,22 @@ public struct FileIntake: Sendable {
     private func inInbox(_ url: URL, data: Data, hash: String) throws -> URL {
         guard isInInbox(url) == false else { return url }
         try path.create()
-        var destination = path.inbox.appending(path: url.lastPathComponent)
-        if FileManager.default.fileExists(atPath: destination.path) {
+        // Files arrive side by side, so the name is claimed by the write itself.
+        let destination = path.inbox.appending(path: url.lastPathComponent)
+        do {
+            try data.write(to: destination, options: .withoutOverwriting)
+            return destination
+        } catch CocoaError.fileWriteFileExists {
             // Another file of that name is still waiting; it keeps its place.
-            let name = url.deletingPathExtension().lastPathComponent
-            destination = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
         }
-        try data.write(to: destination)
-        return destination
+        let name = url.deletingPathExtension().lastPathComponent
+        let hashed = path.inbox.appending(path: "\(name)-\(hash.prefix(8)).\(url.pathExtension)")
+        do {
+            try data.write(to: hashed, options: .withoutOverwriting)
+        } catch CocoaError.fileWriteFileExists {
+            // Same name and hash: the same content is already there.
+        }
+        return hashed
     }
 
     /// A file attached in the chat: stored like a dropped one, or the stored

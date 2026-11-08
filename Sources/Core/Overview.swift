@@ -30,7 +30,7 @@ public enum ReviewFilter: String, CaseIterable, Hashable, Sendable, Identifiable
 
     public var menuTitle: String {
         switch self {
-        case .alle: "Alle Status"
+        case .alle: "Alle"
         case .zuPruefen: "Zu prüfen"
         case .ohneBeleg: "Ohne Beleg"
         case .ueberfaellig: "Überfällig"

@@ -32,12 +32,14 @@ public enum AfA {
 
     /// The AfA from the year of the purchase to the end of the year.
     /// Everything else is a difference of this, so the rounded yearly amount
-    /// cannot miss the sum: the Abschreibung stops at the Anschaffungskosten,
-    /// and the year that reaches them takes the rest.
+    /// cannot miss the sum: the Abschreibung ends with the month in which the
+    /// Nutzungsdauer runs out, counted from the purchase month, and the last
+    /// year of use takes the rest.
     private static func kumuliert(_ buchung: Buchung, jahr: Int, brutto: Bool) -> Cent {
         guard let jahre = buchung.nutzungsdauerJahre, jahr >= buchung.datum.jahr else { return .null }
         let kosten = anschaffungskosten(buchung, brutto: brutto)
-        guard jahre > 1 else { return kosten }
+        let letztesJahr = buchung.datum.jahr + (buchung.datum.monat - 1 + jahre * 12 - 1) / 12
+        guard jahre > 1, jahr < letztesJahr else { return kosten }
         let jahresbetrag = geteilt(Decimal(kosten.value), durch: Decimal(jahre))
         let anschaffungsjahr = geteilt(Decimal(jahresbetrag.value * Int64(13 - buchung.datum.monat)), durch: 12)
         return min(anschaffungsjahr + Cent(Int64(jahr - buchung.datum.jahr) * jahresbetrag.value), kosten)

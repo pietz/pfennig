@@ -85,7 +85,10 @@ struct Inspector: View {
             originalAmountText = updated.originalbetrag?.deutschFormatiert ?? ""
             dueDateText = updated.faelligkeit?.formatted ?? ""
         }
-        .onDisappear { save() }
+        .onDisappear {
+            save()
+            model.discardIfBlank(draft)
+        }
         // Quitting must not swallow a field the user typed but never committed.
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             save()
@@ -159,7 +162,7 @@ struct Inspector: View {
             }
             TextField("Gegenpartei", text: text(\.gegenparteiName))
                 .focused($focus, equals: .gegenpartei)
-            TextField("Land", text: text(\.gegenparteiLand))
+            TextField("Land", text: text(\.gegenparteiLand), prompt: Text("z. B. US"))
                 .focused($focus, equals: .land)
                 .modifier(feedback(.country))
             TextField("USt-IdNr.", text: text(\.gegenparteiUstid))
@@ -359,19 +362,21 @@ struct Inspector: View {
     private var zahlungen: some View {
         Section("Zahlungen") {
             ForEach(Array(draft.zahlungen.indices), id: \.self) { i in
-                HStack {
-                    TextField("Datum", value: zahlung(i, \.datum, fallback: .today()), format: .deutsch)
-                        .labelsHidden()
-                        .frame(width: 90)
-                    TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
-                        .labelsHidden()
-                        .modifier(feedback(.payment(i), showsMessages: false))
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack {
+                        TextField("Datum", value: zahlung(i, \.datum, fallback: .today()), format: .deutsch)
+                            .labelsHidden()
+                            .frame(width: 90)
+                        TextField("Betrag", value: zahlung(i, \.betrag, fallback: .null), format: .euro)
+                            .labelsHidden()
+                            .modifier(feedback(.payment(i), showsMessages: false))
+                        Button("Zahlung entfernen", systemImage: "minus.circle") { removePayment(i) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+                    }
                     Text(draft.zahlungen[i].betrag < .null ? "Erstattung" : "Zahlung")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
-                        .frame(width: 80, alignment: .leading)
-                    Button("Zahlung entfernen", systemImage: "minus.circle") { removePayment(i) }
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.borderless)
                 }
                 feedback(.payment(i)).messageView
             }
@@ -415,15 +420,28 @@ struct Inspector: View {
         if draft.needsReview(profile: model.currentProfile) {
             VStack(spacing: 0) {
                 Divider()
-                Button {
-                    guard save() else { return }
-                    model.confirm(draft)
-                } label: {
-                    Text("Bestätigen").frame(maxWidth: .infinity)
+                VStack(spacing: 8) {
+                    // One choice can open findings in several sections at once,
+                    // so the button names all of them.
+                    if issues.isEmpty == false {
+                        VStack(alignment: .leading, spacing: 2) {
+                            ForEach(issues.map(\.message), id: \.self) { Text($0) }
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    Button {
+                        guard save() else { return }
+                        model.confirm(draft)
+                    } label: {
+                        Text("Bestätigen").frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(issues.isEmpty == false)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .disabled(issues.isEmpty == false)
                 .padding(12)
             }
             .background(.bar)
