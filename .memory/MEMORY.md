@@ -13,6 +13,8 @@ Stand: 2026-10-12. Kurze Begründungen für getroffene Entscheidungen, keine neu
 
 ## Bewusste Vereinfachungen
 
+- **Mehrere KI-Anbieter als Ziel (2026-11-08):** Der Eigentümer will Apples offizielle KI-APIs früh unterstützen, lokal oder PCC, und OpenAI mit eigenem Schlüssel erhalten; Anthropic und OpenRouter sollen ebenfalls in ein kleines gemeinsames Design passen. [Untersuchung und Architekturvorschlag](../plans/ai-providers.md). Das ist eine neue Produktrichtung, noch keine Freigabe für strukturellen Umbau, Archivkonvertierung oder automatische Anbieterweiterleitung. Systemweite Anbieterwahl bleibt eine mögliche spätere Entwicklung, keine belegte vorhandene API.
+
 - **Apple-KI vorerst nur als Eval (2026-10-12):** Nach unzureichenden nativen Ergebnissen hat der Eigentümer die App-Integration zurückgestellt. Ausführbare Komponentenproben, Vergleichsskript und Forschungsnachweise bleiben unter `evals/apple-ai/`; kein Apple-Modell in der normalen App. Die frühere vollständige experimentelle Integration bleibt in Git erhalten. Bessere Benchmarks sollen sowohl den vorhandenen Luna-Agenten als auch spätere Apple-Ansätze bewerten; keine weitere App-Integration ohne belastbare Ergebnisse und neue Eigentümerrichtung.
 
 - **Kein Aktivitätsverlauf in der UI (#18):** Am 22. September aus dem aktuellen Produktumfang gestrichen, weil keine Kernfunktion. Bestehende Änderungsprotokollierung bleibt erhalten, falls sie später benötigt wird; derzeit keine Anzeige, kein Undo und kein neuer Umsetzungsauftrag.
