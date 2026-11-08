@@ -1,6 +1,6 @@
 # Aktuell und später
 
-Stand 2026-10-12, nach Release 0.11.3. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang. Entscheidungen stehen in `.memory/MEMORY.md`, der Umsetzungsstand in `docs/status.md`. Abgeschlossen oder entschieden: #1, #2, #3, #5, #6, #8, #10, #12, #18, #20.
+Stand 2026-11-08, nach Release 0.11.3. GitHub-Issues halten offene Arbeit fest, nicht automatisch freigegebene Implementierungspläne. Neue Umsetzung braucht einen mit dem Eigentümer abgestimmten Umfang. Entscheidungen stehen in `.memory/MEMORY.md`, der Umsetzungsstand in `docs/status.md`. Abgeschlossen oder entschieden: #1, #2, #3, #5, #6, #8, #10, #12, #18, #20.
 
 ## Nächste Schritte
 
@@ -18,12 +18,12 @@ Außerdem offen: Landingpage-Medien, fünf vorgesehene Plätze, Integration nach
 
 ### Apple Intelligence als optionale KI
 
-Wieder aufnehmen, sobald der Eigentümer macOS 27 installiert hat (2026-10-01). Anlass: Stay Steady nutzt lokale KI; Apples neueres Modell könnte für Pfennig ausreichend sein und API-Einrichtung sowie laufende API-Kosten vermeiden. Keine gemessene Qualität gegenüber dem derzeitigen GPT-5.6 Luna und kein Auftrag zur Integration.
+Am 2026-11-08 erneut untersucht: Die Siri-AI-Vorschau in macOS 27.3 öffnet eigene App-Werkzeuge und App Skills. Sie belegt kein stärkeres direkt aufrufbares Modell-Backend für den vorhandenen Import/Chat. Die bisherigen schwachen Ergebnisse stammen bereits von macOS 27.0.1, einschließlich Bildverarbeitung. PCC bleibt eine eigene mögliche Route ohne Nutzer-API-Schlüssel, mit ungeklärtem tatsächlichem Zugriff und App-Store-Vertriebsvoraussetzungen. [Neue Untersuchung und begrenzter Prüfplan](../evals/apple-ai/reports/siri-ai-273-investigation-20261108.md).
 
-- Das über Foundation Models tatsächlich verfügbare macOS-27-Modell mit Luna vergleichen. Bildverarbeitung, Kontextbudget und Werkzeugaufrufe auf dem Testgerät prüfen; Grenzen von macOS 26 nicht ungeprüft übertragen. [Apple: neue Framework-Funktionen](https://developer.apple.com/videos/play/wwdc2026/241/).
-- Vorhandene synthetische Belege aus `sample-data/2026-q3/` verwenden: zuerst denselben extrahierten Text für beide Modelle, dann vollständige Dokumentverarbeitung. Korrekte Beträge, Steuerbehandlung, Zahlungsstatus, SQL-Werkzeugabläufe, Wiederholbarkeit, Laufzeit und manuellen Korrekturaufwand vergleichen.
-- Danach Aufwand einer wählbaren lokalen KI im bestehenden Agenten bewerten. Apples Private Cloud Compute separat betrachten: Serververarbeitung, Nutzungslimits und [App-Store-/Entitlement-Voraussetzungen](https://developer.apple.com/private-cloud-compute/).
-- Geschäftsidee prüfen: kostenlose lokale Basis-KI, stärkere KI als Pro-Angebot eventuell im Abonnement. Erst nach belegtem Qualitätsunterschied und Klärung der laufenden Kosten entscheiden; Modellwahl, Preise, Abrechnung und Ablösung des eigenen API-Schlüssels sind offen.
+- Auf einem geeigneten Testgerät zuerst tatsächliche Modellfähigkeiten und die eingefrorenen bisherigen Vergleichsfälle prüfen; dieses Gerät hat macOS 15.8.1/SDK 26.2. Keine neue native Qualitätsmessung in dieser Untersuchung.
+- Siri-Werkzeuge und Skills wären ein zusätzlicher Ausführungspfad. Vor einem isolierten Prototyp den begrenzten Umfang abstimmen; zuerst Suche und eine typisierte Änderung mit synthetischen Daten, danach Dokumentübergabe und vollständige Buchung testen. Die Vorschau ist noch nicht für reguläre Kunden verfügbar.
+- Vor einem PCC-Vergleich erfolgreichen Zugriff nachweisen; Entitlement-/Kontoeinrichtung und ein möglicher App-Store-Vertrieb bleiben Eigentümerentscheidungen. Keine Produktionsintegration beschlossen.
+- Kostenlose lokale Basis-KI und stärkere Pro-KI bleiben unentschiedene Produktideen. Erst belegte Qualität, Nutzungslimits und Vertriebsvoraussetzungen klären.
 
 ### Eingang und Prüfung
 

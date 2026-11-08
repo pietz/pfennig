@@ -73,6 +73,8 @@ python3 -m unittest discover -s evals/apple-ai -p 'test_*.py'
 
 ## Recorded findings
 
+[Renewed macOS 27.3 Siri investigation, 2026-11-08](reports/siri-ai-273-investigation-20261108.md): custom Siri tools and app skills are a new integration route, not evidence of an improved interchangeable local backend. Includes current preview restrictions, PCC distribution requirements and a bounded follow-up plan. No new inference was possible on the research host.
+
 The later four-configuration experiment improved the original development cases from 3/9 to 9/9, but regressed on reserved expense cases from 6/12 to 3/12. It does not validate a general native importer. See the [complete attempt log and paired results](reports/apple-five-experiments-20261012.md). The following table records the earlier pilot:
 
 | Measurement | Native Apple | Historical Luna/high |
