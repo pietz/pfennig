@@ -417,9 +417,9 @@ final class AppModel {
         currentProfile
     }
 
-    func aiSettings() -> AISettings {
+    func aiSettings(provider: AIProvider? = nil) -> AISettings {
         do {
-            return try repository.aiSettings()
+            return try repository.aiSettings(provider: provider)
         } catch {
             errorMessage = "\(error)"
             return AISettings()

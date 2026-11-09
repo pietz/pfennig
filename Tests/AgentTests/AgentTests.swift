@@ -1193,3 +1193,96 @@ private func letzteAnfrage(_ skript: Skript) async throws -> [[String: Any]] {
     let request = try #require(try repository.allRequests().first)
     #expect(request.konversation?.contains("max_output_tokens") == true)
 }
+
+@Test func routerImportUsesResponsesWithNativePDFAndToolReplay() async throws {
+    let repository = try Repository.inMemory()
+    let ai = try AISettings(
+        model: #require(Model(rawValue: "anthropic/example-model")),
+        effort: .automatic,
+        fast: true,
+        provider: .openrouter
+    )
+    try repository.saveAISettings(ai)
+    let skript = Skript([werkzeugantwort(einfuegen), schlussantwort])
+    let run = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "fictional-router-key",
+        transport: skript.transport
+    )
+    let file = FileInput(id: 1, name: "fictional.pdf", fileExtension: "pdf", data: Data("fictional pdf".utf8))
+    _ = try await run.start(file)
+    #expect(try repository.allBookings().count == 1)
+    #expect(await skript.urls.allSatisfy { $0 == AIProvider.openrouter.endpoint })
+    let bodies = try await skript.gesehen.map { try #require(JSONSerialization.jsonObject(with: $0) as? [String: Any]) }
+    let first = try #require(bodies.first)
+    #expect(first["model"] as? String == "anthropic/example-model")
+    #expect(first["reasoning"] == nil)
+    #expect(first["service_tier"] == nil)
+    #expect(first["store"] as? Bool == false)
+    #expect((first["provider"] as? [String: Any])?["require_parameters"] as? Bool == true)
+    let plugins = try #require(first["plugins"] as? [[String: Any]])
+    #expect((plugins.first?["pdf"] as? [String: String])?["engine"] == "native")
+    #expect(await String(decoding: skript.gesehen[0], as: UTF8.self).contains("input_file"))
+    let second = try #require(bodies.last?["input"] as? [[String: Any]])
+    #expect(second.contains { $0["type"] as? String == "function_call_output" })
+    #expect(second.contains { $0["type"] as? String == "reasoning" })
+    #expect(try repository.allRequests().first?.modell == "openrouter:anthropic/example-model")
+    #expect(Keychain.account(for: .openai) == "openai-api-key")
+    #expect(Keychain.account(for: .openrouter) != Keychain.account(for: .openai))
+}
+
+@Test func chatKeepsProviderAndModelAfterSettingsChangeAndReopen() async throws {
+    let repository = try Repository.inMemory()
+    let router = try AISettings(
+        model: #require(Model(rawValue: "anthropic/example-model")),
+        effort: .low,
+        provider: .openrouter
+    )
+    try repository.saveAISettings(router)
+    let skript = Skript([schlussantwort, schlussantwort])
+    let conversation = try repository.saveConversation(Gespraech(titel: "Provider test"))
+    let run = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "fictional",
+        transport: skript.transport
+    )
+    let first = try await run.chat(conversation, text: "Hello", files: [], earlier: [])
+    _ = try repository.saveConversation(first)
+    let saved = try #require(try repository.conversations().first)
+    try repository.saveAISettings(AISettings(model: .sol))
+    let reopened = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "fictional",
+        transport: skript.transport
+    )
+    let second = try await reopened.chat(saved, text: "Continue", files: [], earlier: [])
+    #expect(await skript.urls.allSatisfy { $0 == AIProvider.openrouter.endpoint })
+    let last = try #require(await skript.gesehen.last)
+    let body = try #require(JSONSerialization.jsonObject(with: last) as? [String: Any])
+    #expect(body["model"] as? String == router.model.rawValue)
+    #expect((body["reasoning"] as? [String: String])?["effort"] == "low")
+    #expect(!String(decoding: last, as: UTF8.self).contains("\"anbieter\""))
+    #expect(Conversation.messages(second.verlauf).count == 4)
+    #expect(try Conversation.settings(Conversation.items(second.verlauf), repository: repository) == router)
+    let oldHistory: [[String: Any]] = [["role": "user", "content": [["type": "input_text", "text": "Old chat"]]]]
+    try repository.saveAISettings(router)
+    #expect(try Conversation.settings(oldHistory, repository: repository).provider == .openai)
+}
+
+@Test func responsesSendsCredentialsOnlyToTheSelectedEndpoint() async throws {
+    for provider in AIProvider.allCases {
+        let transport: Transport = { request in
+            #expect(request.url == provider.endpoint)
+            #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer fictional-\(provider.rawValue)")
+            return (
+                Data("{}".utf8),
+                HTTPURLResponse(url: provider.endpoint, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            )
+        }
+        _ = try await Responses(key: "fictional-\(provider.rawValue)", transport: transport, provider: provider)
+            .send(["input": "test"])
+    }
+}

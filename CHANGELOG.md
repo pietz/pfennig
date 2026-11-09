@@ -1,5 +1,13 @@
 # Änderungen
 
+## Noch nicht veröffentlicht
+
+- OpenAI oder OpenRouter unter „KI-Zugang“ auswählen, mit getrennten Schlüsseln und Einstellungen
+- Modell-ID frei eingeben oder aus Vorschlägen übernehmen; Verbindung erneut prüfen
+- Bestehende Gespräche behalten ihren Anbieter und ihr Modell, auch nach einer Änderung der Auswahl
+
+Eigene Modell-IDs brauchen Werkzeug- und Dateiformatunterstützung. OpenRouter ist mit synthetischen Antworten geprüft, noch ohne Live-Qualitätsbenchmark.
+
 ## 0.11.3 (2026-10-12)
 
 - Der Importindikator auf Start und Buchungen hat unter macOS 26 und neuer keinen eigenen schmalen Glasrahmen mehr

@@ -20,13 +20,20 @@ public struct Chat: Sendable {
     /// made to existing bookings stay.
     public func send(_ text: String, files urls: [URL], to gespraech: Gespraech?) async throws -> Gespraech {
         let repository = intake.repository
-        guard let key = intake.key ?? Keychain.read(), key.isEmpty == false else {
+        let ai = try Conversation.settings(Conversation.items(gespraech?.verlauf ?? "[]"), repository: repository)
+        guard let key = intake.key ?? Keychain.read(provider: ai.provider), key.isEmpty == false else {
             throw AgentError.missingKey
         }
         let files = try urls.map(intake.attach)
         let current = try gespraech ?? repository.saveConversation(Gespraech(titel: Chat.title(text, files: files)))
         let earlier = intake.stored(Conversation.fileIDs(Conversation.items(current.verlauf)))
-        let run = AgentRun(repository: repository, tool: intake.tool, key: key, transport: intake.transport)
+        let run = AgentRun(
+            repository: repository,
+            tool: intake.tool,
+            key: key,
+            transport: intake.transport,
+            settings: ai
+        )
         do {
             let updated = try await run.chat(current, text: text, files: files, earlier: earlier)
             return try repository.saveConversation(updated)

@@ -113,6 +113,12 @@ private let noBooking = AgentError.noBooking.localizedDescription
      "converted_eur_tolerance_cents":0, "expected_failure":"invalid_pdf"}
     """)
     #expect(score(item, [], outcome: "failed", error: "OpenAI hat mit 400 geantwortet: invalid PDF").isEmpty)
+    #expect(score(
+        item,
+        [],
+        outcome: "failed",
+        error: AgentError.api(status: 400, text: "invalid PDF").localizedDescription
+    ).isEmpty)
     #expect(score(item, [], outcome: "failed", error: "Die Verbindung zu OpenAI kam nicht zustande")
         .isEmpty == false)
 }

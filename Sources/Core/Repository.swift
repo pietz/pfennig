@@ -419,22 +419,30 @@ public final class Repository: Sendable {
 
     /// What the user chose under KI-Zugang, with the defaults of a fresh
     /// installation for keys that were never set.
-    public func aiSettings() throws -> AISettings {
+    public func aiSettings(provider: AIProvider? = nil) throws -> AISettings {
         try database.read { db in
-            let defaults = AISettings()
+            let selected = try provider ?? Repository.value("ki.anbieter", in: db).flatMap(AIProvider.init) ?? .openai
+            let prefix = selected.settingsPrefix
+            let defaults = AISettings(
+                model: selected == .openai ? .luna6 : Model(rawValue: "openai/\(Model.luna6.rawValue)")!,
+                effort: selected == .openai ? .high : .automatic, provider: selected
+            )
             return try AISettings(
-                model: Repository.value("ki.modell", in: db).flatMap(Model.init) ?? defaults.model,
-                effort: Repository.value("ki.aufwand", in: db).flatMap(ReasoningEffort.init) ?? defaults.effort,
-                fast: Repository.value("ki.schnell", in: db) == "true"
+                model: Repository.value(prefix + "modell", in: db).flatMap(Model.init) ?? defaults.model,
+                effort: Repository.value(prefix + "aufwand", in: db).flatMap(ReasoningEffort.init) ?? defaults.effort,
+                fast: Repository.value(prefix + "schnell", in: db) == "true",
+                provider: selected
             )
         }
     }
 
     public func saveAISettings(_ settings: AISettings) throws {
         try database.write { db in
-            try Repository.setSetting("ki.modell", value: settings.model.rawValue, in: db)
-            try Repository.setSetting("ki.aufwand", value: settings.effort.rawValue, in: db)
-            try Repository.setSetting("ki.schnell", value: String(settings.fast), in: db)
+            let prefix = settings.provider.settingsPrefix
+            try Repository.setSetting("ki.anbieter", value: settings.provider.rawValue, in: db)
+            try Repository.setSetting(prefix + "modell", value: settings.model.rawValue, in: db)
+            try Repository.setSetting(prefix + "aufwand", value: settings.effort.rawValue, in: db)
+            try Repository.setSetting(prefix + "schnell", value: String(settings.fast), in: db)
         }
     }
 

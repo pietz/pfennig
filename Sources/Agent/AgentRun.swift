@@ -109,19 +109,22 @@ public struct AgentRun: Sendable {
     let key: String
     let transport: Transport
     let rulesOverride: String?
+    let settings: AISettings?
 
     public init(
         repository: Repository,
         tool: SQLTool,
         key: String,
         transport: @escaping Transport = Responses.network,
-        rulesOverride: String? = nil
+        rulesOverride: String? = nil,
+        settings: AISettings? = nil
     ) {
         self.repository = repository
         self.tool = tool
         self.key = key
         self.transport = transport
         self.rulesOverride = rulesOverride
+        self.settings = settings
     }
 
     /// The SQL tool the agent gets, in the shape the Responses API expects.
@@ -194,7 +197,11 @@ public struct AgentRun: Sendable {
         earlier: [FileInput]
     ) async throws -> Gespraech {
         guard let id = gespraech.id else { preconditionFailure("the conversation is stored before its first round") }
-        let history = Conversation.items(gespraech.verlauf)
+        var history = Conversation.items(gespraech.verlauf)
+        let ai = try settings ?? Conversation.settings(history, repository: repository)
+        if !history.contains(where: { $0["type"] as? String == "ki" }) {
+            history.insert(Conversation.configuration(ai), at: 0)
+        }
         var message: [[String: Any]] = files.flatMap { file -> [[String: Any]] in
             [
                 Conversation.reference(file.id),
@@ -204,7 +211,13 @@ public struct AgentRun: Sendable {
         if text.isEmpty == false {
             message.append(["type": "input_text", "text": text])
         }
-        let items = try await run(history: history, message: message, files: files + earlier, gespraechId: id).items
+        let items = try await run(
+            history: history,
+            message: message,
+            files: files + earlier,
+            gespraechId: id,
+            configuration: ai
+        ).items
         var updated = gespraech
         updated.verlauf = Conversation.json(history + items)
         return updated
@@ -219,11 +232,16 @@ public struct AgentRun: Sendable {
         message: [[String: Any]],
         files: [FileInput],
         dateiId: Int64? = nil,
-        gespraechId: Int64? = nil
+        gespraechId: Int64? = nil,
+        configuration: AISettings? = nil
     ) async throws -> (result: RunResult, items: [[String: Any]]) {
         let instructions = try AgentInstructions.build(repository, rulesOverride: rulesOverride)
-        let ai = try repository.aiSettings()
-        let request = try repository.startRequest(dateiId: dateiId, gespraechId: gespraechId, modell: ai.model.rawValue)
+        let ai = try configuration ?? settings ?? repository.aiSettings()
+        let request = try repository.startRequest(
+            dateiId: dateiId,
+            gespraechId: gespraechId,
+            modell: ai.provider == .openai ? ai.model.rawValue : "openrouter:\(ai.model.rawValue)"
+        )
         var items: [[String: Any]] = [["role": "user", "content": message]]
         var usage = Usage()
         var result = RunResult()
@@ -270,19 +288,21 @@ public struct AgentRun: Sendable {
         result: inout RunResult,
         usage: inout Usage
     ) async throws {
-        let client = Responses(key: key, transport: transport)
+        let client = Responses(key: key, transport: transport, provider: ai.provider)
         var calls = 0
         while true {
             var body: [String: Any] = [
                 "model": ai.model.rawValue,
-                "reasoning": ["effort": ai.effort.rawValue],
                 "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription],
                 "store": false,
                 "include": ["reasoning.encrypted_content"],
                 "input": [["role": "system", "content": instructions]]
                     + Conversation.expand(history + items, files: files)
             ]
-            if ai.fast {
+            if ai.effort != .automatic {
+                body["reasoning"] = ["effort": ai.effort.rawValue]
+            }
+            if ai.fast, ai.provider == .openai {
                 // OpenAI's priority processing, about twice the price.
                 body["service_tier"] = "priority"
             }

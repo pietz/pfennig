@@ -1,5 +1,7 @@
 # AI providers: bounded architecture proposal
 
+Update 2026-11-09: The owner approved the smaller Responses-based implementation. OpenAI and OpenRouter now share the existing client, with separate credentials/settings and editable model identifiers. Chat configuration is stored inside the existing JSON transcript, without a neutral transcript redesign or schema change. The broader proposal below remains advisory; direct Anthropic and Apple integration are future work.
+
 2026-11-08. Owner direction: support Apple's official AI APIs early, alongside OpenAI, and investigate Anthropic and OpenRouter. This document proposes the implementation boundary; it does not authorize a structural refactor, archive conversion or provider rollout.
 
 ## Recommendation

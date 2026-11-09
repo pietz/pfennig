@@ -18,7 +18,7 @@ Außerdem offen: Landingpage-Medien, fünf vorgesehene Plätze, Integration nach
 
 ### Apple Intelligence als optionale KI
 
-Neue Eigentümerrichtung vom 2026-11-08: offizielle Apple-KI früh unterstützen, OpenAI erhalten und Anthropic/OpenRouter untersuchen. [Gemeinsamer Architekturvorschlag und begrenzter erster Schritt](../plans/ai-providers.md). Vor strukturellem Umbau den Umfang und den Erhalt bestehender Chats abstimmen.
+Neue Eigentümerrichtung vom 2026-11-08: offizielle Apple-KI früh unterstützen, OpenAI erhalten und Anthropic/OpenRouter untersuchen. [Gemeinsamer Architekturvorschlag und begrenzter erster Schritt](../plans/ai-providers.md). Der kleinere Responses-Einstieg mit OpenAI/OpenRouter wurde am 2026-11-09 beauftragt und umgesetzt, noch ohne Veröffentlichung oder Live-OpenRouter-Abnahme. Die weitergehende Anbieterarchitektur bleibt ein Vorschlag.
 
 Am 2026-11-08 erneut untersucht: Die Siri-AI-Vorschau in macOS 27.3 öffnet eigene App-Werkzeuge und App Skills. Sie belegt kein stärkeres direkt aufrufbares Modell-Backend für den vorhandenen Import/Chat. Die bisherigen schwachen Ergebnisse stammen bereits von macOS 27.0.1, einschließlich Bildverarbeitung. PCC bleibt eine eigene mögliche Route ohne Nutzer-API-Schlüssel, mit ungeklärtem tatsächlichem Zugriff und App-Store-Vertriebsvoraussetzungen. [Neue Untersuchung und begrenzter Prüfplan](../evals/apple-ai/reports/siri-ai-273-investigation-20261108.md).
 

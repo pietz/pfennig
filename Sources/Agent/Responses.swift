@@ -19,9 +19,9 @@ public enum AgentError: Error, LocalizedError {
         case .missingKey:
             "Kein API-Schlüssel hinterlegt. Der Schlüssel steht in den Einstellungen unter KI-Zugang."
         case let .network(text):
-            "Die Verbindung zu OpenAI kam nicht zustande: \(text)"
+            "Die Verbindung zum KI-Anbieter kam nicht zustande: \(text)"
         case let .api(status, text):
-            "OpenAI hat mit \(status) geantwortet: \(text)"
+            "Der KI-Anbieter hat mit \(status) geantwortet: \(text)"
         case let .response(text):
             "Die Antwort war unbrauchbar: \(text)"
         case .noBooking:
@@ -39,10 +39,9 @@ public typealias Transport = @Sendable (URLRequest) async throws -> (Data, HTTPU
 /// `POST /v1/responses` and nothing else: one request, one JSON object back,
 /// a single retry on the transient status codes.
 public struct Responses: Sendable {
-    static let endpoint = URL(string: "https://api.openai.com/v1/responses")!
-
     let key: String
     let transport: Transport
+    var provider: AIProvider = .openai
     /// The wait before a failed connection is tried once more.
     var networkRetryDelay: Duration = .seconds(3)
 
@@ -66,15 +65,17 @@ public struct Responses: Sendable {
 
     /// The smallest request that proves key and connection: no tools, no file,
     /// a handful of tokens. It throws what the settings window shows.
-    public static func testConnection(transport: @escaping Transport = network) async throws {
-        guard let key = Keychain.read(), key.isEmpty == false else {
+    public static func testConnection(
+        settings: AISettings = AISettings(),
+        transport: @escaping Transport = network
+    ) async throws {
+        guard let key = Keychain.read(provider: settings.provider), !key.isEmpty else {
             throw AgentError.missingKey
         }
-        _ = try await Responses(key: key, transport: transport).send([
-            // The cheapest model at the lowest effort; this asks the key, not the choice.
-            "model": Model.luna6.rawValue,
-            "reasoning": ["effort": ReasoningEffort.none.rawValue],
+        _ = try await Responses(key: key, transport: transport, provider: settings.provider).send([
+            "model": settings.model.rawValue,
             "max_output_tokens": 16,
+            "store": false,
             "input": "Antworte nur mit OK."
         ])
     }
@@ -119,11 +120,17 @@ public struct Responses: Sendable {
     }
 
     private func sendOnce(_ body: [String: Any]) async throws -> [String: Any] {
-        var request = URLRequest(url: Responses.endpoint)
+        var request = URLRequest(url: provider.endpoint)
         request.httpMethod = "POST"
         request.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        var configured = body
+        if provider == .openrouter {
+            configured.removeValue(forKey: "service_tier")
+            configured["provider"] = ["require_parameters": true, "data_collection": "deny"]
+            configured["plugins"] = [["id": "file-parser", "pdf": ["engine": "native"]]]
+        }
+        request.httpBody = try JSONSerialization.data(withJSONObject: configured)
         request.timeoutInterval = 300
 
         let data: Data

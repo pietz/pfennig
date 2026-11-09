@@ -1,3 +1,4 @@
+import Core
 import Foundation
 
 /// The stored form of an agent exchange: the Responses items as they went
@@ -5,6 +6,22 @@ import Foundation
 /// `dateien` instead of its bytes. `gespraeche.verlauf` and
 /// `anfragen.konversation` both hold it.
 public enum Conversation {
+    static func settings(_ history: [[String: Any]], repository: Repository) throws -> AISettings {
+        guard let marker = history.first(where: { $0["type"] as? String == "ki" }) else {
+            return try repository.aiSettings(provider: history.isEmpty ? nil : .openai)
+        }
+        guard let provider = (marker["anbieter"] as? String).flatMap(AIProvider.init),
+              let model = (marker["modell"] as? String).flatMap(Model.init),
+              let effort = (marker["aufwand"] as? String).flatMap(ReasoningEffort.init)
+        else { throw AgentError.response("Die KI-Einstellungen des Gesprächs sind unlesbar.") }
+        return AISettings(model: model, effort: effort, fast: marker["schnell"] as? Bool ?? false, provider: provider)
+    }
+
+    static func configuration(_ settings: AISettings) -> [String: Any] {
+        ["type": "ki", "anbieter": settings.provider.rawValue, "modell": settings.model.rawValue,
+         "aufwand": settings.effort.rawValue, "schnell": settings.fast]
+    }
+
     static func reference(_ id: Int64) -> [String: Any] {
         ["type": "datei", "id": id]
     }
@@ -26,7 +43,7 @@ public enum Conversation {
     /// The items as they go to the model: each reference replaced by the file
     /// itself, or by a note when the file is no longer there.
     static func expand(_ items: [[String: Any]], files: [Int64: FileInput]) -> [[String: Any]] {
-        items.map { item in
+        items.filter { $0["type"] as? String != "ki" }.map { item in
             guard item["role"] as? String == "user" else { return item }
             var expanded = item
             expanded["content"] = userContent(item).map { piece in

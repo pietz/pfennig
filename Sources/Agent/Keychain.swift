@@ -1,18 +1,19 @@
+import Core
 import Foundation
 import Security
 
-/// The OpenAI key in the macOS Keychain. It is never written anywhere else, in
-/// particular not into SQLite or the user defaults. Service and account stay
-/// what they have always been so a key stored by an earlier build keeps
-/// working.
+/// Separate provider keys in the macOS Keychain. The existing OpenAI service
+/// and account remain unchanged. Keys never enter the database or defaults.
 public enum Keychain: Sendable {
     private static let service = "com.pietz.pfennig"
-    private static let account = "openai-api-key"
+    static func account(for provider: AIProvider) -> String {
+        provider.rawValue + "-api-key"
+    }
 
     /// The stored key. Reading the secret is what makes macOS unlock the item,
     /// so this is called once per agent run and never from a view.
-    public static func read() -> String? {
-        var query = base
+    public static func read(provider: AIProvider = .openai) -> String? {
+        var query = base(provider)
         query[kSecReturnData as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: AnyObject?
@@ -25,32 +26,36 @@ public enum Keychain: Sendable {
     /// Stores the key and says whether it is there now. The old item goes
     /// first, so a refused add leaves no key behind and the caller must not
     /// claim one.
-    public static func write(_ key: String) -> Bool {
-        remove()
-        var entry = base
+    public static func write(_ key: String, provider: AIProvider = .openai) -> Bool {
+        remove(provider: provider)
+        var entry = base(provider)
         entry[kSecValueData as String] = Data(key.utf8)
         return SecItemAdd(entry as CFDictionary, nil) == errSecSuccess
     }
 
-    public static func remove() {
-        SecItemDelete(base as CFDictionary)
+    public static func remove(provider: AIProvider = .openai) {
+        SecItemDelete(base(provider) as CFDictionary)
     }
 
     /// Whether a key is stored. This asks for the item's attributes and never
     /// for its data, so macOS answers without the dialog it shows for a secret.
     public static var exists: Bool {
-        var query = base
+        exists(provider: .openai)
+    }
+
+    public static func exists(provider: AIProvider) -> Bool {
+        var query = base(provider)
         query[kSecReturnAttributes as String] = true
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         var result: AnyObject?
         return SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess
     }
 
-    private static var base: [String: Any] {
+    private static func base(_ provider: AIProvider) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: account
+            kSecAttrAccount as String: account(for: provider)
         ]
     }
 }

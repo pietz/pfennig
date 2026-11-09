@@ -298,11 +298,13 @@ enum EvalScoring {
         guard let error else { return false }
         return (100 ... 599).contains { isAPIError(error, status: $0) }
             || error.hasPrefix(AgentError.network("").localizedDescription)
+            || error.hasPrefix("Die Verbindung zu OpenAI kam nicht zustande:")
             || error == AgentError.missingKey.localizedDescription
     }
 
     static func isAPIError(_ error: String?, status: Int) -> Bool {
         error?.hasPrefix(AgentError.api(status: status, text: "").localizedDescription) == true
+            || error?.hasPrefix("OpenAI hat mit \(status) geantwortet:") == true
     }
 
     /// The findings against `expected`, or none when an accepted end state fits.

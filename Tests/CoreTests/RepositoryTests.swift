@@ -620,3 +620,19 @@ func beobachtungLiefertJedeAenderung() async throws {
     #expect(throws: (any Error).self) { try repository.startRequest(modell: "gpt-5") }
     #expect(throws: (any Error).self) { try repository.startRequest(dateiId: 1, gespraechId: 1, modell: "gpt-5") }
 }
+
+@Test func providerSettingsRemainSeparateWithoutSchemaChanges() throws {
+    let repository = try Repository.inMemory()
+    let original = AISettings(model: .terra, effort: .xhigh, fast: true)
+    try repository.saveAISettings(original)
+    let custom = try #require(Model(rawValue: " anthropic/example-model "))
+    let router = AISettings(model: custom, effort: .automatic, provider: .openrouter)
+    try repository.saveAISettings(router)
+    #expect(try repository.aiSettings() == router)
+    #expect(try repository.aiSettings(provider: .openai) == original)
+    #expect(try repository.setting("ki.modell") == original.model.rawValue)
+    #expect(try repository.setting("ki.openrouter.modell") == "anthropic/example-model")
+    #expect(Model(rawValue: " \n ") == nil)
+    try repository.saveAISettings(original)
+    #expect(try repository.aiSettings(provider: .openrouter) == router)
+}

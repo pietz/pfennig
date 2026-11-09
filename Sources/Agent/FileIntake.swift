@@ -152,7 +152,8 @@ public struct FileIntake: Sendable {
             location = inbox
             let fileExtension = inbox.pathExtension.lowercased()
             try FileInput.checkSize(fileExtension, data)
-            guard let key = key ?? Keychain.read(), key.isEmpty == false else {
+            let ai = try repository.aiSettings()
+            guard let key = key ?? Keychain.read(provider: ai.provider), key.isEmpty == false else {
                 throw AgentError.missingKey
             }
 
@@ -163,7 +164,7 @@ public struct FileIntake: Sendable {
                 tool: tool,
                 key: key,
                 transport: transport,
-                rulesOverride: rulesOverride
+                rulesOverride: rulesOverride, settings: ai
             )
             _ = try await run.start(input)
             // The run is committed. A cleanup failure must not turn a

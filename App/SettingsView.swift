@@ -84,6 +84,7 @@ private struct AISettingsView: View {
     let model: AppModel
     @State private var ki = AISettings()
     @State private var input = ""
+    @State private var modelInput = ""
     @State private var hasKey = false
     @State private var checkResult: String?
     @State private var isConnected = false
@@ -91,31 +92,75 @@ private struct AISettingsView: View {
 
     var body: some View {
         Form {
+            Picker("Anbieter", selection: Binding(
+                get: { ki.provider },
+                set: { provider in
+                    ki = model.aiSettings(provider: provider)
+                    modelInput = ki.model.rawValue
+                    input = ""
+                    checkResult = nil
+                    hasKey = Keychain.exists(provider: provider)
+                }
+            )) {
+                ForEach(AIProvider.allCases) { Text($0.name).tag($0) }
+            }
+            .disabled(isChecking)
             SecureField(
                 "API-Schlüssel",
                 text: $input,
-                prompt: Text(hasKey ? "Hinterlegt" : "sk-...")
+                prompt: Text(hasKey ? "Hinterlegt" : "API-Schlüssel")
             )
             .onSubmit(apply)
             state
-            Text("Der Schlüssel liegt im Schlüsselbund dieses Macs und verlässt ihn nur für Anfragen an OpenAI.")
+            Text("Der Schlüssel liegt im Schlüsselbund dieses Macs und wird nur an \(ki.provider.name) gesendet.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
 
-            Picker("Modell", selection: $ki.model) {
-                ForEach(Model.allCases) { Text($0.name).tag($0) }
+            TextField("Modell-ID", text: $modelInput)
+                .onChange(of: modelInput) {
+                    if let selected = Model(rawValue: modelInput) {
+                        ki.model = selected
+                    }
+                }
+                .onSubmit { modelInput = ki.model.rawValue }
+                .autocorrectionDisabled()
+            Menu("Modellvorschläge") {
+                ForEach(Model.allCases) { suggestion in
+                    Button(suggestion.name) {
+                        modelInput = ki.provider == .openai ? suggestion.rawValue : "openai/\(suggestion.rawValue)"
+                    }
+                }
             }
             Picker("Denkaufwand", selection: $ki.effort) {
-                ForEach(ReasoningEffort.allCases) { Text($0.name).tag($0) }
+                ForEach(ReasoningEffort.allCases.filter {
+                    ki.provider == .openai || [.automatic, .low, .medium, .high].contains($0)
+                }) { Text($0.name).tag($0) }
             }
-            Toggle("Fast Mode", isOn: $ki.fast)
+            if ki.provider == .openai {
+                Toggle("Fast Mode", isOn: $ki.fast)
+            }
+            Text(
+                "Das Modell muss Werkzeugaufrufe und die angehängten Dateiformate unterstützen. Eigene Modell-IDs sind nicht qualitätsgeprüft."
+            )
+            .font(.footnote).foregroundStyle(.secondary)
+            Text(
+                "Die Auswahl gilt für neue Gespräche und Importe. Bestehende Gespräche behalten ihren Anbieter und ihr Modell."
+            )
+            .font(.footnote).foregroundStyle(.secondary)
+            Button("Verbindung prüfen", action: test)
+                .disabled(isChecking || !hasKey || Model(rawValue: modelInput) == nil)
         }
         .formStyle(.grouped)
+        .disabled(isChecking)
         .onAppear {
-            hasKey = Keychain.exists
             ki = model.aiSettings()
+            modelInput = ki.model.rawValue
+            hasKey = Keychain.exists(provider: ki.provider)
         }
-        .onChange(of: ki) { model.saveAISettings(ki) }
+        .onChange(of: ki) {
+            checkResult = nil
+            model.saveAISettings(ki)
+        }
     }
 
     /// Whether a key is stored, and what the last check said about it.
@@ -145,11 +190,11 @@ private struct AISettingsView: View {
         checkResult = nil
         guard key.isEmpty == false else {
             guard hasKey else { return }
-            Keychain.remove()
+            Keychain.remove(provider: ki.provider)
             hasKey = false
             return
         }
-        hasKey = Keychain.write(key)
+        hasKey = Keychain.write(key, provider: ki.provider)
         guard hasKey else {
             isConnected = false
             checkResult = "Der Schlüssel ließ sich nicht im Schlüsselbund speichern."
@@ -161,11 +206,13 @@ private struct AISettingsView: View {
     /// One tiny request, so a wrong key shows up here and not on the first
     /// document.
     private func test() {
+        guard !isChecking else { return }
+        let settings = ki
         isChecking = true
         checkResult = nil
         Task {
             do {
-                try await Responses.testConnection()
+                try await Responses.testConnection(settings: settings)
                 isConnected = true
                 checkResult = "Verbindung funktioniert"
             } catch {
