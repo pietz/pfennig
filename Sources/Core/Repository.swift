@@ -164,6 +164,12 @@ public final class Repository: Sendable {
         try database.read { try Repository.allBookings($0) }
     }
 
+    public func taxSnapshot() throws -> (buchungen: [Buchung], profil: Profil) {
+        try database.read { db in
+            try (Repository.allBookings(db), Repository.profile(db))
+        }
+    }
+
     /// Creation provenance already lives in the change log. Later manual edits
     /// must not hide missing input on an agent-created draft.
     public func agentCreatedBookingIDs() throws -> Set<Int64> {

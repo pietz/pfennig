@@ -26,18 +26,24 @@ import Foundation
 /// shortened.
 public struct EUeR: Hashable, Sendable {
     public struct Zeile: Hashable, Sendable, Identifiable {
+        public struct ID: Hashable, Sendable {
+            public let zeile: Int
+            public let nichtAbziehbar: Bool
+        }
+
         public let zeile: Int
         public let bezeichnung: String
         public let richtung: Richtung
         public let betrag: Cent
-        /// The form takes the nicht abziehbaren 30 Prozent der Bewirtung in
-        /// its own column of line 64, the Gewinn does not take them at all.
-        public var nichtAbziehbar = false
+        public let nichtAbziehbar: Bool
+        public let buchungsbeitraege: [Buchungsbeitrag]
 
-        /// Line 64 stands twice in the result, so its number alone does not
-        /// name a row.
-        public var id: String {
-            "\(zeile) \(bezeichnung)"
+        public var id: ID {
+            ID(zeile: zeile, nichtAbziehbar: nichtAbziehbar)
+        }
+
+        public var rundungsdifferenz: Cent {
+            betrag - buchungsbeitraege.reduce(.null) { $0 + $1.betrag }
         }
     }
 
@@ -111,10 +117,7 @@ public struct EUeR: Hashable, Sendable {
 
     public static func calculate(_ buchungen: [Buchung], jahr: Int, profile: Profil) -> EUeR {
         let brutto = profile.kleinunternehmer
-        var werte: [Int: Cent] = [:]
-        var vereinnahmt = Cent.null
-        var vorsteuer = Cent.null
-        var geschenkeNichtAbziehbar = Cent.null
+        var beitraege: [Zeile.ID: [Buchungsbeitrag]] = [:]
 
         for buchung in buchungen where buchung.art != .ignoriert {
             let kategorie = buchung.kategorie.flatMap { key in
@@ -124,13 +127,19 @@ public struct EUeR: Hashable, Sendable {
                 || (buchung.richtung == .ausgabe && buchung.nutzungsdauerJahre != nil)
             else { continue }
             let summe = summe(buchung, jahr: jahr, profile: profile)
+            func erfassen(_ nummer: Int, _ betrag: Cent, am datum: LocalDate, nichtAbziehbar: Bool = false) {
+                guard betrag != .null else { return }
+                let id = Zeile.ID(zeile: nummer, nichtAbziehbar: nichtAbziehbar)
+                beitraege[id, default: []].append(Buchungsbeitrag(buchung, datum: datum, betrag: betrag))
+            }
+
             let betrag: Cent
             switch buchung.richtung {
             case .einnahme:
                 // Income is earned in full; a Privatanteil only shortens expenses.
                 betrag = summe.netto + (brutto ? summe.steuer : .null)
                 if brutto == false {
-                    vereinnahmt = vereinnahmt + summe.steuer
+                    erfassen(zeileVereinnahmteUmsatzsteuer, summe.steuer, am: summe.datum)
                 }
             case .ausgabe:
                 let prozent = buchung.privatanteilProzent
@@ -149,46 +158,18 @@ public struct EUeR: Hashable, Sendable {
                 betrag = buchung.nutzungsdauerJahre == nil
                     ? betrieblich
                     : AfA.betrag(buchung, jahr: jahr, brutto: brutto)
-                vorsteuer = vorsteuer + abziehbar
+                erfassen(zeileGezahlteVorsteuer, abziehbar, am: summe.datum)
             }
-            if betrag != .null {
-                let zeilenummer = kategorie.map { EUeR.zeile(buchung, $0, profile: profile) } ?? zeileAfA
-                if zeilenummer == zeileGeschenke, geschenkAbziehbar(buchung, brutto: brutto) == false {
-                    geschenkeNichtAbziehbar = geschenkeNichtAbziehbar + betrag
-                } else {
-                    werte[zeilenummer, default: .null] = werte[zeilenummer, default: .null] + betrag
-                }
-            }
+
+            let nummer = kategorie.map { EUeR.zeile(buchung, $0, profile: profile) } ?? zeileAfA
+            erfassen(
+                nummer, betrag,
+                am: nummer == zeileAfA ? buchung.datum : summe.datum,
+                nichtAbziehbar: nummer == zeileGeschenke && geschenkAbziehbar(buchung, brutto: brutto) == false
+            )
         }
 
-        var rows = werte.keys.sorted().flatMap { nummer in
-            zeilen(nummer, betrag: werte[nummer] ?? .null)
-        }
-        if geschenkeNichtAbziehbar != .null {
-            rows.append(Zeile(
-                zeile: zeileGeschenke,
-                bezeichnung: "\(bezeichnung(zeileGeschenke)), nicht abziehbar",
-                richtung: .ausgabe,
-                betrag: geschenkeNichtAbziehbar,
-                nichtAbziehbar: true
-            ))
-        }
-        if vereinnahmt != .null {
-            rows.append(Zeile(
-                zeile: zeileVereinnahmteUmsatzsteuer,
-                bezeichnung: "Vereinnahmte Umsatzsteuer",
-                richtung: .einnahme,
-                betrag: vereinnahmt
-            ))
-        }
-        if vorsteuer != .null {
-            rows.append(Zeile(
-                zeile: zeileGezahlteVorsteuer,
-                bezeichnung: "Gezahlte Vorsteuer",
-                richtung: .ausgabe,
-                betrag: vorsteuer
-            ))
-        }
+        let rows = beitraege.flatMap { id, beitraege in zeilen(id, beitraege: beitraege) }
         // The form prints the nicht abziehbare column of lines 63 and 64 first, and
         // Swift does not promise a stable sort, so the order is part of the key.
         return EUeR(
@@ -216,54 +197,77 @@ public struct EUeR: Hashable, Sendable {
     /// which is 70 Prozent abziehbar and 30 Prozent nicht abziehbar, §4 Abs. 5
     /// Satz 1 Nr. 2 EStG. The abziehbare share is rounded and the rest is the
     /// remainder, so both columns together stay the full amount.
-    private static func zeilen(_ nummer: Int, betrag: Cent) -> [Zeile] {
+    private static func zeilen(_ id: Zeile.ID, beitraege: [Buchungsbeitrag]) -> [Zeile] {
+        let nummer = id.zeile
+        let betrag = beitraege.reduce(Cent.null) { $0 + $1.betrag }
         let richtung: Richtung = nummer < 24 ? .einnahme : .ausgabe
-        if nummer == zeileGeschenke {
-            return [Zeile(
-                zeile: nummer,
-                bezeichnung: "\(bezeichnung(nummer)), abziehbar",
-                richtung: richtung,
-                betrag: betrag
-            )]
+
+        if betrag == .null,
+           id.nichtAbziehbar || nummer == zeileVereinnahmteUmsatzsteuer || nummer == zeileGezahlteVorsteuer
+        {
+            return []
         }
-        guard nummer == zeileBewirtung else {
-            return [Zeile(zeile: nummer, bezeichnung: bezeichnung(nummer), richtung: richtung, betrag: betrag)]
+
+        let titel = bezeichnung(nummer)
+        if nummer == zeileBewirtung {
+            let abziehbar = ohnePrivatanteil(betrag, prozent: 30)
+            return [
+                Zeile(
+                    zeile: nummer,
+                    bezeichnung: "\(titel), nicht abziehbar (30 %)",
+                    richtung: richtung,
+                    betrag: betrag - abziehbar,
+                    nichtAbziehbar: true,
+                    buchungsbeitraege: beitraege.map {
+                        $0.mitBetrag($0.betrag - ohnePrivatanteil($0.betrag, prozent: 30))
+                    }
+                ),
+                Zeile(
+                    zeile: nummer,
+                    bezeichnung: "\(titel), abziehbar (70 %)",
+                    richtung: richtung,
+                    betrag: abziehbar,
+                    nichtAbziehbar: false,
+                    buchungsbeitraege: beitraege.map { $0.mitBetrag(ohnePrivatanteil($0.betrag, prozent: 30)) }
+                )
+            ]
         }
-        let abziehbar = ohnePrivatanteil(betrag, prozent: 30)
-        return [
-            Zeile(
-                zeile: nummer,
-                bezeichnung: "\(bezeichnung(nummer)), nicht abziehbar (30 %)",
-                richtung: richtung,
-                betrag: betrag - abziehbar,
-                nichtAbziehbar: true
-            ),
-            Zeile(
-                zeile: nummer,
-                bezeichnung: "\(bezeichnung(nummer)), abziehbar (70 %)",
-                richtung: richtung,
-                betrag: abziehbar
-            )
-        ]
+
+        let zusatz = nummer == zeileGeschenke ? (id.nichtAbziehbar ? ", nicht abziehbar" : ", abziehbar") : ""
+        return [Zeile(
+            zeile: nummer,
+            bezeichnung: titel + zusatz,
+            richtung: richtung,
+            betrag: betrag,
+            nichtAbziehbar: id.nichtAbziehbar,
+            buchungsbeitraege: beitraege
+        )]
     }
 
     /// What one booking brings into the year: the net and the tax of the
     /// shares of its payments of the year, both before the Privatanteil.
-    private static func summe(_ buchung: Buchung, jahr: Int, profile: Profil) -> (netto: Cent, steuer: Cent) {
+    /// Use the last contributing payment date for the combined booking amount.
+    private static func summe(
+        _ buchung: Buchung, jahr: Int, profile: Profil
+    ) -> (netto: Cent, steuer: Cent, datum: LocalDate) {
         let zahlungen = buchung.zahlungen.sorted { $0.datum < $1.datum }
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
 
         var netto = Cent.null
         var steuer = Cent.null
+        var datum = buchung.datum
         for (stelle, zahlung) in zahlungen.enumerated()
             where abflussjahr(zahlung.datum, buchung, profile: profile) == jahr
         {
             for anteil in anteile[stelle] {
                 netto = netto + anteil.netto
                 steuer = steuer + anteil.steuer
+                if anteil.netto != .null || anteil.steuer != .null {
+                    datum = zahlung.datum
+                }
             }
         }
-        return (netto, steuer)
+        return (netto, steuer, datum)
     }
 
     /// The year a payment counts in. A USt-Vorauszahlung is a regularly

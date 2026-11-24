@@ -198,7 +198,7 @@ private func input() -> FileInput {
     // Priority processing is off unless the user asks for it.
     #expect(erste["service_tier"] as? String == nil)
     let werkzeuge = try #require(erste["tools"] as? [[String: Any]])
-    #expect(werkzeuge.count == 2)
+    #expect(werkzeuge.count == 3)
     #expect(werkzeuge[0]["type"] as? String == "function")
     #expect(werkzeuge[0]["name"] as? String == "sql")
     #expect(werkzeuge[0]["strict"] as? Bool == true)
@@ -209,6 +209,8 @@ private func input() -> FileInput {
     #expect(werkzeuge[1]["type"] as? String == "function")
     #expect(werkzeuge[1]["name"] as? String == "umrechnen")
     #expect(werkzeuge[1]["strict"] as? Bool == true)
+    #expect(werkzeuge[2]["name"] as? String == "steuerauswertung")
+    #expect(werkzeuge[2]["strict"] as? Bool == true)
     let eingabeteile = try #require(erste["input"] as? [[String: Any]])
     let content = try #require(eingabeteile[1]["content"] as? [[String: Any]])
     #expect(content[0]["type"] as? String == "input_file")
@@ -1285,4 +1287,138 @@ private func letzteAnfrage(_ skript: Skript) async throws -> [[String: Any]] {
         _ = try await Responses(key: "fictional-\(provider.rawValue)", transport: transport, provider: provider)
             .send(["input": "test"])
     }
+}
+
+@Test func steuerauswertungLiefertUStVAUndEUeRImGespraechOhneBuchungsaenderung() async throws {
+    let repository = try Repository.inMemory()
+    try repository.saveProfile(Profil(
+        rhythmus: .monatlich, dauerfristverlaengerung: true, sondervorauszahlungen: [2026: Cent(125)]
+    ))
+    let verkauf = try repository.save(Buchung(
+        richtung: .einnahme, art: .rechnung, datum: #require(LocalDate("2026-11-30")), titel: "Zahlung im Dezember",
+        kategorie: "umsatz_dienstleistung",
+        positionen: [Position(netto: Cent(1999), steuersatz: 19, steuer: Cent(380))],
+        steuerbehandlung: .inland, zahlungen: [Zahlung(
+            datum: #require(LocalDate("2026-12-03")),
+            betrag: Cent(2379)
+        )]
+    ), akteur: .nutzer)
+    try repository.save(Buchung(
+        richtung: .ausgabe, art: .beleg, datum: #require(LocalDate("2026-12-04")), titel: "Offene Steuerbehandlung",
+        positionen: []
+    ), akteur: .nutzer)
+    let vorher = try repository.allBookings()
+    let gespraech = try repository.saveConversation(Gespraech(titel: "Steuerauswertung"))
+    let skript = Skript([
+        funktionsantwort(
+            "steuerauswertung", arguments: ["art": "ustva", "jahr": 2026, "monat": 12, "quartal": NSNull()],
+            responseID: "resp_1", callID: "ustva"
+        ),
+        funktionsantwort(
+            "steuerauswertung", arguments: ["art": "euer", "jahr": 2026],
+            responseID: "resp_2", callID: "euer"
+        ),
+        schlussantwort
+    ])
+    let run = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "test",
+        transport: skript.transport
+    )
+    let result = try await run.chat(gespraech, text: "Zeige beide Auswertungen.", files: [], earlier: [])
+    let output = try Conversation.items(result.verlauf).filter { $0["type"] as? String == "function_call_output" }
+        .map {
+            let json = try #require($0["output"] as? String)
+            return try #require(JSONSerialization.jsonObject(with: Data(json.utf8)) as? [String: Any])
+        }
+    try #require(output.count == 2)
+    let ustva = output[0]
+    #expect(ustva["art"] as? String == "ustva")
+    #expect(ustva["zeitraum"] as? String == "Dezember 2026")
+    #expect(ustva["ungepruefte_buchungen"] as? Int == 2)
+    #expect(ustva["buchungen_ohne_steuerbehandlung"] as? Int == 1)
+    #expect(ustva["summen"] as? [String: Int] == ["zahllast": 236])
+    #expect(ustva["zahllast_komponenten"] as? [[String: Int]] == [
+        ["kennzahl": 81, "betrag": 361], ["kennzahl": 39, "betrag": -125]
+    ])
+    let ustvaZeilen = try #require(ustva["zeilen"] as? [[String: Any]])
+    #expect(ustvaZeilen.compactMap { $0["nummer"] as? Int } == [81, 39])
+    #expect(ustvaZeilen[0]["betrag"] as? Int == 1900)
+    #expect(ustvaZeilen[0]["rundungsdifferenz"] as? Int == -99)
+    let beitraege = try #require(ustvaZeilen[0]["buchungsbeitraege"] as? [[String: Any]])
+    #expect(beitraege.count == 1)
+    let beitrag = try #require(beitraege.first)
+    #expect(beitrag["buchung_id"] as? Int64 == verkauf.id)
+    #expect(beitrag["datum"] as? String == "2026-12-03")
+    #expect(beitrag["titel"] as? String == verkauf.titel)
+    #expect(beitrag["betrag"] as? Int == 1999)
+    #expect((ustvaZeilen[1]["profilbeitrag"] as? [String: Any])?["betrag"] as? Int == 125)
+    #expect((ustvaZeilen[1]["buchungsbeitraege"] as? [[String: Any]])?.isEmpty == true)
+
+    let euer = output[1]
+    #expect(euer["art"] as? String == "euer")
+    #expect(euer["zeitraum"] as? String == "2026")
+    #expect(euer["ungepruefte_buchungen"] as? Int == 2)
+    #expect(euer["buchungen_ohne_steuerbehandlung"] as? Int == 1)
+    #expect(euer["summen"] as? [String: Int] == ["einnahmen": 2379, "ausgaben": 0, "gewinn": 2379])
+    let euerZeilen = try #require(euer["zeilen"] as? [[String: Any]])
+    #expect(euerZeilen.compactMap { $0["nummer"] as? Int } == [15, 17])
+    #expect(euerZeilen.compactMap { $0["betrag"] as? Int } == [1999, 380])
+    #expect(euerZeilen.compactMap { $0["richtung"] as? String } == ["einnahme", "einnahme"])
+    let steuerbeitraege = try #require(euerZeilen[1]["buchungsbeitraege"] as? [[String: Any]])
+    #expect(steuerbeitraege.first?["buchung_id"] as? Int64 == verkauf.id)
+    #expect(steuerbeitraege.first?["betrag"] as? Int == 380)
+
+    #expect(try repository.allBookings() == vorher)
+    let aktivitaeten = try await repository.database.read { try Int.fetchOne(
+        $0,
+        sql: "SELECT COUNT(*) FROM aktivitaeten"
+    ) }
+    #expect(aktivitaeten == 2)
+}
+
+@Test func steuerauswertungErsetztKeineBuchungBeimImport() async throws {
+    let repository = try Repository.inMemory()
+    let skript = Skript([
+        funktionsantwort(
+            "steuerauswertung", arguments: ["art": "ustva", "jahr": 2026, "quartal": 3],
+            responseID: "resp_1", callID: "ustva"
+        ),
+        schlussantwort
+    ])
+    let run = try await AgentRun(
+        repository: repository,
+        tool: SQLTool(repository),
+        key: "test",
+        transport: skript.transport
+    )
+
+    do {
+        _ = try await run.start(input())
+        Issue.record("Eine Steuerauswertung allein darf den Import nicht abschließen.")
+    } catch let abort as RunAbort {
+        guard case AgentError.noBooking = abort.reason else {
+            Issue.record("Unerwarteter Importfehler: \(abort.reason)")
+            return
+        }
+        #expect(abort.created.isEmpty)
+    }
+    let request = try #require(try repository.allRequests().first)
+    #expect(request.status == .fehler)
+    #expect(request.konversation?.contains("Q3 2026") == true)
+    #expect(try repository.allBookings().isEmpty)
+}
+
+@Test(arguments: [
+    #"{"art":"ustva","jahr":2026}"#,
+    #"{"art":"ustva","jahr":2026,"monat":13}"#,
+    #"{"art":"ustva","jahr":2026,"quartal":0}"#,
+    #"{"art":"ustva","jahr":2026,"monat":1,"quartal":1}"#,
+    #"{"art":"euer","jahr":2026,"monat":1}"#,
+    #"{"art":"euer","jahr":0}"#
+])
+func steuerauswertungLehntUngueltigeZeitraeumeAb(_ argumente: String) throws {
+    let repository = try Repository.inMemory()
+    #expect(TaxEvaluation.execute(argumente, repository: repository).hasPrefix("Fehler:"))
 }

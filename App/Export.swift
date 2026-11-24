@@ -4,21 +4,24 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 /// The export sheet: the values of one period, and the file the user takes to
-/// Mein ELSTER or types into the Anlage EÜR. It computes on demand and keeps
-/// no state beyond the chosen period.
+/// Mein ELSTER or types into the Anlage EÜR. It computes on demand.
 struct ExportSheet: View {
     @Bindable var model: AppModel
     @Environment(\.dismiss) private var close
 
     private let profile: Profil
+    private let openBooking: (Int64) -> Void
     @State private var art: Zeitraumart = .ustva
     @State private var jahr: Int
     @State private var nummer: Int
+    @State private var detail: TaxLineDetail?
+    @State private var bookingToOpen: Int64?
 
     /// `preselected` is the period the start page asked for, if it came
     /// from there.
-    init(model: AppModel, preselected: Zeitraum? = nil) {
+    init(model: AppModel, preselected: Zeitraum? = nil, openBooking: @escaping (Int64) -> Void) {
         self.model = model
+        self.openBooking = openBooking
         let profile = model.profile()
         self.profile = profile
         let selection = preselected ?? Zeitraum.naechsteUStVA(
@@ -76,6 +79,12 @@ struct ExportSheet: View {
             footer
         }
         .frame(width: 560, height: 600)
+        .sheet(item: $detail, onDismiss: openSelectedBooking) { detail in
+            TaxLineSheet(period: zeitraum.name, detail: detail) { id in
+                bookingToOpen = id
+                self.detail = nil
+            }
+        }
         .alert("Fehler", isPresented: $model.showsError, presenting: model.errorMessage) { _ in
             Button("OK") {}
         } message: { text in
@@ -144,20 +153,33 @@ struct ExportSheet: View {
             Text("Keine Werte in diesem Zeitraum.").foregroundStyle(.secondary)
         }
         ForEach(values.zeilen) { zeile in
-            value(
+            drilldown(
                 "Kz \(zeile.kennzahl.nummer)",
                 zeile.kennzahl.titel,
-                // A Bemessungsgrundlage goes into the form in whole euros, and
-                // that is what the file writes, so that is what is shown.
-                zeile.kennzahl.istBemessung
-                    ? Cent(Kennzahl.volleEuro(zeile.betrag) * 100)
-                    : zeile.betrag
+                zeile.meldebetrag,
+                detail: ustvaLineDetail(zeile)
             )
         }
-        value(
+        let zahllastTitel = values.zahllast < .null ? "Verbleibender Überschuss" : "Verbleibende Vorauszahlung"
+        drilldown(
             "Kz 83",
-            values.zahllast < .null ? "Verbleibender Überschuss" : "Verbleibende Vorauszahlung",
+            zahllastTitel,
             values.zahllast,
+            detail: TaxLineDetail(
+                title: "Kz 83 · \(zahllastTitel)",
+                amount: values.zahllast,
+                bookings: [],
+                adjustments: values.zeilen.compactMap { zeile in
+                    zeile.zahllastbeitrag.map { amount in
+                        let prefix = Kennzahl.abgeleiteteSaetze[zeile.id] != nil ? "Steuer aus Kz \(zeile.id)" : "Kz \(zeile.id)"
+                        return TaxLineDetail.Amount(
+                            title: "\(prefix) · \(zeile.kennzahl.titel)",
+                            amount: amount,
+                            detail: ustvaLineDetail(zeile)
+                        )
+                    }
+                }
+            ),
             highlighted: true
         )
     }
@@ -168,11 +190,124 @@ struct ExportSheet: View {
             Text("Keine Werte in diesem Jahr.").foregroundStyle(.secondary)
         }
         ForEach(values.zeilen) { zeile in
-            value("Zeile \(zeile.zeile)", zeile.bezeichnung, zeile.betrag)
+            drilldown(
+                "Zeile \(zeile.zeile)",
+                zeile.bezeichnung,
+                zeile.betrag,
+                detail: euerLineDetail(zeile)
+            )
         }
-        value("Summe", "Einnahmen", values.einnahmen)
-        value("Summe", "Ausgaben", values.ausgaben)
-        value("Summe", "Gewinn", values.ergebnis, highlighted: true)
+        let einnahmenZeilen = values.zeilen.filter { $0.richtung == .einnahme }
+        let ausgabenZeilen = values.zeilen.filter { $0.richtung == .ausgabe && $0.nichtAbziehbar == false }
+        let gewinnZeilen = values.zeilen.filter { $0.richtung == .einnahme || $0.nichtAbziehbar == false }
+
+        drilldown(
+            "Summe",
+            "Einnahmen",
+            values.einnahmen,
+            detail: TaxLineDetail(
+                title: "Summe · Einnahmen",
+                amount: values.einnahmen,
+                bookings: [],
+                adjustments: einnahmenZeilen.map { zeile in
+                    TaxLineDetail.Amount(
+                        title: "Zeile \(zeile.zeile) · \(zeile.bezeichnung)",
+                        amount: zeile.betrag,
+                        detail: euerLineDetail(zeile)
+                    )
+                },
+                totalLabel: "Summe"
+            )
+        )
+        drilldown(
+            "Summe",
+            "Ausgaben",
+            values.ausgaben,
+            detail: TaxLineDetail(
+                title: "Summe · Ausgaben",
+                amount: values.ausgaben,
+                bookings: [],
+                adjustments: ausgabenZeilen.map { zeile in
+                    TaxLineDetail.Amount(
+                        title: "Zeile \(zeile.zeile) · \(zeile.bezeichnung)",
+                        amount: zeile.betrag,
+                        detail: euerLineDetail(zeile)
+                    )
+                },
+                totalLabel: "Summe"
+            )
+        )
+        drilldown(
+            "Summe",
+            "Gewinn",
+            values.ergebnis,
+            detail: TaxLineDetail(
+                title: "Summe · Gewinn",
+                amount: values.ergebnis,
+                bookings: [],
+                adjustments: gewinnZeilen.map { zeile in
+                    TaxLineDetail.Amount(
+                        title: "Zeile \(zeile.zeile) · \(zeile.bezeichnung)",
+                        amount: zeile.richtung == .einnahme ? zeile.betrag : -zeile.betrag,
+                        detail: euerLineDetail(zeile)
+                    )
+                },
+                totalLabel: "Gewinn"
+            ),
+            highlighted: true
+        )
+    }
+
+    private func ustvaLineDetail(_ zeile: UStVA.Zeile) -> TaxLineDetail {
+        TaxLineDetail(
+            title: "Kz \(zeile.kennzahl.nummer) · \(zeile.kennzahl.titel)",
+            amount: zeile.meldebetrag,
+            bookings: zeile.buchungsbeitraege,
+            adjustments: [
+                zeile.profilbetrag
+                    .map { TaxLineDetail.Amount(title: "Sondervorauszahlung laut Profil", amount: $0) },
+                adjustment("Kürzung auf volle Euro", zeile.rundungsdifferenz)
+            ].compactMap(\.self)
+        )
+    }
+
+    private func euerLineDetail(_ zeile: EUeR.Zeile) -> TaxLineDetail {
+        TaxLineDetail(
+            title: "Zeile \(zeile.zeile) · \(zeile.bezeichnung)",
+            amount: zeile.betrag,
+            bookings: zeile.buchungsbeitraege,
+            adjustments: [adjustment("Rundungsdifferenz der Zeile", zeile.rundungsdifferenz)].compactMap(\.self)
+        )
+    }
+
+    private func adjustment(_ title: String, _ amount: Cent) -> TaxLineDetail.Amount? {
+        amount == .null ? nil : TaxLineDetail.Amount(title: title, amount: amount)
+    }
+
+    private func drilldown(
+        _ label: String, _ title: String, _ amount: Cent,
+        detail lineDetail: TaxLineDetail, highlighted: Bool = false
+    ) -> some View {
+        Button {
+            detail = lineDetail
+        } label: {
+            HStack(spacing: 8) {
+                value(label, title, amount, highlighted: highlighted)
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func openSelectedBooking() {
+        guard let id = bookingToOpen else { return }
+        bookingToOpen = nil
+        openBooking(id)
+        close()
     }
 
     private func value(_ label: String, _ titel: String, _ betrag: Cent, highlighted: Bool = false) -> some View {
@@ -194,8 +329,8 @@ struct ExportSheet: View {
     // MARK: - Hinweise
 
     @ViewBuilder private var hints: some View {
-        let offen = zeitraum.ungeprueft(model.buchungen)
-        let fehlend = zeitraum.fehlendeSteuerbehandlungen(model.buchungen)
+        let offen = zeitraum.ungeprueft(model.buchungen, profile: profile)
+        let fehlend = zeitraum.fehlendeSteuerbehandlungen(model.buchungen, profile: profile)
         let exportiert = model.exportedPeriods[zeitraum]
         if offen > 0 || fehlend > 0 || exportiert != nil {
             Section {
@@ -277,6 +412,143 @@ struct ExportSheet: View {
             model.errorMessage = error.localizedDescription
         } catch {
             model.errorMessage = "Die Datei ließ sich nicht schreiben: \(error.localizedDescription)"
+        }
+    }
+}
+
+private struct TaxLineDetail: Identifiable {
+    struct Amount {
+        let title: String
+        let amount: Cent
+        let detail: TaxLineDetail?
+
+        init(title: String, amount: Cent, detail: TaxLineDetail? = nil) {
+            self.title = title
+            self.amount = amount
+            self.detail = detail
+        }
+    }
+
+    let id = UUID()
+    let title: String
+    let amount: Cent
+    let bookings: [Buchungsbeitrag]
+    let adjustments: [Amount]
+    let totalLabel: String
+
+    init(
+        title: String,
+        amount: Cent,
+        bookings: [Buchungsbeitrag],
+        adjustments: [Amount],
+        totalLabel: String = "Gemeldeter Betrag"
+    ) {
+        self.title = title
+        self.amount = amount
+        self.bookings = bookings
+        self.adjustments = adjustments
+        self.totalLabel = totalLabel
+    }
+}
+
+private struct TaxLineSheet: View {
+    @Environment(\.dismiss) private var close
+    let period: String
+    let detail: TaxLineDetail
+    let openBooking: (Int64) -> Void
+
+    @State private var stack: [TaxLineDetail] = []
+
+    private var active: TaxLineDetail {
+        stack.last ?? detail
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 4) {
+                if !stack.isEmpty {
+                    Button {
+                        stack.removeLast()
+                    } label: {
+                        Label("Zurück", systemImage: "chevron.left")
+                            .font(.callout)
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 2)
+                }
+                Text(active.title).font(.headline)
+                Text(period).foregroundStyle(.secondary)
+            }
+            .padding()
+            Divider()
+            Form {
+                ForEach(active.bookings.indices, id: \.self) { index in
+                    let booking = active.bookings[index]
+                    if let id = booking.buchungId {
+                        Button { openBooking(id) } label: {
+                            bookingRow(booking)
+                                .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        bookingRow(booking)
+                    }
+                }
+                ForEach(active.adjustments.indices, id: \.self) { index in
+                    let item = active.adjustments[index]
+                    if let child = item.detail {
+                        Button { stack.append(child) } label: {
+                            HStack(spacing: 8) {
+                                amountRow(item.title, item.amount)
+                                Image(systemName: "chevron.right")
+                                    .font(.caption)
+                                    .foregroundStyle(.tertiary)
+                                    .accessibilityHidden(true)
+                            }
+                            .contentShape(.rect)
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        amountRow(item.title, item.amount)
+                    }
+                }
+                if active.bookings.isEmpty, active.adjustments.isEmpty {
+                    Text("Keine Beiträge in diesem Zeitraum.").foregroundStyle(.secondary)
+                }
+            }
+            .formStyle(.grouped)
+            Divider()
+            HStack {
+                amountRow(active.totalLabel, active.amount).fontWeight(.semibold)
+                Button("Schließen") { close() }
+                    .keyboardShortcut(.cancelAction)
+            }
+            .padding(12)
+        }
+        .frame(width: 500, height: 380)
+    }
+
+    private func bookingRow(_ booking: Buchungsbeitrag) -> some View {
+        HStack(spacing: 12) {
+            Text(booking.datum.formatted)
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
+            amountRow(booking.titel, booking.betrag)
+            if booking.buchungId != nil {
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                    .accessibilityHidden(true)
+            }
+        }
+    }
+
+    private func amountRow(_ title: String, _ amount: Cent) -> some View {
+        HStack {
+            Text(title)
+            Spacer(minLength: 12)
+            Text(amount.formatted).monospacedDigit().fixedSize()
         }
     }
 }

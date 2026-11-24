@@ -387,6 +387,13 @@ final class AppModel {
 
     // MARK: - Export
 
+    func selectBookingFromExport(_ id: Int64) {
+        filter = .alle
+        reviewFilter = .alle
+        search = ""
+        selection = buchungen.contains { $0.id == id } ? [id] : []
+    }
+
     private func loadExported() {
         do {
             exportedPeriods = try repository.exportedPeriods()
@@ -409,7 +416,7 @@ final class AppModel {
     /// or manually marked handled. The inspector warns for either event.
     func changedAfterExport(_ buchung: Buchung) -> Bool {
         exportedPeriods.contains { zeitraum, exportiertAm in
-            zeitraum.beruehrt(buchung) && buchung.geaendertAm > exportiertAm
+            zeitraum.beruehrt(buchung, profile: currentProfile) && buchung.geaendertAm > exportiertAm
         }
     }
 

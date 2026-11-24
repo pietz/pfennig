@@ -147,7 +147,7 @@ public struct AgentRun: Sendable {
         ]
     }
 
-    /// The sole additional tool: it receives original major-unit amounts and
+    /// Receives original major-unit amounts and
     /// returns their EUR cents plus the reference-rate provenance.
     static var conversionToolDescription: [String: Any] {
         [
@@ -293,7 +293,7 @@ public struct AgentRun: Sendable {
         while true {
             var body: [String: Any] = [
                 "model": ai.model.rawValue,
-                "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription],
+                "tools": [AgentRun.sqlToolDescription, AgentRun.conversionToolDescription, TaxEvaluation.description],
                 "store": false,
                 "include": ["reasoning.encrypted_content"],
                 "input": [["role": "system", "content": instructions]]
@@ -331,8 +331,10 @@ public struct AgentRun: Sendable {
                     text = toolResult.text
                 case "umrechnen":
                     text = await CurrencyConverter.execute(call.arguments, transport: transport)
+                case "steuerauswertung":
+                    text = TaxEvaluation.execute(call.arguments, repository: repository)
                 default:
-                    text = "Fehler: Unbekanntes Werkzeug \(call.name). Verwende sql oder umrechnen."
+                    text = "Fehler: Unbekanntes Werkzeug \(call.name). Verwende sql, umrechnen oder steuerauswertung."
                 }
                 items.append([
                     "type": "function_call_output",

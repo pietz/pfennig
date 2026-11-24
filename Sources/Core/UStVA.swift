@@ -35,9 +35,34 @@ public struct UStVA: Hashable, Sendable {
     public struct Zeile: Hashable, Sendable, Identifiable {
         public let kennzahl: Kennzahl
         public let betrag: Cent
+        public let buchungsbeitraege: [Buchungsbeitrag]
+        /// Kz 39 comes from the year's special advance in the profile.
+        public let profilbetrag: Cent?
 
         public var id: Int {
             kennzahl.nummer
+        }
+
+        public var meldebetrag: Cent {
+            kennzahl.istBemessung ? Cent(Kennzahl.volleEuro(betrag) * 100) : betrag
+        }
+
+        public var rundungsdifferenz: Cent {
+            meldebetrag - betrag
+        }
+
+        /// Signed share of Kz 83, using the tax derived from the reported base.
+        public var zahllastbeitrag: Cent? {
+            if Kennzahl.abgeleiteteSaetze[id] != nil {
+                return Kennzahl.abgeleiteteSteuer(nummer: id, bemessung: betrag)
+            }
+            if Kennzahl.steuerKennzahlen.contains(id) {
+                return betrag
+            }
+            if Kennzahl.abzugsKennzahlen.contains(id) {
+                return -betrag
+            }
+            return nil
         }
     }
 
@@ -50,33 +75,51 @@ public struct UStVA: Hashable, Sendable {
     // MARK: - Berechnung
 
     public static func calculate(_ buchungen: [Buchung], zeitraum: Zeitraum, profile: Profil) -> UStVA {
-        var werte: [Int: Cent] = [:]
+        var beitraege: [Int: [Buchungsbeitrag]] = [:]
         for buchung in buchungen where zaehlt(buchung) {
+            func erfassen(_ werte: [Int: Cent], _ datum: LocalDate) {
+                for (nummer, betrag) in werte where betrag != .null {
+                    beitraege[nummer, default: []].append(Buchungsbeitrag(buchung, datum: datum, betrag: betrag))
+                }
+            }
             switch buchung.richtung {
-            case .einnahme: einnahme(buchung, zeitraum: zeitraum, profile: profile, in: &werte)
-            case .ausgabe: ausgabe(buchung, zeitraum: zeitraum, profile: profile, in: &werte)
+            case .einnahme:
+                einnahme(buchung, zeitraum: zeitraum, profile: profile, erfassen: erfassen)
+            case .ausgabe:
+                var werte: [Int: Cent] = [:]
+                ausgabe(buchung, zeitraum: zeitraum, profile: profile, in: &werte)
+                erfassen(werte, buchung.datum)
             }
         }
 
         // §48 Abs. 4 UStDV: credit the assessed special advance in the last
         // reporting period. This app supports the regular December case only.
+        var sondervorauszahlung: Cent?
         if profile.kleinunternehmer == false, profile.rhythmus == .monatlich,
            profile.dauerfristverlaengerung, zeitraum.einteilung == .monat(12),
            let betrag = profile.sondervorauszahlungen[zeitraum.jahr], betrag > .null
         {
-            buchen(39, betrag, in: &werte)
+            sondervorauszahlung = betrag
         }
 
         // Only filled lines, in the order of the form.
         let rows = Kennzahl.alle.compactMap { kennzahl -> Zeile? in
-            guard let betrag = werte[kennzahl.nummer], betrag != .null else { return nil }
-            return Zeile(kennzahl: kennzahl, betrag: betrag)
+            let buchungsbeitraege = beitraege[kennzahl.nummer] ?? []
+            let profilbetrag = kennzahl.nummer == 39 ? sondervorauszahlung : nil
+            let betrag = buchungsbeitraege.reduce(profilbetrag ?? .null) { $0 + $1.betrag }
+            guard betrag != .null else { return nil }
+            return Zeile(
+                kennzahl: kennzahl,
+                betrag: betrag,
+                buchungsbeitraege: buchungsbeitraege,
+                profilbetrag: profilbetrag
+            )
         }
         return UStVA(
             zeitraum: zeitraum,
             steuernummer: profile.steuernummer,
             zeilen: rows,
-            zahllast: zahllast(rows)
+            zahllast: rows.compactMap(\.zahllastbeitrag).reduce(.null, +)
         )
     }
 
@@ -96,17 +139,18 @@ public struct UStVA: Hashable, Sendable {
         _ buchung: Buchung,
         zeitraum: Zeitraum,
         profile: Profil,
-        in werte: inout [Int: Cent]
+        erfassen: ([Int: Cent], LocalDate) -> Void
     ) {
         if buchung.steuerbehandlung == .reverseCharge, Kennzahl.istEUStaat(buchung.gegenparteiLand) {
             guard zeitraum.enthaelt(buchung.datum) else { return }
-            buchen(21, buchung.netto, in: &werte)
+            erfassen([21: buchung.netto], buchung.datum)
             return
         }
 
         let zahlungen = geordnet(buchung)
         let anteile = Aufteilung.aufteilen(positionen: buchung.positionen, betraege: zahlungen.map(\.betrag))
         for (stelle, zahlung) in zahlungen.enumerated() where zeitraum.enthaelt(zahlung.datum) {
+            var werte: [Int: Cent] = [:]
             for anteil in anteile[stelle] {
                 guard let nummer = Kennzahl.einnahme(
                     behandlung: buchung.steuerbehandlung, steuersatz: anteil.steuersatz,
@@ -116,6 +160,7 @@ public struct UStVA: Hashable, Sendable {
                 guard profile.kleinunternehmer == false || nummer != 48 else { continue }
                 buchen(nummer, anteil.netto, in: &werte)
             }
+            erfassen(werte, zahlung.datum)
         }
     }
 
@@ -194,24 +239,5 @@ public struct UStVA: Hashable, Sendable {
     private static func buchen(_ nummer: Int, _ betrag: Cent, in werte: inout [Int: Cent]) {
         guard betrag != .null else { return }
         werte[nummer, default: .null] = werte[nummer, default: .null] + betrag
-    }
-
-    /// Kz 83, taken the way ELSTER takes it: a base without a tax column is
-    /// cut to whole euros first and multiplied by its rate, so the Zahllast
-    /// shown here is the one the portal computes from the same values.
-    private static func zahllast(_ rows: [Zeile]) -> Cent {
-        rows.reduce(Cent.null) { summe, zeile in
-            let nummer = zeile.kennzahl.nummer
-            if Kennzahl.abgeleiteteSaetze[nummer] != nil {
-                return summe + Kennzahl.abgeleiteteSteuer(nummer: nummer, bemessung: zeile.betrag)
-            }
-            if Kennzahl.steuerKennzahlen.contains(nummer) {
-                return summe + zeile.betrag
-            }
-            if Kennzahl.abzugsKennzahlen.contains(nummer) {
-                return summe - zeile.betrag
-            }
-            return summe
-        }
     }
 }

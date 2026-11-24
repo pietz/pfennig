@@ -53,6 +53,7 @@ struct WorkspaceView: View {
     @State private var workspace: Workspace = .start
     /// True while a drag hangs over the window.
     @State private var isDropTarget = false
+    @State private var bookingFromExport: Int64?
 
     @ViewBuilder private var detail: some View {
         switch workspace {
@@ -110,13 +111,20 @@ struct WorkspaceView: View {
             return true
         } isTargeted: { isDropTarget = $0 }
         // Export is reachable from both pages, so the sheet sits at window scope.
-        .sheet(isPresented: $model.exportVisible) {
-            ExportSheet(model: model, preselected: model.exportPeriod)
+        .sheet(isPresented: $model.exportVisible, onDismiss: openBookingFromExport) {
+            ExportSheet(model: model, preselected: model.exportPeriod) { bookingFromExport = $0 }
         }
         // Keep the single live observation and inbox lifecycle at window scope.
         .task { await model.observe() }
         // The window is never narrower than the parts the current page shows.
         .frame(minWidth: minimumWindowWidth, minHeight: 416)
+    }
+
+    private func openBookingFromExport() {
+        guard let id = bookingFromExport else { return }
+        bookingFromExport = nil
+        model.selectBookingFromExport(id)
+        workspace = .buchungen
     }
 
     /// The ledger with its inspector: the widest page and the opening size.

@@ -201,16 +201,27 @@ public struct Zeitraum: Hashable, Sendable {
             || (art == .euer && AfA.betrag(buchung, jahr: jahr, brutto: false) > .null)
     }
 
-    public func fehlendeSteuerbehandlungen(_ buchungen: [Buchung]) -> Int {
+    /// Profile-aware variant that also includes January 1-10 `ust_zahlung`
+    /// payments attributed to the prior EÜR year and Kleinunternehmer AfA.
+    public func beruehrt(_ buchung: Buchung, profile: Profil?) -> Bool {
+        if beruehrt(buchung) {
+            return true
+        }
+        guard art == .euer, let profile else { return false }
+        return buchung.zahlungen.contains { EUeR.abflussjahr($0.datum, buchung, profile: profile) == jahr }
+            || AfA.betrag(buchung, jahr: jahr, brutto: profile.kleinunternehmer) > .null
+    }
+
+    public func fehlendeSteuerbehandlungen(_ buchungen: [Buchung], profile: Profil? = nil) -> Int {
         buchungen.filter {
-            $0.art != .ignoriert && beruehrt($0) && $0.steuerbehandlung == nil
+            $0.art != .ignoriert && $0.steuerbehandlung == nil && beruehrt($0, profile: profile)
         }.count
     }
 
     /// How many bookings of the period the user has not confirmed yet.
-    public func ungeprueft(_ buchungen: [Buchung]) -> Int {
+    public func ungeprueft(_ buchungen: [Buchung], profile: Profil? = nil) -> Int {
         buchungen.filter { buchung in
-            buchung.art != .ignoriert && beruehrt(buchung) && buchung.geprueftAm == nil
+            buchung.art != .ignoriert && buchung.geprueftAm == nil && beruehrt(buchung, profile: profile)
         }
         .count
     }
