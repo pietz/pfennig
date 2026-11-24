@@ -1,5 +1,14 @@
 # Änderungen
 
+## 0.13.0 (2026-11-24)
+
+- UStVA-Kennzahlen und EÜR-Zeilen im Exportfenster öffnen eine Aufschlüsselung der beteiligten Buchungen, mit direktem Sprung zur Buchung
+- Der Agent kann UStVA und EÜR im Chat mit dem rein lesenden Werkzeug `steuerauswertung` aus denselben Berechnungen wie der Export beantworten
+- Auftrags- und Bestellbestätigungen werden nur noch gebucht, wenn sie eine Rechnung oder Zahlung belegen; eine bloße Bestellung erzeugt keine verfrühte Vorsteuer mehr
+- Ausgewählte Einstellungstabs sind im dunklen Modus besser lesbar
+
+Eine bezahlte Auftragsbestätigung ohne ordnungsgemäße Rechnung kann weiterhin Vorsteuer zu früh ausweisen und braucht dann manuelle Korrektur. Steuerexporte bleiben auf 2026 begrenzt.
+
 ## 0.12.0 (2026-11-09)
 
 - OpenAI oder OpenRouter unter „KI-Zugang“ auswählen, mit getrennten Schlüsseln und Einstellungen

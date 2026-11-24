@@ -1,5 +1,7 @@
 # Status
 
+**0.13.0 vorbereitet (2026-11-24).** Version 0.13.0/Build 18 mit Steuer-Aufschlüsselung und `steuerauswertung`, dunkler Akzentfarbe und der Regel für Auftragsbestätigungen.
+
 **Unbezahlte Auftragsbestätigungen nicht mehr gebucht (2026-11-24, noch nicht veröffentlicht).** Die Importregel nennt Bestell- und Auftragsbestätigungen nur noch als buchbar, wenn sie eine Rechnung oder Zahlung belegen. Anlass: eine Auftragsbestätigung ohne Lieferung, Rechnung oder Zahlung wurde mit 28,31 € Vorsteuer gebucht. Zwei breitere Formulierungen verworfen: "erfolgte Leistungen" hätte unbezahlte Abschlagsrechnungen ausgeschlossen, "Zahlungsbelege" ließ eine Bankübersicht (Fall 28) buchen. Luna/high mit der übernommenen Formulierung: Stresssatz 8/9 (`stress-08` 5/5 bei Wiederholung; `stress-07` bleibt die offene Chat-Zahlungszuordnung), öffentlich 52/52, Fall 28 5/5. Fall 14 schwankt modellbedingt (neu 4/5, alte Regel 2/5). Review Astra High; 272 Tests, SwiftFormat und Debug-Build erfolgreich.
 
 **Dunkle Akzentfarbe für Einstellungstabs abgestimmt (2026-11-24, noch nicht veröffentlicht).** `AccentColor` behält `#1D4C7A` im hellen Modus und nutzt `#427AB3` im dunklen Modus (4,50:1 zu weißem Text auf ausgewählten Tabellenzeilen und 3,10:1 bis 3,70:1 zu dunklem Fensterchrom `#2C2C2C` bis `#1E1E1E`), ohne eigene Tab-Steuerelemente oder AppKit-Eingriffe. Unabhängiges Review (Astra High) ohne Befund; `actool`, 272 Tests und Debug-Build erfolgreich.
