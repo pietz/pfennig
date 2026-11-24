@@ -1,5 +1,9 @@
 # Änderungen
 
+## 0.13.1 (2026-11-24)
+
+- Das Löschen eines Gesprächs im Chatverlauf fragt jetzt nach einer Bestätigung, statt es sofort endgültig zu entfernen
+
 ## 0.13.0 (2026-11-24)
 
 - UStVA-Kennzahlen und EÜR-Zeilen im Exportfenster öffnen eine Aufschlüsselung der beteiligten Buchungen, mit direktem Sprung zur Buchung
