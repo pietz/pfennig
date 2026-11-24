@@ -9,8 +9,6 @@ Stand 2026-11-09, nach Release 0.12.0. GitHub-Issues halten offene Arbeit fest, 
 3. **Steuerjahr 2027 amtlich verifizieren, vom Eigentümer beauftragt.** Neue BMF-Formulare und Anleitungen für UStVA und EÜR getrennt mit den vorhandenen Kennzahlen und Zeilen vergleichen. Stand 2026-11-24 sind weder UStVA- noch EÜR-Vordrucke 2027 veröffentlicht; der Export bleibt bis dahin auf 2026 begrenzt. [ELSTER plant UStVA 2027 für den 01.01.2027](https://www.elster.de/eportal/infoseite/bereitstellungstermine); ein späterer Eigentümer-Testimport ohne Übermittlung muss die XML-Kompatibilität belegen. Auch die 2026-Kennzahlen 89/93/61/39 brauchen noch eine eigene ELSTER-Abnahme. [Nachweise und Prüfplan](reliability-advisor-20261012.md).
 4. **Chat [#16](https://github.com/pietz/pfennig/issues/16) im Alltag prüfen.** Ein Agent für Import und Chat, zustandslos, Verlauf ohne Dateibytes in `gespraeche`; seit 0.10.0 veröffentlicht. Dateienübersicht [#17](https://github.com/pietz/pfennig/issues/17) und Anfragekosten [#19](https://github.com/pietz/pfennig/issues/19) bleiben zurückgestellt, bis der Einsatz konkreten Bedarf zeigt.
 
-Außerdem offen: ausgewählter Einstellungstab im dunklen Modus mit zu wenig Kontrast. Eine globale hellere Akzentfarbe macht Tabellenmarkierungen schlechter lesbar; lokale SwiftUI-Tints erreichen die nativen Einstellungstabs nicht. Vor weiterer Umsetzung einen begrenzten Farb-/Auswahlumfang abstimmen, keine AppKit-Introspektion oder eigene Tab-Oberfläche ergänzen. [Native Prüfung](macos27-ui-check.md).
-
 Außerdem offen: Landingpage-Medien, fünf vorgesehene Plätze, Integration nach Bereitstellung der Assets.
 
 ## Geparkt
