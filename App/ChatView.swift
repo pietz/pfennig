@@ -10,6 +10,7 @@ struct ChatView: View {
     @State private var selection: TextSelection?
     @State private var picking = false
     @State private var historyVisible = false
+    @State private var conversationToDelete: Gespraech?
     @State private var isDropTarget = false
     @FocusState private var focused: Bool
 
@@ -177,13 +178,29 @@ struct ChatView: View {
                         .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    Button("Löschen", systemImage: "trash") { model.deleteConversation(gespraech) }
+                    Button("Löschen", systemImage: "trash") { conversationToDelete = gespraech }
                         .labelStyle(.iconOnly)
                         .buttonStyle(.borderless)
                         .help("Gespräch löschen")
                 }
             }
             .frame(width: 320, height: 320)
+            .confirmationDialog(
+                "Gespräch löschen?",
+                isPresented: Binding(
+                    get: { conversationToDelete != nil },
+                    set: {
+                        if $0 == false {
+                            conversationToDelete = nil
+                        }
+                    }
+                ),
+                presenting: conversationToDelete
+            ) { gespraech in
+                Button("Löschen", role: .destructive) { model.deleteConversation(gespraech) }
+            } message: { gespraech in
+                Text("„\(gespraech.titel)“ wird endgültig entfernt.")
+            }
         }
     }
 
