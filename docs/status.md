@@ -1,6 +1,6 @@
 # Status
 
-**0.13.1 vorbereitet (2026-11-24).** Build 19 mit Bestätigung vor dem Löschen eines Gesprächs.
+**Release 0.13.1 veröffentlicht (2026-11-24).** Build 19, Tag `v0.13.1` auf `29fba96`, als [Latest](https://github.com/pietz/pfennig/releases/tag/v0.13.1) mit sechs Assets veröffentlicht. Bestätigung vor dem Löschen eines Gesprächs. 272 Tests bestanden; Notarisierung, Stapling und Gatekeeper im Release-Skript geprüft. Alle sechs öffentlichen Downloads und der Latest-Appcast stimmen byteweise mit den lokalen Artefakten überein. Der Bestätigungsdialog wurde nicht in der laufenden App durchgeklickt.
 
 **Release 0.13.0 veröffentlicht (2026-11-24).** Build 18, Tag `v0.13.0` auf `d69f983`, als [Latest](https://github.com/pietz/pfennig/releases/tag/v0.13.0) mit sechs Assets veröffentlicht. Enthält Steuer-Aufschlüsselung und `steuerauswertung`, dunkle Akzentfarbe und die Regel für Auftragsbestätigungen. 272 Tests bestanden. Developer-ID-Signaturen einschließlich Sparkle-Helfern, Apple-Notarisierung, Stapling und Gatekeeper (`Notarized Developer ID`) im Release-Skript geprüft; Appcast mit Ed25519 signiert. Alle sechs öffentlichen Downloads und der Latest-Appcast stimmen byteweise mit den lokalen Artefakten überein. Keine Prüfung in einem getrennten macOS-Testkonto; installierte Release-App nicht ersetzt.
 
